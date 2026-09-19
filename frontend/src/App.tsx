@@ -62,6 +62,11 @@ export const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Screen Reader Live Announcement per WCAG 2.1 AA (Criteria 4.1.3 Status Messages)
+  const [liveAnnouncement, setLiveAnnouncement] = useState<string>(
+    'Corridor decision-support platform initialized. Source mode: SIMULATION.'
+  );
+
   // Historical Time Scrubber State (P1-B)
   const [scrubberMinutesAgo, setScrubberMinutesAgo] = useState<number>(0);
   const [isScrubberPlaying, setIsScrubberPlaying] = useState<boolean>(false);
@@ -189,8 +194,30 @@ export const App: React.FC = () => {
     };
   }, [roadSegments, effectiveStates]);
 
+  // Synchronize dynamic status message for screen readers (WCAG 4.1.3)
+  useEffect(() => {
+    if (effectiveUpdated) {
+      const advisoryCount = advisorySummary?.totalActive || 0;
+      const advisoryText = advisoryCount > 0 ? `${advisoryCount} active advisories.` : 'No critical advisories.';
+      const replayText = scrubberMinutesAgo > 0 ? `Historical replay active (${scrubberMinutesAgo}m ago).` : 'Live stream active.';
+      setLiveAnnouncement(
+        `Corridor twin state updated at ${new Date(effectiveUpdated).toLocaleTimeString()}. ${replayText} Source mode: ${effectiveMode}. Speed: ${aggregates.avgSpeed.toFixed(1)} km/h. ${advisoryText}`
+      );
+    }
+  }, [effectiveUpdated, effectiveMode, scrubberMinutesAgo, advisorySummary, aggregates.avgSpeed]);
+
   return (
     <div className="app-layout">
+      {/* Skip to Main Content Link for Keyboard Accessibility (WCAG 2.4.1 Bypass Blocks) */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
+      {/* Screen Reader Live Status Announcement Region (WCAG 4.1.3 Status Messages) */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {liveAnnouncement}
+      </div>
+
       <Header
         wsConnected={wsConnected}
         currentMode={effectiveMode}
@@ -202,7 +229,7 @@ export const App: React.FC = () => {
         onToggleTheme={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
       />
 
-      <main className="workspace">
+      <main id="main-content" tabIndex={-1} className="workspace" aria-label="Main Operational Workspace">
         {/* VIEW 1: Operations Map & Live Corridor Overview */}
         {activeTab === 'operations' && (
           <div className="operations-view-layout">

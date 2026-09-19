@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   X,
   Gauge,
@@ -15,6 +15,7 @@ import {
 import { EntityCurrentState, RoadSegmentAsset, IntersectionAsset } from '../types/twin';
 import { ForecastPanel } from './ForecastPanel';
 import { fetchSegmentComparison, SegmentComparisonResult } from '../services/api';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface EntityDetailDrawerProps {
   entity: RoadSegmentAsset | IntersectionAsset | null;
@@ -33,8 +34,12 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
   onClose,
   onSelectCompareEntity
 }) => {
+  const drawerRef = useRef<HTMLElement>(null);
   const [comparisonResult, setComparisonResult] = useState<SegmentComparisonResult | null>(null);
   const [loadingCompare, setLoadingCompare] = useState<boolean>(false);
+
+  // Focus trapping and Escape key closing per WCAG 2.1 AA
+  useFocusTrap(drawerRef, !!entity, onClose);
 
   if (!entity) return null;
 
@@ -100,7 +105,13 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
   const flowDelta = flowA !== undefined && flowB !== undefined ? flowA - flowB : null;
 
   return (
-    <aside className={`entity-drawer ${isComparing ? 'comparison-mode' : ''}`} aria-label="Entity Details">
+    <aside
+      ref={drawerRef}
+      tabIndex={-1}
+      role="region"
+      aria-label={isComparing ? 'Multi-Segment Comparative Analysis Drawer' : 'Entity Details Drawer'}
+      className={`entity-drawer ${isComparing ? 'comparison-mode' : ''}`}
+    >
       {/* Drawer Header */}
       <div className="drawer-header">
         <div>
@@ -131,7 +142,7 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
               Exit Compare
             </button>
           )}
-          <button onClick={onClose} className="close-btn" aria-label="Close drawer">
+          <button onClick={onClose} className="close-btn" aria-label="Close entity details drawer">
             <X size={18} />
           </button>
         </div>

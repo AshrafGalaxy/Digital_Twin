@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sliders,
   Play,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ScenarioTemplate, ScenarioRunResult } from '../types/twin';
 import { fetchScenarioTemplates, runScenario } from '../services/api';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ScenarioStudioProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface ScenarioStudioProps {
 }
 
 export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [templates, setTemplates] = useState<ScenarioTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('SCEN-INT-01');
   const [greenExtension, setGreenExtension] = useState<number>(15);
@@ -28,6 +30,9 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [runResult, setRunResult] = useState<ScenarioRunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Focus trap and Escape key listener per WCAG 2.1 AA
+  useFocusTrap(modalRef, isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,16 +65,23 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
 
   return (
-    <div className="scenario-modal-backdrop">
-      <div className="scenario-modal-container">
+    <div className="scenario-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="scenario-studio-title"
+        className="scenario-modal-container"
+      >
         {/* Header */}
         <div className="scenario-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <div className="scenario-icon-badge">
-              <Cpu size={20} color="#0F4C5C" />
+              <Cpu size={20} color="var(--color-primary)" />
             </div>
             <div>
-              <h2 className="scenario-title">Scenario Studio — Microscopic Traffic Simulation</h2>
+              <h2 id="scenario-studio-title" className="scenario-title">Scenario Studio — Microscopic Traffic Simulation</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
                 <span className="provenance-badge badge-simulation">SIMULATION</span>
                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>

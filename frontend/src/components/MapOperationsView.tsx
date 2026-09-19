@@ -314,26 +314,47 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     const currentMap = map.current;
     if (!currentMap) return;
 
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     if (!is3DMode) {
       // Transition camera to 3D Extrusion perspective
-      currentMap.easeTo({
-        pitch: 58,
-        bearing: -22,
-        zoom: 15.3,
-        duration: 1400
-      });
+      if (prefersReducedMotion) {
+        currentMap.jumpTo({
+          pitch: 58,
+          bearing: -22,
+          zoom: 15.3
+        });
+      } else {
+        currentMap.easeTo({
+          pitch: 58,
+          bearing: -22,
+          zoom: 15.3,
+          duration: 1400
+        });
+      }
       if (currentMap.getLayer('corridor-buildings-extrusion')) {
         currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', 'visible');
       }
       setIs3DMode(true);
     } else {
-      // Smoothly return to 2D Operational Baseline
-      currentMap.easeTo({
-        pitch: 20,
-        bearing: 0,
-        zoom: 14.5,
-        duration: 1100
-      });
+      // Return to 2D Operational Baseline
+      if (prefersReducedMotion) {
+        currentMap.jumpTo({
+          pitch: 20,
+          bearing: 0,
+          zoom: 14.5
+        });
+      } else {
+        currentMap.easeTo({
+          pitch: 20,
+          bearing: 0,
+          zoom: 14.5,
+          duration: 1100
+        });
+      }
       if (currentMap.getLayer('corridor-buildings-extrusion')) {
         currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', 'none');
       }

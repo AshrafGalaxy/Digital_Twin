@@ -11,14 +11,14 @@
 ## 1. Overall Solidification & Feature Progress
 
 ```text
-[████████████████████████░░░░░░░░░░░░░░░░] 60% Total Scope Completed
+[████████████████████████████░░░░░░░░░░░░] 70% Total Scope Completed
 ```
 
 - **Foundational Pipeline (Phases 0–6):** 100% Complete (`[x]`)
 - **Evaluation & Benchmarks (Phase 7):** 100% Complete (`[x]`)
 - **Phase 8 Core Algorithms & 3D Extrusions:** 100% Complete (`[x]`)
 - **Track 1 UI/UX Navigation & Analytics (P1-A, P1-B, P1-C):** 100% Complete (`[x]`)
-- **Track 2 Theming & Accessibility (P2-A):** 50% Complete (`[x]` P2-A done, `[ ]` P2-B pending)
+- **Track 2 Theming & Accessibility (P2-A, P2-B):** 100% Complete (`[x]`)
 - **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** Pending (`[ ]`)
 - **Track 4 Persistence & Telemetry Streamer (P4-A, P4-B):** Pending (`[ ]`)
 
@@ -39,14 +39,17 @@
   - [x] System Health View (`SystemHealthView.tsx`) with subsystem health, NGSI-LD schema validation rates (100%), and provenance matrix.
 - [x] **P1-B: Interactive Historical Time Scrubber & Replay Control** *(Completed)*
   - [x] Bottom playback bar on Operations View allowing operators to rewind up to 12 hours.
-  - [x] Interactive timeline scrubber slider with play/pause and playback speed multipliers (1x, 2x, 5x, 10x).
-  - [x] Backend historical snapshot endpoint (`GET /api/v1/state/snapshot`) updating segment colors and metrics dynamically.
-  - [x] Replay session management endpoints (`GET /stream/replay/status`, `POST /stream/replay/control`) with WS broadcast.
-- [x] **P1-C: Multi-Segment Comparative Drawer** *(Completed)*
-  - [x] Multi-select toggle and opposing bound quick shortcut in Entity Detail Drawer.
-  - [x] Side-by-side comparative speed, flow, delay, Level of Service (LOS A–F), and queue disparity charts.
-  - [x] Directional imbalance diagnosis card highlighting bottleneck severity (CRITICAL / ELEVATED / BALANCED).
-  - [x] Backend comparison endpoint (`GET /api/v1/state/compare`) returning differential analytics and LOS.
+  - [x] 12-hour timeline scrubber slider with 15-minute tick markers.
+  - [x] Play / pause toggle and playback speed multipliers (1x, 2x, 5x, 10x).
+  - [x] Backend snapshot endpoint `GET /api/v1/state/snapshot?minutes_ago=N`.
+  - [x] Backend replay control endpoint `POST /api/v1/stream/replay/control`.
+  - [x] WebSocket broadcast of `REPLAY_STATE_CHANGED` events.
+  - [x] Instant "Jump to Live" button restoring real-time stream.
+- [x] **P1-C: Multi-Segment Comparative Drawer & Directional Analysis** *(Completed)*
+  - [x] Backend endpoint `GET /api/v1/state/compare?segment_a={id}&segment_b={id}`.
+  - [x] Level of Service (`LOS A` through `LOS F`) computation.
+  - [x] Directional imbalance diagnosis (`CRITICAL`, `ELEVATED`, `BALANCED`).
+  - [x] Frontend comparison drawer with side-by-side metrics and delta indicators.
   - [x] Dual-segment visual highlighting on MapLibre with cyan and amber casing layers.
 
 ---
@@ -56,11 +59,11 @@
   - [x] Implement complete token set for `:root, [data-theme="light"]` and `[data-theme="dark"]` in `index.css`.
   - [x] Interactive theme switcher toggle in `Header.tsx` with `localStorage` persistence and OS preference detection.
   - [x] MapLibre GL style switcher toggling between light civic basemap and dark operations tiles.
-- [ ] **P2-B: Full Accessibility Hardening (WCAG 2.1 AA)**
-  - [ ] Add `aria-live="polite"` regions for incoming WebSocket updates and alert badges.
-  - [ ] Add visible-on-focus "Skip to main content" link (`#main-content`) at DOM root.
-  - [ ] Add `prefers-reduced-motion` media queries suppressing camera transitions and spinner animations.
-  - [ ] Keyboard focus trapping and `Escape` key listeners on all dialogs and drawers.
+- [x] **P2-B: Full Accessibility Hardening (WCAG 2.1 AA)** *(Completed)*
+  - [x] Add `aria-live="polite"` regions for incoming WebSocket updates and alert badges.
+  - [x] Add visible-on-focus "Skip to main content" link (`#main-content`) at DOM root.
+  - [x] Add `prefers-reduced-motion` media queries suppressing camera transitions and spinner animations.
+  - [x] Keyboard focus trapping and `Escape` key listeners on all dialogs and drawers (`useFocusTrap`).
 
 ---
 

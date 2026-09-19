@@ -54,7 +54,7 @@ An honest audit of the current codebase against the root contract files confirms
   - Add an interactive theme toggle icon button in `Header.tsx` that persists preference in `localStorage` and respects `prefers-color-scheme`.
   - Update MapLibre GL map style to seamlessly toggle between light cartography and dark operational tiles.
 
-* [ ] **P2-B: Full Accessibility Hardening**
+* [x] **P2-B: Full Accessibility Hardening** *(COMPLETED)*
   - Add `aria-live="polite"` live announcement regions for incoming WebSocket updates and alert counters.
   - Add a visible-on-focus "Skip to main content" link (`#main-content`) at the top of the DOM.
   - Add `prefers-reduced-motion` media queries disabling camera flight easing and spinner rotations.

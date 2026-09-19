@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   AdvisoryRecommendation,
   AdvisorySummary,
@@ -11,6 +11,7 @@ import {
   reviewRecommendation,
   triggerRuleEvaluation
 } from '../services/api';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface AdvisoryCenterModalProps {
   isOpen: boolean;
@@ -25,8 +26,12 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
   onSelectEntity,
   onOpenScenarioStudio
 }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [recommendations, setRecommendations] = useState<AdvisoryRecommendation[]>([]);
   const [summary, setSummary] = useState<AdvisorySummary | null>(null);
+
+  // Focus trapping and Escape key closing per WCAG 2.1 AA
+  useFocusTrap(modalRef, isOpen, onClose);
   const [domainFilter, setDomainFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(false);
@@ -121,10 +126,13 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
+        ref={modalRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="advisory-title"
         className="advisory-modal-content"
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-labelledby="advisory-title"
       >
         {/* Modal Header */}
         <div className="modal-header">
