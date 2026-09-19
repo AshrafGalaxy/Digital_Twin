@@ -1359,4 +1359,155 @@ body {
   font-style: italic;
 }
 
+/* ==========================================================================
+   Phase 8 Extensions: 3D Presentation, Conformal Prediction & Explainability
+   ========================================================================== */
+
+.map-3d-controls-overlay {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 10;
+}
+
+.map-3d-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-standard);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.map-3d-toggle-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: var(--color-text-primary);
+  border-color: var(--color-primary);
+}
+
+.map-3d-toggle-btn.active {
+  background: var(--color-primary);
+  color: #FFFFFF;
+  border-color: #2DD4BF;
+  box-shadow: 0 0 14px rgba(45, 212, 191, 0.4);
+}
+
+/* Conformal Prediction Box */
+.forecast-conformal-box {
+  background: rgba(15, 76, 92, 0.18);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.conformal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conformal-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #2DD4BF;
+}
+
+.conformal-target {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.conformal-range {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+.conformal-margin {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+/* Local TreeSHAP Feature Explainability */
+.forecast-explanation-box {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.explanation-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.explanation-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explanation-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.explanation-chip.contrib-pos {
+  background: rgba(16, 185, 129, 0.12);
+  border-left: 2px solid #10B981;
+}
+
+.explanation-chip.contrib-neg {
+  background: rgba(239, 68, 68, 0.12);
+  border-left: 2px solid #EF4444;
+}
+
+.chip-name {
+  color: var(--color-text-secondary);
+}
+
+.chip-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.contrib-pos .chip-val {
+  color: #10B981;
+}
+
+.contrib-neg .chip-val {
+  color: #EF4444;
+}
+
+
 

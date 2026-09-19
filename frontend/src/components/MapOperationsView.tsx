@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
+import buildings3dGeoJson from '../assets/corridor_buildings_3d.json';
 
 interface MapOperationsViewProps {
   studyAreaGeoJson: any;
@@ -19,6 +20,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
+  const [is3DMode, setIs3DMode] = useState<boolean>(false);
 
   // Initialize MapLibre GL Map
   useEffect(() => {
@@ -53,7 +55,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       },
       center: [73.9220, 18.5615], // Corridor midpoint
       zoom: 14.5,
-      pitch: 25,
+      pitch: 20,
       attributionControl: false
     });
 
@@ -66,7 +68,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     };
   }, []);
 
-  // Render Study Area and Assets when data is ready
+  // Render Study Area, Assets, and 3D Extrusions when data is ready
   useEffect(() => {
     const currentMap = map.current;
     if (!currentMap) return;
@@ -165,7 +167,36 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         (currentMap.getSource('road-segments') as maplibregl.GeoJSONSource).setData(segmentsGeoJson as any);
       }
 
-      // 3. Add Intersections Markers
+      // 3. Add 3D Building Extrusions Layer (Phase 8, D-13)
+      if (!currentMap.getSource('corridor-buildings-3d')) {
+        currentMap.addSource('corridor-buildings-3d', {
+          type: 'geojson',
+          data: buildings3dGeoJson as any
+        });
+
+        currentMap.addLayer({
+          id: 'corridor-buildings-extrusion',
+          type: 'fill-extrusion',
+          source: 'corridor-buildings-3d',
+          layout: {
+            visibility: is3DMode ? 'visible' : 'none'
+          },
+          paint: {
+            'fill-extrusion-color': ['get', 'color'],
+            'fill-extrusion-height': ['get', 'height'],
+            'fill-extrusion-base': ['get', 'base_height'],
+            'fill-extrusion-opacity': 0.88
+          }
+        });
+      } else if (currentMap.getLayer('corridor-buildings-extrusion')) {
+        currentMap.setLayoutProperty(
+          'corridor-buildings-extrusion',
+          'visibility',
+          is3DMode ? 'visible' : 'none'
+        );
+      }
+
+      // 4. Add Intersections Markers
       intersections.forEach(ix => {
         const el = document.createElement('div');
         el.className = 'intersection-marker';
@@ -192,7 +223,60 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     } else {
       currentMap.once('load', onMapLoad);
     }
-  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, onSelectEntity]);
+  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, onSelectEntity, is3DMode]);
 
-  return <div ref={mapContainer} className="map-viewport" />;
+  const toggle3DMode = () => {
+    const currentMap = map.current;
+    if (!currentMap) return;
+
+    if (!is3DMode) {
+      // Transition camera to 3D Extrusion perspective
+      currentMap.easeTo({
+        pitch: 58,
+        bearing: -22,
+        zoom: 15.3,
+        duration: 1400
+      });
+      if (currentMap.getLayer('corridor-buildings-extrusion')) {
+        currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', 'visible');
+      }
+      setIs3DMode(true);
+    } else {
+      // Smoothly return to 2D Operational Baseline
+      currentMap.easeTo({
+        pitch: 20,
+        bearing: 0,
+        zoom: 14.5,
+        duration: 1100
+      });
+      if (currentMap.getLayer('corridor-buildings-extrusion')) {
+        currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', 'none');
+      }
+      setIs3DMode(false);
+    }
+  };
+
+  return (
+    <div className="map-container-relative" style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={mapContainer} className="map-viewport" />
+
+      {/* 3D Presentation Mode Overlay Controls */}
+      <div className="map-3d-controls-overlay">
+        <button
+          type="button"
+          className={`map-3d-toggle-btn ${is3DMode ? 'active' : ''}`}
+          onClick={toggle3DMode}
+          title={is3DMode ? "Return to 2D Operations Map" : "Enable 3D Corridor Extrusions Presentation"}
+        >
+          <span className="btn-icon">{is3DMode ? '🌐' : '🏢'}</span>
+          <span>{is3DMode ? '3D Extrusions Active' : 'Enable 3D View'}</span>
+        </button>
+        {is3DMode && (
+          <span className="provenance-badge badge-simulation" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+            3D SIMULATION
+          </span>
+        )}
+      </div>
+    </div>
+  );
 };

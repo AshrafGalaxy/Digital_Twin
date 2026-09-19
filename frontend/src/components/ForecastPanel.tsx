@@ -111,7 +111,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <div className="forecast-label">80% Confidence Interval</div>
+              <div className="forecast-label">80% Interval</div>
               <div className="forecast-interval-val">
                 [{trafficForecast.confidenceLower.toFixed(1)} – {trafficForecast.confidenceUpper.toFixed(1)}]
                 <span className="forecast-unit"> km/h</span>
@@ -130,6 +130,35 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             )}
           </div>
         </div>
+
+        {/* Conformal Prediction Uncertainty Calibration */}
+        {trafficForecast.conformalIntervals && (
+          <div className="forecast-conformal-box">
+            <div className="conformal-header">
+              <span className="conformal-badge">CONFORMAL CALIBRATION</span>
+              <span className="conformal-target">90% Coverage Guarantee</span>
+            </div>
+            <div className="conformal-range">
+              [{trafficForecast.conformalIntervals.interval90.lower.toFixed(1)} – {trafficForecast.conformalIntervals.interval90.upper.toFixed(1)} km/h]
+              <span className="conformal-margin"> (±{trafficForecast.conformalIntervals.interval90.margin} km/h, { (trafficForecast.conformalIntervals.interval90.empiricalTestCoverage * 100).toFixed(1) }% test coverage)</span>
+            </div>
+          </div>
+        )}
+
+        {/* TreeSHAP Local Feature Explainability */}
+        {trafficForecast.explanation?.topContributors && trafficForecast.explanation.topContributors.length > 0 && (
+          <div className="forecast-explanation-box">
+            <div className="explanation-title">Local Feature Attributions (TreeSHAP)</div>
+            <div className="explanation-chips">
+              {trafficForecast.explanation.topContributors.map((c, i) => (
+                <div key={i} className={`explanation-chip ${c.contribution >= 0 ? 'contrib-pos' : 'contrib-neg'}`}>
+                  <span className="chip-name">{c.displayName}:</span>
+                  <span className="chip-val">{c.contribution >= 0 ? `+${c.contribution.toFixed(1)}` : c.contribution.toFixed(1)} km/h</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Baseline vs Model Comparison */}
         {trafficForecast.baselineComparison && (
@@ -222,6 +251,35 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Conformal Prediction Uncertainty Calibration */}
+        {energyForecast.conformalIntervals && (
+          <div className="forecast-conformal-box">
+            <div className="conformal-header">
+              <span className="conformal-badge">CONFORMAL CALIBRATION</span>
+              <span className="conformal-target">90% Coverage Guarantee</span>
+            </div>
+            <div className="conformal-range">
+              [{energyForecast.conformalIntervals.interval90.lower.toFixed(0)} – {energyForecast.conformalIntervals.interval90.upper.toFixed(0)} kW]
+              <span className="conformal-margin"> (±{energyForecast.conformalIntervals.interval90.margin.toFixed(0)} kW, { (energyForecast.conformalIntervals.interval90.empiricalTestCoverage * 100).toFixed(1) }% test coverage)</span>
+            </div>
+          </div>
+        )}
+
+        {/* TreeSHAP Local Feature Explainability */}
+        {energyForecast.explanation?.topContributors && energyForecast.explanation.topContributors.length > 0 && (
+          <div className="forecast-explanation-box">
+            <div className="explanation-title">Local Feature Attributions (TreeSHAP)</div>
+            <div className="explanation-chips">
+              {energyForecast.explanation.topContributors.map((c, i) => (
+                <div key={i} className={`explanation-chip ${c.contribution >= 0 ? 'contrib-pos' : 'contrib-neg'}`}>
+                  <span className="chip-name">{c.displayName}:</span>
+                  <span className="chip-val">{c.contribution >= 0 ? `+${c.contribution.toFixed(0)}` : c.contribution.toFixed(0)} kW</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Baseline Comparison */}
         {energyForecast.baselineComparison && (

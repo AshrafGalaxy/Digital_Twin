@@ -109,6 +109,26 @@ export interface ScenarioRunResult {
   deltas: ScenarioDeltas;
 }
 
+export interface ConformalInterval {
+  lower: number;
+  upper: number;
+  margin: number;
+  coverageTarget: number;
+  empiricalTestCoverage: number;
+}
+
+export interface FeatureContribution {
+  feature: string;
+  displayName: string;
+  contribution: number;
+  impact: 'INCREASES' | 'DECREASES';
+}
+
+export interface LocalExplanation {
+  baseValue: number;
+  topContributors: FeatureContribution[];
+}
+
 export interface TrafficForecast {
   entityId: string;
   targetMetric: string;
@@ -119,6 +139,11 @@ export interface TrafficForecast {
   predictedValue: number;
   confidenceLower: number;
   confidenceUpper: number;
+  conformalIntervals?: {
+    interval90: ConformalInterval;
+    interval95: ConformalInterval;
+  };
+  explanation?: LocalExplanation;
   unit: string;
   modelVersion: string;
   inputQualityStatus: string;
@@ -141,6 +166,11 @@ export interface EnergyForecast {
   predictedValue: number;
   confidenceLower: number;
   confidenceUpper: number;
+  conformalIntervals?: {
+    interval90: ConformalInterval;
+    interval95: ConformalInterval;
+  };
+  explanation?: LocalExplanation;
   unit: string;
   modelVersion: string;
   inputQualityStatus: string;

@@ -1,0 +1,120 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BLD-PHOENIX-MALL-MAIN",
+        "name": "Phoenix Marketcity Mall (Main Atrium)",
+        "category": "MALL",
+        "height": 38.0,
+        "base_height": 0.0,
+        "color": "#1E3A8A"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.9155, 18.5615],
+            [73.9185, 18.5615],
+            [73.9185, 18.5635],
+            [73.9155, 18.5635],
+            [73.9155, 18.5615]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BLD-PHOENIX-EAST-WING",
+        "name": "Phoenix East Wing Commercial Tower",
+        "category": "COMMERCIAL",
+        "height": 28.0,
+        "base_height": 0.0,
+        "color": "#0F766E"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.9188, 18.5617],
+            [73.9205, 18.5617],
+            [73.9205, 18.5632],
+            [73.9188, 18.5632],
+            [73.9188, 18.5617]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BLD-VN-CHOWK-COMMERCIAL",
+        "name": "Viman Nagar Chowk Retail Complex",
+        "category": "COMMERCIAL",
+        "height": 22.0,
+        "base_height": 0.0,
+        "color": "#0F766E"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.9152, 18.5590],
+            [73.9166, 18.5590],
+            [73.9166, 18.5604],
+            [73.9152, 18.5604],
+            [73.9152, 18.5590]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BLD-SN-TOWER-01",
+        "name": "Somnath Nagar Business Center",
+        "category": "COMMERCIAL",
+        "height": 26.0,
+        "base_height": 0.0,
+        "color": "#0F766E"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.9265, 18.5622],
+            [73.9282, 18.5622],
+            [73.9282, 18.5638],
+            [73.9265, 18.5638],
+            [73.9265, 18.5622]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BLD-NAGAR-RES-01",
+        "name": "Nagar Road Corridor Apartments",
+        "category": "RESIDENTIAL",
+        "height": 18.0,
+        "base_height": 0.0,
+        "color": "#334155"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.9220, 18.5625],
+            [73.9242, 18.5625],
+            [73.9242, 18.5636],
+            [73.9220, 18.5636],
+            [73.9220, 18.5625]
+          ]
+        ]
+      }
+    }
+  ]
+}
