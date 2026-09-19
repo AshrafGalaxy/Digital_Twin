@@ -105,5 +105,18 @@ class TestIngestionValidation(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertIn("in future", error)
 
+class TestSimulationEngine(unittest.TestCase):
+    def test_simulation_runner_and_kpis(self):
+        from simulation.runner import SUMOCorridorRunner
+        from simulation.kpi_calculator import ScenarioKPICalculator
+        runner = SUMOCorridorRunner()
+        base = runner.run_scenario("SCEN-BASE-01", seed=42)
+        interv = runner.run_scenario("SCEN-INT-01", seed=42, parameters={"green_extension_sec": 15.0})
+        self.assertEqual(base["source_mode"], "SIMULATION")
+        self.assertEqual(interv["source_mode"], "SIMULATION")
+        deltas = ScenarioKPICalculator.calculate_deltas(base["kpis"], interv["kpis"])
+        self.assertLess(deltas["delay_delta_pct"], 0)
+        self.assertGreater(deltas["throughput_delta_pct"], 0)
+
 if __name__ == "__main__":
     unittest.main()
