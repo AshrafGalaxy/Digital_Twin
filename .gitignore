@@ -1,0 +1,27 @@
+# Local UI Mockups and reference assets
+reference/Mock UI images/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Node / Frontend artifacts
+node_modules/
+dist/
+.vite/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# OS & IDE artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
