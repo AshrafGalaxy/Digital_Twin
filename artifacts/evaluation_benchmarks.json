@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-19T19:32:13.148307+00:00",
+  "experiments": {
+    "E-01_traffic_forecast": {
+      "persistence_mae": 4.239,
+      "persistence_rmse": 5.708,
+      "historical_avg_mae": 4.064,
+      "historical_avg_rmse": 5.497,
+      "xgboost_mae": 2.266,
+      "xgboost_rmse": 2.905,
+      "improvement_over_persistence_pct": 46.5,
+      "test_samples": 603
+    },
+    "E-02_energy_forecast": {
+      "persistence_mae": 389.82,
+      "persistence_rmse": 754.81,
+      "same_hour_mae": 409.31,
+      "same_hour_rmse": 773.79,
+      "xgboost_mae": 67.35,
+      "xgboost_rmse": 83.57,
+      "improvement_over_persistence_pct": 82.7,
+      "test_samples": 288
+    },
+    "E-03_feature_ablation": {
+      "all_features_mae": 2.929,
+      "without_lags_mae": 2.876,
+      "without_lags_delta_pct": -1.8,
+      "without_rolling_mae": 2.919,
+      "without_rolling_delta_pct": -0.4,
+      "without_cyclical_mae": 3.515,
+      "without_cyclical_delta_pct": 20.0
+    },
+    "E-04_pipeline_latency": {
+      "ingestion_validation_mean_ms": 0.005,
+      "ingestion_validation_p95_ms": 0.008,
+      "ml_inference_mean_ms": 4.71,
+      "ml_inference_p95_ms": 5.52,
+      "rule_engine_mean_ms": 9.26,
+      "rule_engine_p95_ms": 10.73,
+      "simulation_run_mean_ms": 0.02
+    },
+    "E-06_simulation_scenarios": {
+      "baseline_travel_time_sec": 264.79,
+      "intervention_travel_time_sec": 201.62,
+      "travel_time_delta_pct": -23.86,
+      "baseline_delay_sec": 170.99,
+      "intervention_delay_sec": 107.82,
+      "delay_delta_pct": -36.94,
+      "baseline_queue_meters": 435.99,
+      "intervention_queue_meters": 141.12,
+      "queue_delta_pct": -67.63,
+      "baseline_throughput_vph": 1721.8,
+      "intervention_throughput_vph": 2395.1,
+      "throughput_delta_pct": 39.1
+    }
+  }
+}

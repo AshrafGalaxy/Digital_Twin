@@ -172,7 +172,21 @@ class TestRecommendationsAndHealth(unittest.TestCase):
         self.assertEqual(rec.auditTrail[-1].reviewer, "Officer Sharma")
 
 
+class TestEvaluationExperiments(unittest.TestCase):
+    def test_traffic_benchmark(self):
+        from scripts.run_evaluation_benchmarks import run_experiment_e01_traffic
+        res = run_experiment_e01_traffic()
+        self.assertLess(res["xgboost_mae"], res["persistence_mae"])
+
+    def test_latency_constraints(self):
+        from scripts.run_evaluation_benchmarks import run_experiment_e04_latency
+        res = run_experiment_e04_latency()
+        self.assertLess(res["ml_inference_p95_ms"], 50.0)
+        self.assertLess(res["rule_engine_p95_ms"], 50.0)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
