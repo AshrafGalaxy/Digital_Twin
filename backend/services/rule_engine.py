@@ -21,6 +21,7 @@ from backend.schemas.recommendations import (
     RecommendationStatus
 )
 from backend.services.forecast_service import forecast_service
+from backend.services.anomaly_detector import EnvironmentalAnomalyDetector
 
 
 class AdvisoryRuleEngine:
@@ -32,6 +33,7 @@ class AdvisoryRuleEngine:
     def __init__(self):
         self._lock = threading.Lock()
         self._recommendations: Dict[str, AdvisoryRecommendation] = {}
+        self.anomaly_detector = EnvironmentalAnomalyDetector()
         self._seed_initial_advisories()
 
     def _seed_initial_advisories(self):
@@ -264,6 +266,76 @@ class AdvisoryRuleEngine:
                     rec.updatedAt = now
 
             return list(self._recommendations.values())
+
+    def evaluate_environmental_reading(
+        self,
+        sensor_id: str,
+        pm25: float,
+        pm10: Optional[float] = None,
+        aqi: Optional[float] = None,
+        ambient_temp_c: Optional[float] = None
+    ) -> Optional[AdvisoryRecommendation]:
+        """
+        Evaluates an environmental sensor reading using Isolation Forest and Z-scores.
+        If an anomaly is detected, creates or updates an environmental advisory recommendation.
+        """
+        eval_result = self.anomaly_detector.evaluate_reading(
+            sensor_id=sensor_id,
+            pm25=pm25,
+            pm10=pm10,
+            aqi=aqi,
+            ambient_temp_c=ambient_temp_c
+        )
+
+        if not eval_result["isAnomaly"]:
+            return None
+
+        now = datetime.now(timezone.utc)
+        rec_id = f"REC-ENV-ANOMALY-{sensor_id.split(':')[-1]}"
+        sev = (
+            RecommendationSeverity.CRITICAL
+            if eval_result["severity"] == "CRITICAL"
+            else RecommendationSeverity.WARNING
+        )
+
+        rec = AdvisoryRecommendation(
+            recommendationId=rec_id,
+            domain=RecommendationDomain.ENVIRONMENT,
+            severity=sev,
+            status=RecommendationStatus.ACTIVE,
+            targetEntityId=sensor_id,
+            title=f"Air Quality Anomaly Detected at {sensor_id.split(':')[-1]}",
+            description="; ".join(eval_result["reasons"]),
+            triggerRule="RULE-ENV-ISOLATION-ANOMALY",
+            evidence=RecommendationEvidence(
+                sourceMode=SourceMode.SIMULATION,
+                metricName="pm25UgM3",
+                observedOrPredictedValue=pm25,
+                threshold=60.0,
+                unit="ug/m3",
+                confidenceScore=0.94,
+                timestamp=now
+            ),
+            suggestedAction="Advise municipal ward officer to investigate localized particulate source and alert commercial buildings to engage indoor HEPA filtration stages.",
+            humanApprovalRequired=True,
+            governanceNotice="Advisory only. Requires human verification before issuing public health advisories.",
+            auditTrail=[
+                AuditLogEntry(
+                    timestamp=now,
+                    previousStatus=RecommendationStatus.ACTIVE,
+                    newStatus=RecommendationStatus.ACTIVE,
+                    reviewer="System Anomaly Engine",
+                    notes=f"Anomaly detected: {eval_result['severity']} (Z-score: {eval_result['zScore']})"
+                )
+            ],
+            createdAt=now,
+            updatedAt=now
+        )
+
+        with self._lock:
+            self._recommendations[rec_id] = rec
+
+        return rec
 
     def get_summary(self) -> AdvisorySummary:
         """Returns aggregated counters of recommendations across severity and domain."""
