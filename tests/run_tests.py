@@ -148,6 +148,31 @@ class TestMLForecasting(unittest.TestCase):
         self.assertGreaterEqual(energy["confidenceUpper"], energy["predictedValue"])
 
 
+class TestRecommendationsAndHealth(unittest.TestCase):
+    def test_rule_engine_and_governance_invariants(self):
+        from backend.services.rule_engine import rule_engine
+        from backend.schemas.recommendations import RecommendationStatus
+        recs = rule_engine.list_recommendations()
+        self.assertGreaterEqual(len(recs), 3)
+        for r in recs:
+            self.assertTrue(r.humanApprovalRequired)
+            self.assertIn("human verification", r.governanceNotice.lower())
+
+    def test_review_lifecycle_audit(self):
+        from backend.services.rule_engine import AdvisoryRuleEngine
+        from backend.schemas.recommendations import RecommendationStatus
+        engine = AdvisoryRuleEngine()
+        rec = engine.review_recommendation(
+            rec_id="REC-TRF-20260920-001",
+            new_status=RecommendationStatus.UNDER_REVIEW,
+            reviewer="Officer Sharma",
+            notes="Testing signal adjustment."
+        )
+        self.assertEqual(rec.status, RecommendationStatus.UNDER_REVIEW)
+        self.assertEqual(rec.auditTrail[-1].reviewer, "Officer Sharma")
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
