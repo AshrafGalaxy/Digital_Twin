@@ -1,0 +1,32 @@
+{
+  "studyAreaId": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+  "version": "1.0.0",
+  "entities": [
+    {
+      "id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+      "type": "Building",
+      "name": "Phoenix Marketcity Commercial Complex & Zone",
+      "category": "COMMERCIAL_RETAIL",
+      "location": {
+        "type": "Point",
+        "coordinates": [73.9168, 18.5620]
+      },
+      "grossFloorAreaSqMeters": 115000,
+      "occupancyType": "RETAIL_ENTERTAINMENT_COMMERCIAL",
+      "electricalConnection": {
+        "substation": "Viman Nagar 22kV Substation",
+        "sanctionedLoadKVA": 8500,
+        "contractDemandKW": 6800
+      },
+      "baselineMetrics": {
+        "averageDaytimeDemandKW": 4200,
+        "peakEveningDemandKW": 5900,
+        "nightBaseDemandKW": 1100,
+        "powerFactor": 0.98
+      },
+      "dataClassification": "BENCHMARK_SYNTHETIC",
+      "sourceMode": "SIMULATION",
+      "provenanceNotice": "Building energy observations and profiles are calibrated synthetic/benchmark values modeled after typical Indian retail-commercial facilities, and do not represent private proprietary utility meter data."
+    }
+  ]
+}

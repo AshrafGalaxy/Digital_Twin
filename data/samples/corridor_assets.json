@@ -1,0 +1,224 @@
+{
+  "studyAreaId": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+  "version": "1.0.0",
+  "intersections": [
+    {
+      "id": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "type": "Intersection",
+      "name": "Viman Nagar Chowk (Phoenix Mall Junction)",
+      "controlType": "SIGNALIZED",
+      "coordinates": [73.9168, 18.5602],
+      "connectedSegments": [
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01"
+      ],
+      "cycleTimeSec": 120,
+      "phases": 4
+    },
+    {
+      "id": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "type": "Intersection",
+      "name": "Somnath Nagar Chowk",
+      "controlType": "SIGNALIZED",
+      "coordinates": [73.9280, 18.5630],
+      "connectedSegments": [
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
+        "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01"
+      ],
+      "cycleTimeSec": 90,
+      "phases": 3
+    }
+  ],
+  "roadSegments": [
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+      "type": "RoadSegment",
+      "name": "Nagar Road EB Approach to Viman Nagar Chowk",
+      "direction": "EASTBOUND",
+      "fromIntersection": null,
+      "toIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "lengthMeters": 480,
+      "laneCount": 3,
+      "speedLimitKmh": 50,
+      "freeFlowSpeedKmh": 45,
+      "capacityVehPerHour": 3600,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9125, 18.5592],
+        [73.9168, 18.5602]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+      "type": "RoadSegment",
+      "name": "Nagar Road EB Link (Viman Nagar to Somnath Nagar)",
+      "direction": "EASTBOUND",
+      "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "toIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "lengthMeters": 1180,
+      "laneCount": 3,
+      "speedLimitKmh": 50,
+      "freeFlowSpeedKmh": 48,
+      "capacityVehPerHour": 3600,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9168, 18.5602],
+        [73.9220, 18.5615],
+        [73.9280, 18.5630]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03",
+      "type": "RoadSegment",
+      "name": "Nagar Road EB Exit from Somnath Nagar Chowk",
+      "direction": "EASTBOUND",
+      "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "toIntersection": null,
+      "lengthMeters": 450,
+      "laneCount": 3,
+      "speedLimitKmh": 50,
+      "freeFlowSpeedKmh": 45,
+      "capacityVehPerHour": 3600,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9280, 18.5630],
+        [73.9322, 18.5641]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01",
+      "type": "RoadSegment",
+      "name": "Nagar Road WB Approach to Somnath Nagar Chowk",
+      "direction": "WESTBOUND",
+      "fromIntersection": null,
+      "toIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "lengthMeters": 450,
+      "laneCount": 3,
+      "speedLimitKmh": 50,
+      "freeFlowSpeedKmh": 45,
+      "capacityVehPerHour": 3600,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9322, 18.5643],
+        [73.9280, 18.5632]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+      "type": "RoadSegment",
+      "name": "Nagar Road WB Link (Somnath Nagar to Viman Nagar)",
+      "direction": "WESTBOUND",
+      "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "toIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "lengthMeters": 1180,
+      "laneCount": 3,
+      "speedLimitKmh": 50,
+      "freeFlowSpeedKmh": 48,
+      "capacityVehPerHour": 3600,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9280, 18.5632],
+        [73.9220, 18.5617],
+        [73.9168, 18.5604]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03",
+      "type": "RoadSegment",
+      "name": "Nagar Road WB Exit Past Viman Nagar Chowk",
+      "direction": "WESTBOUND",
+      "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "toIntersection": null,
+      "lengthMeters": 480,
+      "laneCount": 3,
+      "speedLimitKmh": 50,
+      "freeFlowSpeedKmh": 45,
+      "capacityVehPerHour": 3600,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9168, 18.5604],
+        [73.9125, 18.5594]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
+      "type": "RoadSegment",
+      "name": "Viman Nagar Road NB Approach to Chowk",
+      "direction": "NORTHBOUND",
+      "fromIntersection": null,
+      "toIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "lengthMeters": 350,
+      "laneCount": 2,
+      "speedLimitKmh": 40,
+      "freeFlowSpeedKmh": 35,
+      "capacityVehPerHour": 1800,
+      "osmHighway": "secondary",
+      "coordinates": [
+        [73.9165, 18.5570],
+        [73.9168, 18.5602]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01",
+      "type": "RoadSegment",
+      "name": "Viman Nagar Road SB Interior Branch",
+      "direction": "SOUTHBOUND",
+      "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "toIntersection": null,
+      "lengthMeters": 400,
+      "laneCount": 2,
+      "speedLimitKmh": 40,
+      "freeFlowSpeedKmh": 35,
+      "capacityVehPerHour": 1800,
+      "osmHighway": "secondary",
+      "coordinates": [
+        [73.9168, 18.5604],
+        [73.9171, 18.5640]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
+      "type": "RoadSegment",
+      "name": "Somnath Nagar Road NB Approach to Chowk",
+      "direction": "NORTHBOUND",
+      "fromIntersection": null,
+      "toIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "lengthMeters": 300,
+      "laneCount": 2,
+      "speedLimitKmh": 35,
+      "freeFlowSpeedKmh": 30,
+      "capacityVehPerHour": 1400,
+      "osmHighway": "tertiary",
+      "coordinates": [
+        [73.9278, 18.5603],
+        [73.9280, 18.5630]
+      ]
+    },
+    {
+      "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01",
+      "type": "RoadSegment",
+      "name": "Somnath Nagar Road SB Exit to Wadgaon Sheri",
+      "direction": "SOUTHBOUND",
+      "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "toIntersection": null,
+      "lengthMeters": 320,
+      "laneCount": 2,
+      "speedLimitKmh": 35,
+      "freeFlowSpeedKmh": 30,
+      "capacityVehPerHour": 1400,
+      "osmHighway": "tertiary",
+      "coordinates": [
+        [73.9280, 18.5630],
+        [73.9282, 18.5658]
+      ]
+    }
+  ]
+}

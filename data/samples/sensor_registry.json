@@ -1,0 +1,126 @@
+{
+  "studyAreaId": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+  "sensorsCount": 10,
+  "sensors": [
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-VN-EB-01",
+      "name": "Nagar Rd EB Virtual Detector (Approach to VN Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+      "direction": "EASTBOUND",
+      "coordinates": [73.9150, 18.5598],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent", "queueLengthMeters"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-VN-EB-02",
+      "name": "Nagar Rd EB Mid-Block Detector (East of VN Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+      "direction": "EASTBOUND",
+      "coordinates": [73.9195, 18.5609],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-SN-EB-01",
+      "name": "Nagar Rd EB Approach Detector (Approach to Somnath Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+      "direction": "EASTBOUND",
+      "coordinates": [73.9260, 18.5625],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent", "queueLengthMeters"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-SN-EB-02",
+      "name": "Nagar Rd EB Departure Detector (East of Somnath Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03",
+      "direction": "EASTBOUND",
+      "coordinates": [73.9300, 18.5635],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-SN-WB-01",
+      "name": "Nagar Rd WB Inflow Detector (East of Somnath Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01",
+      "direction": "WESTBOUND",
+      "coordinates": [73.9300, 18.5637],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent", "queueLengthMeters"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-SN-WB-02",
+      "name": "Nagar Rd WB Mid-Block Detector (West of Somnath Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+      "direction": "WESTBOUND",
+      "coordinates": [73.9240, 18.5621],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-VN-WB-01",
+      "name": "Nagar Rd WB Approach Detector (Approach to VN Chowk)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+      "direction": "WESTBOUND",
+      "coordinates": [73.9185, 18.5608],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent", "queueLengthMeters"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-VN-WB-02",
+      "name": "Nagar Rd WB Departure Detector (Past VN Chowk to Ramwadi)",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03",
+      "direction": "WESTBOUND",
+      "coordinates": [73.9145, 18.5598],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-VN-NB-01",
+      "name": "Viman Nagar Road NB Approach Detector",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
+      "direction": "NORTHBOUND",
+      "coordinates": [73.9167, 18.5585],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent", "queueLengthMeters"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    },
+    {
+      "id": "urn:ngsi-ld:TrafficSensor:PUNE:DS-SN-NB-01",
+      "name": "Somnath Nagar Road NB Approach Detector",
+      "linkedSegmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
+      "direction": "NORTHBOUND",
+      "coordinates": [73.9279, 18.5615],
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "supportedSourceModes": ["REPLAY", "SIMULATION", "LIVE"],
+      "metrics": ["averageSpeedKmh", "vehicleFlowPerHour", "occupancyPercent", "queueLengthMeters"],
+      "samplingIntervalSec": 60,
+      "freshnessThresholdSec": 180
+    }
+  ]
+}
