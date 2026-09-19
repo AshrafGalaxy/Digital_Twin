@@ -57,3 +57,54 @@ export interface BuildingAsset {
   };
   provenanceNotice: string;
 }
+
+export interface ScenarioTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  parametersSchema: Record<string, any>;
+  defaultParameters: Record<string, any>;
+}
+
+export interface ScenarioKPIs {
+  average_travel_time_sec: number;
+  average_delay_sec: number;
+  p95_queue_length_meters: number;
+  throughput_veh_per_hour: number;
+}
+
+export interface ScenarioDeltas {
+  travel_time_delta_pct?: number;
+  travel_time_saved_sec?: number;
+  delay_delta_pct?: number;
+  delay_saved_sec?: number;
+  queue_length_delta_pct?: number;
+  queue_reduced_meters?: number;
+  throughput_delta_pct?: number;
+  additional_throughput_vph?: number;
+  overall_verdict: string;
+}
+
+export interface ScenarioRunResult {
+  runId: string;
+  templateId: string;
+  name: string;
+  status: string;
+  sourceMode: SourceMode;
+  governanceNotice: string;
+  randomSeed: number;
+  networkVersion: string;
+  demandVersion: string;
+  executedAt: string;
+  parameters: Record<string, any>;
+  baseline: {
+    templateId: string;
+    kpis: ScenarioKPIs;
+  };
+  intervention: {
+    templateId: string;
+    kpis: ScenarioKPIs;
+  };
+  deltas: ScenarioDeltas;
+}

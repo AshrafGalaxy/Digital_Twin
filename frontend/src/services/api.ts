@@ -42,6 +42,37 @@ export async function fetchCurrentState(): Promise<EntityCurrentState[]> {
   }
 }
 
+export async function fetchScenarioTemplates(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/scenarios/templates`);
+  if (!res.ok) throw new Error('Failed to fetch scenario templates');
+  return res.json();
+}
+
+export async function runScenario(params: {
+  templateId: string;
+  greenExtensionSec: number;
+  demandMultiplier: number;
+  randomSeed: number;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/scenarios/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  });
+  if (!res.ok) throw new Error('Failed to execute simulation run');
+  return res.json();
+}
+
+export async function fetchRecentScenarioRuns(): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/scenarios/runs`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export function connectStateStream(
   onUpdate: (data: any) => void,
   onConnectionChange?: (connected: boolean) => void

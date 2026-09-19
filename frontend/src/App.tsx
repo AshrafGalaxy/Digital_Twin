@@ -4,6 +4,7 @@ import { MapOperationsView } from './components/MapOperationsView';
 import { CorridorMetricsCard } from './components/CorridorMetricsCard';
 import { EntityDetailDrawer } from './components/EntityDetailDrawer';
 import { MapLegend } from './components/MapLegend';
+import { ScenarioStudio } from './components/ScenarioStudio';
 import {
   EntityCurrentState,
   IntersectionAsset,
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [currentMode, setCurrentMode] = useState<SourceMode>('SIMULATION');
+  const [isScenarioStudioOpen, setIsScenarioStudioOpen] = useState<boolean>(false);
 
   // Load Initial Assets
   useEffect(() => {
@@ -123,6 +125,7 @@ export const App: React.FC = () => {
         wsConnected={wsConnected}
         currentMode={currentMode}
         lastUpdated={lastUpdated}
+        onOpenScenarios={() => setIsScenarioStudioOpen(true)}
       />
 
       <main className="workspace">
@@ -148,6 +151,11 @@ export const App: React.FC = () => {
           entity={selectedEntity}
           liveState={activeEntityState}
           onClose={() => setSelectedEntity(null)}
+        />
+
+        <ScenarioStudio
+          isOpen={isScenarioStudioOpen}
+          onClose={() => setIsScenarioStudioOpen(false)}
         />
       </main>
     </div>

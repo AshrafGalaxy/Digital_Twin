@@ -6,9 +6,10 @@ interface HeaderProps {
   wsConnected: boolean;
   currentMode: SourceMode;
   lastUpdated: string | null;
+  onOpenScenarios?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ wsConnected, currentMode, lastUpdated }) => {
+export const Header: React.FC<HeaderProps> = ({ wsConnected, currentMode, lastUpdated, onOpenScenarios }) => {
   return (
     <header className="app-header">
       <div className="brand-section">
@@ -18,6 +19,17 @@ export const Header: React.FC<HeaderProps> = ({ wsConnected, currentMode, lastUp
       </div>
 
       <div className="status-section">
+        {/* Scenario Studio Launcher */}
+        {onOpenScenarios && (
+          <button
+            className="header-scenario-btn"
+            onClick={onOpenScenarios}
+            title="Open Microscopic Traffic Simulation Studio"
+          >
+            <span>Scenario Studio</span>
+          </button>
+        )}
+
         {/* Stream / WebSocket Health */}
         <div className="status-pill">
           <span className={`dot ${wsConnected ? 'dot-live' : 'dot-stale'}`} />
