@@ -26,6 +26,7 @@ import {
   fetchRoadSegments,
   fetchCurrentState,
   fetchHistoricalSnapshot,
+  controlReplaySession,
   connectStateStream,
   fetchAdvisorySummary
 } from './services/api';
@@ -120,6 +121,13 @@ export const App: React.FC = () => {
               freshnessSeconds: 1.0
             }
           }));
+        } else if (data.eventType === 'REPLAY_STATE_CHANGED') {
+          const payload = data.payload;
+          if (payload) {
+            setScrubberMinutesAgo(payload.minutesAgo);
+            setIsScrubberPlaying(payload.isPlaying);
+            if (payload.speed) setScrubberSpeed(payload.speed);
+          }
         }
       },
       (connected) => setWsConnected(connected)
@@ -210,12 +218,23 @@ export const App: React.FC = () => {
               minutesAgo={scrubberMinutesAgo}
               isPlaying={isScrubberPlaying}
               playbackSpeed={scrubberSpeed}
-              onScrubChange={(mins) => setScrubberMinutesAgo(mins)}
-              onTogglePlay={() => setIsScrubberPlaying(prev => !prev)}
-              onSpeedChange={(spd) => setScrubberSpeed(spd)}
+              onScrubChange={(mins) => {
+                setScrubberMinutesAgo(mins);
+                controlReplaySession({ action: 'seek', minutes_ago: mins });
+              }}
+              onTogglePlay={() => {
+                const nextPlaying = !isScrubberPlaying;
+                setIsScrubberPlaying(nextPlaying);
+                controlReplaySession({ action: nextPlaying ? 'play' : 'pause', minutes_ago: scrubberMinutesAgo });
+              }}
+              onSpeedChange={(spd) => {
+                setScrubberSpeed(spd);
+                controlReplaySession({ action: 'speed', speed: spd });
+              }}
               onJumpToLive={() => {
                 setScrubberMinutesAgo(0);
                 setIsScrubberPlaying(false);
+                controlReplaySession({ action: 'jump_to_live' });
               }}
             />
           </div>
@@ -225,19 +244,19 @@ export const App: React.FC = () => {
         {activeTab === 'traffic' && (
           <TrafficAnalyticsView
             roadSegments={roadSegments}
-            liveStates={liveStates}
-            sourceMode={currentMode}
+            liveStates={effectiveStates}
+            sourceMode={effectiveMode}
           />
         )}
 
         {/* VIEW 3: Energy Analytics & Commercial Load Forecasting */}
         {activeTab === 'energy' && (
-          <EnergyAnalyticsView sourceMode={currentMode} />
+          <EnergyAnalyticsView sourceMode={effectiveMode} />
         )}
 
         {/* VIEW 4: Environmental Context & Air Quality Monitoring */}
         {activeTab === 'environment' && (
-          <EnvironmentContextView sourceMode={currentMode} />
+          <EnvironmentContextView sourceMode={effectiveMode} />
         )}
 
         {/* VIEW 5: Scenario Studio — Microscopic Simulation Sandbox */}

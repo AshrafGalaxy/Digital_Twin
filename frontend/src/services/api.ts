@@ -60,6 +60,40 @@ export async function fetchHistoricalSnapshot(minutesAgo: number): Promise<Entit
   }
 }
 
+export async function fetchReplayStatus(): Promise<{
+  isPlaying: boolean;
+  minutesAgo: number;
+  speed: number;
+  targetTime: string;
+  sourceMode: string;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/stream/replay/status`);
+    if (!res.ok) return { isPlaying: false, minutesAgo: 0, speed: 1.0, targetTime: new Date().toISOString(), sourceMode: 'SIMULATION' };
+    return res.json();
+  } catch {
+    return { isPlaying: false, minutesAgo: 0, speed: 1.0, targetTime: new Date().toISOString(), sourceMode: 'SIMULATION' };
+  }
+}
+
+export async function controlReplaySession(params: {
+  action: 'play' | 'pause' | 'seek' | 'speed' | 'jump_to_live';
+  minutes_ago?: number;
+  speed?: number;
+}): Promise<any> {
+  try {
+    const res = await fetch(`${API_BASE}/stream/replay/control`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 
 export async function fetchScenarioTemplates(): Promise<any[]> {
   const res = await fetch(`${API_BASE}/scenarios/templates`);

@@ -110,7 +110,8 @@
 | `GET` | `/api/v1/ngsi-ld/entities` | Interoperability | FIWARE / NGSI-LD 1.3 canonical export | [x] Implemented |
 | `GET` | `/api/v1/ngsi-ld/entities/{entity_id}` | Interoperability | Single entity NGSI-LD representation | [x] Implemented |
 | `GET` | `/api/v1/state/snapshot` | Temporal Playback | Query corridor state snapshot at exact timestamp $t$ | [x] Implemented |
-| `POST` | `/api/v1/stream/replay/control` | Telemetry Control | Pause, play, scrub, and speed multiplier control | [ ] **Upcoming** |
+| `GET` | `/api/v1/stream/replay/status` | Telemetry Control | Query active historical replay session state | [x] Implemented |
+| `POST` | `/api/v1/stream/replay/control` | Telemetry Control | Pause, play, scrub, and speed multiplier control | [x] Implemented |
 | `GET` | `/api/v1/datasets/manifests` | Data Governance | List standardized dataset manifests with licenses | [ ] **Upcoming (P3-A)** |
 | `GET` | `/api/v1/datasets/manifests/{id}` | Data Governance | Get specific dataset manifest details | [ ] **Upcoming (P3-A)** |
 | `GET` | `/api/v1/health/quarantine` | Quality Assurance | Inspect dead-letter quarantined telemetry events | [ ] **Upcoming (P3-B)** |
@@ -125,11 +126,13 @@
    - 7 distinct views deployed and accessible via top-level tab navigation.
    - Dedicated views for Traffic, Energy, Environment, Scenarios, Recommendations, and System Health.
    - Built and verified with TypeScript zero-warning build (`npm run build`).
-2. **Interactive Historical Time Scrubber (P1-B):**
+2. **Interactive Historical Time Scrubber & Replay Control (P1-B):**
    - Docked playback bar on Operations View with timeline slider ($-12\text{ hours}$ to Live).
    - Play/pause auto-advance and speed multipliers (1x, 2x, 5x, 10x).
    - Dedicated backend snapshot API (`GET /api/v1/state/snapshot`) with strict `REPLAY` provenance.
+   - Dedicated replay control API (`POST /api/v1/stream/replay/control`) & status API (`GET /api/v1/stream/replay/status`) with WebSocket broadcast synchronization.
    - Dynamic MapLibre corridor layer recoloring and corridor telemetry aggregates updating upon scrubbing.
+   - Replay state propagation to Traffic Analytics, Energy Analytics, and Environment Context views.
 3. **Phase 8 Core Mathematical Extensions:**
    - 90% and 95% Conformal Prediction uncertainty intervals calibrated on test residuals.
    - TreeSHAP local feature attribution (`pred_contribs=True`).
@@ -137,7 +140,7 @@
    - FIWARE NGSI-LD v1.3 export endpoints.
    - 3D corridor building extrusions in MapLibre.
 4. **Backend Test Suite:**
-   - 37 of 37 unit, integration, and benchmark tests passing in `pytest`.
+   - 39 of 39 unit, integration, and benchmark tests passing in `pytest`.
 
 ### What's Left:
 1. **Multi-Segment Comparison Drawer (P1-C)** to compare arterial directions side-by-side.

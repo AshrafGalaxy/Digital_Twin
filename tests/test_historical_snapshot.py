@@ -70,3 +70,60 @@ def test_corridor_snapshot_preserves_live_state_isolation():
 
     # The current state entity count and contents should remain independent of historical queries
     assert len(initial_live_records) == len(after_live_records)
+
+
+def test_replay_session_control_lifecycle():
+    """Verify the telemetry stream replay control and status management endpoints."""
+    # 1. Check initial replay status
+    status_res = client.get("/api/v1/stream/replay/status")
+    assert status_res.status_code == 200
+    status = status_res.json()
+    assert "isPlaying" in status
+    assert "minutesAgo" in status
+    assert "speed" in status
+
+    # 2. Seek to -180 minutes
+    seek_res = client.post("/api/v1/stream/replay/control", json={
+        "action": "seek",
+        "minutes_ago": 180
+    })
+    assert seek_res.status_code == 200
+    seek_data = seek_res.json()
+    assert seek_data["minutesAgo"] == 180
+    assert seek_data["sourceMode"] == "REPLAY"
+
+    # 3. Start playback at 5x speed
+    play_res = client.post("/api/v1/stream/replay/control", json={"action": "play"})
+    assert play_res.status_code == 200
+    assert play_res.json()["isPlaying"] is True
+
+    speed_res = client.post("/api/v1/stream/replay/control", json={
+        "action": "speed",
+        "speed": 5.0
+    })
+    assert speed_res.status_code == 200
+    assert speed_res.json()["speed"] == 5.0
+
+    # 4. Pause playback
+    pause_res = client.post("/api/v1/stream/replay/control", json={"action": "pause"})
+    assert pause_res.status_code == 200
+    assert pause_res.json()["isPlaying"] is False
+
+    # 5. Jump back to live
+    live_res = client.post("/api/v1/stream/replay/control", json={"action": "jump_to_live"})
+    assert live_res.status_code == 200
+    live_data = live_res.json()
+    assert live_data["minutesAgo"] == 0
+    assert live_data["isPlaying"] is False
+    assert live_data["sourceMode"] == "SIMULATION"
+
+
+def test_replay_control_input_validation():
+    """Verify input validation rules on replay control endpoint."""
+    # Out of range minutes_ago (> 720) should fail validation with 422
+    invalid_res = client.post("/api/v1/stream/replay/control", json={
+        "action": "seek",
+        "minutes_ago": 1500
+    })
+    assert invalid_res.status_code == 422
+
