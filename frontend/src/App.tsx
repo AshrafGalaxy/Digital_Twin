@@ -5,18 +5,21 @@ import { CorridorMetricsCard } from './components/CorridorMetricsCard';
 import { EntityDetailDrawer } from './components/EntityDetailDrawer';
 import { MapLegend } from './components/MapLegend';
 import { ScenarioStudio } from './components/ScenarioStudio';
+import { AdvisoryCenterModal } from './components/AdvisoryCenterModal';
 import {
   EntityCurrentState,
   IntersectionAsset,
   RoadSegmentAsset,
-  SourceMode
+  SourceMode,
+  AdvisorySummary
 } from './types/twin';
 import {
   fetchStudyArea,
   fetchIntersections,
   fetchRoadSegments,
   fetchCurrentState,
-  connectStateStream
+  connectStateStream,
+  fetchAdvisorySummary
 } from './services/api';
 
 export const App: React.FC = () => {
@@ -29,20 +32,25 @@ export const App: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [currentMode, setCurrentMode] = useState<SourceMode>('SIMULATION');
   const [isScenarioStudioOpen, setIsScenarioStudioOpen] = useState<boolean>(false);
+  const [isAdvisoryCenterOpen, setIsAdvisoryCenterOpen] = useState<boolean>(false);
+  const [advisorySummary, setAdvisorySummary] = useState<AdvisorySummary | null>(null);
+
 
   // Load Initial Assets
   useEffect(() => {
     async function loadAssets() {
       try {
-        const [area, segs, inters, initialStates] = await Promise.all([
+        const [area, segs, inters, initialStates, summary] = await Promise.all([
           fetchStudyArea(),
           fetchRoadSegments(),
           fetchIntersections(),
-          fetchCurrentState()
+          fetchCurrentState(),
+          fetchAdvisorySummary().catch(() => null)
         ]);
         setStudyAreaGeoJson(area);
         setRoadSegments(segs);
         setIntersections(inters);
+        if (summary) setAdvisorySummary(summary);
 
         const stateMap: Record<string, EntityCurrentState> = {};
         initialStates.forEach(s => {
@@ -126,6 +134,8 @@ export const App: React.FC = () => {
         currentMode={currentMode}
         lastUpdated={lastUpdated}
         onOpenScenarios={() => setIsScenarioStudioOpen(true)}
+        onOpenAdvisories={() => setIsAdvisoryCenterOpen(true)}
+        activeAdvisoriesCount={advisorySummary?.totalActive || 0}
       />
 
       <main className="workspace">
@@ -157,7 +167,23 @@ export const App: React.FC = () => {
           isOpen={isScenarioStudioOpen}
           onClose={() => setIsScenarioStudioOpen(false)}
         />
+
+        <AdvisoryCenterModal
+          isOpen={isAdvisoryCenterOpen}
+          onClose={() => {
+            setIsAdvisoryCenterOpen(false);
+            fetchAdvisorySummary().then(setAdvisorySummary).catch(() => null);
+          }}
+          onSelectEntity={(entityId) => {
+            const foundSeg = roadSegments.find(s => s.id === entityId);
+            const foundInter = intersections.find(i => i.id === entityId);
+            if (foundSeg) setSelectedEntity(foundSeg);
+            else if (foundInter) setSelectedEntity(foundInter);
+          }}
+          onOpenScenarioStudio={() => setIsScenarioStudioOpen(true)}
+        />
       </main>
     </div>
   );
 };
+

@@ -1,4 +1,12 @@
-import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset, TrafficSensorAsset, BuildingAsset } from '../types/twin';
+import {
+  EntityCurrentState,
+  IntersectionAsset,
+  RoadSegmentAsset,
+  TrafficSensorAsset,
+  BuildingAsset,
+  AdvisoryRecommendation,
+  AdvisorySummary
+} from '../types/twin';
 
 const API_BASE = '/api/v1';
 
@@ -154,3 +162,49 @@ export function connectStateStream(
     ws?.close();
   };
 }
+
+export async function fetchRecommendations(domain?: string, status?: string): Promise<AdvisoryRecommendation[]> {
+  const params = new URLSearchParams();
+  if (domain) params.append('domain', domain);
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`${API_BASE}/recommendations${query}`);
+  if (!res.ok) throw new Error('Failed to fetch advisory recommendations');
+  return res.json();
+}
+
+export async function fetchAdvisorySummary(): Promise<AdvisorySummary> {
+  const res = await fetch(`${API_BASE}/recommendations/summary`);
+  if (!res.ok) throw new Error('Failed to fetch advisory summary');
+  return res.json();
+}
+
+export async function fetchRecommendationDetail(recId: string): Promise<AdvisoryRecommendation> {
+  const res = await fetch(`${API_BASE}/recommendations/${recId}`);
+  if (!res.ok) throw new Error(`Failed to fetch recommendation ${recId}`);
+  return res.json();
+}
+
+export async function reviewRecommendation(
+  recId: string,
+  newStatus: string,
+  reviewer: string,
+  notes?: string
+): Promise<AdvisoryRecommendation> {
+  const res = await fetch(`${API_BASE}/recommendations/${recId}/review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newStatus, reviewer, notes })
+  });
+  if (!res.ok) throw new Error(`Failed to review recommendation ${recId}`);
+  return res.json();
+}
+
+export async function triggerRuleEvaluation(): Promise<AdvisoryRecommendation[]> {
+  const res = await fetch(`${API_BASE}/recommendations/evaluate`, {
+    method: 'POST'
+  });
+  if (!res.ok) throw new Error('Failed to trigger rule evaluation');
+  return res.json();
+}
+

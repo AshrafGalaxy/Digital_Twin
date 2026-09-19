@@ -7,9 +7,18 @@ interface HeaderProps {
   currentMode: SourceMode;
   lastUpdated: string | null;
   onOpenScenarios?: () => void;
+  onOpenAdvisories?: () => void;
+  activeAdvisoriesCount?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ wsConnected, currentMode, lastUpdated, onOpenScenarios }) => {
+export const Header: React.FC<HeaderProps> = ({
+  wsConnected,
+  currentMode,
+  lastUpdated,
+  onOpenScenarios,
+  onOpenAdvisories,
+  activeAdvisoriesCount
+}) => {
   return (
     <header className="app-header">
       <div className="brand-section">
@@ -19,6 +28,20 @@ export const Header: React.FC<HeaderProps> = ({ wsConnected, currentMode, lastUp
       </div>
 
       <div className="status-section">
+        {/* Advisory Decision Support Launcher */}
+        {onOpenAdvisories && (
+          <button
+            className="header-advisory-btn"
+            onClick={onOpenAdvisories}
+            title="Open Advisory Decision Support Center"
+          >
+            <span>Advisories</span>
+            {activeAdvisoriesCount !== undefined && activeAdvisoriesCount > 0 && (
+              <span className="header-badge-count">{activeAdvisoriesCount}</span>
+            )}
+          </button>
+        )}
+
         {/* Scenario Studio Launcher */}
         {onOpenScenarios && (
           <button

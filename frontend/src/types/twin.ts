@@ -169,3 +169,55 @@ export interface ModelVersion {
   trainedAt: string;
   localityCaveat?: string;
 }
+
+export type RecommendationDomain = 'TRAFFIC' | 'ENERGY' | 'ENVIRONMENT';
+export type RecommendationSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+export type RecommendationStatus = 'ACTIVE' | 'UNDER_REVIEW' | 'ACKNOWLEDGED' | 'DISMISSED';
+
+export interface RecommendationEvidence {
+  sourceMode: SourceMode;
+  metricName: string;
+  observedOrPredictedValue: number;
+  threshold: number;
+  unit: string;
+  horizonMinutes?: number;
+  modelVersion?: string;
+  scenarioId?: string;
+  confidenceScore?: number;
+  timestamp: string;
+}
+
+export interface AuditLogEntry {
+  timestamp: string;
+  previousStatus: RecommendationStatus;
+  newStatus: RecommendationStatus;
+  reviewer: string;
+  notes?: string;
+}
+
+export interface AdvisoryRecommendation {
+  recommendationId: string;
+  domain: RecommendationDomain;
+  severity: RecommendationSeverity;
+  status: RecommendationStatus;
+  targetEntityId: string;
+  title: string;
+  description: string;
+  triggerRule: string;
+  evidence: RecommendationEvidence;
+  suggestedAction: string;
+  humanApprovalRequired: boolean;
+  governanceNotice: string;
+  auditTrail: AuditLogEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdvisorySummary {
+  totalActive: number;
+  criticalCount: number;
+  warningCount: number;
+  infoCount: number;
+  byDomain: Record<string, number>;
+}
+
