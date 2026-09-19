@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  viman_nagar.tll.xml
+  Traffic light logic definitions for VN-01 (Viman Nagar Chowk) and SN-01 (Somnath Nagar Chowk).
+  Includes baseline (program 0, 120s cycle) and dynamic intervention (program 1, +15s green to EB).
+-->
+<tlLogics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tllogic_file.xsd">
+    <!-- ========================================================================= -->
+    <!-- VN-01: Viman Nagar Chowk (Phoenix Mall Junction)                          -->
+    <!-- 4-Phase Signal Logic (120s Cycle)                                         -->
+    <!-- ========================================================================= -->
+    
+    <!-- Baseline Program (ID: 0) -->
+    <tlLogic id="VN-01" type="static" programID="0" offset="0">
+        <!-- Phase 1: Nagar Road Eastbound Main Through (35s Green + 3s Yellow) -->
+        <phase duration="35" state="GGgrrrGGgrrr"/>
+        <phase duration="3"  state="yygrrryygrrr"/>
+        <!-- Phase 2: Nagar Road Westbound Main Through (35s Green + 3s Yellow) -->
+        <phase duration="35" state="rrrGGgrrrGGg"/>
+        <phase duration="3"  state="rrryygrrryyg"/>
+        <!-- Phase 3: Viman Nagar Road Northbound Cross Approach (25s Green + 3s Yellow) -->
+        <phase duration="25" state="rrrrrrGGgrrr"/>
+        <phase duration="3"  state="rrrrrryygrrr"/>
+        <!-- Phase 4: Mall / Commercial Access Southbound Branch (13s Green + 3s Yellow) -->
+        <phase duration="13" state="rrrrrrrrrGGg"/>
+        <phase duration="3"  state="rrrrrrrrryyg"/>
+    </tlLogic>
+
+    <!-- Intervention Program (ID: 1) - Re-allocated Green Split per ADR-004 -->
+    <tlLogic id="VN-01" type="static" programID="1" offset="0">
+        <!-- Phase 1: Nagar Road Eastbound Main Through Extended (50s Green + 3s Yellow) [+15s] -->
+        <phase duration="50" state="GGgrrrGGgrrr"/>
+        <phase duration="3"  state="yygrrryygrrr"/>
+        <!-- Phase 2: Nagar Road Westbound Main Through (30s Green + 3s Yellow) [-5s] -->
+        <phase duration="30" state="rrrGGgrrrGGg"/>
+        <phase duration="3"  state="rrryygrrryyg"/>
+        <!-- Phase 3: Viman Nagar Road Northbound Cross Approach (18s Green + 3s Yellow) [-7s] -->
+        <phase duration="18" state="rrrrrrGGgrrr"/>
+        <phase duration="3"  state="rrrrrryygrrr"/>
+        <!-- Phase 4: Mall / Commercial Access Southbound Branch (10s Green + 3s Yellow) [-3s] -->
+        <phase duration="10" state="rrrrrrrrrGGg"/>
+        <phase duration="3"  state="rrrrrrrrryyg"/>
+    </tlLogic>
+
+    <!-- ========================================================================= -->
+    <!-- SN-01: Somnath Nagar Chowk                                                -->
+    <!-- 3-Phase Signal Logic (90s Cycle)                                          -->
+    <!-- ========================================================================= -->
+    <tlLogic id="SN-01" type="static" programID="0" offset="15">
+        <!-- Phase 1: Nagar Road EB / WB Through (50s Green + 3s Yellow) -->
+        <phase duration="50" state="GGgrrrGGgrrr"/>
+        <phase duration="3"  state="yygrrryygrrr"/>
+        <!-- Phase 2: Somnath Nagar Road NB Cross (20s Green + 3s Yellow) -->
+        <phase duration="20" state="rrrrrrGGgrrr"/>
+        <phase duration="3"  state="rrrrrryygrrr"/>
+        <!-- Phase 3: Secondary Turning Movements (11s Green + 3s Yellow) -->
+        <phase duration="11" state="rrrrrrrrrGGg"/>
+        <phase duration="3"  state="rrrrrrrrryyg"/>
+    </tlLogic>
+</tlLogics>

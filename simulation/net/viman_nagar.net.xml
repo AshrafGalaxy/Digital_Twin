@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  viman_nagar.net.xml
+  Compiled SUMO Network for Nagar Road Pilot Corridor (Viman Nagar Chowk to Somnath Nagar Chowk)
+  Version: 1.0.0
+-->
+<net version="1.16" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+    <location netOffset="0.00,0.00" convBoundary="520.00,150.00,2630.00,1100.00" origBoundary="73.9125,18.5570,73.9322,18.5643" projParameter="+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
+
+    <!-- Edge Definitions -->
+    <edge id="SEG-NR-EB-01" from="NR-EB-START" to="VN-01" priority="3" numLanes="3" speed="13.89" length="480.00">
+        <lane id="SEG-NR-EB-01_0" index="0" speed="13.89" length="480.00" shape="520.00,395.20 1000.00,495.20"/>
+        <lane id="SEG-NR-EB-01_1" index="1" speed="13.89" length="480.00" shape="520.00,398.40 1000.00,498.40"/>
+        <lane id="SEG-NR-EB-01_2" index="2" speed="13.89" length="480.00" shape="520.00,401.60 1000.00,501.60"/>
+    </edge>
+    <edge id="SEG-NR-EB-02" from="VN-01" to="SN-01" priority="3" numLanes="3" speed="13.89" length="1180.00">
+        <lane id="SEG-NR-EB-02_0" index="0" speed="13.89" length="1180.00" shape="1000.00,495.20 2180.00,795.20"/>
+        <lane id="SEG-NR-EB-02_1" index="1" speed="13.89" length="1180.00" shape="1000.00,498.40 2180.00,798.40"/>
+        <lane id="SEG-NR-EB-02_2" index="2" speed="13.89" length="1180.00" shape="1000.00,501.60 2180.00,801.60"/>
+    </edge>
+    <edge id="SEG-NR-EB-03" from="SN-01" to="NR-EB-END" priority="3" numLanes="3" speed="13.89" length="450.00">
+        <lane id="SEG-NR-EB-03_0" index="0" speed="13.89" length="450.00" shape="2180.00,795.20 2630.00,895.20"/>
+        <lane id="SEG-NR-EB-03_1" index="1" speed="13.89" length="450.00" shape="2180.00,798.40 2630.00,898.40"/>
+        <lane id="SEG-NR-EB-03_2" index="2" speed="13.89" length="450.00" shape="2180.00,801.60 2630.00,901.60"/>
+    </edge>
+
+    <edge id="SEG-NR-WB-01" from="NR-EB-END" to="SN-01" priority="3" numLanes="3" speed="13.89" length="450.00">
+        <lane id="SEG-NR-WB-01_0" index="0" speed="13.89" length="450.00" shape="2630.00,908.40 2180.00,808.40"/>
+        <lane id="SEG-NR-WB-01_1" index="1" speed="13.89" length="450.00" shape="2630.00,905.20 2180.00,805.20"/>
+        <lane id="SEG-NR-WB-01_2" index="2" speed="13.89" length="450.00" shape="2630.00,902.00 2180.00,802.00"/>
+    </edge>
+    <edge id="SEG-NR-WB-02" from="SN-01" to="VN-01" priority="3" numLanes="3" speed="13.89" length="1180.00">
+        <lane id="SEG-NR-WB-02_0" index="0" speed="13.89" length="1180.00" shape="2180.00,808.40 1000.00,508.40"/>
+        <lane id="SEG-NR-WB-02_1" index="1" speed="13.89" length="1180.00" shape="2180.00,805.20 1000.00,505.20"/>
+        <lane id="SEG-NR-WB-02_2" index="2" speed="13.89" length="1180.00" shape="2180.00,802.00 1000.00,502.00"/>
+    </edge>
+    <edge id="SEG-NR-WB-03" from="VN-01" to="NR-EB-START" priority="3" numLanes="3" speed="13.89" length="480.00">
+        <lane id="SEG-NR-WB-03_0" index="0" speed="13.89" length="480.00" shape="1000.00,508.40 520.00,408.40"/>
+        <lane id="SEG-NR-WB-03_1" index="1" speed="13.89" length="480.00" shape="1000.00,505.20 520.00,405.20"/>
+        <lane id="SEG-NR-WB-03_2" index="2" speed="13.89" length="480.00" shape="1000.00,502.00 520.00,402.00"/>
+    </edge>
+
+    <edge id="SEG-VN-NB-01" from="VN-NB-START" to="VN-01" priority="2" numLanes="2" speed="11.11" length="350.00">
+        <lane id="SEG-VN-NB-01_0" index="0" speed="11.11" length="350.00" shape="996.80,150.00 996.80,500.00"/>
+        <lane id="SEG-VN-NB-01_1" index="1" speed="11.11" length="350.00" shape="993.60,150.00 993.60,500.00"/>
+    </edge>
+    <edge id="SEG-VN-SB-01" from="VN-01" to="VN-SB-END" priority="2" numLanes="2" speed="11.11" length="400.00">
+        <lane id="SEG-VN-SB-01_0" index="0" speed="11.11" length="400.00" shape="1003.20,500.00 1003.20,900.00"/>
+        <lane id="SEG-VN-SB-01_1" index="1" speed="11.11" length="400.00" shape="1006.40,500.00 1006.40,900.00"/>
+    </edge>
+
+    <edge id="SEG-SN-NB-01" from="SN-NB-START" to="SN-01" priority="1" numLanes="2" speed="9.72" length="300.00">
+        <lane id="SEG-SN-NB-01_0" index="0" speed="9.72" length="300.00" shape="2176.80,500.00 2176.80,800.00"/>
+        <lane id="SEG-SN-NB-01_1" index="1" speed="9.72" length="300.00" shape="2173.60,500.00 2173.60,800.00"/>
+    </edge>
+    <edge id="SEG-SN-SB-01" from="SN-01" to="SN-SB-END" priority="1" numLanes="2" speed="9.72" length="300.00">
+        <lane id="SEG-SN-SB-01_0" index="0" speed="9.72" length="300.00" shape="2183.20,800.00 2183.20,1100.00"/>
+        <lane id="SEG-SN-SB-01_1" index="1" speed="9.72" length="300.00" shape="2186.40,800.00 2186.40,1100.00"/>
+    </edge>
+
+    <!-- Traffic Light Logics -->
+    <tlLogic id="VN-01" type="static" programID="0" offset="0">
+        <phase duration="35" state="GGgrrrGGgrrr"/>
+        <phase duration="3"  state="yygrrryygrrr"/>
+        <phase duration="35" state="rrrGGgrrrGGg"/>
+        <phase duration="3"  state="rrryygrrryyg"/>
+        <phase duration="25" state="rrrrrrGGgrrr"/>
+        <phase duration="3"  state="rrrrrryygrrr"/>
+        <phase duration="13" state="rrrrrrrrrGGg"/>
+        <phase duration="3"  state="rrrrrrrrryyg"/>
+    </tlLogic>
+
+    <tlLogic id="VN-01" type="static" programID="1" offset="0">
+        <phase duration="50" state="GGgrrrGGgrrr"/>
+        <phase duration="3"  state="yygrrryygrrr"/>
+        <phase duration="30" state="rrrGGgrrrGGg"/>
+        <phase duration="3"  state="rrryygrrryyg"/>
+        <phase duration="18" state="rrrrrrGGgrrr"/>
+        <phase duration="3"  state="rrrrrryygrrr"/>
+        <phase duration="10" state="rrrrrrrrrGGg"/>
+        <phase duration="3"  state="rrrrrrrrryyg"/>
+    </tlLogic>
+
+    <tlLogic id="SN-01" type="static" programID="0" offset="15">
+        <phase duration="50" state="GGgrrrGGgrrr"/>
+        <phase duration="3"  state="yygrrryygrrr"/>
+        <phase duration="20" state="rrrrrrGGgrrr"/>
+        <phase duration="3"  state="rrrrrryygrrr"/>
+        <phase duration="11" state="rrrrrrrrrGGg"/>
+        <phase duration="3"  state="rrrrrrrrryyg"/>
+    </tlLogic>
+
+    <!-- Junction Definitions -->
+    <junction id="VN-01" type="traffic_light" x="1000.00" y="500.00" incLanes="SEG-NR-EB-01_0 SEG-NR-EB-01_1 SEG-NR-EB-01_2 SEG-NR-WB-02_0 SEG-NR-WB-02_1 SEG-NR-WB-02_2 SEG-VN-NB-01_0 SEG-VN-NB-01_1" intLanes="" shape="992.00,514.00 1008.00,514.00 1008.00,486.00 992.00,486.00"/>
+    <junction id="SN-01" type="traffic_light" x="2180.00" y="800.00" incLanes="SEG-NR-EB-02_0 SEG-NR-EB-02_1 SEG-NR-EB-02_2 SEG-NR-WB-01_0 SEG-NR-WB-01_1 SEG-NR-WB-01_2 SEG-SN-NB-01_0 SEG-SN-NB-01_1" intLanes="" shape="2172.00,814.00 2188.00,814.00 2188.00,786.00 2172.00,786.00"/>
+    <junction id="NR-EB-START" type="priority" x="520.00" y="400.00" incLanes="SEG-NR-WB-03_0 SEG-NR-WB-03_1 SEG-NR-WB-03_2" shape="520.00,410.00 520.00,390.00"/>
+    <junction id="NR-EB-END" type="priority" x="2630.00" y="900.00" incLanes="SEG-NR-EB-03_0 SEG-NR-EB-03_1 SEG-NR-EB-03_2" shape="2630.00,890.00 2630.00,910.00"/>
+    <junction id="VN-NB-START" type="priority" x="1000.00" y="150.00" incLanes="" shape="990.00,150.00 1000.00,150.00"/>
+    <junction id="VN-SB-END" type="priority" x="1000.00" y="900.00" incLanes="SEG-VN-SB-01_0 SEG-VN-SB-01_1" shape="1000.00,900.00 1010.00,900.00"/>
+    <junction id="SN-NB-START" type="priority" x="2180.00" y="500.00" incLanes="" shape="2170.00,500.00 2180.00,500.00"/>
+    <junction id="SN-SB-END" type="priority" x="2180.00" y="1100.00" incLanes="SEG-SN-SB-01_0 SEG-SN-SB-01_1" shape="2180.00,1100.00 2190.00,1100.00"/>
+
+    <!-- Corridor Through Connections -->
+    <connection from="SEG-NR-EB-01" to="SEG-NR-EB-02" fromLane="0" toLane="0" tl="VN-01" linkIndex="0"/>
+    <connection from="SEG-NR-EB-01" to="SEG-NR-EB-02" fromLane="1" toLane="1" tl="VN-01" linkIndex="1"/>
+    <connection from="SEG-NR-EB-01" to="SEG-NR-EB-02" fromLane="2" toLane="2" tl="VN-01" linkIndex="2"/>
+    <connection from="SEG-NR-EB-01" to="SEG-VN-SB-01" fromLane="2" toLane="1" tl="VN-01" linkIndex="3"/>
+
+    <connection from="SEG-NR-EB-02" to="SEG-NR-EB-03" fromLane="0" toLane="0" tl="SN-01" linkIndex="0"/>
+    <connection from="SEG-NR-EB-02" to="SEG-NR-EB-03" fromLane="1" toLane="1" tl="SN-01" linkIndex="1"/>
+    <connection from="SEG-NR-EB-02" to="SEG-NR-EB-03" fromLane="2" toLane="2" tl="SN-01" linkIndex="2"/>
+
+    <connection from="SEG-NR-WB-01" to="SEG-NR-WB-02" fromLane="0" toLane="0" tl="SN-01" linkIndex="3"/>
+    <connection from="SEG-NR-WB-01" to="SEG-NR-WB-02" fromLane="1" toLane="1" tl="SN-01" linkIndex="4"/>
+    <connection from="SEG-NR-WB-01" to="SEG-NR-WB-02" fromLane="2" toLane="2" tl="SN-01" linkIndex="5"/>
+
+    <connection from="SEG-NR-WB-02" to="SEG-NR-WB-03" fromLane="0" toLane="0" tl="VN-01" linkIndex="4"/>
+    <connection from="SEG-NR-WB-02" to="SEG-NR-WB-03" fromLane="1" toLane="1" tl="VN-01" linkIndex="5"/>
+    <connection from="SEG-NR-WB-02" to="SEG-NR-WB-03" fromLane="2" toLane="2" tl="VN-01" linkIndex="6"/>
+</net>

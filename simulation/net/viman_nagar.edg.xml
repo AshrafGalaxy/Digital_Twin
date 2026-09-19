@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  viman_nagar.edg.xml
+  Edge definitions for Nagar Road corridor, mapping directly to NGSI-LD RoadSegment assets.
+  Speeds in m/s (13.89 m/s = 50 km/h, 11.11 m/s = 40 km/h, 9.72 m/s = 35 km/h).
+-->
+<edges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/edges_file.xsd">
+    <!-- Nagar Road Eastbound Carriageway (3 Lanes) -->
+    <edge id="SEG-NR-EB-01" from="NR-EB-START" to="VN-01" priority="3" numLanes="3" speed="13.89" length="480.0"/>
+    <edge id="SEG-NR-EB-02" from="VN-01" to="SN-01" priority="3" numLanes="3" speed="13.89" length="1180.0"/>
+    <edge id="SEG-NR-EB-03" from="SN-01" to="NR-EB-END" priority="3" numLanes="3" speed="13.89" length="450.0"/>
+
+    <!-- Nagar Road Westbound Carriageway (3 Lanes) -->
+    <edge id="SEG-NR-WB-01" from="NR-EB-END" to="SN-01" priority="3" numLanes="3" speed="13.89" length="450.0"/>
+    <edge id="SEG-NR-WB-02" from="SN-01" to="VN-01" priority="3" numLanes="3" speed="13.89" length="1180.0"/>
+    <edge id="SEG-NR-WB-03" from="VN-01" to="NR-EB-START" priority="3" numLanes="3" speed="13.89" length="480.0"/>
+
+    <!-- Viman Nagar Road Cross Street (2 Lanes) -->
+    <edge id="SEG-VN-NB-01" from="VN-NB-START" to="VN-01" priority="2" numLanes="2" speed="11.11" length="350.0"/>
+    <edge id="SEG-VN-SB-01" from="VN-01" to="VN-SB-END" priority="2" numLanes="2" speed="11.11" length="400.0"/>
+
+    <!-- Somnath Nagar Road Cross Street (2 Lanes) -->
+    <edge id="SEG-SN-NB-01" from="SN-NB-START" to="SN-01" priority="1" numLanes="2" speed="9.72" length="300.0"/>
+    <edge id="SEG-SN-SB-01" from="SN-01" to="SN-SB-END" priority="1" numLanes="2" speed="9.72" length="300.0"/>
+</edges>

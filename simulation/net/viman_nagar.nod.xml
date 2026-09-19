@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  viman_nagar.nod.xml
+  Junction nodes definition for Nagar Road corridor (Viman Nagar Chowk to Somnath Nagar Chowk)
+  EPSG:4326 projected coordinates centered around Pune Nagar Road
+-->
+<nodes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/nodes_file.xsd">
+    <!-- Corridor Intersections -->
+    <node id="VN-01" x="1000.0" y="500.0" type="traffic_light" tl="VN-01"/>
+    <node id="SN-01" x="2180.0" y="800.0" type="traffic_light" tl="SN-01"/>
+
+    <!-- Corridor Boundary / Approach Nodes -->
+    <node id="NR-EB-START" x="520.0" y="400.0" type="priority"/>
+    <node id="NR-EB-END" x="2630.0" y="900.0" type="priority"/>
+    
+    <!-- Cross Street Approach Nodes -->
+    <node id="VN-NB-START" x="1000.0" y="150.0" type="priority"/>
+    <node id="VN-SB-END" x="1000.0" y="900.0" type="priority"/>
+    <node id="SN-NB-START" x="2180.0" y="500.0" type="priority"/>
+    <node id="SN-SB-END" x="2180.0" y="1100.0" type="priority"/>
+</nodes>

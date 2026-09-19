@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  viman_nagar_baseline.rou.xml
+  Demand and route definitions for Nagar Road corridor evening peak (18:00-19:30).
+  Calibrated heterogeneous vehicle mix: 45% 2W, 35% Car, 12% Auto, 8% Bus.
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- Vehicle Type Distributions -->
+    <vType id="two_wheeler" length="2.2" minGap="0.8" maxSpeed="16.6" accel="2.5" decel="4.5" sigma="0.5" vClass="motorcycle" guiShape="motorcycle" color="yellow"/>
+    <vType id="passenger_car" length="4.5" minGap="1.5" maxSpeed="14.0" accel="2.0" decel="4.0" sigma="0.5" vClass="passenger" guiShape="passenger" color="blue"/>
+    <vType id="auto_rickshaw" length="2.8" minGap="1.0" maxSpeed="11.0" accel="1.5" decel="3.5" sigma="0.6" vClass="passenger" guiShape="passenger/sedan" color="green"/>
+    <vType id="city_bus" length="12.0" minGap="2.5" maxSpeed="11.0" accel="1.2" decel="3.0" sigma="0.3" vClass="bus" guiShape="bus" color="red"/>
+
+    <vTypeDistribution id="pune_vehicle_mix">
+        <vType id="pune_2w" length="2.2" minGap="0.8" maxSpeed="16.6" accel="2.5" decel="4.5" sigma="0.5" vClass="motorcycle" probability="0.45" color="240,180,40"/>
+        <vType id="pune_car" length="4.5" minGap="1.5" maxSpeed="14.0" accel="2.0" decel="4.0" sigma="0.5" vClass="passenger" probability="0.35" color="70,130,180"/>
+        <vType id="pune_auto" length="2.8" minGap="1.0" maxSpeed="11.0" accel="1.5" decel="3.5" sigma="0.6" vClass="passenger" probability="0.12" color="34,139,34"/>
+        <vType id="pune_bus" length="12.0" minGap="2.5" maxSpeed="11.0" accel="1.2" decel="3.0" sigma="0.3" vClass="bus" probability="0.08" color="178,34,34"/>
+    </vTypeDistribution>
+
+    <!-- Corridor Routes -->
+    <route id="route_EB_through" edges="SEG-NR-EB-01 SEG-NR-EB-02 SEG-NR-EB-03"/>
+    <route id="route_WB_through" edges="SEG-NR-WB-01 SEG-NR-WB-02 SEG-NR-WB-03"/>
+    <route id="route_VN_turn_south" edges="SEG-NR-EB-01 SEG-VN-SB-01"/>
+    <route id="route_VN_inbound_EB" edges="SEG-VN-NB-01 SEG-NR-EB-02 SEG-NR-EB-03"/>
+    <route id="route_SN_cross" edges="SEG-SN-NB-01 SEG-SN-SB-01"/>
+
+    <!-- Calibrated Evening Peak Flows (Vehicles per hour) -->
+    <!-- Nagar Road EB Main Through: 2,400 veh/hr (heavy outbound evening flow towards Wagholi) -->
+    <flow id="flow_EB_main" type="pune_vehicle_mix" route="route_EB_through" begin="0" end="3600" vehsPerHour="2400" departLane="best" departSpeed="max"/>
+
+    <!-- Nagar Road WB Return Through: 1,600 veh/hr -->
+    <flow id="flow_WB_main" type="pune_vehicle_mix" route="route_WB_through" begin="0" end="3600" vehsPerHour="1600" departLane="best" departSpeed="max"/>
+
+    <!-- Viman Nagar Phoenix Mall Turn Traffic: 450 veh/hr -->
+    <flow id="flow_VN_mall" type="pune_vehicle_mix" route="route_VN_turn_south" begin="0" end="3600" vehsPerHour="450" departLane="2" departSpeed="avg"/>
+
+    <!-- Viman Nagar Neighborhood Inbound Traffic: 350 veh/hr -->
+    <flow id="flow_VN_in" type="pune_vehicle_mix" route="route_VN_inbound_EB" begin="0" end="3600" vehsPerHour="350" departLane="best" departSpeed="avg"/>
+
+    <!-- Somnath Nagar Cross Movement: 250 veh/hr -->
+    <flow id="flow_SN_cross" type="pune_vehicle_mix" route="route_SN_cross" begin="0" end="3600" vehsPerHour="250" departLane="best" departSpeed="avg"/>
+</routes>
