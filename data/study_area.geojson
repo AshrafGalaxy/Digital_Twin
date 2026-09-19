@@ -1,0 +1,50 @@
+{
+  "type": "FeatureCollection",
+  "name": "study_area",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Viman Nagar - Somnath Nagar Corridor Pilot Area",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "country": "India",
+        "primaryHighway": "Nagar Road (Ahmednagar - Pune Highway)",
+        "corridorLengthKm": 1.25,
+        "boundaryVersion": "1.0.0",
+        "captureDate": "2026-09-19",
+        "crs": "EPSG:4326",
+        "coreIntersections": [
+          "urn:ngsi-ld:Intersection:PUNE:VN-01",
+          "urn:ngsi-ld:Intersection:PUNE:SN-01"
+        ],
+        "keyLandmarks": [
+          "Phoenix Marketcity Mall",
+          "Viman Nagar Chowk",
+          "Somnath Nagar Chowk"
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.9120, 18.5645],
+            [73.9200, 18.5665],
+            [73.9315, 18.5660],
+            [73.9325, 18.5605],
+            [73.9220, 18.5580],
+            [73.9125, 18.5575],
+            [73.9120, 18.5645]
+          ]
+        ]
+      }
+    }
+  ]
+}
