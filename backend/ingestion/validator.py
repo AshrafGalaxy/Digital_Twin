@@ -9,17 +9,30 @@ from typing import Any, Dict, Optional, Tuple
 
 from pydantic import ValidationError
 
-from ..core.constants import (
-    ENERGY_FRESHNESS_THRESHOLD_SEC,
-    QualityStatus,
-    SourceMode,
-    TRAFFIC_FRESHNESS_THRESHOLD_SEC
-)
-from ..schemas.canonical import (
-    EnergyObservationEvent,
-    EnvironmentObservationEvent,
-    TrafficObservationEvent
-)
+try:
+    from core.constants import (
+        ENERGY_FRESHNESS_THRESHOLD_SEC,
+        QualityStatus,
+        SourceMode,
+        TRAFFIC_FRESHNESS_THRESHOLD_SEC
+    )
+    from schemas.canonical import (
+        EnergyObservationEvent,
+        EnvironmentObservationEvent,
+        TrafficObservationEvent
+    )
+except ImportError:
+    from backend.core.constants import (
+        ENERGY_FRESHNESS_THRESHOLD_SEC,
+        QualityStatus,
+        SourceMode,
+        TRAFFIC_FRESHNESS_THRESHOLD_SEC
+    )
+    from backend.schemas.canonical import (
+        EnergyObservationEvent,
+        EnvironmentObservationEvent,
+        TrafficObservationEvent
+    )
 
 class IngestionValidator:
     @staticmethod

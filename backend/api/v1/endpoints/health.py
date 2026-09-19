@@ -7,8 +7,12 @@ Health check and readiness endpoints for the digital twin platform.
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ....core.config import settings
-from ....core.database import check_db_health
+try:
+    from core.config import settings
+    from core.database import check_db_health
+except ImportError:
+    from backend.core.config import settings
+    from backend.core.database import check_db_health
 
 router = APIRouter(tags=["Health"])
 

@@ -12,16 +12,28 @@ from typing import Any, Callable, Dict, Optional
 
 import paho.mqtt.client as mqtt
 
-from ..core.config import settings
-from ..core.constants import (
-    MQTT_TOPIC_ALL,
-    MQTT_TOPIC_ENERGY_OBS,
-    MQTT_TOPIC_ENV_OBS,
-    MQTT_TOPIC_TRAFFIC_OBS
-)
-from ..core.database import AsyncSessionLocal
-from .state_projector import StateProjector
-from .validator import IngestionValidator
+try:
+    from core.config import settings
+    from core.constants import (
+        MQTT_TOPIC_ALL,
+        MQTT_TOPIC_ENERGY_OBS,
+        MQTT_TOPIC_ENV_OBS,
+        MQTT_TOPIC_TRAFFIC_OBS
+    )
+    from core.database import AsyncSessionLocal
+    from ingestion.state_projector import StateProjector
+    from ingestion.validator import IngestionValidator
+except ImportError:
+    from backend.core.config import settings
+    from backend.core.constants import (
+        MQTT_TOPIC_ALL,
+        MQTT_TOPIC_ENERGY_OBS,
+        MQTT_TOPIC_ENV_OBS,
+        MQTT_TOPIC_TRAFFIC_OBS
+    )
+    from backend.core.database import AsyncSessionLocal
+    from backend.ingestion.state_projector import StateProjector
+    from backend.ingestion.validator import IngestionValidator
 
 logger = logging.getLogger(__name__)
 

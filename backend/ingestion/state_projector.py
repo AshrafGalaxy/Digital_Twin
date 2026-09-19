@@ -13,12 +13,20 @@ from typing import Any, Dict, Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.constants import EntityType, QualityStatus, SourceMode
-from ..schemas.canonical import (
-    EnergyObservationEvent,
-    EnvironmentObservationEvent,
-    TrafficObservationEvent
-)
+try:
+    from core.constants import EntityType, QualityStatus, SourceMode
+    from schemas.canonical import (
+        EnergyObservationEvent,
+        EnvironmentObservationEvent,
+        TrafficObservationEvent
+    )
+except ImportError:
+    from backend.core.constants import EntityType, QualityStatus, SourceMode
+    from backend.schemas.canonical import (
+        EnergyObservationEvent,
+        EnvironmentObservationEvent,
+        TrafficObservationEvent
+    )
 
 logger = logging.getLogger(__name__)
 

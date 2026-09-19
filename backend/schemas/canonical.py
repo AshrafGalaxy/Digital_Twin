@@ -9,16 +9,28 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from ..core.constants import (
-    Direction,
-    EntityType,
-    QualityStatus,
-    SourceMode,
-    SPEED_MAX_KMH,
-    SPEED_MIN_KMH,
-    OCCUPANCY_MAX_PCT,
-    OCCUPANCY_MIN_PCT
-)
+try:
+    from core.constants import (
+        Direction,
+        EntityType,
+        QualityStatus,
+        SourceMode,
+        SPEED_MAX_KMH,
+        SPEED_MIN_KMH,
+        OCCUPANCY_MAX_PCT,
+        OCCUPANCY_MIN_PCT
+    )
+except ImportError:
+    from backend.core.constants import (
+        Direction,
+        EntityType,
+        QualityStatus,
+        SourceMode,
+        SPEED_MAX_KMH,
+        SPEED_MIN_KMH,
+        OCCUPANCY_MAX_PCT,
+        OCCUPANCY_MIN_PCT
+    )
 
 class BaseEntitySchema(BaseModel):
     id: str

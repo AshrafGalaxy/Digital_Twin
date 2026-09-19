@@ -6,8 +6,15 @@ Main entrypoint for the Digital Twin FastAPI modular monolith backend.
 
 from contextlib import asynccontextmanager
 import logging
+import sys
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Ensure backend directory is in sys.path for direct or module execution
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from core.config import settings
 from core.database import check_db_health
