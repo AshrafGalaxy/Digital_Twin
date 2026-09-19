@@ -1,46 +1,18 @@
 /* ========================================================
    Digital Twin Design System & CSS Tokens
-   Strict adherence to DESIGN_SYSTEM.md & UI_UX_SPEC.md
-   Civic infrastructure, analytical clarity, restrained teal
+   Strict adherence to DESIGN_SYSTEM.md §4, §5, §7, §8, §10
+   Dual Theme Architecture: Light (Civic Cartography) & Dark (Operations Console)
    ======================================================== */
 
-:root {
-  /* Color Palette: Civic Deep Teal & Neutral Surfaces */
-  --primary: #0F4C5C;
-  --primary-hover: #0A3642;
-  --primary-light: #E6F0F2;
-  --accent: #E36414;
+:root,
+[data-theme="dark"] {
+  /* Typography Stack per DESIGN_SYSTEM.md §7.1 */
+  --font-sans: 'Satoshi', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: var(--font-sans);
+  --font-display: var(--font-sans);
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Surfaces & Backgrounds */
-  --bg-app: #0B131F;
-  --bg-surface: #131E2F;
-  --bg-surface-elevated: #1B293E;
-  --border-color: #24354D;
-  --border-subtle: #1C2B3F;
-
-  /* Typography Colors */
-  --text-main: #F1F5F9;
-  --text-muted: #94A3B8;
-  --text-subtle: #64748B;
-
-  /* Semantic Traffic State Colors */
-  --traffic-low: #10B981;       /* Flowing (Green) */
-  --traffic-moderate: #F59E0B;  /* Moderate (Amber) */
-  --traffic-heavy: #EF4444;     /* Heavy/Congested (Crimson) */
-
-  /* Provenance Badge Tokens */
-  --provenance-live: #10B981;
-  --provenance-replay: #3B82F6;
-  --provenance-simulation: #8B5CF6;
-  --provenance-predicted: #06B6D4;
-  --provenance-stale: #F59E0B;
-  --provenance-invalid: #EF4444;
-
-  /* Typography Stack */
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* 4px Spacing Grid */
+  /* 4px Spacing Grid per DESIGN_SYSTEM.md §8.1 */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -48,13 +20,297 @@
   --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
 
-  /* Radius & Elevation */
-  --radius-sm: 4px;
+  /* Radius Tokens per DESIGN_SYSTEM.md §10.3 */
+  --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.5);
+  --radius-full: 9999px;
+
+  /* Dark Theme Surfaces per DESIGN_SYSTEM.md §5.3 */
+  --color-bg: #111827;
+  --color-surface: #18212F;
+  --color-surface-raised: #202B3A;
+  --color-surface-subtle: #16202D;
+  --color-surface-selected: #173A3C;
+  --color-overlay: rgba(2, 6, 23, 0.68);
+
+  /* Dark Theme Text per DESIGN_SYSTEM.md §5.3 */
+  --color-text: #F3F6F8;
+  --color-text-secondary: #C6D0D9;
+  --color-text-muted: #A9B6C3;
+  --color-text-faint: #8190A0;
+  --color-text-inverse: #18212F;
+
+  /* Dark Theme Structure per DESIGN_SYSTEM.md §5.3 */
+  --color-border: #334155;
+  --color-border-strong: #4B5B70;
+  --color-divider: #283649;
+
+  /* Primary Civic Teal per DESIGN_SYSTEM.md §5.3 */
+  --color-primary: #3FB4B8;
+  --color-primary-hover: #66C7C9;
+  --color-primary-active: #8DDBDC;
+  --color-primary-subtle: #173A3C;
+  --color-primary-focus: #70D3D5;
+
+  /* Semantic Status per DESIGN_SYSTEM.md §5.3 */
+  --color-success: #5FC79A;
+  --color-success-subtle: #183E34;
+  --color-warning: #F1AE4B;
+  --color-warning-subtle: #4B3516;
+  --color-danger: #F28B82;
+  --color-danger-subtle: #4A2426;
+  --color-invalid: #F49AB0;
+  --color-invalid-subtle: #4D2434;
+  --color-info: #73B7F0;
+  --color-info-subtle: #1B3550;
+
+  /* Provenance Tokens per DESIGN_SYSTEM.md §5.3 */
+  --color-live: #5FC79A;
+  --color-live-subtle: #183E34;
+  --color-replay: #AFC0D0;
+  --color-replay-subtle: #29394A;
+  --color-simulation: #C5A6F5;
+  --color-simulation-subtle: #372850;
+  --color-predicted: #73B7F0;
+  --color-predicted-subtle: #1B3550;
+  --color-stale: #F1AE4B;
+  --color-stale-subtle: #4B3516;
+
+  /* Data Visualization per DESIGN_SYSTEM.md §5.3 */
+  --color-traffic-low: #5FC79A;
+  --color-traffic-moderate: #F1AE4B;
+  --color-traffic-high: #F28B82;
+  --color-traffic-unknown: #9AAABC;
+  --color-chart-observed: #3FB4B8;
+  --color-chart-predicted: #73B7F0;
+  --color-chart-simulation: #C5A6F5;
+  --color-chart-baseline: #9AAABC;
+
+  /* Shadows & Elevation per DESIGN_SYSTEM.md §10.4 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.42);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.40);
+  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.50);
+
+  /* Legacy Bridge Tokens (Seamless backward compatibility) */
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-hover);
+  --primary-light: var(--color-primary-subtle);
+  --accent: #E36414;
+
+  --bg-app: var(--color-bg);
+  --bg-surface: var(--color-surface);
+  --bg-surface-elevated: var(--color-surface-raised);
+  --border-color: var(--color-border);
+  --border-subtle: var(--color-divider);
+
+  --text-main: var(--color-text);
+  --text-muted: var(--color-text-secondary);
+  --text-subtle: var(--color-text-muted);
+
+  --traffic-low: var(--color-traffic-low);
+  --traffic-moderate: var(--color-traffic-moderate);
+  --traffic-heavy: var(--color-traffic-high);
+
+  --provenance-live: var(--color-live);
+  --provenance-replay: var(--color-replay);
+  --provenance-simulation: var(--color-simulation);
+  --provenance-predicted: var(--color-predicted);
+  --provenance-stale: var(--color-stale);
+  --provenance-invalid: var(--color-invalid);
+}
+
+[data-theme="light"] {
+  /* Light Theme Surfaces per DESIGN_SYSTEM.md §5.2 */
+  --color-bg: #F6F7F8;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FBFCFD;
+  --color-surface-subtle: #F1F5F4;
+  --color-surface-selected: #E7F2F1;
+  --color-overlay: rgba(24, 33, 47, 0.48);
+
+  /* Light Theme Text per DESIGN_SYSTEM.md §5.2 */
+  --color-text: #18212F;
+  --color-text-secondary: #536170;
+  --color-text-muted: #6F7C8B;
+  --color-text-faint: #8A97A5;
+  --color-text-inverse: #F8FAFC;
+
+  /* Light Theme Structure per DESIGN_SYSTEM.md §5.2 */
+  --color-border: #D9E0E6;
+  --color-border-strong: #B9C5D0;
+  --color-divider: #E5EAEE;
+
+  /* Primary Civic Teal per DESIGN_SYSTEM.md §5.2 */
+  --color-primary: #006B6F;
+  --color-primary-hover: #00565A;
+  --color-primary-active: #00464A;
+  --color-primary-subtle: #DDF0EF;
+  --color-primary-focus: #0B8C91;
+
+  /* Semantic Status per DESIGN_SYSTEM.md §5.2 */
+  --color-success: #177E5D;
+  --color-success-subtle: #DDF3EA;
+  --color-warning: #B86B00;
+  --color-warning-subtle: #FFF1D6;
+  --color-danger: #B42318;
+  --color-danger-subtle: #FEE9E7;
+  --color-invalid: #A61B3C;
+  --color-invalid-subtle: #FCE7EE;
+  --color-info: #1769AA;
+  --color-info-subtle: #E4F0FA;
+
+  /* Provenance Tokens per DESIGN_SYSTEM.md §5.2 */
+  --color-live: #177E5D;
+  --color-live-subtle: #DDF3EA;
+  --color-replay: #4A6075;
+  --color-replay-subtle: #E8EEF3;
+  --color-simulation: #6E4AA5;
+  --color-simulation-subtle: #EEE7F8;
+  --color-predicted: #1769AA;
+  --color-predicted-subtle: #E4F0FA;
+  --color-stale: #B86B00;
+  --color-stale-subtle: #FFF1D6;
+
+  /* Data Visualization per DESIGN_SYSTEM.md §5.2 */
+  --color-traffic-low: #177E5D;
+  --color-traffic-moderate: #B86B00;
+  --color-traffic-high: #B42318;
+  --color-traffic-unknown: #667085;
+  --color-chart-observed: #006B6F;
+  --color-chart-predicted: #1769AA;
+  --color-chart-simulation: #6E4AA5;
+  --color-chart-baseline: #667085;
+
+  /* Shadows & Elevation per DESIGN_SYSTEM.md §10.4 */
+  --shadow-sm: 0 1px 2px rgba(24, 33, 47, 0.06);
+  --shadow-md: 0 8px 20px rgba(24, 33, 47, 0.10);
+  --shadow-lg: 0 16px 40px rgba(24, 33, 47, 0.16);
+  --shadow-card: 0 2px 10px rgba(24, 33, 47, 0.08);
+  --shadow-drawer: -4px 0 24px rgba(24, 33, 47, 0.12);
+
+  /* Legacy Bridge Tokens */
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-hover);
+  --primary-light: var(--color-primary-subtle);
+  --accent: #D9651E;
+
+  --bg-app: var(--color-bg);
+  --bg-surface: var(--color-surface);
+  --bg-surface-elevated: var(--color-surface-raised);
+  --border-color: var(--color-border);
+  --border-subtle: var(--color-divider);
+
+  --text-main: var(--color-text);
+  --text-muted: var(--color-text-secondary);
+  --text-subtle: var(--color-text-muted);
+
+  --traffic-low: var(--color-traffic-low);
+  --traffic-moderate: var(--color-traffic-moderate);
+  --traffic-heavy: var(--color-traffic-high);
+
+  --provenance-live: var(--color-live);
+  --provenance-replay: var(--color-replay);
+  --provenance-simulation: var(--color-simulation);
+  --provenance-predicted: var(--color-predicted);
+  --provenance-stale: var(--color-stale);
+  --provenance-invalid: var(--color-invalid);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-bg: #F6F7F8;
+    --color-surface: #FFFFFF;
+    --color-surface-raised: #FBFCFD;
+    --color-surface-subtle: #F1F5F4;
+    --color-surface-selected: #E7F2F1;
+    --color-overlay: rgba(24, 33, 47, 0.48);
+
+    --color-text: #18212F;
+    --color-text-secondary: #536170;
+    --color-text-muted: #6F7C8B;
+    --color-text-faint: #8A97A5;
+    --color-text-inverse: #F8FAFC;
+
+    --color-border: #D9E0E6;
+    --color-border-strong: #B9C5D0;
+    --color-divider: #E5EAEE;
+
+    --color-primary: #006B6F;
+    --color-primary-hover: #00565A;
+    --color-primary-active: #00464A;
+    --color-primary-subtle: #DDF0EF;
+    --color-primary-focus: #0B8C91;
+
+    --color-success: #177E5D;
+    --color-success-subtle: #DDF3EA;
+    --color-warning: #B86B00;
+    --color-warning-subtle: #FFF1D6;
+    --color-danger: #B42318;
+    --color-danger-subtle: #FEE9E7;
+    --color-invalid: #A61B3C;
+    --color-invalid-subtle: #FCE7EE;
+    --color-info: #1769AA;
+    --color-info-subtle: #E4F0FA;
+
+    --color-live: #177E5D;
+    --color-live-subtle: #DDF3EA;
+    --color-replay: #4A6075;
+    --color-replay-subtle: #E8EEF3;
+    --color-simulation: #6E4AA5;
+    --color-simulation-subtle: #EEE7F8;
+    --color-predicted: #1769AA;
+    --color-predicted-subtle: #E4F0FA;
+    --color-stale: #B86B00;
+    --color-stale-subtle: #FFF1D6;
+
+    --color-traffic-low: #177E5D;
+    --color-traffic-moderate: #B86B00;
+    --color-traffic-high: #B42318;
+    --color-traffic-unknown: #667085;
+    --color-chart-observed: #006B6F;
+    --color-chart-predicted: #1769AA;
+    --color-chart-simulation: #6E4AA5;
+    --color-chart-baseline: #667085;
+
+    --shadow-sm: 0 1px 2px rgba(24, 33, 47, 0.06);
+    --shadow-md: 0 8px 20px rgba(24, 33, 47, 0.10);
+    --shadow-lg: 0 16px 40px rgba(24, 33, 47, 0.16);
+    --shadow-card: 0 2px 10px rgba(24, 33, 47, 0.08);
+    --shadow-drawer: -4px 0 24px rgba(24, 33, 47, 0.12);
+
+    --primary: var(--color-primary);
+    --primary-hover: var(--color-primary-hover);
+    --primary-light: var(--color-primary-subtle);
+    --accent: #D9651E;
+
+    --bg-app: var(--color-bg);
+    --bg-surface: var(--color-surface);
+    --bg-surface-elevated: var(--color-surface-raised);
+    --border-color: var(--color-border);
+    --border-subtle: var(--color-divider);
+
+    --text-main: var(--color-text);
+    --text-muted: var(--color-text-secondary);
+    --text-subtle: var(--color-text-muted);
+
+    --traffic-low: var(--color-traffic-low);
+    --traffic-moderate: var(--color-traffic-moderate);
+    --traffic-heavy: var(--color-traffic-high);
+
+    --provenance-live: var(--color-live);
+    --provenance-replay: var(--color-replay);
+    --provenance-simulation: var(--color-simulation);
+    --provenance-predicted: var(--color-predicted);
+    --provenance-stale: var(--color-stale);
+    --provenance-invalid: var(--color-invalid);
+  }
 }
 
 * {
@@ -104,7 +360,8 @@ body {
   align-items: center;
   gap: var(--space-1);
   padding: 0 var(--space-6);
-  background-color: rgba(11, 19, 31, 0.4);
+  background-color: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
 }
 
@@ -125,14 +382,14 @@ body {
 }
 
 .nav-tab-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-primary);
+  background: var(--color-surface-subtle);
 }
 
 .nav-tab-btn.active {
-  color: #2DD4BF;
-  border-bottom-color: #2DD4BF;
-  background: rgba(45, 212, 191, 0.08);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-primary-subtle);
   font-weight: 600;
 }
 
@@ -162,7 +419,7 @@ body {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
 }
 
 .brand-subtitle {
@@ -188,6 +445,42 @@ body {
   border: 1px solid var(--border-color);
   font-size: 12px;
   font-weight: 500;
+  color: var(--text-main);
+}
+
+/* Theme Toggle Button per DESIGN_SYSTEM.md §4 */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  outline: none;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--color-surface-selected);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.theme-toggle-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-primary-focus);
+}
+
+.theme-toggle-icon.sun {
+  color: #F59E0B;
+}
+
+.theme-toggle-icon.moon {
+  color: var(--color-primary);
 }
 
 .dot {
@@ -220,7 +513,7 @@ body {
   position: absolute;
   top: var(--space-4);
   left: var(--space-4);
-  background: rgba(19, 30, 47, 0.92);
+  background: var(--bg-surface);
   backdrop-filter: blur(8px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -607,7 +900,7 @@ body {
   position: absolute;
   bottom: var(--space-5);
   left: var(--space-4);
-  background: rgba(19, 30, 47, 0.92);
+  background: var(--bg-surface);
   backdrop-filter: blur(8px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -616,6 +909,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  box-shadow: var(--shadow-card);
 }
 
 .legend-title {
@@ -769,7 +1063,8 @@ body {
 .control-select:focus,
 .control-input:focus {
   outline: none;
-  border-color: #0F4C5C;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .template-desc {
@@ -789,12 +1084,12 @@ body {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
-  color: #2DD4BF;
+  color: var(--color-primary);
 }
 
 .control-slider {
   width: 100%;
-  accent-color: #0F4C5C;
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 
@@ -994,8 +1289,8 @@ body {
 }
 
 .forecast-hero-card {
-  background: rgba(15, 76, 92, 0.14);
-  border: 1px solid rgba(15, 76, 92, 0.35);
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
 }
@@ -1017,7 +1312,7 @@ body {
   font-family: var(--font-mono);
   font-size: 20px;
   font-weight: 700;
-  color: #2DD4BF;
+  color: var(--color-primary);
 }
 
 .forecast-interval-val {
@@ -1041,7 +1336,7 @@ body {
   color: var(--text-subtle);
   margin-top: var(--space-2);
   padding-top: var(--space-1);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .forecast-delta {
@@ -1058,7 +1353,8 @@ body {
 }
 
 .forecast-baseline-box {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
 }
@@ -2219,9 +2515,9 @@ body {
 }
 
 .scrubber-btn:hover:not(:disabled) {
-  border-color: #2DD4BF;
-  color: #2DD4BF;
-  background: rgba(45, 212, 191, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
 }
 
 .scrubber-btn:disabled {
@@ -2230,26 +2526,27 @@ body {
 }
 
 .scrubber-btn.play-btn {
-  background: #0F4C5C;
-  border-color: #2DD4BF;
-  color: #FFFFFF;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .scrubber-btn.play-btn:hover {
-  background: #0A3642;
-  box-shadow: 0 0 10px rgba(45, 212, 191, 0.4);
+  background: var(--color-primary-hover);
+  box-shadow: 0 0 10px var(--color-primary-subtle);
 }
 
 .scrubber-btn.play-btn.playing {
-  background: #E36414;
-  border-color: #F97316;
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: #FFFFFF;
 }
 
 .scrubber-speed-selector {
   display: flex;
   align-items: center;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border-color);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 2px;
   margin-left: 4px;
@@ -2264,6 +2561,7 @@ body {
   padding: 2px 6px;
   border-radius: 2px;
   cursor: pointer;
+  transition: all 0.1s ease;
 }
 
 .speed-pill:hover {
@@ -2271,8 +2569,8 @@ body {
 }
 
 .speed-pill.active {
-  background: var(--primary);
-  color: #FFFFFF;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .scrubber-track-group {
@@ -2293,10 +2591,11 @@ body {
 
 .scrubber-slider {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-divider);
   outline: none;
   cursor: pointer;
 }
@@ -2307,10 +2606,10 @@ body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #2DD4BF;
-  border: 2px solid #0F4C5C;
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(45, 212, 191, 0.8);
+  box-shadow: 0 0 8px var(--color-primary);
   transition: transform 0.1s;
 }
 
@@ -2328,8 +2627,8 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
   padding: 4px 10px;
   border-radius: var(--radius-sm);
 }

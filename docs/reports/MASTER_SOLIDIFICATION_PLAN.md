@@ -49,7 +49,7 @@ An honest audit of the current codebase against the root contract files confirms
 ---
 
 ### Track 2: Complete Design System & WCAG 2.1 AA Accessibility (`DESIGN_SYSTEM.md`)
-* [ ] **P2-A: Light / Dark Theme Switcher**
+* [x] **P2-A: Light / Dark Theme Switcher** *(COMPLETED)*
   - Implement the full token set for `:root, [data-theme="light"]` and `[data-theme="dark"]` in `frontend/src/index.css`.
   - Add an interactive theme toggle icon button in `Header.tsx` that persists preference in `localStorage` and respects `prefers-color-scheme`.
   - Update MapLibre GL map style to seamlessly toggle between light cartography and dark operational tiles.

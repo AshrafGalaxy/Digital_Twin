@@ -10,6 +10,7 @@ interface MapOperationsViewProps {
   liveStates: Record<string, EntityCurrentState>;
   selectedEntity?: RoadSegmentAsset | IntersectionAsset | null;
   compareEntity?: RoadSegmentAsset | null;
+  currentTheme?: 'light' | 'dark';
   onSelectEntity: (entity: RoadSegmentAsset | IntersectionAsset) => void;
   onSelectCompareEntity?: (entity: RoadSegmentAsset | null) => void;
 }
@@ -21,16 +22,20 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   liveStates,
   selectedEntity,
   compareEntity,
+  currentTheme = 'dark',
   onSelectEntity,
   onSelectCompareEntity
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
 
   // Initialize MapLibre GL Map
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
+
+    const isLight = currentTheme === 'light';
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -52,9 +57,9 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             minzoom: 0,
             maxzoom: 19,
             paint: {
-              'raster-saturation': -0.7,
-              'raster-brightness-max': 0.6,
-              'raster-contrast': 0.2
+              'raster-saturation': isLight ? -0.15 : -0.7,
+              'raster-brightness-max': isLight ? 0.98 : 0.6,
+              'raster-contrast': isLight ? 0.05 : 0.2
             }
           }
         ]
@@ -69,10 +74,40 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     map.current.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
 
     return () => {
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
       map.current?.remove();
       map.current = null;
     };
   }, []);
+
+  // Dynamically update map raster styling and vector layers on theme toggle
+  useEffect(() => {
+    const currentMap = map.current;
+    if (!currentMap) return;
+
+    const isLight = currentTheme === 'light';
+    const applyTheme = () => {
+      if (currentMap.getLayer('osm-tiles-layer')) {
+        currentMap.setPaintProperty('osm-tiles-layer', 'raster-saturation', isLight ? -0.15 : -0.7);
+        currentMap.setPaintProperty('osm-tiles-layer', 'raster-brightness-max', isLight ? 0.98 : 0.6);
+        currentMap.setPaintProperty('osm-tiles-layer', 'raster-contrast', isLight ? 0.05 : 0.2);
+      }
+      if (currentMap.getLayer('study-area-line')) {
+        currentMap.setPaintProperty('study-area-line', 'line-color', isLight ? '#006B6F' : '#22D3EE');
+      }
+      if (currentMap.getLayer('study-area-fill')) {
+        currentMap.setPaintProperty('study-area-fill', 'fill-color', isLight ? '#006B6F' : '#0F4C5C');
+        currentMap.setPaintProperty('study-area-fill', 'fill-opacity', isLight ? 0.08 : 0.12);
+      }
+    };
+
+    if (currentMap.isStyleLoaded()) {
+      applyTheme();
+    } else {
+      currentMap.once('load', applyTheme);
+    }
+  }, [currentTheme]);
 
   // Render Study Area, Assets, and 3D Extrusions when data is ready
   useEffect(() => {
@@ -242,24 +277,29 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       }
 
       // 4. Add Intersections Markers
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
+
+      const isLight = currentTheme === 'light';
       intersections.forEach(ix => {
         const el = document.createElement('div');
         el.className = 'intersection-marker';
         el.style.width = '14px';
         el.style.height = '14px';
         el.style.borderRadius = '50%';
-        el.style.backgroundColor = '#0F4C5C';
-        el.style.border = '2px solid #22D3EE';
-        el.style.boxShadow = '0 0 10px rgba(34, 211, 238, 0.6)';
+        el.style.backgroundColor = isLight ? '#006B6F' : '#0F4C5C';
+        el.style.border = isLight ? '2px solid #00565A' : '2px solid #22D3EE';
+        el.style.boxShadow = isLight ? '0 1px 4px rgba(0, 107, 111, 0.4)' : '0 0 10px rgba(34, 211, 238, 0.6)';
         el.style.cursor = 'pointer';
 
         el.addEventListener('click', () => {
           onSelectEntity(ix);
         });
 
-        new maplibregl.Marker({ element: el })
+        const marker = new maplibregl.Marker({ element: el })
           .setLngLat(ix.coordinates)
           .addTo(currentMap);
+        markersRef.current.push(marker);
       });
     };
 
@@ -268,7 +308,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     } else {
       currentMap.once('load', onMapLoad);
     }
-  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode]);
+  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme]);
 
   const toggle3DMode = () => {
     const currentMap = map.current;

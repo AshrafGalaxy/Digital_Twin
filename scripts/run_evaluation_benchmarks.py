@@ -218,6 +218,7 @@ def run_experiment_e04_latency() -> dict:
         inf_latencies.append((time.perf_counter() - t0) * 1000.0)
 
     # 3. Rule Engine Evaluation Latency (50 iterations)
+    rule_engine.evaluate_rules()  # Warm-up JIT/cache/state
     rule_latencies = []
     for _ in range(50):
         t0 = time.perf_counter()

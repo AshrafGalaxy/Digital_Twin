@@ -18,7 +18,7 @@
 - **Evaluation & Benchmarks (Phase 7):** 100% Complete (`[x]`)
 - **Phase 8 Core Algorithms & 3D Extrusions:** 100% Complete (`[x]`)
 - **Track 1 UI/UX Navigation & Analytics (P1-A, P1-B, P1-C):** 100% Complete (`[x]`)
-- **Track 2 Theming & Accessibility (P2-A, P2-B):** Pending (`[ ]`)
+- **Track 2 Theming & Accessibility (P2-A):** 50% Complete (`[x]` P2-A done, `[ ]` P2-B pending)
 - **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** Pending (`[ ]`)
 - **Track 4 Persistence & Telemetry Streamer (P4-A, P4-B):** Pending (`[ ]`)
 
@@ -52,10 +52,10 @@
 ---
 
 ### Track 2: Design System & WCAG 2.1 AA Accessibility (`DESIGN_SYSTEM.md`)
-- [ ] **P2-A: Dual Light / Dark Theme Switcher**
-  - [ ] Implement complete token set for `:root, [data-theme="light"]` and `[data-theme="dark"]` in `index.css`.
-  - [ ] Interactive theme switcher toggle in `Header.tsx` with `localStorage` persistence and OS preference detection.
-  - [ ] MapLibre GL style switcher toggling between light civic basemap and dark operations tiles.
+- [x] **P2-A: Dual Light / Dark Theme Switcher** *(Completed)*
+  - [x] Implement complete token set for `:root, [data-theme="light"]` and `[data-theme="dark"]` in `index.css`.
+  - [x] Interactive theme switcher toggle in `Header.tsx` with `localStorage` persistence and OS preference detection.
+  - [x] MapLibre GL style switcher toggling between light civic basemap and dark operations tiles.
 - [ ] **P2-B: Full Accessibility Hardening (WCAG 2.1 AA)**
   - [ ] Add `aria-live="polite"` regions for incoming WebSocket updates and alert badges.
   - [ ] Add visible-on-focus "Skip to main content" link (`#main-content`) at DOM root.
@@ -148,14 +148,18 @@
    - Multivariate Isolation Forest atmospheric anomaly detector.
    - FIWARE NGSI-LD v1.3 export endpoints.
    - 3D corridor building extrusions in MapLibre.
-5. **Backend Test Suite:**
+5. **Dual Light / Dark Theme Switcher (P2-A):**
+   - Full CSS design tokens per `DESIGN_SYSTEM.md` §4 and §5.
+   - Header switcher with OS preference detection and `localStorage` persistence.
+   - Dynamic MapLibre raster brightness/saturation adjustment and vector theme alignment.
+6. **Backend Test Suite:**
    - 41 of 41 unit, integration, and benchmark tests passing in `pytest`.
 
 ### What's Left:
-1. **Light/Dark Theming Engine & Accessibility (P2-A, P2-B)** for complete WCAG 2.1 AA compliance.
-2. **Data Manifests & Quarantine Queue (P3-A, P3-B)** for complete data honesty and governance.
-3. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)** for resilient zero-dependency deployment.
+1. **WCAG 2.1 AA Accessibility Hardening (P2-B)**: aria-live, skip link, prefers-reduced-motion, keyboard focus traps.
+2. **Data Manifests & Quarantine Queue (P3-A, P3-B)**: JSON manifests catalog and quarantine dead-letter table.
+3. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)**: SQLite/PostgreSQL dynamic adapter and in-process fallback.
 
 ### What's Next:
-> **P2-A: Dual Light / Dark Theme Switcher**  
-> We will implement full token sets for `:root, [data-theme="light"]` and `[data-theme="dark"]` in `index.css`, add a theme toggle button in `Header.tsx` with `localStorage` persistence and OS preference detection, and adapt MapLibre raster brightness/saturation for light cartography.
+> **P2-B: Full Accessibility Hardening (WCAG 2.1 AA)**  
+> We will add `aria-live="polite"` dynamic notification regions, a visible-on-focus "Skip to main content" link, `prefers-reduced-motion` media queries, and keyboard focus trapping (`Tab` cycle, `Escape` key close) across modals and drawers.

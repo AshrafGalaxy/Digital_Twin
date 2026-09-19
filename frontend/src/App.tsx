@@ -46,6 +46,22 @@ export const App: React.FC = () => {
   const [isAdvisoryCenterOpen, setIsAdvisoryCenterOpen] = useState<boolean>(false);
   const [advisorySummary, setAdvisorySummary] = useState<AdvisorySummary | null>(null);
 
+  // Theme State per DESIGN_SYSTEM.md §4 (Light / Dark Switcher)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return 'light';
+    }
+    return 'dark';
+  });
+
+  // Sync theme attribute on <html> document element and persist in localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
   // Historical Time Scrubber State (P1-B)
   const [scrubberMinutesAgo, setScrubberMinutesAgo] = useState<number>(0);
   const [isScrubberPlaying, setIsScrubberPlaying] = useState<boolean>(false);
@@ -182,6 +198,8 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         activeAdvisoriesCount={advisorySummary?.totalActive || 0}
+        theme={theme}
+        onToggleTheme={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
       />
 
       <main className="workspace">
@@ -203,6 +221,7 @@ export const App: React.FC = () => {
               liveStates={effectiveStates}
               selectedEntity={selectedEntity}
               compareEntity={compareEntity}
+              currentTheme={theme}
               onSelectEntity={(entity) => {
                 setSelectedEntity(entity);
                 if (compareEntity && compareEntity.id === entity.id) {
