@@ -1,0 +1,74 @@
+{
+  "catalogVersion": "1.0.0",
+  "updatedAt": "2026-09-19T23:50:00Z",
+  "studyArea": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+  "datasets": [
+    {
+      "id": "D-01",
+      "name": "OpenStreetMap Corridor Geometry",
+      "manifest": "D-01-OpenStreetMap.md",
+      "localityClassification": "PILOT_LOCAL",
+      "sourceMode": "LIVE_EXTRACT",
+      "license": "Open Database License (ODbL) 1.0",
+      "intendedUse": "Study-area roads, intersection topology, and building footprints"
+    },
+    {
+      "id": "D-02",
+      "name": "OSMnx Network Model",
+      "manifest": "D-02-OSMnx-Network.md",
+      "localityClassification": "PILOT_LOCAL",
+      "sourceMode": "DERIVED",
+      "license": "MIT License",
+      "intendedUse": "Road graph modeling and SUMO netconvert inputs"
+    },
+    {
+      "id": "D-03",
+      "name": "Pune Heterogeneous Traffic Count Dataset",
+      "manifest": "D-03-Pune-Traffic-Counts.md",
+      "localityClassification": "PUNE_NON_LOCAL",
+      "sourceMode": "REPLAY",
+      "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+      "intendedUse": "Traffic forecasting feature pipeline validation and vehicle classification distribution",
+      "prohibitedClaim": "Must not be described as Viman Nagar Chowk field measurements (recorded at Alankar, Jehangir, and RTO chowks)."
+    },
+    {
+      "id": "D-04",
+      "name": "Pune Hourly Air Quality Reports",
+      "manifest": "D-04-Pune-Hourly-AQI.md",
+      "localityClassification": "REGIONAL_CONTEXT",
+      "sourceMode": "REPLAY",
+      "license": "Open Data Commons Open Database License (ODbL) / OpenCity",
+      "intendedUse": "Environmental context and threshold alert triggering",
+      "prohibitedClaim": "Regional station sensor readings must not be claimed as hyperlocal Viman Nagar corridor sensors."
+    },
+    {
+      "id": "D-05",
+      "name": "Open-Meteo Historical & Current Weather API",
+      "manifest": "D-05-OpenMeteo-Weather.md",
+      "localityClassification": "REGIONAL_CONTEXT",
+      "sourceMode": "LIVE_API",
+      "license": "Creative Commons Attribution 4.0 International (CC BY 4.0) / Non-commercial terms",
+      "intendedUse": "Temperature, precipitation, and humidity features for traffic and energy models"
+    },
+    {
+      "id": "D-06",
+      "name": "Commercial Zone Energy Demand Profile",
+      "manifest": "D-06-Commercial-Energy-Profile.md",
+      "localityClassification": "BENCHMARK_SYNTHETIC",
+      "sourceMode": "SIMULATION",
+      "license": "Project Internal Derivative / Open Benchmark",
+      "intendedUse": "Representative building energy forecast modeling",
+      "prohibitedClaim": "Must not be represented as proprietary private utility smart-meter readings."
+    },
+    {
+      "id": "D-07",
+      "name": "SUMO Corridor Microscopic Simulation Stream",
+      "manifest": "D-07-SUMO-Corridor-Simulation.md",
+      "localityClassification": "SIMULATION",
+      "sourceMode": "SIMULATION",
+      "license": "Eclipse Public License 2.0 (EPL-2.0)",
+      "intendedUse": "What-if intervention scenario analysis and baseline validation",
+      "prohibitedClaim": "Simulation outputs must not be represented as real-world field outcomes or proof of municipal performance."
+    }
+  ]
+}
