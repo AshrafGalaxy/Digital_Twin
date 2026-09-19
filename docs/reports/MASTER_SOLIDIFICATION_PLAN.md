@@ -27,7 +27,7 @@ An honest audit of the current codebase against the root contract files confirms
 ## 2. Master Task List for Full Solidification
 
 ### Track 1: Complete UI/UX Navigation & Dedicated Views (`UI_UX_SPEC.md`)
-* [ ] **P1-A: Top-Level Navigation Shell & 7 Dedicated Views**
+* [x] **P1-A: Top-Level Navigation Shell & 7 Dedicated Views** *(COMPLETED — Commit 67d2802)*
   - Refactor `frontend/src/App.tsx` and `Header.tsx` to introduce a primary navigation bar supporting the 7 mandatory views:
     1. **Operations** (Map, corridor overview, drawer, live tickers)
     2. **Traffic Analytics** (Dedicated speed history, 15m forecast horizon, sensor health, segment rankings)
