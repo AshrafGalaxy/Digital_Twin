@@ -127,3 +127,42 @@ def test_replay_control_input_validation():
     })
     assert invalid_res.status_code == 422
 
+
+def test_segment_comparison_endpoint_valid_pair():
+    """Verify GET /api/v1/state/compare returns side-by-side metrics, deltas, and LOS."""
+    seg_a = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+    seg_b = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02"
+    response = client.get(f"/api/v1/state/compare?segment_a={seg_a}&segment_b={seg_b}")
+    assert response.status_code == 200
+    data = response.json()
+
+    # Check segment A and B structure
+    assert data["segmentA"]["id"] == seg_a
+    assert data["segmentA"]["direction"] == "EASTBOUND"
+    assert data["segmentA"]["levelOfService"] in ["A", "B", "C", "D", "E", "F"]
+
+    assert data["segmentB"]["id"] == seg_b
+    assert data["segmentB"]["direction"] == "WESTBOUND"
+    assert data["segmentB"]["levelOfService"] in ["A", "B", "C", "D", "E", "F"]
+
+    # Check comparative deltas
+    deltas = data["deltas"]
+    assert "speedDeltaKmh" in deltas
+    assert "queueDeltaMeters" in deltas
+    assert "congestionIndexDelta" in deltas
+    assert "flowDeltaPerHour" in deltas
+
+    # Check directional imbalance diagnosis
+    imbalance = data["directionalImbalance"]
+    assert imbalance["severity"] in ["CRITICAL", "ELEVATED", "BALANCED"]
+    assert len(imbalance["summary"]) > 10
+
+
+def test_segment_comparison_endpoint_invalid_segment():
+    """Verify GET /api/v1/state/compare returns 404 if a segment ID is invalid."""
+    seg_a = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+    seg_b = "urn:ngsi-ld:RoadSegment:PUNE:NON-EXISTENT"
+    response = client.get(f"/api/v1/state/compare?segment_a={seg_a}&segment_b={seg_b}")
+    assert response.status_code == 404
+
+

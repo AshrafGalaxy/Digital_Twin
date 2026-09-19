@@ -26,6 +26,8 @@ export interface IntersectionAsset {
   controlType: string;
   coordinates: [number, number];
   cycleTimeSec: number;
+  connectedSegments?: string[];
+  phases?: number;
 }
 
 export interface RoadSegmentAsset {

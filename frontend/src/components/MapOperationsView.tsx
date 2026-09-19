@@ -8,7 +8,10 @@ interface MapOperationsViewProps {
   roadSegments: RoadSegmentAsset[];
   intersections: IntersectionAsset[];
   liveStates: Record<string, EntityCurrentState>;
+  selectedEntity?: RoadSegmentAsset | IntersectionAsset | null;
+  compareEntity?: RoadSegmentAsset | null;
   onSelectEntity: (entity: RoadSegmentAsset | IntersectionAsset) => void;
+  onSelectCompareEntity?: (entity: RoadSegmentAsset | null) => void;
 }
 
 export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
@@ -16,7 +19,10 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   roadSegments,
   intersections,
   liveStates,
-  onSelectEntity
+  selectedEntity,
+  compareEntity,
+  onSelectEntity,
+  onSelectCompareEntity
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -113,13 +119,29 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           if (speed < 20) color = '#EF4444'; // Red
           else if (speed < 35) color = '#F59E0B'; // Amber
 
+          const isSelected = selectedEntity?.id === seg.id;
+          const isCompare = compareEntity?.id === seg.id;
+          let casingColor = 'transparent';
+          let casingWidth = 0;
+          if (isSelected) {
+            casingColor = '#22D3EE';
+            casingWidth = 11;
+          } else if (isCompare) {
+            casingColor = '#F59E0B';
+            casingWidth = 10;
+          }
+
           return {
             type: 'Feature',
             id: seg.id,
             properties: {
               ...seg,
               color,
-              speed
+              speed,
+              isSelected,
+              isCompare,
+              casingColor,
+              casingWidth
             },
             geometry: {
               type: 'LineString',
@@ -133,6 +155,22 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         currentMap.addSource('road-segments', {
           type: 'geojson',
           data: segmentsGeoJson as any
+        });
+
+        // Background casing layer for selected & compared segments
+        currentMap.addLayer({
+          id: 'road-segments-casing',
+          type: 'line',
+          source: 'road-segments',
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round'
+          },
+          paint: {
+            'line-color': ['get', 'casingColor'],
+            'line-width': ['get', 'casingWidth'],
+            'line-opacity': 0.85
+          }
         });
 
         currentMap.addLayer({
@@ -154,7 +192,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           if (!e.features || !e.features[0]) return;
           const clickedId = e.features[0].id;
           const found = roadSegments.find(s => s.id === clickedId);
-          if (found) onSelectEntity(found);
+          if (!found) return;
+
+          // If Shift is pressed while another road segment is active, set comparison target
+          if (e.originalEvent.shiftKey && onSelectCompareEntity && selectedEntity && 'speedLimitKmh' in selectedEntity && selectedEntity.id !== found.id) {
+            onSelectCompareEntity(found);
+          } else {
+            onSelectEntity(found);
+          }
         });
 
         currentMap.on('mouseenter', 'road-segments-line', () => {
@@ -223,7 +268,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     } else {
       currentMap.once('load', onMapLoad);
     }
-  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, onSelectEntity, is3DMode]);
+  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode]);
 
   const toggle3DMode = () => {
     const currentMap = map.current;

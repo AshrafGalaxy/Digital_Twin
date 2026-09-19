@@ -6,8 +6,10 @@ Endpoints for querying authoritative current twin state and historical telemetry
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,14 +79,14 @@ async def get_corridor_snapshot(
     Used by the frontend timeline scrubber for historical time-travel inspection.
     """
     now_utc = datetime.now(timezone.utc)
-    if target_time:
+    if target_time and isinstance(target_time, str):
         try:
             target_dt = datetime.fromisoformat(target_time.replace("Z", "+00:00"))
         except ValueError:
             target_dt = now_utc
     else:
         from datetime import timedelta
-        target_dt = now_utc - timedelta(minutes=minutes_ago)
+        target_dt = now_utc - timedelta(minutes=minutes_ago if isinstance(minutes_ago, int) else 0)
 
     # 1. Try querying actual observations from TimescaleDB/PostgreSQL if available
     try:
@@ -227,4 +229,184 @@ async def get_telemetry_history(
         return [dict(row) for row in result.mappings().all()]
     except Exception:
         return []
+
+
+# ============================================================================
+# P1-C: Multi-Segment Comparative Drawer Analytics
+# ============================================================================
+
+CORRIDOR_ASSETS_PATH = Path("data/samples/corridor_assets.json")
+CORRIDOR_ASSETS_FALLBACK = Path("../data/samples/corridor_assets.json")
+
+
+def _get_segment_asset(segment_id: str) -> Optional[Dict[str, Any]]:
+    path = CORRIDOR_ASSETS_PATH if CORRIDOR_ASSETS_PATH.exists() else CORRIDOR_ASSETS_FALLBACK
+    if not path.exists():
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for seg in data.get("roadSegments", []):
+                if seg.get("id") == segment_id:
+                    return seg
+    except Exception:
+        pass
+    return None
+
+
+def _compute_los(speed: float) -> str:
+    if speed >= 42.0:
+        return "A"
+    elif speed >= 38.0:
+        return "B"
+    elif speed >= 32.0:
+        return "C"
+    elif speed >= 25.0:
+        return "D"
+    elif speed >= 18.0:
+        return "E"
+    return "F"
+
+
+class SegmentComparisonMetrics(BaseModel):
+    id: str
+    name: str
+    direction: str
+    speedLimitKmh: float
+    averageSpeedKmh: float
+    congestionIndex: float
+    vehicleFlowPerHour: float
+    queueLengthMeters: float
+    levelOfService: str
+    sourceMode: str
+
+
+class ComparisonDeltas(BaseModel):
+    speedDeltaKmh: float
+    queueDeltaMeters: float
+    congestionIndexDelta: float
+    flowDeltaPerHour: float
+
+
+class DirectionalImbalance(BaseModel):
+    dominantCongestionDirection: Optional[str] = None
+    severity: str
+    summary: str
+
+
+class SegmentComparisonResponse(BaseModel):
+    segmentA: SegmentComparisonMetrics
+    segmentB: SegmentComparisonMetrics
+    deltas: ComparisonDeltas
+    directionalImbalance: DirectionalImbalance
+
+
+@router.get("/compare", response_model=SegmentComparisonResponse)
+async def compare_road_segments(
+    segment_a: str = Query(..., description="Entity ID of segment A"),
+    segment_b: str = Query(..., description="Entity ID of segment B"),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Performs side-by-side comparative analysis of two corridor road segments.
+    Returns individual telemetry metrics, deltas (A - B), Level of Service (LOS),
+    and directional imbalance diagnosis.
+    """
+    seg_a_asset = _get_segment_asset(segment_a)
+    if not seg_a_asset:
+        raise HTTPException(status_code=404, detail=f"Road segment '{segment_a}' not found")
+
+    seg_b_asset = _get_segment_asset(segment_b)
+    if not seg_b_asset:
+        raise HTTPException(status_code=404, detail=f"Road segment '{segment_b}' not found")
+
+    # Fetch snapshot or current state to obtain latest telemetry metrics
+    snapshot = await get_corridor_snapshot(minutes_ago=0, target_time=None, session=session)
+    state_map = {s.entityId: s for s in snapshot}
+
+    s_a = state_map.get(segment_a)
+    s_b = state_map.get(segment_b)
+
+    speed_a = s_a.metrics.get("averageSpeedKmh", seg_a_asset.get("speedLimitKmh", 50.0)) if s_a else 45.0
+    cong_a = s_a.metrics.get("congestionIndex", 0.15) if s_a else 0.15
+    flow_a = s_a.metrics.get("vehicleFlowPerHour", 2200.0) if s_a else 2200.0
+    queue_a = s_a.metrics.get("queueLengthMeters", 10.0) if s_a else 10.0
+    mode_a = s_a.sourceMode if s_a else "SIMULATION"
+
+    speed_b = s_b.metrics.get("averageSpeedKmh", seg_b_asset.get("speedLimitKmh", 50.0)) if s_b else 45.0
+    cong_b = s_b.metrics.get("congestionIndex", 0.15) if s_b else 0.15
+    flow_b = s_b.metrics.get("vehicleFlowPerHour", 2200.0) if s_b else 2200.0
+    queue_b = s_b.metrics.get("queueLengthMeters", 10.0) if s_b else 10.0
+    mode_b = s_b.sourceMode if s_b else "SIMULATION"
+
+    metrics_a = SegmentComparisonMetrics(
+        id=segment_a,
+        name=seg_a_asset.get("name", segment_a),
+        direction=seg_a_asset.get("direction", "UNKNOWN"),
+        speedLimitKmh=float(seg_a_asset.get("speedLimitKmh", 50.0)),
+        averageSpeedKmh=round(speed_a, 1),
+        congestionIndex=round(cong_a, 2),
+        vehicleFlowPerHour=round(flow_a, 0),
+        queueLengthMeters=round(queue_a, 1),
+        levelOfService=_compute_los(speed_a),
+        sourceMode=mode_a
+    )
+
+    metrics_b = SegmentComparisonMetrics(
+        id=segment_b,
+        name=seg_b_asset.get("name", segment_b),
+        direction=seg_b_asset.get("direction", "UNKNOWN"),
+        speedLimitKmh=float(seg_b_asset.get("speedLimitKmh", 50.0)),
+        averageSpeedKmh=round(speed_b, 1),
+        congestionIndex=round(cong_b, 2),
+        vehicleFlowPerHour=round(flow_b, 0),
+        queueLengthMeters=round(queue_b, 1),
+        levelOfService=_compute_los(speed_b),
+        sourceMode=mode_b
+    )
+
+    speed_delta = round(speed_a - speed_b, 1)
+    queue_delta = round(queue_a - queue_b, 1)
+    cong_delta = round(cong_a - cong_b, 2)
+    flow_delta = round(flow_a - flow_b, 0)
+
+    deltas = ComparisonDeltas(
+        speedDeltaKmh=speed_delta,
+        queueDeltaMeters=queue_delta,
+        congestionIndexDelta=cong_delta,
+        flowDeltaPerHour=flow_delta
+    )
+
+    # Directional Imbalance Analysis
+    if abs(speed_delta) >= 12.0 or abs(cong_delta) >= 0.25:
+        severity = "CRITICAL"
+        dominant_dir = metrics_a.direction if speed_a < speed_b else metrics_b.direction
+        bottleneck_name = metrics_a.name if speed_a < speed_b else metrics_b.name
+        counter_name = metrics_b.name if speed_a < speed_b else metrics_a.name
+        summary = (
+            f"Severe directional bottleneck on {bottleneck_name} ({dominant_dir}): "
+            f"operating at {abs(speed_delta)} km/h lower speed with {abs(queue_delta)}m longer queue "
+            f"than counter-flow on {counter_name}."
+        )
+    elif abs(speed_delta) >= 6.0 or abs(cong_delta) >= 0.12:
+        severity = "ELEVATED"
+        dominant_dir = metrics_a.direction if speed_a < speed_b else metrics_b.direction
+        summary = (
+            f"Moderate directional variance observed ({dominant_dir} operates at {abs(speed_delta)} km/h lower speed)."
+        )
+    else:
+        severity = "BALANCED"
+        dominant_dir = None
+        summary = "Corridor traffic is balanced between both segments with minimal speed and queue variance."
+
+    return SegmentComparisonResponse(
+        segmentA=metrics_a,
+        segmentB=metrics_b,
+        deltas=deltas,
+        directionalImbalance=DirectionalImbalance(
+            dominantCongestionDirection=dominant_dir,
+            severity=severity,
+            summary=summary
+        )
+    )
 

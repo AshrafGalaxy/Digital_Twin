@@ -94,6 +94,59 @@ export async function controlReplaySession(params: {
   }
 }
 
+export interface SegmentComparisonResult {
+  segmentA: {
+    id: string;
+    name: string;
+    direction: string;
+    speedLimitKmh: number;
+    averageSpeedKmh: number;
+    congestionIndex: number;
+    vehicleFlowPerHour: number;
+    queueLengthMeters: number;
+    levelOfService: string;
+    sourceMode: string;
+  };
+  segmentB: {
+    id: string;
+    name: string;
+    direction: string;
+    speedLimitKmh: number;
+    averageSpeedKmh: number;
+    congestionIndex: number;
+    vehicleFlowPerHour: number;
+    queueLengthMeters: number;
+    levelOfService: string;
+    sourceMode: string;
+  };
+  deltas: {
+    speedDeltaKmh: number;
+    queueDeltaMeters: number;
+    congestionIndexDelta: number;
+    flowDeltaPerHour: number;
+  };
+  directionalImbalance: {
+    dominantCongestionDirection?: string;
+    severity: 'CRITICAL' | 'ELEVATED' | 'BALANCED';
+    summary: string;
+  };
+}
+
+export async function fetchSegmentComparison(
+  segmentA: string,
+  segmentB: string
+): Promise<SegmentComparisonResult | null> {
+  try {
+    const res = await fetch(
+      `${API_BASE}/state/compare?segment_a=${encodeURIComponent(segmentA)}&segment_b=${encodeURIComponent(segmentB)}`
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 
 export async function fetchScenarioTemplates(): Promise<any[]> {
   const res = await fetch(`${API_BASE}/scenarios/templates`);

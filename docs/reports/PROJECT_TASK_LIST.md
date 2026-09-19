@@ -17,8 +17,7 @@
 - **Foundational Pipeline (Phases 0–6):** 100% Complete (`[x]`)
 - **Evaluation & Benchmarks (Phase 7):** 100% Complete (`[x]`)
 - **Phase 8 Core Algorithms & 3D Extrusions:** 100% Complete (`[x]`)
-- **Track 1 UI/UX Dedicated Views (P1-A):** 100% Complete (`[x]`)
-- **Track 1 Temporal Scrubber & Comparison (P1-B, P1-C):** Pending (`[ ]`)
+- **Track 1 UI/UX Navigation & Analytics (P1-A, P1-B, P1-C):** 100% Complete (`[x]`)
 - **Track 2 Theming & Accessibility (P2-A, P2-B):** Pending (`[ ]`)
 - **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** Pending (`[ ]`)
 - **Track 4 Persistence & Telemetry Streamer (P4-A, P4-B):** Pending (`[ ]`)
@@ -38,13 +37,17 @@
   - [x] Scenario Studio View (`ScenarioStudioView.tsx`) with full-page simulation sandbox, green split / demand sliders, and KPI delta table.
   - [x] Recommendations View (`RecommendationsView.tsx`) with advisory filters, human review form, and immutable audit logs.
   - [x] System Health View (`SystemHealthView.tsx`) with subsystem health, NGSI-LD schema validation rates (100%), and provenance matrix.
-- [x] **P1-B: Interactive Historical Time Scrubber** *(Completed)*
+- [x] **P1-B: Interactive Historical Time Scrubber & Replay Control** *(Completed)*
   - [x] Bottom playback bar on Operations View allowing operators to rewind up to 12 hours.
   - [x] Interactive timeline scrubber slider with play/pause and playback speed multipliers (1x, 2x, 5x, 10x).
   - [x] Backend historical snapshot endpoint (`GET /api/v1/state/snapshot`) updating segment colors and metrics dynamically.
-- [ ] **P1-C: Multi-Segment Comparative Drawer** *(NEXT)*
-  - [ ] Multi-select toggle for road segments (e.g., Nagar Road EB vs. Nagar Road WB).
-  - [ ] Side-by-side comparative speed, delay, and queue-length charts.
+  - [x] Replay session management endpoints (`GET /stream/replay/status`, `POST /stream/replay/control`) with WS broadcast.
+- [x] **P1-C: Multi-Segment Comparative Drawer** *(Completed)*
+  - [x] Multi-select toggle and opposing bound quick shortcut in Entity Detail Drawer.
+  - [x] Side-by-side comparative speed, flow, delay, Level of Service (LOS A–F), and queue disparity charts.
+  - [x] Directional imbalance diagnosis card highlighting bottleneck severity (CRITICAL / ELEVATED / BALANCED).
+  - [x] Backend comparison endpoint (`GET /api/v1/state/compare`) returning differential analytics and LOS.
+  - [x] Dual-segment visual highlighting on MapLibre with cyan and amber casing layers.
 
 ---
 
@@ -112,6 +115,7 @@
 | `GET` | `/api/v1/state/snapshot` | Temporal Playback | Query corridor state snapshot at exact timestamp $t$ | [x] Implemented |
 | `GET` | `/api/v1/stream/replay/status` | Telemetry Control | Query active historical replay session state | [x] Implemented |
 | `POST` | `/api/v1/stream/replay/control` | Telemetry Control | Pause, play, scrub, and speed multiplier control | [x] Implemented |
+| `GET` | `/api/v1/state/compare` | Corridor Analytics | Side-by-side comparative analysis of two road segments | [x] Implemented |
 | `GET` | `/api/v1/datasets/manifests` | Data Governance | List standardized dataset manifests with licenses | [ ] **Upcoming (P3-A)** |
 | `GET` | `/api/v1/datasets/manifests/{id}` | Data Governance | Get specific dataset manifest details | [ ] **Upcoming (P3-A)** |
 | `GET` | `/api/v1/health/quarantine` | Quality Assurance | Inspect dead-letter quarantined telemetry events | [ ] **Upcoming (P3-B)** |
@@ -133,21 +137,25 @@
    - Dedicated replay control API (`POST /api/v1/stream/replay/control`) & status API (`GET /api/v1/stream/replay/status`) with WebSocket broadcast synchronization.
    - Dynamic MapLibre corridor layer recoloring and corridor telemetry aggregates updating upon scrubbing.
    - Replay state propagation to Traffic Analytics, Energy Analytics, and Environment Context views.
-3. **Phase 8 Core Mathematical Extensions:**
+3. **Multi-Segment Comparative Drawer & Analysis (P1-C):**
+   - Side-by-side comparative speed, flow, Level of Service (LOS A–F), and queue length metrics.
+   - Opposing bound quick comparison shortcut (e.g. Nagar Road EB vs WB).
+   - Dedicated comparative endpoint (`GET /api/v1/state/compare`) with directional imbalance diagnosis (CRITICAL/ELEVATED/BALANCED).
+   - Dual-segment visual highlighting on MapLibre map with distinct cyan and amber casing borders.
+4. **Phase 8 Core Mathematical Extensions:**
    - 90% and 95% Conformal Prediction uncertainty intervals calibrated on test residuals.
    - TreeSHAP local feature attribution (`pred_contribs=True`).
    - Multivariate Isolation Forest atmospheric anomaly detector.
    - FIWARE NGSI-LD v1.3 export endpoints.
    - 3D corridor building extrusions in MapLibre.
-4. **Backend Test Suite:**
-   - 39 of 39 unit, integration, and benchmark tests passing in `pytest`.
+5. **Backend Test Suite:**
+   - 41 of 41 unit, integration, and benchmark tests passing in `pytest`.
 
 ### What's Left:
-1. **Multi-Segment Comparison Drawer (P1-C)** to compare arterial directions side-by-side.
-2. **Light/Dark Theming Engine & Accessibility (P2-A, P2-B)** for complete WCAG 2.1 AA compliance.
-3. **Data Manifests & Quarantine Queue (P3-A, P3-B)** for complete data honesty and governance.
-4. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)** for resilient zero-dependency deployment.
+1. **Light/Dark Theming Engine & Accessibility (P2-A, P2-B)** for complete WCAG 2.1 AA compliance.
+2. **Data Manifests & Quarantine Queue (P3-A, P3-B)** for complete data honesty and governance.
+3. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)** for resilient zero-dependency deployment.
 
 ### What's Next:
-> **P1-C: Multi-Segment Comparative Drawer**  
-> We will enable multi-segment selection on the Operations map and display side-by-side comparative speed, delay, and Level of Service charts in the inspection drawer.
+> **P2-A: Dual Light / Dark Theme Switcher**  
+> We will implement full token sets for `:root, [data-theme="light"]` and `[data-theme="dark"]` in `index.css`, add a theme toggle button in `Header.tsx` with `localStorage` persistence and OS preference detection, and adapt MapLibre raster brightness/saturation for light cartography.

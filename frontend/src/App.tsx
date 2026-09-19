@@ -38,6 +38,7 @@ export const App: React.FC = () => {
   const [intersections, setIntersections] = useState<IntersectionAsset[]>([]);
   const [liveStates, setLiveStates] = useState<Record<string, EntityCurrentState>>({});
   const [selectedEntity, setSelectedEntity] = useState<RoadSegmentAsset | IntersectionAsset | null>(null);
+  const [compareEntity, setCompareEntity] = useState<RoadSegmentAsset | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [currentMode, setCurrentMode] = useState<SourceMode>('SIMULATION');
@@ -172,8 +173,6 @@ export const App: React.FC = () => {
     };
   }, [roadSegments, effectiveStates]);
 
-  const activeEntityState = selectedEntity ? effectiveStates[selectedEntity.id] || null : null;
-
   return (
     <div className="app-layout">
       <Header
@@ -202,15 +201,29 @@ export const App: React.FC = () => {
               roadSegments={roadSegments}
               intersections={intersections}
               liveStates={effectiveStates}
-              onSelectEntity={(entity) => setSelectedEntity(entity)}
+              selectedEntity={selectedEntity}
+              compareEntity={compareEntity}
+              onSelectEntity={(entity) => {
+                setSelectedEntity(entity);
+                if (compareEntity && compareEntity.id === entity.id) {
+                  setCompareEntity(null);
+                }
+              }}
+              onSelectCompareEntity={(comp) => setCompareEntity(comp)}
             />
 
             <MapLegend />
 
             <EntityDetailDrawer
               entity={selectedEntity}
-              liveState={activeEntityState}
-              onClose={() => setSelectedEntity(null)}
+              compareEntity={compareEntity}
+              availableSegments={roadSegments}
+              liveStates={effectiveStates}
+              onClose={() => {
+                setSelectedEntity(null);
+                setCompareEntity(null);
+              }}
+              onSelectCompareEntity={(comp) => setCompareEntity(comp)}
             />
 
             {/* P1-B: Interactive Historical Time Scrubber */}

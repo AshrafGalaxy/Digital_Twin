@@ -42,8 +42,9 @@ An honest audit of the current codebase against the root contract files confirms
   - Automatically query `/api/v1/state/snapshot` and dynamically render past corridor congestion states on MapLibre.
 
 
-* [ ] **P1-C: Multi-Segment Comparative Drawer**
+* [x] **P1-C: Multi-Segment Comparative Drawer** *(COMPLETED)*
   - Allow multi-selection of road segments (e.g. Nagar Road Eastbound vs. Westbound) to render side-by-side comparative speed and delay charts.
+  - Directional imbalance diagnosis, LOS A–F ranking, and dual-highlight casing on MapLibre map.
 
 ---
 
