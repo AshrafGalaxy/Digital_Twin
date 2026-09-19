@@ -118,5 +118,36 @@ class TestSimulationEngine(unittest.TestCase):
         self.assertLess(deltas["delay_delta_pct"], 0)
         self.assertGreater(deltas["throughput_delta_pct"], 0)
 
+
+class TestMLForecasting(unittest.TestCase):
+    def test_chronological_splits(self):
+        from ml.features.traffic_features import generate_corridor_traffic_history, build_traffic_features, chronological_split
+        from ml.features.energy_features import generate_building_energy_history, build_energy_features, chronological_energy_split
+
+        traffic_df = chronological_split(build_traffic_features(generate_corridor_traffic_history(days=5, seed=42)))
+        self.assertLess(traffic_df[0]["timestamp"].max(), traffic_df[1]["timestamp"].min())
+        self.assertLess(traffic_df[1]["timestamp"].max(), traffic_df[2]["timestamp"].min())
+
+        energy_df = chronological_energy_split(build_energy_features(generate_building_energy_history(days=5, seed=42)))
+        self.assertLess(energy_df[0]["timestamp"].max(), energy_df[1]["timestamp"].min())
+        self.assertLess(energy_df[1]["timestamp"].max(), energy_df[2]["timestamp"].min())
+
+    def test_forecast_inference_and_provenance(self):
+        from ml.inference.forecaster import CorridorForecaster
+        forecaster = CorridorForecaster()
+        traffic = forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 28.0)
+        self.assertEqual(traffic["sourceMode"], "PREDICTED")
+        self.assertEqual(traffic["horizonMinutes"], 15)
+        self.assertLessEqual(traffic["confidenceLower"], traffic["predictedValue"])
+        self.assertGreaterEqual(traffic["confidenceUpper"], traffic["predictedValue"])
+
+        energy = forecaster.predict_building_energy("urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01", 4200.0)
+        self.assertEqual(energy["sourceMode"], "PREDICTED")
+        self.assertEqual(energy["horizonMinutes"], 60)
+        self.assertLessEqual(energy["confidenceLower"], energy["predictedValue"])
+        self.assertGreaterEqual(energy["confidenceUpper"], energy["predictedValue"])
+
+
 if __name__ == "__main__":
     unittest.main()
+
