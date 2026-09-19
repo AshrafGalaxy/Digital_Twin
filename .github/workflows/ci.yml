@@ -1,0 +1,90 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ============================================================================
+  # 1. Backend, Canonical Schemas, & Microscopic Simulation Tests
+  # ============================================================================
+  backend-tests:
+    name: Backend & Simulation Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Pytest suite (Schemas, Ingestion, Simulation, State Isolation)
+        run: |
+          pytest tests/ -v
+
+      - name: Run Unittest suite (run_tests.py)
+        run: |
+          python tests/run_tests.py
+
+  # ============================================================================
+  # 2. Frontend TypeScript Compilation & Production Bundle Build
+  # ============================================================================
+  frontend-build:
+    name: Frontend TypeScript & Vite Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          npm --prefix frontend ci
+
+      - name: Run TypeScript type-check and Vite build
+        run: |
+          npm --prefix frontend run build
+
+  # ============================================================================
+  # 3. GIS Corridor Assets & Data Manifest Integrity Validation
+  # ============================================================================
+  asset-validation:
+    name: GIS Assets & Catalog Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate GeoJSON and Asset Registries
+        run: |
+          python -c "
+          import json, glob
+          for path in glob.glob('data/**/*.geojson', recursive=True) + glob.glob('data/**/*.json', recursive=True):
+              with open(path, 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+              print(f'[OK] Validated JSON syntax: {path}')
+          "
