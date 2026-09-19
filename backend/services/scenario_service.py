@@ -159,3 +159,8 @@ class ScenarioService:
         """Returns recent scenario runs."""
         runs = list(_RUNS_CACHE.values())
         return sorted(runs, key=lambda x: x["executedAt"], reverse=True)[:limit]
+
+
+# Global singleton scenario service instance
+scenario_service = ScenarioService()
+

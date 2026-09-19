@@ -104,3 +104,8 @@ class ForecastService:
             })
 
         return models
+
+
+# Global singleton forecast service instance
+forecast_service = ForecastService()
+
