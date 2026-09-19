@@ -37,9 +37,10 @@ An honest audit of the current codebase against the root contract files confirms
     6. **Recommendations & Governance** (Full-page advisory audit log, human review modal, institutional memorandum export)
     7. **System & Data Health** (Ingestion latency telemetry, schema compliance rates, subsystem uptime indicators)
 
-* [ ] **P1-B: Interactive Historical Time Scrubber**
+* [x] **P1-B: Interactive Historical Time Scrubber** *(COMPLETED)*
   - Implement an interactive timeline scrubber bar at the bottom of the map view allowing operators to scrub between $t - 12\text{ hours}$ and live state.
-  - Automatically query `/api/v1/state/history` and dynamically render past corridor congestion states.
+  - Automatically query `/api/v1/state/snapshot` and dynamically render past corridor congestion states on MapLibre.
+
 
 * [ ] **P1-C: Multi-Segment Comparative Drawer**
   - Allow multi-selection of road segments (e.g. Nagar Road Eastbound vs. Westbound) to render side-by-side comparative speed and delay charts.

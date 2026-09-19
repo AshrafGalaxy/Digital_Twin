@@ -12,6 +12,7 @@ import { EnvironmentContextView } from './components/views/EnvironmentContextVie
 import { ScenarioStudioView } from './components/views/ScenarioStudioView';
 import { RecommendationsView } from './components/views/RecommendationsView';
 import { SystemHealthView } from './components/views/SystemHealthView';
+import { TimeScrubber } from './components/TimeScrubber';
 import {
   EntityCurrentState,
   IntersectionAsset,
@@ -24,6 +25,7 @@ import {
   fetchIntersections,
   fetchRoadSegments,
   fetchCurrentState,
+  fetchHistoricalSnapshot,
   connectStateStream,
   fetchAdvisorySummary
 } from './services/api';
@@ -41,6 +43,27 @@ export const App: React.FC = () => {
   const [isScenarioStudioOpen, setIsScenarioStudioOpen] = useState<boolean>(false);
   const [isAdvisoryCenterOpen, setIsAdvisoryCenterOpen] = useState<boolean>(false);
   const [advisorySummary, setAdvisorySummary] = useState<AdvisorySummary | null>(null);
+
+  // Historical Time Scrubber State (P1-B)
+  const [scrubberMinutesAgo, setScrubberMinutesAgo] = useState<number>(0);
+  const [isScrubberPlaying, setIsScrubberPlaying] = useState<boolean>(false);
+  const [scrubberSpeed, setScrubberSpeed] = useState<number>(1);
+  const [historicalStates, setHistoricalStates] = useState<Record<string, EntityCurrentState>>({});
+
+  // Fetch historical snapshot when scrubber position changes
+  useEffect(() => {
+    if (scrubberMinutesAgo > 0) {
+      fetchHistoricalSnapshot(scrubberMinutesAgo)
+        .then((snapshot) => {
+          if (snapshot && snapshot.length > 0) {
+            const map: Record<string, EntityCurrentState> = {};
+            snapshot.forEach(s => { map[s.entityId] = s; });
+            setHistoricalStates(map);
+          }
+        })
+        .catch(err => console.error('Historical snapshot fetch error:', err));
+    }
+  }, [scrubberMinutesAgo]);
 
   // Load Initial Assets
   useEffect(() => {
@@ -105,10 +128,20 @@ export const App: React.FC = () => {
     return () => disconnect();
   }, []);
 
-  // Compute Corridor Telemetry Aggregates
+  // Determine Effective State: Real-Time vs Historical Scrubber Snapshot
+  const isHistoricalMode = scrubberMinutesAgo > 0;
+  const effectiveStates = isHistoricalMode && Object.keys(historicalStates).length > 0
+    ? historicalStates
+    : liveStates;
+  const effectiveMode: SourceMode = isHistoricalMode ? 'REPLAY' : currentMode;
+  const effectiveUpdated = isHistoricalMode
+    ? new Date(Date.now() - scrubberMinutesAgo * 60 * 1000).toISOString()
+    : lastUpdated;
+
+  // Compute Corridor Telemetry Aggregates based on Effective States
   const aggregates = useMemo(() => {
     const segmentStates = roadSegments
-      .map(seg => liveStates[seg.id]?.metrics)
+      .map(seg => effectiveStates[seg.id]?.metrics)
       .filter(Boolean);
 
     if (segmentStates.length === 0) {
@@ -129,16 +162,16 @@ export const App: React.FC = () => {
       energyDemandKw: 5120.0,
       activeSensors: 10
     };
-  }, [roadSegments, liveStates]);
+  }, [roadSegments, effectiveStates]);
 
-  const activeEntityState = selectedEntity ? liveStates[selectedEntity.id] || null : null;
+  const activeEntityState = selectedEntity ? effectiveStates[selectedEntity.id] || null : null;
 
   return (
     <div className="app-layout">
       <Header
         wsConnected={wsConnected}
-        currentMode={currentMode}
-        lastUpdated={lastUpdated}
+        currentMode={effectiveMode}
+        lastUpdated={effectiveUpdated}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         activeAdvisoriesCount={advisorySummary?.totalActive || 0}
@@ -153,14 +186,14 @@ export const App: React.FC = () => {
               congestionIndex={aggregates.congestionIndex}
               energyDemandKw={aggregates.energyDemandKw}
               activeSensors={aggregates.activeSensors}
-              sourceMode={currentMode}
+              sourceMode={effectiveMode}
             />
 
             <MapOperationsView
               studyAreaGeoJson={studyAreaGeoJson}
               roadSegments={roadSegments}
               intersections={intersections}
-              liveStates={liveStates}
+              liveStates={effectiveStates}
               onSelectEntity={(entity) => setSelectedEntity(entity)}
             />
 
@@ -170,6 +203,20 @@ export const App: React.FC = () => {
               entity={selectedEntity}
               liveState={activeEntityState}
               onClose={() => setSelectedEntity(null)}
+            />
+
+            {/* P1-B: Interactive Historical Time Scrubber */}
+            <TimeScrubber
+              minutesAgo={scrubberMinutesAgo}
+              isPlaying={isScrubberPlaying}
+              playbackSpeed={scrubberSpeed}
+              onScrubChange={(mins) => setScrubberMinutesAgo(mins)}
+              onTogglePlay={() => setIsScrubberPlaying(prev => !prev)}
+              onSpeedChange={(spd) => setScrubberSpeed(spd)}
+              onJumpToLive={() => {
+                setScrubberMinutesAgo(0);
+                setIsScrubberPlaying(false);
+              }}
             />
           </div>
         )}

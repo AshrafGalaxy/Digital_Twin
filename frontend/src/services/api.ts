@@ -50,6 +50,17 @@ export async function fetchCurrentState(): Promise<EntityCurrentState[]> {
   }
 }
 
+export async function fetchHistoricalSnapshot(minutesAgo: number): Promise<EntityCurrentState[]> {
+  try {
+    const res = await fetch(`${API_BASE}/state/snapshot?minutes_ago=${minutesAgo}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+
 export async function fetchScenarioTemplates(): Promise<any[]> {
   const res = await fetch(`${API_BASE}/scenarios/templates`);
   if (!res.ok) throw new Error('Failed to fetch scenario templates');

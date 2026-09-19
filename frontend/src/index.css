@@ -1955,6 +1955,204 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* ==========================================================================
+   Historical Time Scrubber Dock (P1-B, UI_UX_SPEC.md §7.3)
+   ========================================================================== */
+
+.time-scrubber-dock {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 1040px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  z-index: 15;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+.scrubber-transport-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.scrubber-btn {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.scrubber-btn:hover:not(:disabled) {
+  border-color: #2DD4BF;
+  color: #2DD4BF;
+  background: rgba(45, 212, 191, 0.1);
+}
+
+.scrubber-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.scrubber-btn.play-btn {
+  background: #0F4C5C;
+  border-color: #2DD4BF;
+  color: #FFFFFF;
+}
+
+.scrubber-btn.play-btn:hover {
+  background: #0A3642;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.4);
+}
+
+.scrubber-btn.play-btn.playing {
+  background: #E36414;
+  border-color: #F97316;
+}
+
+.scrubber-speed-selector {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  margin-left: 4px;
+}
+
+.speed-pill {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.speed-pill:hover {
+  color: var(--text-main);
+}
+
+.speed-pill.active {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+
+.scrubber-track-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 var(--space-3);
+}
+
+.scrubber-ticks-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.scrubber-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+}
+
+.scrubber-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2DD4BF;
+  border: 2px solid #0F4C5C;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(45, 212, 191, 0.8);
+  transition: transform 0.1s;
+}
+
+.scrubber-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.scrubber-info-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.scrubber-timestamp-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.scrubber-time-texts {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.scrubber-time-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.scrubber-relative-val {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.scrubber-live-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10B981;
+  color: #10B981;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.scrubber-live-btn:hover {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+
 
 
 

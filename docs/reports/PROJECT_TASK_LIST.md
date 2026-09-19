@@ -38,11 +38,11 @@
   - [x] Scenario Studio View (`ScenarioStudioView.tsx`) with full-page simulation sandbox, green split / demand sliders, and KPI delta table.
   - [x] Recommendations View (`RecommendationsView.tsx`) with advisory filters, human review form, and immutable audit logs.
   - [x] System Health View (`SystemHealthView.tsx`) with subsystem health, NGSI-LD schema validation rates (100%), and provenance matrix.
-- [ ] **P1-B: Interactive Historical Time Scrubber** *(NEXT)*
-  - [ ] Bottom playback bar on Operations View allowing operators to rewind up to 12 hours.
-  - [ ] Interactive timeline scrubber slider with play/pause and playback speed multipliers (1x, 2x, 5x).
-  - [ ] Dynamic query to backend historical snapshot API to update segment colors and metrics.
-- [ ] **P1-C: Multi-Segment Comparative Drawer**
+- [x] **P1-B: Interactive Historical Time Scrubber** *(Completed)*
+  - [x] Bottom playback bar on Operations View allowing operators to rewind up to 12 hours.
+  - [x] Interactive timeline scrubber slider with play/pause and playback speed multipliers (1x, 2x, 5x, 10x).
+  - [x] Backend historical snapshot endpoint (`GET /api/v1/state/snapshot`) updating segment colors and metrics dynamically.
+- [ ] **P1-C: Multi-Segment Comparative Drawer** *(NEXT)*
   - [ ] Multi-select toggle for road segments (e.g., Nagar Road EB vs. Nagar Road WB).
   - [ ] Side-by-side comparative speed, delay, and queue-length charts.
 
@@ -109,8 +109,8 @@
 | `POST` | `/api/v1/recommendations/evaluate` | Rule Engine | Re-evaluate active state against deterministic rules | [x] Implemented |
 | `GET` | `/api/v1/ngsi-ld/entities` | Interoperability | FIWARE / NGSI-LD 1.3 canonical export | [x] Implemented |
 | `GET` | `/api/v1/ngsi-ld/entities/{entity_id}` | Interoperability | Single entity NGSI-LD representation | [x] Implemented |
-| `GET` | `/api/v1/state/snapshot` | Temporal Playback | Query corridor state snapshot at exact timestamp $t$ | [ ] **Upcoming (P1-B)** |
-| `POST` | `/api/v1/stream/replay/control` | Telemetry Control | Pause, play, scrub, and speed multiplier control | [ ] **Upcoming (P1-B)** |
+| `GET` | `/api/v1/state/snapshot` | Temporal Playback | Query corridor state snapshot at exact timestamp $t$ | [x] Implemented |
+| `POST` | `/api/v1/stream/replay/control` | Telemetry Control | Pause, play, scrub, and speed multiplier control | [ ] **Upcoming** |
 | `GET` | `/api/v1/datasets/manifests` | Data Governance | List standardized dataset manifests with licenses | [ ] **Upcoming (P3-A)** |
 | `GET` | `/api/v1/datasets/manifests/{id}` | Data Governance | Get specific dataset manifest details | [ ] **Upcoming (P3-A)** |
 | `GET` | `/api/v1/health/quarantine` | Quality Assurance | Inspect dead-letter quarantined telemetry events | [ ] **Upcoming (P3-B)** |
@@ -125,22 +125,26 @@
    - 7 distinct views deployed and accessible via top-level tab navigation.
    - Dedicated views for Traffic, Energy, Environment, Scenarios, Recommendations, and System Health.
    - Built and verified with TypeScript zero-warning build (`npm run build`).
-2. **Phase 8 Core Mathematical Extensions:**
+2. **Interactive Historical Time Scrubber (P1-B):**
+   - Docked playback bar on Operations View with timeline slider ($-12\text{ hours}$ to Live).
+   - Play/pause auto-advance and speed multipliers (1x, 2x, 5x, 10x).
+   - Dedicated backend snapshot API (`GET /api/v1/state/snapshot`) with strict `REPLAY` provenance.
+   - Dynamic MapLibre corridor layer recoloring and corridor telemetry aggregates updating upon scrubbing.
+3. **Phase 8 Core Mathematical Extensions:**
    - 90% and 95% Conformal Prediction uncertainty intervals calibrated on test residuals.
    - TreeSHAP local feature attribution (`pred_contribs=True`).
    - Multivariate Isolation Forest atmospheric anomaly detector.
    - FIWARE NGSI-LD v1.3 export endpoints.
    - 3D corridor building extrusions in MapLibre.
-3. **Backend Test Suite:**
-   - 34 of 34 unit, integration, and benchmark tests passing in `pytest`.
+4. **Backend Test Suite:**
+   - 37 of 37 unit, integration, and benchmark tests passing in `pytest`.
 
 ### What's Left:
-1. **Interactive Historical Scrubber (P1-B)** on the Operations map to rewind corridor time.
-2. **Multi-Segment Comparison Drawer (P1-C)** to compare arterial directions side-by-side.
-3. **Light/Dark Theming Engine & Accessibility (P2-A, P2-B)** for complete WCAG 2.1 AA compliance.
-4. **Data Manifests & Quarantine Queue (P3-A, P3-B)** for complete data honesty and governance.
-5. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)** for resilient zero-dependency deployment.
+1. **Multi-Segment Comparison Drawer (P1-C)** to compare arterial directions side-by-side.
+2. **Light/Dark Theming Engine & Accessibility (P2-A, P2-B)** for complete WCAG 2.1 AA compliance.
+3. **Data Manifests & Quarantine Queue (P3-A, P3-B)** for complete data honesty and governance.
+4. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)** for resilient zero-dependency deployment.
 
 ### What's Next:
-> **P1-B: Interactive Historical Time Scrubber & Snapshot API**  
-> We will add the timeline scrubber bar to the Operations view, enabling playback and time-travel inspection across historical corridor states via `GET /api/v1/state/snapshot`.
+> **P1-C: Multi-Segment Comparative Drawer**  
+> We will enable multi-segment selection on the Operations map and display side-by-side comparative speed, delay, and Level of Service charts in the inspection drawer.
