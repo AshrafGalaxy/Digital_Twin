@@ -185,6 +185,28 @@ class TestEvaluationExperiments(unittest.TestCase):
         self.assertLess(res["rule_engine_p95_ms"], 50.0)
 
 
+class TestPhase8Extensions(unittest.TestCase):
+    def test_conformal_and_explainability(self):
+        from ml.conformal_calibrator import ConformalPredictionCalibrator
+        from ml.inference.forecaster import CorridorForecaster
+        f = CorridorForecaster()
+        res = f.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 25.0)
+        self.assertIn("conformalIntervals", res)
+        self.assertIn("explanation", res)
+        self.assertEqual(res["conformalIntervals"]["interval90"]["margin"], 4.80)
+
+    def test_environmental_anomaly_and_fiware(self):
+        from backend.services.anomaly_detector import EnvironmentalAnomalyDetector
+        from backend.services.fiware_adapter import FIWAREOrionLDAdapter
+        detector = EnvironmentalAnomalyDetector()
+        spike = detector.evaluate_reading("urn:ngsi-ld:EnvironmentSensor:PUNE:ENV-VN-AIR-01", pm25=185.0)
+        self.assertTrue(spike["isAnomaly"])
+        self.assertEqual(spike["severity"], "CRITICAL")
+
+        entities = FIWAREOrionLDAdapter.export_all_entities()
+        self.assertGreaterEqual(len(entities), 10)
+
+
 if __name__ == "__main__":
     unittest.main()
 
