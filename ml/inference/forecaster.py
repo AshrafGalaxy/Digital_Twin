@@ -22,6 +22,8 @@ import joblib
 
 from ml.features.traffic_features import FEATURE_COLUMNS
 from ml.features.energy_features import ENERGY_FEATURE_COLUMNS
+from ml.conformal_calibrator import ConformalPredictionCalibrator
+from ml.explainer import LocalModelExplainer
 
 MODELS_DIR = ROOT_DIR / "artifacts" / "models"
 
@@ -115,6 +117,15 @@ class CorridorForecaster:
         p10 = float(np.clip(p10, 4.0, pred - 0.5))
         p90 = float(np.clip(p90, pred + 0.5, 56.0))
 
+        # Conformal prediction intervals & local feature attributions
+        conformal = ConformalPredictionCalibrator.get_traffic_intervals(pred)
+        explanation = LocalModelExplainer.explain_prediction(
+            self.traffic_artifact["model"],
+            X_input,
+            FEATURE_COLUMNS,
+            top_k=5
+        )
+
         return {
             "entityId": segment_id,
             "targetMetric": "averageSpeedKmh",
@@ -125,6 +136,8 @@ class CorridorForecaster:
             "predictedValue": round(pred, 2),
             "confidenceLower": round(p10, 2),
             "confidenceUpper": round(p90, 2),
+            "conformalIntervals": conformal,
+            "explanation": explanation,
             "unit": "km/h",
             "modelVersion": self.traffic_artifact.get("model_id", "traffic-xgb-v1"),
             "inputQualityStatus": "VALID",
@@ -201,6 +214,15 @@ class CorridorForecaster:
         # Peak load alert if forecast exceeds 4,800 kW
         is_peak_alert = pred >= 4800.0
 
+        # Conformal prediction intervals & local feature attributions
+        conformal = ConformalPredictionCalibrator.get_energy_intervals(pred)
+        explanation = LocalModelExplainer.explain_prediction(
+            self.energy_artifact["model"],
+            X_input,
+            ENERGY_FEATURE_COLUMNS,
+            top_k=5
+        )
+
         return {
             "entityId": building_id,
             "targetMetric": "activePowerKw",
@@ -211,6 +233,8 @@ class CorridorForecaster:
             "predictedValue": round(pred, 1),
             "confidenceLower": round(p10, 1),
             "confidenceUpper": round(p90, 1),
+            "conformalIntervals": conformal,
+            "explanation": explanation,
             "unit": "kW",
             "modelVersion": self.energy_artifact.get("model_id", "energy-xgb-v1"),
             "inputQualityStatus": "VALID",

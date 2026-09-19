@@ -27,6 +27,8 @@ class TrafficForecastResponse(BaseModel):
     predictedValue: float
     confidenceLower: float
     confidenceUpper: float
+    conformalIntervals: Optional[Dict[str, Any]] = None
+    explanation: Optional[Dict[str, Any]] = None
     unit: str = "km/h"
     modelVersion: str
     inputQualityStatus: str = "VALID"
@@ -44,6 +46,8 @@ class EnergyForecastResponse(BaseModel):
     predictedValue: float
     confidenceLower: float
     confidenceUpper: float
+    conformalIntervals: Optional[Dict[str, Any]] = None
+    explanation: Optional[Dict[str, Any]] = None
     unit: str = "kW"
     modelVersion: str
     inputQualityStatus: str = "VALID"
