@@ -1,7 +1,28 @@
-# ==============================================================================
-# start_dev.ps1 - Digital Twin One-Command Local Development Launcher
-# Starts both FastAPI Backend (port 8000) and React/Vite Frontend (port 5173)
-# ==============================================================================
+param(
+    [switch]$Interactive,
+    [switch]$NewWindow
+)
+
+$RootDir = $PSScriptRoot
+if (-not $RootDir) {
+    $RootDir = (Get-Location).Path
+}
+
+# 0. Check if running in a non-interactive output panel (e.g., VS Code Output tab / Code Runner)
+$IsRedirected = $false
+try {
+    $IsRedirected = [Console]::IsInputRedirected
+} catch {
+    $IsRedirected = $false
+}
+
+if ((-not $Interactive) -and ($NewWindow -or $IsRedirected)) {
+    Write-Host "[+] Non-interactive Output panel detected." -ForegroundColor Cyan
+    Write-Host "[+] Spawning dedicated interactive terminal window (with Ctrl+C support)..." -ForegroundColor Green
+    $targetScript = if ($PSCommandPath) { $PSCommandPath } else { "$RootDir\start_dev.ps1" }
+    Start-Process powershell.exe -ArgumentList "-NoExit", "-ExecutionPolicy Bypass", "-File `"$targetScript`" -Interactive"
+    exit 0
+}
 
 Write-Host ""
 Write-Host "==============================================================================" -ForegroundColor Cyan
@@ -9,7 +30,6 @@ Write-Host "               DIGITAL TWIN - SMART CITY ANALYTICS PLATFORM         
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$RootDir = $PSScriptRoot
 $PythonBin = "$RootDir\.venv\Scripts\python.exe"
 
 # 1. Check Python virtual environment
