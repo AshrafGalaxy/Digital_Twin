@@ -30,10 +30,14 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Run Pytest suite (Schemas, Ingestion, Simulation, State Isolation)
+        env:
+          PYTHONPATH: .
         run: |
           pytest tests/ -v
 
       - name: Run Unittest suite (run_tests.py)
+        env:
+          PYTHONPATH: .
         run: |
           python tests/run_tests.py
 
