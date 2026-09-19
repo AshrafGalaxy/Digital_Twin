@@ -1,0 +1,266 @@
+import React, { useEffect, useState } from 'react';
+import {
+  TrendingUp,
+  Zap,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  HelpCircle,
+  Clock,
+  ShieldAlert
+} from 'lucide-react';
+import { TrafficForecast, EnergyForecast } from '../types/twin';
+import { fetchTrafficForecast, fetchEnergyForecast } from '../services/api';
+
+interface ForecastPanelProps {
+  entityType: 'RoadSegment' | 'Building';
+  entityId: string;
+  currentValue?: number;
+}
+
+export const ForecastPanel: React.FC<ForecastPanelProps> = ({
+  entityType,
+  entityId,
+  currentValue
+}) => {
+  const [trafficForecast, setTrafficForecast] = useState<TrafficForecast | null>(null);
+  const [energyForecast, setEnergyForecast] = useState<EnergyForecast | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isSubscribed = true;
+    setLoading(true);
+    setError(null);
+
+    if (entityType === 'RoadSegment') {
+      fetchTrafficForecast(entityId, currentValue)
+        .then((data) => {
+          if (isSubscribed) setTrafficForecast(data);
+        })
+        .catch((err) => {
+          if (isSubscribed) setError(err.message || 'Failed loading traffic forecast');
+        })
+        .finally(() => {
+          if (isSubscribed) setLoading(false);
+        });
+    } else if (entityType === 'Building') {
+      fetchEnergyForecast(entityId, currentValue)
+        .then((data) => {
+          if (isSubscribed) setEnergyForecast(data);
+        })
+        .catch((err) => {
+          if (isSubscribed) setError(err.message || 'Failed loading energy forecast');
+        })
+        .finally(() => {
+          if (isSubscribed) setLoading(false);
+        });
+    }
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [entityType, entityId, currentValue]);
+
+  if (loading) {
+    return (
+      <div className="forecast-panel-loading">
+        <Activity size={18} className="animate-spin text-muted" />
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+          Computing 15m/60m predictive inference...
+        </span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="forecast-error-box">
+        <AlertTriangle size={14} />
+        <span>{error}</span>
+      </div>
+    );
+  }
+
+  // Road Segment Traffic Speed Forecast View
+  if (entityType === 'RoadSegment' && trafficForecast) {
+    const delta = currentValue !== undefined
+      ? trafficForecast.predictedValue - currentValue
+      : 0;
+
+    return (
+      <div className="forecast-container">
+        {/* Header */}
+        <div className="forecast-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <TrendingUp size={16} color="#2DD4BF" />
+            <span className="forecast-title">15-Min Speed Forecast</span>
+          </div>
+          <span className="provenance-badge badge-predicted">PREDICTED</span>
+        </div>
+
+        {/* Prediction Hero Card */}
+        <div className="forecast-hero-card">
+          <div className="forecast-metric-row">
+            <div>
+              <div className="forecast-label">Projected Speed (t + 15m)</div>
+              <div className="forecast-main-val">
+                {trafficForecast.predictedValue.toFixed(1)}
+                <span className="forecast-unit"> km/h</span>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <div className="forecast-label">80% Confidence Interval</div>
+              <div className="forecast-interval-val">
+                [{trafficForecast.confidenceLower.toFixed(1)} – {trafficForecast.confidenceUpper.toFixed(1)}]
+                <span className="forecast-unit"> km/h</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="forecast-sub-meta">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={12} /> Target: {new Date(trafficForecast.targetTimestamp).toLocaleTimeString()}
+            </span>
+            {currentValue !== undefined && (
+              <span className={`forecast-delta ${delta >= 0 ? 'text-positive' : 'text-negative'}`}>
+                {delta >= 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} km/h vs. current
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Baseline vs Model Comparison */}
+        {trafficForecast.baselineComparison && (
+          <div className="forecast-baseline-box">
+            <div className="baseline-header">
+              <CheckCircle size={12} color="#10B981" />
+              <span>Model vs. Baseline Evaluation</span>
+            </div>
+            <div className="baseline-grid">
+              <div className="baseline-item">
+                <span className="baseline-label">Persistence MAE</span>
+                <span className="baseline-val">{trafficForecast.baselineComparison.persistenceMae} km/h</span>
+              </div>
+              <div className="baseline-item">
+                <span className="baseline-label">XGBoost MAE</span>
+                <span className="baseline-val">{trafficForecast.baselineComparison.modelTestMae} km/h</span>
+              </div>
+              <div className="baseline-item">
+                <span className="baseline-label">Accuracy Gain</span>
+                <span className="baseline-gain">+{trafficForecast.baselineComparison.accuracyGainPct}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Model Version & Locality Caveat */}
+        <div className="forecast-footer-info">
+          <div className="model-tag">
+            <span>Model: </span>
+            <code>{trafficForecast.modelVersion}</code>
+          </div>
+          <div className="locality-caveat">
+            <HelpCircle size={12} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>{trafficForecast.localityNotice}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Commercial Building Energy Demand Forecast View
+  if (entityType === 'Building' && energyForecast) {
+    return (
+      <div className="forecast-container">
+        {/* Header */}
+        <div className="forecast-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Zap size={16} color="#FBBF24" />
+            <span className="forecast-title">60-Min Demand Forecast</span>
+          </div>
+          <span className="provenance-badge badge-predicted">PREDICTED</span>
+        </div>
+
+        {/* Peak Demand Advisory Alert if applicable */}
+        {energyForecast.isPeakDemandAlert && (
+          <div className="peak-alert-banner">
+            <ShieldAlert size={16} />
+            <div>
+              <strong>Peak Load Advisory:</strong> Projected demand exceeds {energyForecast.peakThresholdKw} kW threshold. Recommend precooling HVAC staging.
+            </div>
+          </div>
+        )}
+
+        {/* Prediction Hero Card */}
+        <div className="forecast-hero-card">
+          <div className="forecast-metric-row">
+            <div>
+              <div className="forecast-label">Projected Demand (t + 60m)</div>
+              <div className="forecast-main-val">
+                {energyForecast.predictedValue.toFixed(0)}
+                <span className="forecast-unit"> kW</span>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <div className="forecast-label">80% Confidence Interval</div>
+              <div className="forecast-interval-val">
+                [{energyForecast.confidenceLower.toFixed(0)} – {energyForecast.confidenceUpper.toFixed(0)}]
+                <span className="forecast-unit"> kW</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="forecast-sub-meta">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={12} /> Target: {new Date(energyForecast.targetTimestamp).toLocaleTimeString()}
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#10B981' }}>
+              Contracted: 5,500 kW
+            </span>
+          </div>
+        </div>
+
+        {/* Baseline Comparison */}
+        {energyForecast.baselineComparison && (
+          <div className="forecast-baseline-box">
+            <div className="baseline-header">
+              <CheckCircle size={12} color="#10B981" />
+              <span>Model vs. Baseline Evaluation</span>
+            </div>
+            <div className="baseline-grid">
+              <div className="baseline-item">
+                <span className="baseline-label">Persistence MAE</span>
+                <span className="baseline-val">{energyForecast.baselineComparison.persistenceMae} kW</span>
+              </div>
+              <div className="baseline-item">
+                <span className="baseline-label">XGBoost MAE</span>
+                <span className="baseline-val">{energyForecast.baselineComparison.modelTestMae} kW</span>
+              </div>
+              <div className="baseline-item">
+                <span className="baseline-label">Accuracy Gain</span>
+                <span className="baseline-gain">+{energyForecast.baselineComparison.accuracyGainPct}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Source Limitation Footer */}
+        <div className="forecast-footer-info">
+          <div className="model-tag">
+            <span>Model: </span>
+            <code>{energyForecast.modelVersion}</code>
+          </div>
+          <div className="locality-caveat">
+            <HelpCircle size={12} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>{energyForecast.sourceLimitation}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};

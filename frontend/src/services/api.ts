@@ -73,6 +73,34 @@ export async function fetchRecentScenarioRuns(): Promise<any[]> {
   }
 }
 
+export async function fetchTrafficForecast(segmentId: string, currentSpeed?: number): Promise<any> {
+  const url = currentSpeed !== undefined
+    ? `${API_BASE}/forecasts/traffic/${encodeURIComponent(segmentId)}?current_speed=${currentSpeed}`
+    : `${API_BASE}/forecasts/traffic/${encodeURIComponent(segmentId)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch traffic forecast');
+  return res.json();
+}
+
+export async function fetchEnergyForecast(buildingId: string, currentKw?: number): Promise<any> {
+  const url = currentKw !== undefined
+    ? `${API_BASE}/forecasts/energy/${encodeURIComponent(buildingId)}?current_kw=${currentKw}`
+    : `${API_BASE}/forecasts/energy/${encodeURIComponent(buildingId)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch energy forecast');
+  return res.json();
+}
+
+export async function fetchForecastModels(): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/forecasts/models`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export function connectStateStream(
   onUpdate: (data: any) => void,
   onConnectionChange?: (connected: boolean) => void

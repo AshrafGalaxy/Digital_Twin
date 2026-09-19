@@ -108,3 +108,64 @@ export interface ScenarioRunResult {
   };
   deltas: ScenarioDeltas;
 }
+
+export interface TrafficForecast {
+  entityId: string;
+  targetMetric: string;
+  sourceMode: SourceMode;
+  generatedAt: string;
+  targetTimestamp: string;
+  horizonMinutes: number;
+  predictedValue: number;
+  confidenceLower: number;
+  confidenceUpper: number;
+  unit: string;
+  modelVersion: string;
+  inputQualityStatus: string;
+  baselineComparison: {
+    persistenceValue?: number;
+    modelTestMae?: number;
+    persistenceMae?: number;
+    accuracyGainPct?: number;
+  };
+  localityNotice: string;
+}
+
+export interface EnergyForecast {
+  entityId: string;
+  targetMetric: string;
+  sourceMode: SourceMode;
+  generatedAt: string;
+  targetTimestamp: string;
+  horizonMinutes: number;
+  predictedValue: number;
+  confidenceLower: number;
+  confidenceUpper: number;
+  unit: string;
+  modelVersion: string;
+  inputQualityStatus: string;
+  isPeakDemandAlert: boolean;
+  peakThresholdKw: number;
+  baselineComparison: {
+    persistenceValue?: number;
+    modelTestMae?: number;
+    persistenceMae?: number;
+    sameHourMae?: number;
+    accuracyGainPct?: number;
+  };
+  sourceLimitation: string;
+}
+
+export interface ModelVersion {
+  modelId: string;
+  domain: string;
+  targetMetric: string;
+  horizonMinutes: number;
+  unit: string;
+  status: string;
+  testMae: number;
+  testRmse: number;
+  improvementVsPersistencePct: number;
+  trainedAt: string;
+  localityCaveat?: string;
+}

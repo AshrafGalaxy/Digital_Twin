@@ -2,6 +2,8 @@ import React from 'react';
 import { X, Gauge, Car, ShieldAlert } from 'lucide-react';
 import { EntityCurrentState, RoadSegmentAsset, IntersectionAsset } from '../types/twin';
 
+import { ForecastPanel } from './ForecastPanel';
+
 interface EntityDetailDrawerProps {
   entity: RoadSegmentAsset | IntersectionAsset | null;
   liveState: EntityCurrentState | null;
@@ -93,6 +95,15 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
                   <span className="metric-value">{congestion !== undefined ? `${(congestion * 100).toFixed(0)}%` : '--'}</span>
                 </div>
               </div>
+            </div>
+
+            {/* 15-Minute ML Forecast Component */}
+            <div style={{ marginTop: 'var(--space-3)' }}>
+              <ForecastPanel
+                entityType="RoadSegment"
+                entityId={entity.id}
+                currentValue={speed}
+              />
             </div>
           </div>
         )}
