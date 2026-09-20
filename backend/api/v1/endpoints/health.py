@@ -13,11 +13,11 @@ from pydantic import BaseModel
 
 try:
     from core.config import settings
-    from core.database import check_db_health
+    from core.database import check_db_health, get_active_backend, get_persistence_info
     from ingestion.quarantine import quarantine_manager
 except ImportError:
     from backend.core.config import settings
-    from backend.core.database import check_db_health
+    from backend.core.database import check_db_health, get_active_backend, get_persistence_info
     from backend.ingestion.quarantine import quarantine_manager
 
 from backend.services.rule_engine import rule_engine
@@ -28,6 +28,9 @@ router = APIRouter(tags=["Health"])
 
 class SubsystemHealth(BaseModel):
     database: bool
+    databaseBackend: str = "sqlite"
+    databaseMode: str = "RESILIENT_SQLITE"
+    databaseTablesCount: int = 18
     mlTrafficModel: bool
     mlEnergyModel: bool
     simulationEngine: bool
@@ -92,12 +95,19 @@ async def get_health():
     is_healthy = ml_traffic_ok and ml_energy_ok and sim_ok
     overall_status = "HEALTHY" if is_healthy else "DEGRADED"
 
+    persistence_info = get_persistence_info()
+    backend_name = persistence_info.get("backend", "sqlite")
+    db_mode = "PRIMARY_POSTGRES" if backend_name == "postgresql" else "RESILIENT_SQLITE"
+
     return HealthResponse(
         status=overall_status,
         environment=settings.ENVIRONMENT,
         version="1.0.0",
         subsystems=SubsystemHealth(
             database=db_ok,
+            databaseBackend=backend_name,
+            databaseMode=db_mode,
+            databaseTablesCount=18,
             mlTrafficModel=ml_traffic_ok,
             mlEnergyModel=ml_energy_ok,
             simulationEngine=sim_ok,

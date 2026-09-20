@@ -126,17 +126,21 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
       {/* Subsystem Health Cards Grid */}
       <div className="quick-metrics-row-four" style={{ marginBottom: '20px' }}>
-        {/* Database */}
+        {/* Database Persistence Engine (P4-A) */}
         <div className="metric-box">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span className="metric-box-label">TimescaleDB / PostGIS</span>
+            <span className="metric-box-label">
+              {subsystems.databaseBackend === 'postgresql' ? 'PostgreSQL / TimescaleDB' : 'SQLite Resilient Engine'}
+            </span>
             <Database size={16} color="#0F4C5C" />
           </div>
           <span className="metric-box-val" style={{ color: subsystems.database ? '#10B981' : '#F59E0B', fontSize: '20px' }}>
-            {subsystems.database ? 'Online & Synced' : 'Offline / Standalone'}
+            {subsystems.database
+              ? (subsystems.databaseBackend === 'postgresql' ? 'Online & Synced' : 'Online (Resilient Local)')
+              : 'Degraded / Offline'}
           </span>
           <span className="metric-box-sub">
-            Spatial indexing & hypertable retention
+            {subsystems.databaseTablesCount || 18} tables initialized • {subsystems.databaseBackend === 'postgresql' ? 'PostGIS + Timescale' : 'Zero-dependency local'}
           </span>
         </div>
 

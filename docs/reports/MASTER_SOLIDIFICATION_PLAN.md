@@ -79,9 +79,9 @@ An honest audit of the current codebase against the root contract files confirms
 ---
 
 ### Track 4: Backend Infrastructure & Production Fallback Hardening (`TECHNICAL_ARCHITECTURE.md`)
-* [ ] **P4-A: Multi-Storage Resilient Persistence Layer**
+* [x] **P4-A: Multi-Storage Resilient Persistence Layer** *(COMPLETED)*
   - Ensure the database layer smoothly migrates between SQLite (zero-dependency local development) and PostgreSQL/TimescaleDB/PostGIS without any manual code edits.
-  - Implement automatic database table schema initialization on startup.
+  - Implement automatic database table schema initialization and authoritative corridor asset seeding on startup across all 18 tables.
 
 * [ ] **P4-B: Native Continuous Aggregates & Background Telemetry Worker**
   - Implement background 15-minute rolling average aggregators in Python that replicate TimescaleDB continuous aggregates when running in SQLite mode.

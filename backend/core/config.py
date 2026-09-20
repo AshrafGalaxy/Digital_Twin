@@ -4,6 +4,7 @@ config.py
 Application configuration loaded from environment variables.
 """
 
+from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,7 +13,12 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     DEBUG: bool = True
 
-    # Database
+    # Multi-Storage Persistence (P4-A)
+    DATABASE_BACKEND: str = "auto"  # Options: "auto", "postgres", "sqlite"
+    SQLITE_DB_PATH: str = "data/digital_twin.db"
+    DB_CONNECT_TIMEOUT_SEC: float = 1.5
+
+    # PostgreSQL / PostGIS / TimescaleDB
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "digital_twin"
@@ -34,6 +40,28 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def resolved_sqlite_path(self) -> Path:
+        path = Path(self.SQLITE_DB_PATH)
+        if not path.is_absolute():
+            # If current working directory has data/, use it; otherwise check parent data/
+            if not (Path.cwd() / "data").exists() and (Path.cwd().parent / "data").exists():
+                return (Path.cwd().parent / self.SQLITE_DB_PATH).resolve()
+            return (Path.cwd() / path).resolve()
+        return path
+
+    @property
+    def sqlite_async_url(self) -> str:
+        resolved = self.resolved_sqlite_path
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite+aiosqlite:///{resolved.as_posix()}"
+
+    @property
+    def sqlite_sync_url(self) -> str:
+        resolved = self.resolved_sqlite_path
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{resolved.as_posix()}"
 
     @property
     def sync_database_url(self) -> str:

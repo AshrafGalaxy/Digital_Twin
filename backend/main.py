@@ -17,7 +17,8 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from core.config import settings
-from core.database import check_db_health
+from core.database import check_db_health, get_active_backend, get_persistence_info
+from core.schema_migrator import init_db_schema
 from api.v1.router import api_v1_router
 from api.v1.endpoints.stream import manager
 from ingestion.mqtt_consumer import MQTTConsumer
@@ -35,12 +36,17 @@ mqtt_consumer = MQTTConsumer(broadcast_callback=manager.broadcast)
 async def lifespan(app: FastAPI):
     logger.info("Initializing Digital Twin backend in %s mode...", settings.ENVIRONMENT)
     
-    # 1. Check Database connection
-    db_healthy = await check_db_health()
-    if db_healthy:
-        logger.info("PostgreSQL + PostGIS + TimescaleDB connection verified.")
+    # 1. Multi-Storage Persistence: Initialize schema and seed corridor assets (P4-A)
+    migration_res = await init_db_schema()
+    backend_name = get_active_backend()
+    if migration_res.get("status") == "INITIALIZED":
+        logger.info(
+            "Database persistence ready [%s]: %s tables verified, corridor assets primed.",
+            "PostgreSQL (Primary)" if backend_name == "postgresql" else "SQLite (Resilient Local Engine)",
+            migration_res.get("tablesCount", 18)
+        )
     else:
-        logger.warning("Database unavailable on startup. Operating in offline/degraded mode.")
+        logger.warning("Database schema initialization notice: %s", migration_res)
 
     # 2. Start MQTT background consumer
     mqtt_consumer.start()

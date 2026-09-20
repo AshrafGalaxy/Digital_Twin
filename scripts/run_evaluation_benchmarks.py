@@ -211,6 +211,7 @@ def run_experiment_e04_latency() -> dict:
         val_latencies.append((time.perf_counter() - t0) * 1000.0)
 
     # 2. ML Inference Latency (100 iterations)
+    forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 24.0)  # Warm-up threadpool/C++ runtime
     inf_latencies = []
     for _ in range(100):
         t0 = time.perf_counter()

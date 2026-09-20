@@ -170,13 +170,18 @@
    - Endpoint `GET /api/v1/health/quarantine` with pagination and reason filtering.
    - Interactive Quarantine Dead-Letter Inspection Modal in `SystemHealthView` with raw payload JSON inspection.
    - Enforced non-actuation and state isolation invariants (quarantined events NEVER alter authoritative twin state).
-9. **Backend Test Suite:**
-   - 55 of 55 unit, integration, and benchmark tests passing in `pytest`.
+9. **Multi-Storage Resilient Persistence Layer (P4-A):**
+   - Dynamic database engine adapter with auto-detection (`auto`, `postgres`, `sqlite`) probing PostgreSQL and seamlessly activating resilient local SQLite (`data/digital_twin.db`) using `aiosqlite`.
+   - Automatic DDL schema migrator (`backend/core/schema_migrator.py`) creating all 18 tables and indexes on application lifespan startup.
+   - Idempotent spatial asset seeding populating `study_areas`, `intersections`, `road_segments`, `sensors`, `building_zones`, `scenario_templates`, and baseline `entity_current_state` records.
+   - SQLite cross-dialect compatibility with custom `NOW()` SQL function and universal ANSI SQL window function (`ROW_NUMBER() OVER (PARTITION BY ...)`).
+   - System health diagnostic reporting (`databaseBackend`, `databaseMode`, `databaseTablesCount`) reflected in backend `/api/v1/health` and frontend `SystemHealthView`.
+10. **Backend Test Suite:**
+   - 64 of 64 unit, integration, benchmark, and persistence tests passing in `pytest` (100% pass rate).
 
 ### What's Left:
-1. **Multi-Storage Resilient Persistence Layer (P4-A)**: Dynamic database adapter switching seamlessly between SQLite (zero-dependency local dev) and PostgreSQL/TimescaleDB/PostGIS, plus automatic startup DDL migrations.
-2. **Native Continuous Aggregates & Background Telemetry Worker (P4-B)**: Automated continuous rollup pipeline for speed and volume metrics.
+1. **Native Continuous Aggregates & Background Telemetry Worker (P4-B)**: Automated continuous rollup pipeline for speed and volume metrics, plus in-process telemetry streaming worker.
 
 ### What's Next:
-> **P4-A: Multi-Storage Resilient Persistence Layer**  
-> We will ensure the database persistence layer smoothly migrates between SQLite (zero-dependency local development) and PostgreSQL/TimescaleDB/PostGIS without code changes, and implement automatic schema initialization on startup.
+> **P4-B: Native Continuous Aggregates & Background Telemetry Worker**  
+> Implement background 15-minute rolling average aggregators in Python that replicate TimescaleDB continuous aggregates when running in SQLite mode, and build an embedded in-process telemetry simulator thread that automatically streams realistic vehicle and sensor updates if an external MQTT broker is not reachable.

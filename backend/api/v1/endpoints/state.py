@@ -47,6 +47,23 @@ async def get_current_state(
         now_utc = datetime.now(timezone.utc)
         for row in rows:
             observed_at = row["observed_at"]
+            if isinstance(observed_at, str):
+                try:
+                    observed_at = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+                except ValueError:
+                    observed_at = now_utc
+            if isinstance(observed_at, datetime) and observed_at.tzinfo is None:
+                observed_at = observed_at.replace(tzinfo=timezone.utc)
+
+            updated_at = row["updated_at"]
+            if isinstance(updated_at, str):
+                try:
+                    updated_at = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+                except ValueError:
+                    updated_at = now_utc
+            if isinstance(updated_at, datetime) and updated_at.tzinfo is None:
+                updated_at = updated_at.replace(tzinfo=timezone.utc)
+
             freshness = max(0.0, (now_utc - observed_at).total_seconds())
             
             raw_metrics = row["metrics"]
@@ -57,7 +74,7 @@ async def get_current_state(
                 entityType=row["entity_type"],
                 sourceMode=row["source_mode"],
                 observedAt=observed_at,
-                updatedAt=row["updated_at"],
+                updatedAt=updated_at,
                 metrics=metrics_dict,
                 qualityStatus=row["quality_status"],
                 freshnessSeconds=round(freshness, 1)
@@ -91,13 +108,18 @@ async def get_corridor_snapshot(
     # 1. Try querying actual observations from TimescaleDB/PostgreSQL if available
     try:
         query_str = """
-            SELECT DISTINCT ON (segment_id)
-                segment_id, source_mode, observed_at,
-                average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
-                queue_length_meters, congestion_index, quality_flag
-            FROM traffic_observations
-            WHERE observed_at <= :target_dt
-            ORDER BY segment_id, observed_at DESC
+            SELECT segment_id, source_mode, observed_at,
+                   average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
+                   queue_length_meters, congestion_index, quality_flag
+            FROM (
+                SELECT segment_id, source_mode, observed_at,
+                       average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
+                       queue_length_meters, congestion_index, quality_flag,
+                       ROW_NUMBER() OVER (PARTITION BY segment_id ORDER BY observed_at DESC) as rn
+                FROM traffic_observations
+                WHERE observed_at <= :target_dt
+            ) ranked
+            WHERE rn = 1
         """
         result = await session.execute(text(query_str), {"target_dt": target_dt})
         rows = result.mappings().all()
