@@ -81,6 +81,39 @@ services:
     networks:
       - twin_network
 
+  minio:
+    image: minio/minio:latest
+    container_name: digital_twin_minio
+    profiles: ["full", "storage"]
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadminpassword}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - twin_network
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: digital_twin_mlflow
+    profiles: ["full", "analytics"]
+    restart: unless-stopped
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/artifacts
+    volumes:
+      - mlflow_data:/mlflow
+      - ./artifacts:/artifacts
+    networks:
+      - twin_network
+
 networks:
   twin_network:
     driver: bridge
@@ -89,3 +122,5 @@ volumes:
   postgres_data:
   mosquitto_data:
   mosquitto_log:
+  minio_data:
+  mlflow_data:
