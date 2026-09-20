@@ -335,3 +335,8 @@ class TelemetryStreamerWorker:
 
 # Global singleton streamer worker instance
 telemetry_streamer = TelemetryStreamerWorker()
+
+import sys
+if __name__ in sys.modules:
+    sys.modules.setdefault("backend.ingestion.telemetry_streamer", sys.modules[__name__])
+    sys.modules.setdefault("ingestion.telemetry_streamer", sys.modules[__name__])

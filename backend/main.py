@@ -11,18 +11,30 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Ensure backend directory is in sys.path for direct or module execution
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from core.config import settings
-from core.database import check_db_health, get_active_backend, get_persistence_info
-from core.schema_migrator import init_db_schema
-from api.v1.router import api_v1_router
-from api.v1.endpoints.stream import manager
-from ingestion.mqtt_consumer import MQTTConsumer
-from ingestion.telemetry_streamer import telemetry_streamer
+try:
+    from backend.core.config import settings
+    from backend.core.database import check_db_health, get_active_backend, get_persistence_info
+    from backend.core.schema_migrator import init_db_schema
+    from backend.api.v1.router import api_v1_router
+    from backend.api.v1.endpoints.stream import manager
+    from backend.ingestion.mqtt_consumer import MQTTConsumer
+    from backend.ingestion.telemetry_streamer import telemetry_streamer
+except ImportError:
+    from core.config import settings
+    from core.database import check_db_health, get_active_backend, get_persistence_info
+    from core.schema_migrator import init_db_schema
+    from api.v1.router import api_v1_router
+    from api.v1.endpoints.stream import manager
+    from ingestion.mqtt_consumer import MQTTConsumer
+    from ingestion.telemetry_streamer import telemetry_streamer
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
