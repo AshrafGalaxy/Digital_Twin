@@ -83,9 +83,12 @@ An honest audit of the current codebase against the root contract files confirms
   - Ensure the database layer smoothly migrates between SQLite (zero-dependency local development) and PostgreSQL/TimescaleDB/PostGIS without any manual code edits.
   - Implement automatic database table schema initialization and authoritative corridor asset seeding on startup across all 18 tables.
 
-* [ ] **P4-B: Native Continuous Aggregates & Background Telemetry Worker**
-  - Implement background 15-minute rolling average aggregators in Python that replicate TimescaleDB continuous aggregates when running in SQLite mode.
-  - Build an embedded in-process telemetry simulator thread that automatically streams realistic vehicle and sensor updates if an external MQTT broker is not reachable.
+* [x] **P4-B: Native Continuous Aggregates & Background Telemetry Worker** *(COMPLETED)*
+  - Implement native 15-minute rolling average aggregators in Python that replicate TimescaleDB continuous aggregates across both SQLite and PostgreSQL (`traffic_15m_aggregates`).
+  - Build an embedded in-process telemetry simulator worker (`TelemetryStreamerWorker`) that autonomously streams realistic physics-grounded corridor updates (speed, flow, occupancy, queues, building load, AQI) and dispatches WebSocket events when an external MQTT broker is not reachable.
+  - Expose continuous aggregate rollups via `GET /api/v1/analytics/rollups/traffic` and force materialization via `POST /api/v1/analytics/rollups/compute`.
+  - Expose streamer runtime status and interactive controls via `GET /api/v1/stream/simulator/status` and `POST /api/v1/stream/simulator/control`.
+  - Display continuous aggregates and live streamer controls/metrics in the frontend `SystemHealthView`.
 
 ---
 

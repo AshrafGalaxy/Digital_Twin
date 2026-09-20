@@ -22,6 +22,7 @@ from core.schema_migrator import init_db_schema
 from api.v1.router import api_v1_router
 from api.v1.endpoints.stream import manager
 from ingestion.mqtt_consumer import MQTTConsumer
+from ingestion.telemetry_streamer import telemetry_streamer
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
@@ -50,10 +51,18 @@ async def lifespan(app: FastAPI):
 
     # 2. Start MQTT background consumer
     mqtt_consumer.start()
+
+    # 3. Autonomous In-Process Corridor Telemetry Streamer (P4-B)
+    if settings.TELEMETRY_STREAMER_ENABLED:
+        logger.info("Starting autonomous corridor telemetry streamer worker...")
+        telemetry_streamer.start(broadcast_callback=manager.broadcast)
     
     yield
 
     # Shutdown sequence
+    if settings.TELEMETRY_STREAMER_ENABLED:
+        logger.info("Stopping telemetry streamer worker...")
+        await telemetry_streamer.stop_async()
     logger.info("Stopping MQTT background consumer...")
     mqtt_consumer.stop()
     logger.info("Digital Twin backend shutdown complete.")

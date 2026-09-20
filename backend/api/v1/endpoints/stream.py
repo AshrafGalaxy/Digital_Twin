@@ -27,6 +27,18 @@ class ReplayStatusResponse(BaseModel):
     targetTime: str
     sourceMode: str
 
+class StreamerControlRequest(BaseModel):
+    action: str = Field(..., description="Action: 'start', 'stop', 'pause', 'resume', 'tick_once', 'set_interval'")
+    interval_sec: Optional[float] = Field(None, ge=1.0, le=60.0, description="Tick interval in seconds")
+
+class StreamerStatusResponse(BaseModel):
+    isRunning: bool
+    isPaused: bool
+    ticksCount: int
+    intervalSec: float
+    lastTickAt: Optional[str]
+    sourceMode: str
+
 class ReplaySessionManager:
     """Manages active historical corridor replay playback session."""
     def __init__(self):
@@ -107,6 +119,40 @@ async def control_replay_stream(req: ReplayControlRequest):
     # Broadcast event to connected dashboards
     await manager.broadcast({
         "eventType": "REPLAY_STATE_CHANGED",
+        "payload": status
+    })
+    return status
+
+@router.get("/simulator/status", response_model=StreamerStatusResponse)
+async def get_simulator_status():
+    """Returns the operational status of the embedded in-process corridor telemetry streamer."""
+    from backend.ingestion.telemetry_streamer import telemetry_streamer
+    return telemetry_streamer.get_status()
+
+@router.post("/simulator/control", response_model=StreamerStatusResponse)
+async def control_simulator_stream(req: StreamerControlRequest):
+    """
+    Controls the embedded in-process corridor telemetry streamer.
+    Supports starting, stopping, pausing, resuming, triggering single tick, or setting tick interval.
+    """
+    from backend.ingestion.telemetry_streamer import telemetry_streamer
+    action = req.action.lower()
+    if action == "start":
+        telemetry_streamer.start(broadcast_callback=manager.broadcast)
+    elif action == "stop":
+        telemetry_streamer.stop()
+    elif action == "pause":
+        telemetry_streamer.pause()
+    elif action == "resume":
+        telemetry_streamer.resume()
+    elif action == "tick_once":
+        await telemetry_streamer.tick_once()
+    elif action == "set_interval" and req.interval_sec is not None:
+        telemetry_streamer.set_interval(req.interval_sec)
+
+    status = telemetry_streamer.get_status()
+    await manager.broadcast({
+        "eventType": "STREAMER_STATE_CHANGED",
         "payload": status
     })
     return status

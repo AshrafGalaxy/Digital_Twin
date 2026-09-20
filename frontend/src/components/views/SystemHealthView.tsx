@@ -18,9 +18,12 @@ import {
   fetchDatasetManifests,
   fetchDatasetManifest,
   fetchQuarantineQueue,
+  fetchStreamerStatus,
+  controlStreamer,
   DatasetCatalogResponse,
   DetailedDatasetManifest,
-  QuarantineQueueResponse
+  QuarantineQueueResponse,
+  StreamerStatusResponse
 } from '../../services/api';
 
 interface SystemHealthViewProps {
@@ -43,14 +46,17 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
   const [quarantineData, setQuarantineData] = useState<QuarantineQueueResponse | null>(null);
   const [quarantineModalOpen, setQuarantineModalOpen] = useState<boolean>(false);
   const [selectedQuarantineReason, setSelectedQuarantineReason] = useState<string>('ALL');
+  const [streamerData, setStreamerData] = useState<StreamerStatusResponse | null>(null);
+  const [tickingStreamer, setTickingStreamer] = useState<boolean>(false);
 
   const fetchHealth = async () => {
     try {
       setRefreshing(true);
-      const [healthRes, catalog, quarantine] = await Promise.all([
+      const [healthRes, catalog, quarantine, streamer] = await Promise.all([
         fetch('/api/v1/health'),
         fetchDatasetManifests(),
-        fetchQuarantineQueue()
+        fetchQuarantineQueue(),
+        fetchStreamerStatus()
       ]);
       if (healthRes.ok) {
         const data = await healthRes.json();
@@ -62,10 +68,28 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
       if (quarantine) {
         setQuarantineData(quarantine);
       }
+      if (streamer) {
+        setStreamerData(streamer);
+      }
     } catch (err) {
-      console.error('Failed to fetch system health, manifests, or quarantine queue', err);
+      console.error('Failed to fetch system health, manifests, quarantine, or streamer status', err);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleStreamerAction = async (action: 'start' | 'stop' | 'pause' | 'resume' | 'tick_once') => {
+    try {
+      if (action === 'tick_once') setTickingStreamer(true);
+      const res = await controlStreamer({ action });
+      if (res) {
+        setStreamerData(res);
+        await fetchHealth();
+      }
+    } catch (err) {
+      console.error('Failed to control streamer', err);
+    } finally {
+      setTickingStreamer(false);
     }
   };
 
@@ -274,6 +298,50 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 </td>
                 <td>&lt; 60s freshness threshold</td>
                 <td><span className="status-pill status-active">Fresh</span></td>
+              </tr>
+              <tr>
+                <td>In-Process Telemetry Streamer (P4-B)</td>
+                <td className="mono-cell">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>
+                      {streamerData?.ticksCount ?? subsystems.telemetryStreamerTicks ?? 0} ticks
+                      {streamerData?.isPaused ? ' (Paused)' : ''}
+                    </span>
+                    <button
+                      className="btn-select-sm"
+                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                      onClick={() => handleStreamerAction('tick_once')}
+                      disabled={tickingStreamer}
+                    >
+                      {tickingStreamer ? 'Ticking...' : 'Tick Now'}
+                    </button>
+                    <button
+                      className="btn-select-sm"
+                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                      onClick={() => handleStreamerAction(streamerData?.isPaused ? 'resume' : 'pause')}
+                    >
+                      {streamerData?.isPaused ? 'Resume' : 'Pause'}
+                    </button>
+                  </div>
+                </td>
+                <td>Physics diurnal traffic &amp; energy loop ({streamerData?.intervalSec || 5.0}s)</td>
+                <td>
+                  <span className={`status-pill ${
+                    (streamerData?.isRunning ?? subsystems.telemetryStreamerActive) && !streamerData?.isPaused
+                      ? 'status-active'
+                      : 'status-review'
+                  }`}>
+                    {(streamerData?.isRunning ?? subsystems.telemetryStreamerActive)
+                      ? (streamerData?.isPaused ? 'Paused' : 'Streaming')
+                      : 'Standby'}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Continuous 15m Aggregates (P4-B)</td>
+                <td className="mono-cell">traffic_15m_aggregates</td>
+                <td>900-second window materialization</td>
+                <td><span className="status-pill status-active">Active</span></td>
               </tr>
             </tbody>
           </table>

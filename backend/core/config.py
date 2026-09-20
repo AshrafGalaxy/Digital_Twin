@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     MQTT_USERNAME: str = "twin_service"
     MQTT_PASSWORD: str = "twin_secret_dev"
 
+    # Embedded In-Process Telemetry Simulator Worker (P4-B)
+    TELEMETRY_STREAMER_ENABLED: bool = True
+    TELEMETRY_STREAMER_INTERVAL_SEC: float = 5.0
+    TELEMETRY_STREAMER_MODE: str = "SIMULATION"  # Options: "SIMULATION", "REPLAY"
+
     # API Server
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000

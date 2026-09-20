@@ -8,6 +8,7 @@ resilient local SQLite + aiosqlite fallback with zero manual configuration.
 
 import logging
 import sqlite3
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, Optional
@@ -169,6 +170,7 @@ AsyncSessionLocal = persistence_manager.session_factory
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency yielding an async database session."""
     async with persistence_manager.session_factory() as session:
         try:
             yield session
@@ -178,6 +180,10 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+# Alias for FastAPI Depends(get_db)
+get_db = get_db_session
 
 
 async def check_db_health() -> bool:

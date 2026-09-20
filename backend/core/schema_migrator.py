@@ -307,6 +307,23 @@ SQLITE_TABLE_DDL = [
         raw_payload TEXT NOT NULL,
         validation_details TEXT DEFAULT '{}'
     );
+    """,
+    # 19. Continuous 15m Aggregates (P4-B)
+    """
+    CREATE TABLE IF NOT EXISTS traffic_15m_aggregates (
+        bucket_15m TIMESTAMP NOT NULL,
+        segment_id TEXT NOT NULL,
+        sample_count INTEGER NOT NULL DEFAULT 1,
+        avg_speed_kmh REAL NOT NULL,
+        p85_speed_kmh REAL,
+        total_flow_veh REAL NOT NULL,
+        avg_occupancy_percent REAL NOT NULL,
+        avg_queue_length_meters REAL NOT NULL,
+        max_queue_length_meters REAL NOT NULL,
+        avg_congestion_index REAL NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (bucket_15m, segment_id)
+    );
     """
 ]
 
@@ -317,7 +334,8 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_forecasts_target_entity ON forecasts (entity_id, target_timestamp DESC);",
     "CREATE INDEX IF NOT EXISTS idx_quarantine_rejection_reason ON quarantine_observations(rejection_reason);",
     "CREATE INDEX IF NOT EXISTS idx_quarantine_quarantined_at ON quarantine_observations(quarantined_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(entity_id);"
+    "CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(entity_id);",
+    "CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC);"
 ]
 
 
@@ -765,6 +783,13 @@ async def init_db_schema() -> Dict[str, Any]:
                 logger.info("Authoritative corridor spatial assets seeded successfully.")
             else:
                 logger.info("Corridor assets already present (%s study areas found).", study_count)
+
+            # Ensure continuous aggregates are seeded if empty
+            try:
+                from backend.services.continuous_aggregator import continuous_aggregator
+                await continuous_aggregator.seed_synthetic_historical_rollups(session)
+            except Exception as agg_err:
+                logger.warning("Historical rollup seeding notice: %s", agg_err)
 
             # 3. Query total existing tables
             if is_pg:

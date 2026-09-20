@@ -30,13 +30,15 @@ class SubsystemHealth(BaseModel):
     database: bool
     databaseBackend: str = "sqlite"
     databaseMode: str = "RESILIENT_SQLITE"
-    databaseTablesCount: int = 18
+    databaseTablesCount: int = 19
     mlTrafficModel: bool
     mlEnergyModel: bool
     simulationEngine: bool
     scenarioTemplatesCount: int
     activeAdvisoriesCount: int
     quarantinedEventsCount: int = 0
+    telemetryStreamerActive: bool = False
+    telemetryStreamerTicks: int = 0
 
 
 class HealthResponse(BaseModel):
@@ -99,6 +101,12 @@ async def get_health():
     backend_name = persistence_info.get("backend", "sqlite")
     db_mode = "PRIMARY_POSTGRES" if backend_name == "postgresql" else "RESILIENT_SQLITE"
 
+    try:
+        from backend.ingestion.telemetry_streamer import telemetry_streamer
+        streamer_status = telemetry_streamer.get_status()
+    except Exception:
+        streamer_status = {"isRunning": False, "ticksCount": 0}
+
     return HealthResponse(
         status=overall_status,
         environment=settings.ENVIRONMENT,
@@ -107,13 +115,15 @@ async def get_health():
             database=db_ok,
             databaseBackend=backend_name,
             databaseMode=db_mode,
-            databaseTablesCount=18,
+            databaseTablesCount=19,
             mlTrafficModel=ml_traffic_ok,
             mlEnergyModel=ml_energy_ok,
             simulationEngine=sim_ok,
             scenarioTemplatesCount=len(templates),
             activeAdvisoriesCount=advisory_summary.totalActive,
-            quarantinedEventsCount=quarantine_summary["totalQuarantined"]
+            quarantinedEventsCount=quarantine_summary["totalQuarantined"],
+            telemetryStreamerActive=streamer_status.get("isRunning", False),
+            telemetryStreamerTicks=streamer_status.get("ticksCount", 0)
         ),
         governanceMode="HUMAN_ADVISORY"
     )

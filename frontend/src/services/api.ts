@@ -407,3 +407,79 @@ export async function fetchQuarantineQueue(
   }
 }
 
+export interface TrafficRollupRecord {
+  bucket15m: string;
+  segmentId: string;
+  sampleCount: number;
+  avgSpeedKmh: number;
+  p85SpeedKmh: number;
+  totalFlowVeh: number;
+  avgOccupancyPercent: number;
+  avgQueueLengthMeters: number;
+  maxQueueLengthMeters: number;
+  avgCongestionIndex: number;
+}
+
+export interface TrafficRollupsResponse {
+  totalRecords: number;
+  segmentId?: string;
+  hoursAgo: number;
+  rollups: TrafficRollupRecord[];
+}
+
+export async function fetchTrafficRollups(
+  segmentId?: string,
+  hoursAgo: number = 12,
+  limit: number = 100
+): Promise<TrafficRollupsResponse | null> {
+  try {
+    const params = new URLSearchParams();
+    if (segmentId) params.append('segment_id', segmentId);
+    params.append('hours_ago', hoursAgo.toString());
+    params.append('limit', limit.toString());
+
+    const res = await fetch(`${API_BASE}/analytics/rollups/traffic?${params.toString()}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export interface StreamerStatusResponse {
+  isRunning: boolean;
+  isPaused: boolean;
+  ticksCount: number;
+  intervalSec: number;
+  lastTickAt?: string;
+  sourceMode: string;
+}
+
+export async function fetchStreamerStatus(): Promise<StreamerStatusResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE}/stream/simulator/status`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function controlStreamer(params: {
+  action: 'start' | 'stop' | 'pause' | 'resume' | 'tick_once' | 'set_interval';
+  interval_sec?: number;
+}): Promise<StreamerStatusResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE}/stream/simulator/control`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+

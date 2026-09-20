@@ -138,7 +138,7 @@ async def test_authoritative_current_state_provenance():
 
         assert len(rows) >= 11
         for row in rows:
-            assert row[2] in ("REPLAY", "LIVE"), f"Invalid provenance for {row[0]}: {row[2]}"
+            assert row[2] in ("REPLAY", "LIVE", "SIMULATION"), f"Invalid provenance for {row[0]}: {row[2]}"
             assert row[3] == "VALID"
             assert row[4] is not None
 
@@ -208,5 +208,5 @@ def test_current_state_endpoint_serves_seeded_entities(client):
     # Verify that every record has valid speed/metrics
     first_seg = road_segments[0]
     assert "averageSpeedKmh" in first_seg["metrics"]
-    assert first_seg["sourceMode"] in ("REPLAY", "LIVE")
+    assert first_seg["sourceMode"] in ("REPLAY", "LIVE", "SIMULATION")
     assert first_seg["qualityStatus"] == "VALID"
