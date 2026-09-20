@@ -1,0 +1,34 @@
+{
+  "datasetId": "D-01-OSM",
+  "datasetName": "OpenStreetMap & OSMnx Pilot Corridor Network Model",
+  "version": "1.0.0",
+  "sourceUrl": "https://www.openstreetmap.org/",
+  "accessDate": "2026-09-19",
+  "license": "Open Database License (ODbL) 1.0",
+  "attributionRequirements": "© OpenStreetMap contributors, licensed under ODbL 1.0. Network extraction modeled via OSMnx (Boeing, 2017).",
+  "localityClassification": "PILOT_LOCAL",
+  "sourceMode": "DERIVED",
+  "geographicBoundary": {
+    "studyAreaUrn": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+    "corridorName": "Viman Nagar Chowk to Somnath Nagar Chowk (Nagar Road)",
+    "city": "Pune, Maharashtra, India",
+    "bbox": [73.9135, 18.5580, 73.9315, 18.5670]
+  },
+  "temporalCoverage": {
+    "extractDate": "2026-09-19T00:00:00Z",
+    "samplingFrequency": "Static Infrastructure Topology / Periodic Survey Updates"
+  },
+  "fields": [
+    { "name": "node_id", "unit": "dimensionless", "description": "Authoritative OpenStreetMap junction/node identifier" },
+    { "name": "edge_id", "unit": "dimensionless", "description": "Graph edge connecting two signalized or unsignalized intersections" },
+    { "name": "length_m", "unit": "meters", "description": "Geodetic length of road segment calculated on WGS84" },
+    { "name": "lanes", "unit": "count", "description": "Number of designated travel lanes" },
+    { "name": "maxspeed_kmh", "unit": "km/h", "description": "Statutory speed limit (default 50.0 km/h on Nagar Road arterial)" },
+    { "name": "geometry", "unit": "GeoJSON LineString", "description": "WGS-84 polyline coordinates of road centerline" }
+  ],
+  "intendedUse": "Study area digital twin 2D MapLibre visualization, road asset registration, and SUMO netconvert microscopic network topology generation.",
+  "prohibitedClaims": "Must not claim that lane counts, turning restrictions, or signal cycle lengths reflect real-time adaptive traffic management system (ATMS) operations without formal field calibration.",
+  "knownLimitations": "OSM data contains community-mapped geometries; informal turn bays, construction diversions, and unregulated curb usages require periodic ground-truth validation.",
+  "privacySensitivityAssessment": "Public spatial infrastructure data only. Contains no personal, vehicle, or surveillance telemetry.",
+  "status": "APPROVED_FOR_DEMO"
+}

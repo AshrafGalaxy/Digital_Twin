@@ -19,7 +19,7 @@
 - **Phase 8 Core Algorithms & 3D Extrusions:** 100% Complete (`[x]`)
 - **Track 1 UI/UX Navigation & Analytics (P1-A, P1-B, P1-C):** 100% Complete (`[x]`)
 - **Track 2 Theming & Accessibility (P2-A, P2-B):** 100% Complete (`[x]`)
-- **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** Pending (`[ ]`)
+- **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** In Progress (P3-A: `[x]`, P3-B: `[ ]`)
 - **Track 4 Persistence & Telemetry Streamer (P4-A, P4-B):** Pending (`[ ]`)
 
 ---
@@ -68,9 +68,9 @@
 ---
 
 ### Track 3: Data Engineering, Manifests & Quarantine Schema (`DATA_AND_ML_PLAN.md`)
-- [ ] **P3-A: Dataset Manifest Catalog (`data/manifests/`)**
-  - [ ] Formal JSON/YAML manifests for OSM network, synthetic traffic, commercial energy, and CAAQMS air quality.
-  - [ ] Backend API endpoint `GET /api/v1/datasets/manifests` and manifest viewer in System Health view.
+- [x] **P3-A: Dataset Manifest Catalog (`data/manifests/`)**
+  - [x] Formal JSON/YAML manifests for OSM network, synthetic traffic, commercial energy, and CAAQMS air quality.
+  - [x] Backend API endpoint `GET /api/v1/datasets/manifests` and manifest viewer in System Health view.
 - [ ] **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**
   - [ ] Database table `quarantine_observations` in PostgreSQL/SQLite.
   - [ ] Update `IngestionValidator` to persist rejected events (stale, out-of-bounds, invalid schema) with rejection reason.
@@ -119,8 +119,8 @@
 | `GET` | `/api/v1/stream/replay/status` | Telemetry Control | Query active historical replay session state | [x] Implemented |
 | `POST` | `/api/v1/stream/replay/control` | Telemetry Control | Pause, play, scrub, and speed multiplier control | [x] Implemented |
 | `GET` | `/api/v1/state/compare` | Corridor Analytics | Side-by-side comparative analysis of two road segments | [x] Implemented |
-| `GET` | `/api/v1/datasets/manifests` | Data Governance | List standardized dataset manifests with licenses | [ ] **Upcoming (P3-A)** |
-| `GET` | `/api/v1/datasets/manifests/{id}` | Data Governance | Get specific dataset manifest details | [ ] **Upcoming (P3-A)** |
+| `GET` | `/api/v1/datasets/manifests` | Data Governance | List standardized dataset manifests with licenses | [x] Implemented |
+| `GET` | `/api/v1/datasets/manifests/{id}` | Data Governance | Get specific dataset manifest details | [x] Implemented |
 | `GET` | `/api/v1/health/quarantine` | Quality Assurance | Inspect dead-letter quarantined telemetry events | [ ] **Upcoming (P3-B)** |
 | `POST` | `/api/v1/environment/anomaly/evaluate` | Anomaly Detection | Direct API evaluation of ambient air quality readings | [ ] **Upcoming** |
 
@@ -155,14 +155,22 @@
    - Full CSS design tokens per `DESIGN_SYSTEM.md` §4 and §5.
    - Header switcher with OS preference detection and `localStorage` persistence.
    - Dynamic MapLibre raster brightness/saturation adjustment and vector theme alignment.
-6. **Backend Test Suite:**
-   - 41 of 41 unit, integration, and benchmark tests passing in `pytest`.
+6. **WCAG 2.1 AA Accessibility Hardening (P2-B):**
+   - Skip to main content keyboard accessibility link (`#main-content`).
+   - `aria-live="polite"` real-time telemetry updates.
+   - `prefers-reduced-motion` suppression of animations.
+   - Full modal and drawer keyboard focus trapping and `Escape` key listeners.
+7. **Dataset Manifest Catalog & Data Governance (P3-A):**
+   - Standardized machine-readable JSON dataset manifests (`manifest_osm_network.json`, `manifest_pune_traffic_history.json`, `manifest_phoenix_energy.json`, `manifest_pune_air_quality.json`, `manifest_sumo_simulation.json`, `manifest_openmeteo_weather.json`).
+   - Backend catalog & detail endpoints (`GET /api/v1/datasets/manifests` and `/api/v1/datasets/manifests/{id}`).
+   - Interactive Dataset Governance & Manifest Registry inspector in `SystemHealthView` with prominent mandatory prohibited claims alerts.
+8. **Backend Test Suite:**
+   - 48 of 48 unit, integration, and benchmark tests passing in `pytest`.
 
 ### What's Left:
-1. **WCAG 2.1 AA Accessibility Hardening (P2-B)**: aria-live, skip link, prefers-reduced-motion, keyboard focus traps.
-2. **Data Manifests & Quarantine Queue (P3-A, P3-B)**: JSON manifests catalog and quarantine dead-letter table.
-3. **Multi-Storage Persistence & In-Process Streamer (P4-A, P4-B)**: SQLite/PostgreSQL dynamic adapter and in-process fallback.
+1. **Formal Data Quarantine Table & Dead-Letter Queue (P3-B)**: Database table `quarantine_observations` in PostgreSQL/SQLite, validator persistence, and `GET /api/v1/health/quarantine`.
+2. **Multi-Storage Persistence & Background Rollups (P4-A, P4-B)**: SQLite/PostgreSQL dynamic adapter and automated rollup pipeline.
 
 ### What's Next:
-> **P2-B: Full Accessibility Hardening (WCAG 2.1 AA)**  
-> We will add `aria-live="polite"` dynamic notification regions, a visible-on-focus "Skip to main content" link, `prefers-reduced-motion` media queries, and keyboard focus trapping (`Tab` cycle, `Escape` key close) across modals and drawers.
+> **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**  
+> We will create the `quarantine_observations` schema, update `IngestionValidator` to route rejected telemetry (out-of-bounds speed, future timestamps, schema errors) to the quarantine table with explicit rejection reasons, and expose `GET /api/v1/health/quarantine` for operator inspection.

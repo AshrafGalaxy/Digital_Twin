@@ -306,3 +306,65 @@ export async function triggerRuleEvaluation(): Promise<AdvisoryRecommendation[]>
   return res.json();
 }
 
+export interface DatasetManifestSummary {
+  id: string;
+  manifestId: string;
+  name: string;
+  localityClassification: 'PILOT_LOCAL' | 'PUNE_NON_LOCAL' | 'REGIONAL_CONTEXT' | 'BENCHMARK_SYNTHETIC' | 'SIMULATION';
+  sourceMode: string;
+  license: string;
+  intendedUse: string;
+  prohibitedClaim?: string;
+  manifestJson?: string;
+  manifestMarkdown?: string;
+  fieldsCount?: number;
+}
+
+export interface DatasetCatalogResponse {
+  catalogVersion: string;
+  updatedAt: string;
+  studyArea: string;
+  totalDatasets: number;
+  datasets: DatasetManifestSummary[];
+}
+
+export interface DetailedDatasetManifest {
+  datasetId: string;
+  datasetName: string;
+  version: string;
+  sourceUrl: string;
+  accessDate: string;
+  license: string;
+  attributionRequirements?: string;
+  localityClassification: string;
+  sourceMode: string;
+  geographicBoundary?: any;
+  temporalCoverage?: any;
+  fields?: Array<{ name: string; unit: string; description: string }>;
+  intendedUse: string;
+  prohibitedClaims: string;
+  knownLimitations: string;
+  privacySensitivityAssessment?: string;
+  status?: string;
+}
+
+export async function fetchDatasetManifests(): Promise<DatasetCatalogResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE}/datasets/manifests`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchDatasetManifest(id: string): Promise<DetailedDatasetManifest | null> {
+  try {
+    const res = await fetch(`${API_BASE}/datasets/manifests/${id}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+

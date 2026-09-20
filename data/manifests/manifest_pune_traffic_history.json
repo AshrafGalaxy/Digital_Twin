@@ -1,0 +1,38 @@
+{
+  "datasetId": "D-03-PUNE-TRAFFIC",
+  "datasetName": "Pune Heterogeneous Traffic Count Dataset & Replay Series",
+  "version": "1.0.0",
+  "sourceUrl": "https://data.mendeley.com/datasets/xnf2k6n288/1",
+  "accessDate": "2026-09-19",
+  "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "attributionRequirements": "Data source: Mendeley Data (Heterogeneous Traffic Count Dataset from Signalized Intersections in Pune, DOI: 10.17632/xnf2k6n288.1). Replay and feature pipeline derivative.",
+  "localityClassification": "PUNE_NON_LOCAL",
+  "sourceMode": "REPLAY",
+  "geographicBoundary": {
+    "studyAreaUrn": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+    "surveyLocations": [
+      "Alankar Chowk, Pune",
+      "Jehangir Chowk, Pune",
+      "RTO Chowk, Pune"
+    ],
+    "city": "Pune, Maharashtra, India"
+  },
+  "temporalCoverage": {
+    "surveyPeriod": "Multi-day heterogeneous traffic surveys",
+    "calibratedWindowDays": 21,
+    "samplingFrequency": "5-minute aggregated directional bins"
+  },
+  "fields": [
+    { "name": "timestamp", "unit": "ISO-8601 UTC", "description": "Timestamp of observation bin" },
+    { "name": "speed_kmh", "unit": "km/h", "description": "Average vehicle stream speed on segment" },
+    { "name": "traffic_volume_vph", "unit": "vehicles/hour", "description": "Classified hourly flow rate" },
+    { "name": "occupancy_pct", "unit": "percent (0-100)", "description": "Segment space-mean occupancy rate" },
+    { "name": "congestion_level", "unit": "categorical", "description": "FREE_FLOW, MODERATE, CONGESTED, or SEVERE" },
+    { "name": "vehicle_breakdown", "unit": "proportions", "description": "Fraction of 2-wheelers, 3-wheelers, cars, buses, commercial vehicles" }
+  ],
+  "intendedUse": "Feature engineering pipeline prototyping, time-of-day traffic distribution baselines, XGBoost 15m speed forecasting model training, and replay stream simulation.",
+  "prohibitedClaims": "MANDATORY: Must NEVER be claimed as Viman Nagar Chowk direct field observations. Must not claim that model evaluation on this dataset establishes measured operational accuracy for the Viman Nagar corridor without live ATMS sensor validation.",
+  "knownLimitations": "Recorded at Alankar, Jehangir, and RTO chowks which exhibit differing geometric capacities and approach geometries compared to the Viman Nagar–Somnath Nagar arterial corridor.",
+  "privacySensitivityAssessment": "Aggregated vehicle counts and average speeds only. Strictly contains no license plate recognition (ANPR), facial recognition, or individual vehicle trajectory data.",
+  "status": "APPROVED_FOR_DEMO"
+}

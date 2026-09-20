@@ -1,0 +1,34 @@
+{
+  "datasetId": "D-06-PHOENIX-ENERGY",
+  "datasetName": "Phoenix Marketcity Commercial Building Energy Load Profile",
+  "version": "1.0.0",
+  "sourceUrl": "https://archive.ics.uci.edu/dataset/321/electricityloaddiagrams20112014",
+  "accessDate": "2026-09-19",
+  "license": "Creative Commons Attribution 4.0 International (CC BY 4.0) / Open Benchmark Derivative",
+  "attributionRequirements": "Derived from UCI Electricity Load Diagrams benchmark patterns (CC BY 4.0), calibrated to commercial retail archetype specifications.",
+  "localityClassification": "BENCHMARK_SYNTHETIC",
+  "sourceMode": "SIMULATION",
+  "geographicBoundary": {
+    "targetEntity": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+    "facilityName": "Phoenix Marketcity Viman Nagar",
+    "coordinates": [73.9168, 18.5620],
+    "city": "Pune, Maharashtra, India"
+  },
+  "temporalCoverage": {
+    "calibratedWindowDays": 35,
+    "samplingFrequency": "15-minute aggregated power intervals"
+  },
+  "fields": [
+    { "name": "timestamp", "unit": "ISO-8601 UTC", "description": "Timestamp of energy meter observation" },
+    { "name": "active_power_kw", "unit": "kilowatts (kW)", "description": "Total facility active power consumption" },
+    { "name": "reactive_power_kvar", "unit": "kVAR", "description": "Reactive power demand" },
+    { "name": "power_factor", "unit": "dimensionless (0.0-1.0)", "description": "Instantaneous power factor" },
+    { "name": "energy_kwh", "unit": "kWh", "description": "Cumulative energy consumed in 15-minute period" },
+    { "name": "ambient_temp_c", "unit": "Celsius", "description": "Correlated Pune ambient temperature" }
+  ],
+  "intendedUse": "Training the 60-minute ahead XGBoost energy load forecasting model (energy-xgb-v1), evaluating peak demand alert triggers (>4,800 kW), and testing commercial chiller pre-cooling advisories.",
+  "prohibitedClaims": "MANDATORY: Must not be represented as proprietary private utility smart-meter readings directly polled from Phoenix Marketcity or MSEDCL meters.",
+  "knownLimitations": "Synthetic archetype calibrated to commercial retail diurnal schedules (10:00-22:00 mall opening hours, base HVAC load, and weekend retail surges). Excludes unmetered tenant backup generator transitions.",
+  "privacySensitivityAssessment": "Whole-building aggregate load archetype. Strictly excludes individual retail tenant or personal consumer consumption records.",
+  "status": "APPROVED_FOR_DEMO"
+}

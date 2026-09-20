@@ -63,13 +63,13 @@ An honest audit of the current codebase against the root contract files confirms
 ---
 
 ### Track 3: Data Engineering, Manifests & Quarantine Schema (`DATA_AND_ML_PLAN.md`)
-* [ ] **P3-A: Dataset Manifest Catalog (`data/manifests/`)**
+* [x] **P3-A: Dataset Manifest Catalog (`data/manifests/`)**
   - Create standardized manifest files for:
     - `manifest_osm_network.json` (OpenStreetMap corridor geometry)
     - `manifest_pune_traffic_history.json` (Corridor synthetic/replayed speed series)
     - `manifest_phoenix_energy.json` (Commercial retail load archetype)
     - `manifest_pune_air_quality.json` (Corridor air quality monitoring data)
-  - Expose dataset catalog via `GET /api/v1/datasets/manifests`.
+  - Expose dataset catalog via `GET /api/v1/datasets/manifests` and `/api/v1/datasets/manifests/{id}`.
 
 * [ ] **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**
   - Create database schema `quarantine_observations` in PostgreSQL/SQLite.

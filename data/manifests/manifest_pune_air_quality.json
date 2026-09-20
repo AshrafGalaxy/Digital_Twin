@@ -1,0 +1,37 @@
+{
+  "datasetId": "D-04-PUNE-AQI",
+  "datasetName": "Pune Ambient Air Quality & Meteorological Reports",
+  "version": "1.0.0",
+  "sourceUrl": "https://data.opencity.in/dataset/pune-hourly-air-quality-reports",
+  "accessDate": "2026-09-19",
+  "license": "Open Data Commons Open Database License (ODbL) / OpenCity",
+  "attributionRequirements": "Data source: OpenCity Pune Hourly Air Quality Reports (ODbL). Regional continuous ambient air quality monitoring stations (CAAQMS).",
+  "localityClassification": "REGIONAL_CONTEXT",
+  "sourceMode": "REPLAY",
+  "geographicBoundary": {
+    "studyAreaUrn": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+    "monitoringStations": [
+      "Shivajinagar CAAQMS, Pune",
+      "Hadapsar CAAQMS, Pune",
+      "Bhosari CAAQMS, Pune"
+    ],
+    "city": "Pune, Maharashtra, India"
+  },
+  "temporalCoverage": {
+    "historicalReports": "Multi-month hourly environmental monitoring logs",
+    "samplingFrequency": "Hourly aggregated pollutant reports"
+  },
+  "fields": [
+    { "name": "timestamp", "unit": "ISO-8601 UTC", "description": "Timestamp of pollutant observation" },
+    { "name": "aqi", "unit": "Index (0-500)", "description": "National Air Quality Index (NAQI) composite value" },
+    { "name": "pm2_5", "unit": "µg/m³", "description": "Particulate matter <= 2.5 micrometers" },
+    { "name": "pm10", "unit": "µg/m³", "description": "Particulate matter <= 10 micrometers" },
+    { "name": "no2", "unit": "µg/m³", "description": "Nitrogen dioxide concentration" },
+    { "name": "co", "unit": "mg/m³", "description": "Carbon monoxide concentration" }
+  ],
+  "intendedUse": "Environmental background context, threshold alert evaluation (AQI > 150 trigger), and multi-domain decision-support correlation with corridor congestion spikes.",
+  "prohibitedClaims": "MANDATORY: Regional ambient air quality monitoring station readings must NOT be claimed as hyperlocal Viman Nagar corridor ground-level street canyon sensors.",
+  "knownLimitations": "Station observations are collected at regional municipal monitoring towers, which may not capture street-level vehicular exhaust microclimates directly inside the Viman Nagar Chowk intersection bowl.",
+  "privacySensitivityAssessment": "Public atmospheric and environmental telemetry only. Contains zero private, proprietary, or personal data.",
+  "status": "APPROVED_FOR_DEMO"
+}

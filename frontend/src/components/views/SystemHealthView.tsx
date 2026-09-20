@@ -6,9 +6,20 @@ import {
   Layers,
   ShieldCheck,
   RotateCcw,
-  FileCheck
+  FileCheck,
+  BookOpen,
+  FileText,
+  AlertTriangle,
+  ExternalLink,
+  X
 } from 'lucide-react';
 import { SourceMode } from '../../types/twin';
+import {
+  fetchDatasetManifests,
+  fetchDatasetManifest,
+  DatasetCatalogResponse,
+  DetailedDatasetManifest
+} from '../../services/api';
 
 interface SystemHealthViewProps {
   wsConnected: boolean;
@@ -23,25 +34,60 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 }) => {
   const [healthData, setHealthData] = useState<any>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [catalogData, setCatalogData] = useState<DatasetCatalogResponse | null>(null);
+  const [selectedManifest, setSelectedManifest] = useState<DetailedDatasetManifest | null>(null);
+  const [loadingManifestId, setLoadingManifestId] = useState<string | null>(null);
+  const [manifestModalOpen, setManifestModalOpen] = useState<boolean>(false);
 
   const fetchHealth = async () => {
     try {
       setRefreshing(true);
-      const res = await fetch('/api/v1/health');
-      if (res.ok) {
-        const data = await res.json();
+      const [healthRes, catalog] = await Promise.all([
+        fetch('/api/v1/health'),
+        fetchDatasetManifests()
+      ]);
+      if (healthRes.ok) {
+        const data = await healthRes.json();
         setHealthData(data);
       }
+      if (catalog) {
+        setCatalogData(catalog);
+      }
     } catch (err) {
-      console.error('Failed to fetch system health', err);
+      console.error('Failed to fetch system health or dataset manifests', err);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleInspectManifest = async (datasetId: string) => {
+    try {
+      setLoadingManifestId(datasetId);
+      const manifest = await fetchDatasetManifest(datasetId);
+      if (manifest) {
+        setSelectedManifest(manifest);
+        setManifestModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Failed to load dataset manifest', err);
+    } finally {
+      setLoadingManifestId(null);
     }
   };
 
   useEffect(() => {
     fetchHealth();
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && manifestModalOpen) {
+        setManifestModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [manifestModalOpen]);
 
   const subsystems = healthData?.subsystems || {};
 
@@ -278,6 +324,277 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Track 3 P3-A: Dataset Governance & Manifest Catalog */}
+      <div className="analytics-card" style={{ marginTop: '20px' }}>
+        <div className="analytics-card-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BookOpen size={18} color="#0F4C5C" />
+            <span className="card-title">Dataset Governance & Manifest Catalog</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="provenance-badge badge-live">
+              {catalogData?.totalDatasets || 0} DATASETS REGISTERED
+            </span>
+            <span className="provenance-badge badge-predicted">
+              AGENTS.md §7 COMPLIANT
+            </span>
+          </div>
+        </div>
+
+        <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
+          Per <strong>AGENTS.md §7</strong> and <strong>DATA_AND_ML_PLAN.md §3</strong>, all models and simulation pipelines must strictly consume approved datasets with unambiguous provenance, licensing, locality honesty, and explicit prohibited claims.
+        </p>
+
+        <div className="table-responsive">
+          <table className="analytics-table">
+            <thead>
+              <tr>
+                <th>Dataset ID</th>
+                <th>Dataset Name & Scope</th>
+                <th>Locality Classification</th>
+                <th>Source Mode</th>
+                <th>License</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {catalogData?.datasets.map((item) => {
+                const localityColor =
+                  item.localityClassification === 'PILOT_LOCAL'
+                    ? '#10B981'
+                    : item.localityClassification === 'PUNE_NON_LOCAL'
+                    ? '#F59E0B'
+                    : item.localityClassification === 'BENCHMARK_SYNTHETIC'
+                    ? '#8B5CF6'
+                    : item.localityClassification === 'REGIONAL_CONTEXT'
+                    ? '#0284C7'
+                    : '#64748B';
+
+                return (
+                  <tr key={item.id}>
+                    <td className="font-mono" style={{ fontWeight: 600, color: '#0F4C5C' }}>
+                      {item.id}
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500 }}>{item.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{item.intendedUse}</div>
+                    </td>
+                    <td>
+                      <span
+                        className="status-pill"
+                        style={{
+                          background: `${localityColor}15`,
+                          color: localityColor,
+                          border: `1px solid ${localityColor}40`
+                        }}
+                      >
+                        {item.localityClassification}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`provenance-badge ${
+                        item.sourceMode === 'LIVE_EXTRACT' || item.sourceMode === 'LIVE_API' ? 'badge-live' :
+                        item.sourceMode === 'SIMULATION' ? 'badge-simulation' :
+                        item.sourceMode === 'REPLAY' ? 'badge-warning' : 'badge-predicted'
+                      }`}>
+                        {item.sourceMode}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '12px' }}>
+                      {item.license}
+                    </td>
+                    <td>
+                      <button
+                        className="btn-select-sm"
+                        onClick={() => handleInspectManifest(item.manifestId || item.id)}
+                        disabled={loadingManifestId === (item.manifestId || item.id)}
+                      >
+                        <FileText size={12} />
+                        <span>{loadingManifestId === (item.manifestId || item.id) ? 'Loading...' : 'Inspect Manifest'}</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Dataset Manifest Inspection Modal */}
+      {manifestModalOpen && selectedManifest && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}
+          onClick={() => setManifestModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface, #ffffff)',
+              borderRadius: '12px',
+              boxShadow: 'var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.2))',
+              maxWidth: '780px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid var(--color-border, #E2E8F0)',
+              padding: '24px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: '16px', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="font-mono" style={{ background: '#0F4C5C', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>
+                    {selectedManifest.datasetId}
+                  </span>
+                  <span className="provenance-badge badge-live">v{selectedManifest.version}</span>
+                  <span className="provenance-badge badge-simulation">{selectedManifest.localityClassification}</span>
+                </div>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #0F172A)', marginTop: '8px', marginBottom: '4px' }}>
+                  {selectedManifest.datasetName}
+                </h2>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary, #64748B)' }}>
+                  License: <strong>{selectedManifest.license}</strong> | Accessed: {selectedManifest.accessDate}
+                </div>
+              </div>
+              <button
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-secondary, #64748B)',
+                  padding: '4px'
+                }}
+                onClick={() => setManifestModalOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Mandatory Prohibited Claims Banner */}
+            <div
+              style={{
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #F87171',
+                borderRadius: '8px',
+                padding: '14px 16px',
+                marginBottom: '16px',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start'
+              }}
+            >
+              <AlertTriangle size={20} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ color: '#991B1B', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Mandatory Prohibited Claims (AGENTS.md §7.2)
+                </div>
+                <div style={{ color: '#7F1D1D', fontSize: '13px', marginTop: '4px', lineHeight: 1.5 }}>
+                  {selectedManifest.prohibitedClaims}
+                </div>
+              </div>
+            </div>
+
+            {/* Intended Use & Limitations Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', backgroundColor: 'var(--color-bg, #F8FAFC)', borderRadius: '8px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                <div style={{ fontWeight: 600, fontSize: '12px', color: '#0F4C5C', marginBottom: '4px' }}>
+                  INTENDED SCIENTIFIC USE
+                </div>
+                <div style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--color-text, #334155)' }}>
+                  {selectedManifest.intendedUse}
+                </div>
+              </div>
+              <div style={{ padding: '12px', backgroundColor: 'var(--color-bg, #F8FAFC)', borderRadius: '8px', border: '1px solid var(--color-border, #E2E8F0)' }}>
+                <div style={{ fontWeight: 600, fontSize: '12px', color: '#B45309', marginBottom: '4px' }}>
+                  KNOWN LIMITATIONS
+                </div>
+                <div style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--color-text, #334155)' }}>
+                  {selectedManifest.knownLimitations}
+                </div>
+              </div>
+            </div>
+
+            {/* Privacy & Attribution */}
+            <div style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--color-text-secondary, #64748B)', padding: '10px 14px', background: 'var(--color-surface-raised, #F1F5F9)', borderRadius: '6px' }}>
+              <div><strong>Attribution:</strong> {selectedManifest.attributionRequirements || 'Standard project attribution.'}</div>
+              <div style={{ marginTop: '4px' }}><strong>Privacy & Sensitivity:</strong> {selectedManifest.privacySensitivityAssessment || 'Standard public spatial telemetry.'}</div>
+            </div>
+
+            {/* Fields List */}
+            {selectedManifest.fields && selectedManifest.fields.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text, #0F172A)', marginBottom: '8px' }}>
+                  Registered Telemetry Fields ({selectedManifest.fields.length})
+                </div>
+                <table className="analytics-table" style={{ fontSize: '12px' }}>
+                  <thead>
+                    <tr>
+                      <th>Field Name</th>
+                      <th>Unit</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedManifest.fields.map((f, idx) => (
+                      <tr key={idx}>
+                        <td className="font-mono" style={{ color: '#0F4C5C', fontWeight: 600 }}>{f.name}</td>
+                        <td className="font-mono">{f.unit}</td>
+                        <td>{f.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '16px' }}>
+              {selectedManifest.sourceUrl && (
+                <a
+                  href={selectedManifest.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    color: '#0F4C5C',
+                    textDecoration: 'none',
+                    fontWeight: 500
+                  }}
+                >
+                  <span>Open Official Data Repository</span>
+                  <ExternalLink size={13} />
+                </a>
+              )}
+              <button
+                className="btn-select-sm"
+                onClick={() => setManifestModalOpen(false)}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

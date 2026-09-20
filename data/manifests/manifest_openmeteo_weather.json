@@ -1,0 +1,32 @@
+{
+  "datasetId": "D-05-WEATHER",
+  "datasetName": "Open-Meteo Historical & Current Weather API",
+  "version": "1.0.0",
+  "sourceUrl": "https://open-meteo.com/en/docs/historical-weather-api",
+  "accessDate": "2026-09-19",
+  "license": "Creative Commons Attribution 4.0 International (CC BY 4.0) / Non-Commercial API Terms",
+  "attributionRequirements": "Weather data by Open-Meteo.com, licensed under CC BY 4.0.",
+  "localityClassification": "REGIONAL_CONTEXT",
+  "sourceMode": "LIVE_API",
+  "geographicBoundary": {
+    "latitude": 18.562,
+    "longitude": 73.917,
+    "elevation_m": 560.0,
+    "city": "Pune, Maharashtra, India"
+  },
+  "temporalCoverage": {
+    "samplingFrequency": "Hourly reanalysis and short-term forecasts"
+  },
+  "fields": [
+    { "name": "temperature_2m", "unit": "Celsius", "description": "Ambient dry bulb temperature 2 meters above ground" },
+    { "name": "relative_humidity_2m", "unit": "percent (0-100)", "description": "Relative humidity" },
+    { "name": "precipitation", "unit": "millimeters (mm)", "description": "Hourly precipitation accumulation" },
+    { "name": "surface_pressure", "unit": "hPa", "description": "Barometric surface pressure" },
+    { "name": "wind_speed_10m", "unit": "km/h", "description": "Wind speed 10 meters above ground" }
+  ],
+  "intendedUse": "Providing meteorological exogenous features for traffic congestion forecasting and building HVAC energy demand predictions.",
+  "prohibitedClaims": "Reanalysis and numerical weather prediction outputs must not be represented as calibrated hyper-local automated weather station (AWS) observations directly installed on the corridor.",
+  "knownLimitations": "Grid cell resolution of numerical reanalysis models (~11 km) smooths out hyper-local urban heat island effects and pavement microclimates.",
+  "privacySensitivityAssessment": "Public atmospheric observations. Zero privacy or security constraints.",
+  "status": "APPROVED_FOR_DEMO"
+}
