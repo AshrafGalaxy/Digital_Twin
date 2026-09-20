@@ -39,6 +39,10 @@ MQTT_TOPIC_ENERGY_OBS = "dt/v1/corridor/energy/observations"
 MQTT_TOPIC_ENV_OBS = "dt/v1/corridor/environment/observations"
 MQTT_TOPIC_ALL = "dt/v1/corridor/#"
 
+# Canonical Architecture Hierarchy per TECHNICAL_ARCHITECTURE.md §12.2: nagartwin/{env}/{mode}/{domain}/{id}
+MQTT_TOPIC_NAGARTWIN_PREFIX = "nagartwin"
+MQTT_TOPIC_NAGARTWIN_ALL = "nagartwin/#"
+
 # Sanity & Freshness Thresholds
 TRAFFIC_FRESHNESS_THRESHOLD_SEC = 180.0
 ENERGY_FRESHNESS_THRESHOLD_SEC = 900.0

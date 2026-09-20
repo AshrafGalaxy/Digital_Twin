@@ -18,7 +18,9 @@ try:
         MQTT_TOPIC_ALL,
         MQTT_TOPIC_ENERGY_OBS,
         MQTT_TOPIC_ENV_OBS,
-        MQTT_TOPIC_TRAFFIC_OBS
+        MQTT_TOPIC_TRAFFIC_OBS,
+        MQTT_TOPIC_NAGARTWIN_ALL,
+        MQTT_TOPIC_NAGARTWIN_PREFIX
     )
     from core.database import AsyncSessionLocal
     from ingestion.state_projector import StateProjector
@@ -29,7 +31,9 @@ except ImportError:
         MQTT_TOPIC_ALL,
         MQTT_TOPIC_ENERGY_OBS,
         MQTT_TOPIC_ENV_OBS,
-        MQTT_TOPIC_TRAFFIC_OBS
+        MQTT_TOPIC_TRAFFIC_OBS,
+        MQTT_TOPIC_NAGARTWIN_ALL,
+        MQTT_TOPIC_NAGARTWIN_PREFIX
     )
     from backend.core.database import AsyncSessionLocal
     from backend.ingestion.state_projector import StateProjector
@@ -56,7 +60,8 @@ class MQTTConsumer:
         if rc == 0:
             logger.info("Successfully connected to MQTT Broker at %s:%d", settings.MQTT_BROKER_HOST, settings.MQTT_BROKER_PORT)
             client.subscribe(MQTT_TOPIC_ALL)
-            logger.info("Subscribed to wildcard topic: %s", MQTT_TOPIC_ALL)
+            client.subscribe(MQTT_TOPIC_NAGARTWIN_ALL)
+            logger.info("Subscribed to MQTT corridor topics: %s and %s", MQTT_TOPIC_ALL, MQTT_TOPIC_NAGARTWIN_ALL)
         else:
             logger.error("Failed to connect to MQTT broker, return code: %d", rc)
 
@@ -72,7 +77,22 @@ class MQTTConsumer:
     async def _process_message(self, topic: str, payload: Dict[str, Any]):
         async with AsyncSessionLocal() as session:
             try:
-                if topic == MQTT_TOPIC_TRAFFIC_OBS:
+                # 1. Resolve domain from topic
+                domain = None
+                if topic.startswith(f"{MQTT_TOPIC_NAGARTWIN_PREFIX}/"):
+                    # Format: nagartwin/{environment}/{sourceMode}/{domain}/{entityId}
+                    parts = topic.split("/")
+                    if len(parts) >= 4:
+                        domain = parts[3].lower()
+                elif topic == MQTT_TOPIC_TRAFFIC_OBS or "/traffic/" in topic:
+                    domain = "traffic"
+                elif topic == MQTT_TOPIC_ENERGY_OBS or "/energy/" in topic:
+                    domain = "energy"
+                elif topic == MQTT_TOPIC_ENV_OBS or "/environment/" in topic or "/env/" in topic:
+                    domain = "environment"
+
+                # 2. Process by domain
+                if domain == "traffic":
                     is_valid, error, event = IngestionValidator.validate_traffic_event(payload)
                     if not is_valid:
                         logger.warning("Ingestion validation error on %s: %s", topic, error)
@@ -85,7 +105,6 @@ class MQTTConsumer:
                     await StateProjector.project_traffic_observation(session, event, payload)
                     await session.commit()
 
-                    # Broadcast state update to connected WebSocket clients
                     if self.broadcast_callback:
                         update_msg = {
                             "eventType": "TRAFFIC_STATE_UPDATED",
@@ -96,6 +115,69 @@ class MQTTConsumer:
                                 "averageSpeedKmh": event.averageSpeedKmh,
                                 "congestionIndex": event.congestionIndex,
                                 "queueLengthMeters": event.queueLengthMeters
+                            }
+                        }
+                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                            await self.broadcast_callback(update_msg)
+                        else:
+                            self.broadcast_callback(update_msg)
+
+                elif domain == "energy":
+                    is_valid, error, event = IngestionValidator.validate_energy_event(payload)
+                    if not is_valid:
+                        logger.warning("Energy validation error on %s: %s", topic, error)
+                        await StateProjector.record_ingestion_error(
+                            session, topic, payload.get("sourceMode"), payload, error or "Validation failed"
+                        )
+                        await session.commit()
+                        return
+
+                    await StateProjector.project_energy_observation(session, event, payload)
+                    await session.commit()
+
+                    if self.broadcast_callback:
+                        update_msg = {
+                            "eventType": "ENERGY_STATE_UPDATED",
+                            "entityId": event.buildingId,
+                            "sourceMode": event.sourceMode.value,
+                            "observedAt": event.observedAt.isoformat(),
+                            "metrics": {
+                                "activePowerKw": event.activePowerKw,
+                                "reactivePowerKvar": event.reactivePowerKvar,
+                                "powerFactor": event.powerFactor,
+                                "energyConsumptionKwh": event.energyConsumptionKwh
+                            }
+                        }
+                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                            await self.broadcast_callback(update_msg)
+                        else:
+                            self.broadcast_callback(update_msg)
+
+                elif domain == "environment":
+                    is_valid, error, event = IngestionValidator.validate_environment_event(payload)
+                    if not is_valid:
+                        logger.warning("Environment validation error on %s: %s", topic, error)
+                        await StateProjector.record_ingestion_error(
+                            session, topic, payload.get("sourceMode"), payload, error or "Validation failed"
+                        )
+                        await session.commit()
+                        return
+
+                    await StateProjector.project_environment_observation(session, event, payload)
+                    await session.commit()
+
+                    if self.broadcast_callback:
+                        update_msg = {
+                            "eventType": "ENVIRONMENT_STATE_UPDATED",
+                            "entityId": event.stationId,
+                            "sourceMode": event.sourceMode.value,
+                            "observedAt": event.observedAt.isoformat(),
+                            "metrics": {
+                                "aqiValue": event.aqiValue,
+                                "pm25": event.pm25,
+                                "pm10": event.pm10,
+                                "temperatureC": event.temperatureC,
+                                "relativeHumidityPct": event.relativeHumidityPct
                             }
                         }
                         if asyncio.iscoroutinefunction(self.broadcast_callback):

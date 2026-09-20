@@ -120,6 +120,101 @@ class StateProjector:
             })
 
     @staticmethod
+    async def project_energy_observation(
+        session: AsyncSession,
+        event: EnergyObservationEvent,
+        raw_payload: Optional[Dict[str, Any]] = None
+    ) -> None:
+        insert_obs_sql = text("""
+            INSERT INTO energy_observations (
+                observed_at, building_id, source_mode, active_power_kw,
+                reactive_power_kvar, power_factor, energy_consumption_kwh,
+                quality_flag, raw_payload
+            ) VALUES (
+                :observed_at, :building_id, :source_mode, :active_power_kw,
+                :reactive_power_kvar, :power_factor, :energy_consumption_kwh,
+                :quality_flag, :raw_payload
+            )
+        """)
+        await session.execute(insert_obs_sql, {
+            "observed_at": event.observedAt,
+            "building_id": event.buildingId,
+            "source_mode": event.sourceMode.value,
+            "active_power_kw": event.activePowerKw,
+            "reactive_power_kvar": event.reactivePowerKvar,
+            "power_factor": event.powerFactor,
+            "energy_consumption_kwh": event.energyConsumptionKwh,
+            "quality_flag": event.qualityFlag.value,
+            "raw_payload": json.dumps(raw_payload) if raw_payload else None
+        })
+
+        if event.sourceMode in (SourceMode.LIVE, SourceMode.REPLAY):
+            metrics = {
+                "activePowerKw": event.activePowerKw,
+                "reactivePowerKvar": event.reactivePowerKvar,
+                "powerFactor": event.powerFactor,
+                "energyConsumptionKwh": event.energyConsumptionKwh
+            }
+            upsert_state_sql = text("""
+                INSERT INTO entity_current_state (
+                    entity_id, entity_type, source_mode, observed_at,
+                    updated_at, metrics, quality_status, freshness_seconds
+                ) VALUES (
+                    :entity_id, :entity_type, :source_mode, :observed_at,
+                    NOW(), :metrics, :quality_status, :freshness_seconds
+                )
+                ON CONFLICT (entity_id) DO UPDATE SET
+                    source_mode = EXCLUDED.source_mode,
+                    observed_at = EXCLUDED.observed_at,
+                    updated_at = NOW(),
+                    metrics = EXCLUDED.metrics,
+                    quality_status = EXCLUDED.quality_status,
+                    freshness_seconds = EXCLUDED.freshness_seconds
+                WHERE EXCLUDED.observed_at >= entity_current_state.observed_at
+            """)
+            now_utc = datetime.now(timezone.utc)
+            freshness = max(0.0, (now_utc - event.observedAt).total_seconds())
+            await session.execute(upsert_state_sql, {
+                "entity_id": event.buildingId,
+                "entity_type": EntityType.BUILDING.value,
+                "source_mode": event.sourceMode.value,
+                "observed_at": event.observedAt,
+                "metrics": json.dumps(metrics),
+                "quality_status": event.qualityFlag.value,
+                "freshness_seconds": round(freshness, 1)
+            })
+
+    @staticmethod
+    async def project_environment_observation(
+        session: AsyncSession,
+        event: EnvironmentObservationEvent,
+        raw_payload: Optional[Dict[str, Any]] = None
+    ) -> None:
+        insert_obs_sql = text("""
+            INSERT INTO environment_observations (
+                observed_at, station_id, source_mode, aqi_value,
+                pm25, pm10, temperature_c, relative_humidity_pct,
+                precipitation_mm, quality_flag
+            ) VALUES (
+                :observed_at, :station_id, :source_mode, :aqi_value,
+                :pm25, :pm10, :temperature_c, :relative_humidity_pct,
+                :precipitation_mm, :quality_flag
+            )
+        """)
+        await session.execute(insert_obs_sql, {
+            "observed_at": event.observedAt,
+            "station_id": event.stationId,
+            "source_mode": event.sourceMode.value,
+            "aqi_value": event.aqiValue,
+            "pm25": event.pm25,
+            "pm10": event.pm10,
+            "temperature_c": event.temperatureC,
+            "relative_humidity_pct": event.relativeHumidityPct,
+            "precipitation_mm": event.precipitationMm,
+            "quality_flag": event.qualityFlag.value
+        })
+
+    @staticmethod
     async def record_ingestion_error(
         session: AsyncSession,
         topic: str,
