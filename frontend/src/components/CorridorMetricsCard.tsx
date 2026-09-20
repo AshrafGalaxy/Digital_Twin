@@ -18,10 +18,31 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
   activeSensors,
   sourceMode
 }) => {
+  // Determine overall corridor state per UI_UX_SPEC §7.6
+  const corridorState = congestionIndex > 0.6
+    ? { label: 'STRESSED', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' }
+    : congestionIndex > 0.3
+    ? { label: 'ELEVATED', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' }
+    : { label: 'NOMINAL', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' };
+
   return (
     <div className="corridor-metrics-card">
       <div className="card-header">
-        <span className="card-title">Corridor Telemetry</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="card-title">Corridor Telemetry</span>
+          <span
+            className="status-pill"
+            style={{
+              color: corridorState.color,
+              background: corridorState.bg,
+              border: `1px solid ${corridorState.color}40`,
+              fontWeight: 700,
+              fontSize: '12px'
+            }}
+          >
+            {corridorState.label}
+          </span>
+        </div>
         <ProvenanceBadge mode={sourceMode} />
       </div>
 
@@ -72,6 +93,21 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             <span className="metric-unit">nodes</span>
           </div>
         </div>
+      </div>
+
+      {/* Telemetric Basis & Advisory Notice per UI_UX_SPEC §7.6 */}
+      <div style={{
+        marginTop: '8px',
+        paddingTop: '6px',
+        borderTop: '1px solid var(--border-color)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '12px',
+        color: 'var(--text-muted)'
+      }}>
+        <span>Basis: {sourceMode === 'SIMULATION' ? 'Microscopic Simulation (SUMO)' : 'Replay Survey Telemetry'}</span>
+        <span>Advisory Decision Support</span>
       </div>
     </div>
   );

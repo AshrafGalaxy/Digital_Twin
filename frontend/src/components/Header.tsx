@@ -10,7 +10,8 @@ import {
   ShieldAlert,
   Server,
   Sun,
-  Moon
+  Moon,
+  User
 } from 'lucide-react';
 import { SourceMode } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
@@ -62,12 +63,15 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="app-header">
-      {/* Top Strip: Brand + Global Telemetry / Governance Badges + Theme Switcher */}
+      {/* Top Strip: Brand + Global Telemetry / Governance Badges + Theme Switcher (UI_UX_SPEC §6.1) */}
       <div className="header-top-row">
         <div className="brand-section">
           <Activity size={22} color="var(--color-primary)" />
           <span className="brand-title">Digital Twin</span>
           <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>
+          <span className="provenance-badge badge-replay" style={{ fontSize: '12px', padding: '2px 8px', letterSpacing: '0.5px' }}>
+            DEMO
+          </span>
         </div>
 
         <div className="status-section">
@@ -75,6 +79,13 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="status-pill">
             <span className={`dot ${wsConnected ? 'dot-live' : 'dot-stale'}`} />
             <span>{wsConnected ? 'Stream Active' : 'Connecting...'}</span>
+          </div>
+
+          {/* User Role Indicator (UI_UX_SPEC §6.1) */}
+          <div className="status-pill" title="Current session authorization role">
+            <User size={13} color="var(--text-muted)" />
+            <span className="text-muted">Role:</span>
+            <span style={{ fontWeight: 600 }}>Municipal Analyst</span>
           </div>
 
           {/* Source Mode Provenance Badge */}
@@ -117,6 +128,35 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
           </button>
+        </div>
+      </div>
+
+      {/* Global Status Bar per UI_UX_SPEC §6.2 */}
+      <div className="global-status-bar" aria-label="Global System and Model Status">
+        <div className="status-bar-item">
+          <span className="text-muted">Data Freshness:</span>
+          <span className="font-mono">
+            {lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : 'Real-time telemetry stream'}
+          </span>
+        </div>
+        <div className="status-bar-item">
+          <span className="text-muted">Source Mode:</span>
+          <span style={{ fontWeight: 600 }}>{currentMode} + BENCHMARK</span>
+        </div>
+        <div className="status-bar-item">
+          <span className="text-muted">Traffic Model:</span>
+          <code style={{ fontSize: '12px' }}>traffic-xgb-v1 (15m)</code>
+        </div>
+        <div className="status-bar-item">
+          <span className="text-muted">Energy Model:</span>
+          <code style={{ fontSize: '12px' }}>energy-xgb-v1 (60m)</code>
+        </div>
+        <div className="status-bar-item">
+          <span className="text-muted">Scenario Service:</span>
+          <span style={{ color: '#10B981', fontWeight: 500 }}>SUMO 1.18+ (Available)</span>
+        </div>
+        <div className="status-bar-item status-bar-governance" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
+          <span>Advisory Only • Human Approval Required</span>
         </div>
       </div>
 

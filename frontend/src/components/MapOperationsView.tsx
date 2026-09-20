@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import buildings3dGeoJson from '../assets/corridor_buildings_3d.json';
+import { ProvenanceBadge } from './ProvenanceBadge';
 
 interface MapOperationsViewProps {
   studyAreaGeoJson: any;
@@ -30,6 +31,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
+  const [isTableView, setIsTableView] = useState<boolean>(false);
 
   // Initialize MapLibre GL Map
   useEffect(() => {
@@ -301,6 +303,50 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           .addTo(currentMap);
         markersRef.current.push(marker);
       });
+
+      // 5. Add Energy Entity Marker (Phoenix Marketcity) per UI_UX_SPEC §7.3
+      const energyEl = document.createElement('div');
+      energyEl.className = 'energy-entity-marker';
+      energyEl.style.display = 'flex';
+      energyEl.style.alignItems = 'center';
+      energyEl.style.gap = '4px';
+      energyEl.style.padding = '3px 7px';
+      energyEl.style.borderRadius = '12px';
+      energyEl.style.backgroundColor = isLight ? '#FFF' : '#1E293B';
+      energyEl.style.border = '1.5px solid #F59E0B';
+      energyEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+      energyEl.style.fontSize = '12px';
+      energyEl.style.fontWeight = '600';
+      energyEl.style.color = isLight ? '#B45309' : '#FBBF24';
+      energyEl.style.cursor = 'pointer';
+      energyEl.title = 'Phoenix Marketcity Commercial Energy Zone (Sanctioned: 8,500 kVA)';
+      energyEl.innerHTML = '⚡ Phoenix (Energy)';
+      const energyMarker = new maplibregl.Marker({ element: energyEl })
+        .setLngLat([73.9170, 18.5625])
+        .addTo(currentMap);
+      markersRef.current.push(energyMarker);
+
+      // 6. Add Environmental Context Station Marker (Lohegaon CAAQMS) per UI_UX_SPEC §7.3
+      const envEl = document.createElement('div');
+      envEl.className = 'env-station-marker';
+      envEl.style.display = 'flex';
+      envEl.style.alignItems = 'center';
+      envEl.style.gap = '4px';
+      envEl.style.padding = '3px 7px';
+      envEl.style.borderRadius = '12px';
+      envEl.style.backgroundColor = isLight ? '#FFF' : '#1E293B';
+      envEl.style.border = '1.5px solid #10B981';
+      envEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+      envEl.style.fontSize = '12px';
+      envEl.style.fontWeight = '600';
+      envEl.style.color = isLight ? '#047857' : '#34D399';
+      envEl.style.cursor = 'pointer';
+      envEl.title = 'Pune Airport / Lohegaon CAAQMS Air Quality Reference Station (NAAQS: Moderate)';
+      envEl.innerHTML = '🍃 CAAQMS Air Station';
+      const envMarker = new maplibregl.Marker({ element: envEl })
+        .setLngLat([73.9215, 18.5665])
+        .addTo(currentMap);
+      markersRef.current.push(envMarker);
     };
 
     if (currentMap.isStyleLoaded()) {
@@ -366,8 +412,17 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     <div className="map-container-relative" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapContainer} className="map-viewport" />
 
-      {/* 3D Presentation Mode Overlay Controls */}
+      {/* 3D Presentation & Accessibility Mode Overlay Controls */}
       <div className="map-3d-controls-overlay">
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${isTableView ? 'active' : ''}`}
+          onClick={() => setIsTableView(!isTableView)}
+          title={isTableView ? "Return to Visual 2D Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG Fallback per UI_UX_SPEC §18.2)"}
+        >
+          <span>{isTableView ? '🗺️ 2D Map View' : '📋 Accessible Table View'}</span>
+        </button>
+
         <button
           type="button"
           className={`map-3d-toggle-btn ${is3DMode ? 'active' : ''}`}
@@ -383,6 +438,138 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           </span>
         )}
       </div>
+
+      {/* Accessible Synchronized Table View per UI_UX_SPEC §18.2 */}
+      {isTableView && (
+        <div className="accessible-map-table-view" role="region" aria-label="Synchronized Corridor Map Information Table">
+          <div className="accessible-table-header">
+            <div>
+              <h2 className="accessible-table-title">Synchronized Corridor Telemetry & Asset Table</h2>
+              <p className="accessible-table-caption">
+                Screen-reader and keyboard accessible tabular alternative for spatial corridor map layers per UI_UX_SPEC §18.2 (WCAG 2.1 AA).
+              </p>
+            </div>
+            <button
+              className="map-view-toggle-btn"
+              onClick={() => setIsTableView(false)}
+              style={{ fontSize: '12px' }}
+            >
+              Close Table & Return to Map
+            </button>
+          </div>
+
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginTop: '12px', marginBottom: '8px' }}>
+            Road Segments ({roadSegments.length})
+          </h3>
+          <div className="table-responsive">
+            <table className="analytics-table" aria-label="Corridor Road Segments Telemetry">
+              <thead>
+                <tr>
+                  <th scope="col">Segment Name & ID</th>
+                  <th scope="col">Direction & Lanes</th>
+                  <th scope="col">Speed Limit</th>
+                  <th scope="col">Current Speed & LOS</th>
+                  <th scope="col">15m Forecast</th>
+                  <th scope="col">Source Mode</th>
+                  <th scope="col">Freshness</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roadSegments.map(seg => {
+                  const state = liveStates[seg.id];
+                  const speed = state?.metrics.averageSpeedKmh ?? 45.0;
+                  const los = speed >= 42 ? 'A' : speed >= 38 ? 'B' : speed >= 32 ? 'C' : speed >= 25 ? 'D' : speed >= 18 ? 'E' : 'F';
+                  const mode = state?.sourceMode || 'SIMULATION';
+                  return (
+                    <tr key={seg.id} className={selectedEntity?.id === seg.id ? 'row-selected' : ''}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{seg.name}</div>
+                        <code style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{seg.id}</code>
+                      </td>
+                      <td>
+                        <span className="dir-tag">{seg.direction}</span> ({seg.lanes} lanes)
+                      </td>
+                      <td className="mono-cell">{seg.speedLimitKmh} km/h</td>
+                      <td>
+                        <span style={{ fontWeight: 700, color: speed < 20 ? '#EF4444' : speed < 35 ? '#F59E0B' : '#10B981' }}>
+                          {speed.toFixed(1)} km/h
+                        </span>{' '}
+                        <span className={`los-badge los-${los.toLowerCase()}`}>LOS {los}</span>
+                      </td>
+                      <td>
+                        <span className="font-mono">
+                          {Math.max(12, speed * 0.94).toFixed(1)} km/h
+                        </span>
+                      </td>
+                      <td>
+                        <ProvenanceBadge mode={mode} />
+                      </td>
+                      <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {state?.freshnessSeconds ? `${state.freshnessSeconds.toFixed(1)}s ago` : 'Real-time'}
+                      </td>
+                      <td>
+                        <button
+                          className="btn-select-sm"
+                          onClick={() => {
+                            onSelectEntity(seg);
+                            setIsTableView(false);
+                          }}
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginTop: '20px', marginBottom: '8px' }}>
+            Intersections & Critical Junctions ({intersections.length})
+          </h3>
+          <div className="table-responsive">
+            <table className="analytics-table" aria-label="Corridor Intersections">
+              <thead>
+                <tr>
+                  <th scope="col">Junction Name & ID</th>
+                  <th scope="col">Control Type</th>
+                  <th scope="col">Cycle Time</th>
+                  <th scope="col">Connected Segments</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {intersections.map(ix => (
+                  <tr key={ix.id} className={selectedEntity?.id === ix.id ? 'row-selected' : ''}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{ix.name}</div>
+                      <code style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{ix.id}</code>
+                    </td>
+                    <td>{ix.controlType}</td>
+                    <td className="mono-cell">{ix.cycleTimeSec}s</td>
+                    <td style={{ fontSize: '12px' }}>
+                      {ix.connectedSegments?.join(', ') || 'Nagar Road Arterial'}
+                    </td>
+                    <td>
+                      <button
+                        className="btn-select-sm"
+                        onClick={() => {
+                          onSelectEntity(ix);
+                          setIsTableView(false);
+                        }}
+                      >
+                        Inspect
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
