@@ -3,6 +3,12 @@ param(
     [switch]$NewWindow
 )
 
+# Enforce UTF-8 console output encoding to eliminate Windows code-page artifacts
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
+
 $RootDir = $PSScriptRoot
 if (-not $RootDir) {
     $RootDir = (Get-Location).Path

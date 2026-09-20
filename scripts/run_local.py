@@ -59,6 +59,18 @@ def stream_output(pipe, prefix, color):
             if not line:
                 break
             clean_line = line.rstrip()
+            if not clean_line:
+                continue
+            
+            # Clean up unrendered arrow glyphs, Windows code-page artifacts (âžœ), and leading clutter
+            clean_line = (
+                clean_line
+                .replace("âžœ", "")
+                .replace("➜", "")
+                .replace("\u279c", "")
+                .strip()
+            )
+            
             if clean_line:
                 print(f"{color}[{prefix}]{RESET} {clean_line}")
     except Exception:
@@ -84,6 +96,8 @@ def main():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         bufsize=1,
         env=env
     )
@@ -99,6 +113,8 @@ def main():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         bufsize=1
     )
 
