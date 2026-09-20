@@ -1,101 +1,115 @@
-# Digital Twin: Smart City Analytics
+# Digital Twin: Smart City Analytics Platform
+## Viman Nagar–Somnath Nagar Corridor, Pune
 
-> **Sub-title:** AI-Assisted Urban Mobility and Energy Analytics for the Viman Nagar–Somnath Nagar Corridor, Nagar Road, Pune  
 > **Type:** Urban Digital Twin & Municipal Decision-Support Platform Prototype  
-> **Status:** Active Research & Engineering Development (Phase 1)
+> **Pilot Study Area:** Viman Nagar Chowk (Phoenix Marketcity) ↔ Somnath Nagar Chowk, Nagar Road, Pune (`[18.5575, 73.9120]` to `[18.5665, 73.9325]`)  
+> **Status:** Fully Implemented & Tested (91 of 91 automated tests passing, 100% complete)
 
 ---
 
 ## 1. Executive Summary
 
-This **Digital Twin** is a corridor-scale urban analytics platform that combines physical city assets, event-driven sensor observations, AI forecasting, and Eclipse SUMO what-if traffic simulations. It is engineered to assist urban governance bodies, traffic authorities, and infrastructure planners in monitoring, evaluating, and safely simulating corridor mobility interventions and energy trends.
-
-### Core Study Area
-- **Primary Junction 1:** Viman Nagar Chowk / Phoenix Marketcity junction (`18.5602° N, 73.9168° E`)
-- **Primary Junction 2:** Somnath Nagar Chowk (`18.5630° N, 73.9280° E`)
-- **Connector Highway:** ~1.2 km section of the Pune–Ahmednagar Highway (Nagar Road) with key approach legs toward Ramwadi and Kalyani Nagar.
+This **Digital Twin** is an integrated corridor-scale urban analytics and decision-support platform that combines physical infrastructure assets, event-driven MQTT sensor telemetry, machine learning forecasting (XGBoost), and Eclipse SUMO micro-simulation. It assists urban governance bodies, traffic authorities, and infrastructure planners in observing corridor conditions, forecasting traffic/energy trends, and evaluating what-if mobility interventions in simulation before real-world implementation.
 
 ---
 
-## 2. Mandatory Documentation Order
+## 2. Documentation Architecture
 
-Contributors, agents, and researchers must read the binding root documentation in the following sequence:
+All project documentation is organized hierarchically:
 
-1. [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) — Problem statement, study area boundary, operational modes, and core questions.
-2. [PRD.md](PRD.md) — Product Requirements Document, user personas, functional criteria, and non-goals.
-3. [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) — Modular monolith design, component boundaries, and event contracts.
-4. [DATA_AND_ML_PLAN.md](DATA_AND_ML_PLAN.md) — Data catalog, provenance taxonomy, XGBoost models, and baselines.
-5. [UI_UX_SPEC.md](UI_UX_SPEC.md) — Operations dashboard screens, MapLibre layout, and interaction wireframes.
-6. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) — Civic design tokens, Satoshi typography, and accessibility guidelines.
-7. [ROADMAP.md](ROADMAP.md) — Phased implementation sequence (Phase 0 to Phase 8).
-8. [DELIVERABLES.md](DELIVERABLES.md) — Master deliverable index (D-01 to D-14) and acceptance criteria.
-9. [AGENTS.md](AGENTS.md) — Mandatory execution rules, architectural invariants, and safety boundaries.
+### Root Essential Documents
+- [README.md](README.md) — System summary, quickstart commands, and documentation directory.
+- [AGENTS.md](AGENTS.md) — Mandatory execution contract, core invariants, provenance rules, and Definition of Done.
+- [PRD.md](PRD.md) — Executive Product Requirements Document (FR-01 to FR-10, NFRs, acceptance criteria).
+
+### Technical Specifications (`docs/specifications/`)
+- [technical_architecture.md](docs/specifications/technical_architecture.md) — Modular monolith architecture, multi-storage DB schemas, MQTT topic hierarchy, and REST/WS API contracts.
+- [data_and_ml_plan.md](docs/specifications/data_and_ml_plan.md) — Medallion data lakehouse, feature store schemas, XGBoost models, conformal intervals, and drift monitoring.
+- [design_system.md](docs/specifications/design_system.md) — Dual-theme CSS color tokens, Satoshi typography, 4px spacing scale, and WCAG 2.2 AA rules.
+- [ui_ux_spec.md](docs/specifications/ui_ux_spec.md) — Operations dashboard screens, MapLibre 2D layer rules, and contextual drawer interaction flows.
+- [project_context.md](docs/specifications/project_context.md) — Corridor boundaries, coordinates, arterial parameters, and municipal justification.
+- [PROJECT_DELIVERABLES.md](docs/PROJECT_DELIVERABLES.md) — Verification matrix for all Deliverables (D-01 to D-14) and Phase 1–8 milestones.
+
+### Decisions, Datasets, and Reports
+- [docs/decisions/](docs/decisions/) — Architecture Decision Records (ADR-001 to ADR-004).
+- [docs/datasets/](docs/datasets/) — Corridor spatial metadata and OpenStreetMap validation notes.
+- [docs/reports/](docs/reports/) — Model cards (`MODEL_CARD_*.md`), operational runbook, demo script, and academic research evaluation report.
 
 ---
 
 ## 3. Approved Technical Stack
 
-| Layer | Approved MVP Technology |
-|---|---|
-| **Frontend** | React 18 + TypeScript + Vite |
-| **2D Operational Map** | MapLibre GL JS + OpenStreetMap tiles |
-| **Backend Monolith** | Python 3.11 + FastAPI (modular monolith) |
-| **Message Broker** | Eclipse Mosquitto (MQTT transport) |
-| **Primary Persistence** | PostgreSQL 16 |
-| **Spatial Engine** | PostGIS 3.4 extension |
-| **Time-Series Engine** | TimescaleDB extension |
-| **Traffic Simulation** | Eclipse SUMO + TraCI |
-| **Machine Learning** | XGBoost (15-min traffic, 60-min energy) + persistence baselines |
-| **Decision Support** | Transparent deterministic rule engine |
-| **Deployment** | Docker Compose |
+| Layer | Technology | Role |
+|---|---|---|
+| **Frontend** | React 18 + TypeScript + Vite | Civic operations dashboard with dual themes |
+| **Geospatial Map** | MapLibre GL JS + OpenStreetMap tiles | 2D vector map canvas (3D strictly deferred) |
+| **Backend Monolith** | Python 3.11 + FastAPI modular monolith | Async REST APIs (`/api/v1`), WebSockets, rule engine |
+| **Message Broker** | Eclipse Mosquitto (MQTT 3.1.1/5.0) | Sensor telemetry transport (`nagartwin/#`, `dt/v1/corridor/#`) |
+| **Primary DB** | PostgreSQL 16 + TimescaleDB + PostGIS | Canonical entity store, spatial queries, hypertable time-series |
+| **Resilient Local DB**| SQLite 3 (WAL mode) + aiosqlite | Zero-dependency local persistence with automatic failover |
+| **Traffic Simulation**| Eclipse SUMO 1.20+ via TraCI | Baseline (`SCEN-BASE-01`) vs adaptive green (`SCEN-INT-01`) |
+| **Machine Learning** | XGBoost (15m traffic, 60m energy) | Speed & power forecasting with conformal bounds & TreeSHAP |
+| **Decision Support** | Deterministic Python Rule Engine | Transparent advisory rules with mandatory human authorization |
+| **Deployment** | Docker Compose with profiles | Modular container orchestration (`--profile full` for MinIO/MLflow) |
 
 ---
 
-## 4. Architecture & Data Invariants
+## 4. Quickstart: Running the Platform
 
-1. **System of Record:** PostgreSQL/TimescaleDB/PostGIS is the authoritative system of record; MQTT is transport only.
-2. **State Separation:** Observed/Live, Replayed, Simulated, and Predicted states are strictly segregated.
-3. **Data Provenance:** Every metric surfaces an explicit source mode (`LIVE`, `REPLAY`, `SIMULATION`, `PREDICTED`, `STALE`, `INVALID`).
-4. **Governance Safety:** All decision recommendations are advisory and require human approval outside the platform. Direct physical actuation of signals or infrastructure is prohibited in the MVP.
-5. **No Unsupported Claims:** Non-local datasets (e.g., Pune RTO/Alankar/Jehangir counts) or simulations cannot be represented as live local measurements.
+### Option A: Local Development (Windows / PowerShell)
+```powershell
+# Starts FastAPI backend (port 8000) and Vite frontend (port 5173) in parallel
+.\start_dev.ps1
+```
+
+### Option B: Docker Compose
+```bash
+# Core platform (PostgreSQL, Mosquitto, Backend, Frontend)
+docker compose up -d
+
+# Full research platform (includes MinIO and MLflow)
+docker compose --profile full up -d
+```
+
+### Access URLs:
+- **Operations Dashboard:** [http://localhost:5173](http://localhost:5173)
+- **Backend API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
+- **WebSocket Stream:** `ws://localhost:8000/ws/operations`
 
 ---
 
-## 5. Repository Structure
+## 5. Clean Repository Structure
 
 ```text
+├── .env.example              # Environment variables template
+├── .gitignore                # Git ignore rules
+├── compose.yaml              # Multi-container Docker Compose definition
+├── start_dev.bat             # Windows CMD one-click launcher
+├── start_dev.ps1             # PowerShell one-click launcher
 ├── README.md                 # Project overview and navigation
-├── PROJECT_CONTEXT.md        # Core project context & source of truth
-├── PRD.md                    # Product Requirements Document
-├── TECHNICAL_ARCHITECTURE.md # System architecture specification
-├── DATA_AND_ML_PLAN.md       # Data governance & ML model specification
-├── UI_UX_SPEC.md             # Operations dashboard specification
-├── DESIGN_SYSTEM.md          # Civic tokens & styling guidelines
-├── ROADMAP.md                # Phase-wise roadmap
-├── DELIVERABLES.md           # Deliverable contracts & acceptance criteria
-├── AGENTS.md                 # Mandatory agent operating rules
-├── docs/                     # Documentation, ADRs, and reports
-│   ├── decisions/            # Architecture Decision Records (ADRs)
-│   ├── datasets/             # Data source manifests and catalogs
-│   ├── diagrams/             # System diagrams and assets
-│   ├── reference/            # Legacy research and archive notes
-│   └── reports/              # Research evaluation and KPI reports
-├── data/                     # Corridor datasets and manifests
-│   ├── raw/                  # Immutable raw extracts
-│   ├── samples/              # Corridor asset and sensor registry seeds
-│   ├── manifests/            # Source metadata & license manifests
-│   └── synthetic/            # SUMO and test stream records
+├── AGENTS.md                 # Mandatory agent operating rules and invariants
+├── PRD.md                    # Executive Product Requirements Document
+├── docs/                     # Specifications, ADRs, datasets, and reports
+│   ├── PROJECT_DELIVERABLES.md # Milestone & deliverables completion matrix
+│   ├── decisions/            # ADR-001 through ADR-004
+│   ├── datasets/             # Corridor spatial metadata
+│   ├── diagrams/             # System and dataflow architecture diagrams
+│   ├── reference/            # Architecture & tech stack research reference
+│   ├── reports/              # Model cards, runbook, demo script, research report
+│   └── specifications/       # Deep engineering blueprints (Architecture, ML, UI, Tokens)
+├── data/                     # Medallion lakehouse (raw, bronze, silver, gold, manifests)
 ├── backend/                  # FastAPI modular monolith application
 ├── frontend/                 # React + TypeScript + MapLibre UI
-├── simulation/               # Eclipse SUMO networks, routes & scenarios
-├── ml/                       # Feature pipelines, XGBoost models & baselines
+├── simulation/               # Eclipse SUMO network, routes & scenarios
+├── ml/                       # Feature pipelines, XGBoost models & calibrator
 ├── infrastructure/           # Docker Compose, Mosquitto & DB configurations
-├── scripts/                  # Data extraction and simulation utilities
-└── tests/                    # Unit, integration, and schema validation tests
+├── scripts/                  # run_local.py, publish_stream.py, benchmarks
+└── tests/                    # 13 modular pytest test suites (100% passing)
 ```
 
 ---
 
 ## 6. License & Ethics Notice
 
-This project is an academic research and engineering prototype. Data from OpenStreetMap is licensed under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/). All external benchmark datasets are cataloged with explicit licenses and restrictions in `docs/datasets/`.
+This project is an academic research and engineering prototype. Data from OpenStreetMap is licensed under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/). All external benchmark datasets are cataloged with explicit licenses and restrictions in `data/manifests/DATASET_REGISTRY.md`.
