@@ -17,8 +17,10 @@ import { SourceMode } from '../../types/twin';
 import {
   fetchDatasetManifests,
   fetchDatasetManifest,
+  fetchQuarantineQueue,
   DatasetCatalogResponse,
-  DetailedDatasetManifest
+  DetailedDatasetManifest,
+  QuarantineQueueResponse
 } from '../../services/api';
 
 interface SystemHealthViewProps {
@@ -38,13 +40,17 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
   const [selectedManifest, setSelectedManifest] = useState<DetailedDatasetManifest | null>(null);
   const [loadingManifestId, setLoadingManifestId] = useState<string | null>(null);
   const [manifestModalOpen, setManifestModalOpen] = useState<boolean>(false);
+  const [quarantineData, setQuarantineData] = useState<QuarantineQueueResponse | null>(null);
+  const [quarantineModalOpen, setQuarantineModalOpen] = useState<boolean>(false);
+  const [selectedQuarantineReason, setSelectedQuarantineReason] = useState<string>('ALL');
 
   const fetchHealth = async () => {
     try {
       setRefreshing(true);
-      const [healthRes, catalog] = await Promise.all([
+      const [healthRes, catalog, quarantine] = await Promise.all([
         fetch('/api/v1/health'),
-        fetchDatasetManifests()
+        fetchDatasetManifests(),
+        fetchQuarantineQueue()
       ]);
       if (healthRes.ok) {
         const data = await healthRes.json();
@@ -53,8 +59,11 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
       if (catalog) {
         setCatalogData(catalog);
       }
+      if (quarantine) {
+        setQuarantineData(quarantine);
+      }
     } catch (err) {
-      console.error('Failed to fetch system health or dataset manifests', err);
+      console.error('Failed to fetch system health, manifests, or quarantine queue', err);
     } finally {
       setRefreshing(false);
     }
@@ -81,13 +90,14 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && manifestModalOpen) {
-        setManifestModalOpen(false);
+      if (e.key === 'Escape') {
+        if (manifestModalOpen) setManifestModalOpen(false);
+        if (quarantineModalOpen) setQuarantineModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [manifestModalOpen]);
+  }, [manifestModalOpen, quarantineModalOpen]);
 
   const subsystems = healthData?.subsystems || {};
 
@@ -232,9 +242,26 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
               </tr>
               <tr>
                 <td>Invalid Records Dropped</td>
-                <td className="mono-cell">0</td>
-                <td>Dead-letter queue filter</td>
-                <td><span className="status-pill status-active">Clean</span></td>
+                <td className="mono-cell">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>{quarantineData?.totalQuarantined ?? healthData?.subsystems?.quarantinedEventsCount ?? 0}</span>
+                    <button
+                      className="btn-select-sm"
+                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                      onClick={() => setQuarantineModalOpen(true)}
+                    >
+                      Inspect Queue
+                    </button>
+                  </div>
+                </td>
+                <td>quarantine_observations table</td>
+                <td>
+                  <span className={`status-pill ${
+                    (quarantineData?.totalQuarantined || 0) > 0 ? 'status-review' : 'status-active'
+                  }`}>
+                    {(quarantineData?.totalQuarantined || 0) > 0 ? `${quarantineData?.totalQuarantined} Quarantined` : 'Clean'}
+                  </span>
+                </td>
               </tr>
               <tr>
                 <td>Data Freshness Age</td>
@@ -590,6 +617,194 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 style={{ padding: '6px 16px', fontSize: '13px' }}
               >
                 Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Track 3 P3-B: Quarantine Dead-Letter Queue Inspection Modal */}
+      {quarantineModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}
+          onClick={() => setQuarantineModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface, #ffffff)',
+              borderRadius: '12px',
+              boxShadow: 'var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.2))',
+              maxWidth: '880px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid var(--color-border, #E2E8F0)',
+              padding: '24px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: '16px', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="font-mono" style={{ background: '#DC2626', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>
+                    DEAD-LETTER QUEUE
+                  </span>
+                  <span className="provenance-badge badge-warning">
+                    {quarantineData?.totalQuarantined || 0} REJECTED RECORDS
+                  </span>
+                  <span className="provenance-badge badge-predicted">
+                    quarantine_observations
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #0F172A)', marginTop: '8px', marginBottom: '4px' }}>
+                  Telemetry Ingestion Quarantine & Dead-Letter Inspector
+                </h2>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary, #64748B)' }}>
+                  Per <strong>AGENTS.md §7.5</strong>, invalid telemetry events (out-of-bounds metrics, schema failures, future timestamps) are strictly rejected and isolated from authoritative twin state.
+                </div>
+              </div>
+              <button
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-secondary, #64748B)',
+                  padding: '4px'
+                }}
+                onClick={() => setQuarantineModalOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Reasons Breakdown Badges */}
+            <div style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>
+                Filter by Rejection Reason:
+              </span>
+              <button
+                className={`btn-select-sm ${selectedQuarantineReason === 'ALL' ? 'btn-active' : ''}`}
+                style={{
+                  padding: '3px 10px',
+                  fontSize: '11px',
+                  background: selectedQuarantineReason === 'ALL' ? '#0F4C5C' : 'transparent',
+                  color: selectedQuarantineReason === 'ALL' ? '#fff' : 'inherit'
+                }}
+                onClick={() => setSelectedQuarantineReason('ALL')}
+              >
+                All ({quarantineData?.totalQuarantined || 0})
+              </button>
+              {Object.entries(quarantineData?.reasonsBreakdown || {}).map(([reason, count]) => (
+                <button
+                  key={reason}
+                  className={`btn-select-sm ${selectedQuarantineReason === reason ? 'btn-active' : ''}`}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: '11px',
+                    background: selectedQuarantineReason === reason ? '#0F4C5C' : 'transparent',
+                    color: selectedQuarantineReason === reason ? '#fff' : 'inherit'
+                  }}
+                  onClick={() => setSelectedQuarantineReason(reason)}
+                >
+                  {reason} ({count})
+                </button>
+              ))}
+            </div>
+
+            {/* Quarantined Records Table */}
+            {(!quarantineData || quarantineData.records.length === 0) ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-secondary, #64748B)', background: 'var(--color-bg, #F8FAFC)', borderRadius: '8px', border: '1px dashed var(--color-border, #E2E8F0)' }}>
+                <FileCheck size={32} color="#10B981" style={{ margin: '0 auto 8px' }} />
+                <div style={{ fontWeight: 600, fontSize: '14px', color: '#10B981' }}>Quarantine Queue is Clean</div>
+                <div style={{ fontSize: '12px', marginTop: '4px' }}>All incoming telemetry events have satisfied NGSI-LD canonical schema and physical boundary checks.</div>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="analytics-table" style={{ fontSize: '12px' }}>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Quarantined At</th>
+                      <th>Entity / Source</th>
+                      <th>Rejection Reason</th>
+                      <th>Payload & Failure Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quarantineData.records
+                      .filter(r => selectedQuarantineReason === 'ALL' || r.rejectionReason === selectedQuarantineReason)
+                      .map((r) => (
+                        <tr key={r.id}>
+                          <td className="font-mono" style={{ fontWeight: 600, color: '#DC2626' }}>#{r.id}</td>
+                          <td className="font-mono" style={{ fontSize: '11px' }}>
+                            {new Date(r.quarantinedAt).toLocaleTimeString()}
+                          </td>
+                          <td>
+                            <div className="font-mono" style={{ fontSize: '11px', fontWeight: 600 }}>{r.entityId || 'N/A'}</div>
+                            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{r.entityType} • {r.sourceMode}</div>
+                          </td>
+                          <td>
+                            <span
+                              className="status-pill"
+                              style={{
+                                background: '#FEE2E2',
+                                color: '#B91C1C',
+                                border: '1px solid #FCA5A5',
+                                fontSize: '11px'
+                              }}
+                            >
+                              {r.rejectionReason}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ fontSize: '11px', color: '#B91C1C', marginBottom: '4px' }}>
+                              {r.validationDetails?.error || 'Validation constraint violated'}
+                            </div>
+                            <details style={{ cursor: 'pointer', fontSize: '11px' }}>
+                              <summary style={{ color: '#0F4C5C' }}>View Raw JSON</summary>
+                              <pre style={{
+                                background: '#1E293B',
+                                color: '#E2E8F0',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                fontSize: '10px',
+                                overflowX: 'auto',
+                                marginTop: '4px',
+                                maxHeight: '150px'
+                              }}>
+                                {JSON.stringify(r.rawPayload, null, 2)}
+                              </pre>
+                            </details>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '16px', marginTop: '16px' }}>
+              <button
+                className="btn-select-sm"
+                onClick={() => setQuarantineModalOpen(false)}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
+              >
+                Close Queue Inspector
               </button>
             </div>
           </div>

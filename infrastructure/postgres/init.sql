@@ -260,3 +260,20 @@ CREATE TABLE IF NOT EXISTS audit_events (
     source_service VARCHAR(128) NOT NULL,
     details JSONB NOT NULL DEFAULT '{}'
 );
+
+-- 18. Formal Quarantine Observations Dead-Letter Queue (P3-B)
+CREATE TABLE IF NOT EXISTS quarantine_observations (
+    id BIGSERIAL PRIMARY KEY,
+    quarantined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    entity_id VARCHAR(255),
+    entity_type VARCHAR(64),
+    source_mode VARCHAR(32),
+    observed_at TIMESTAMPTZ,
+    rejection_reason VARCHAR(255) NOT NULL,
+    raw_payload JSONB NOT NULL,
+    validation_details JSONB DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_quarantine_rejection_reason ON quarantine_observations(rejection_reason);
+CREATE INDEX IF NOT EXISTS idx_quarantine_quarantined_at ON quarantine_observations(quarantined_at DESC);
+CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(entity_id);

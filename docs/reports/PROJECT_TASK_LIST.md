@@ -19,7 +19,7 @@
 - **Phase 8 Core Algorithms & 3D Extrusions:** 100% Complete (`[x]`)
 - **Track 1 UI/UX Navigation & Analytics (P1-A, P1-B, P1-C):** 100% Complete (`[x]`)
 - **Track 2 Theming & Accessibility (P2-A, P2-B):** 100% Complete (`[x]`)
-- **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** In Progress (P3-A: `[x]`, P3-B: `[ ]`)
+- **Track 3 Data Manifests & Quarantine Schema (P3-A, P3-B):** 100% Complete (`[x]`)
 - **Track 4 Persistence & Telemetry Streamer (P4-A, P4-B):** Pending (`[ ]`)
 
 ---
@@ -71,10 +71,10 @@
 - [x] **P3-A: Dataset Manifest Catalog (`data/manifests/`)**
   - [x] Formal JSON/YAML manifests for OSM network, synthetic traffic, commercial energy, and CAAQMS air quality.
   - [x] Backend API endpoint `GET /api/v1/datasets/manifests` and manifest viewer in System Health view.
-- [ ] **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**
-  - [ ] Database table `quarantine_observations` in PostgreSQL/SQLite.
-  - [ ] Update `IngestionValidator` to persist rejected events (stale, out-of-bounds, invalid schema) with rejection reason.
-  - [ ] Backend API endpoint `GET /api/v1/health/quarantine` for operator inspection.
+- [x] **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**
+  - [x] Database table `quarantine_observations` in PostgreSQL/SQLite.
+  - [x] Update `IngestionValidator` to persist rejected events (stale, out-of-bounds, invalid schema) with rejection reason.
+  - [x] Backend API endpoint `GET /api/v1/health/quarantine` for operator inspection.
 
 ---
 
@@ -121,7 +121,7 @@
 | `GET` | `/api/v1/state/compare` | Corridor Analytics | Side-by-side comparative analysis of two road segments | [x] Implemented |
 | `GET` | `/api/v1/datasets/manifests` | Data Governance | List standardized dataset manifests with licenses | [x] Implemented |
 | `GET` | `/api/v1/datasets/manifests/{id}` | Data Governance | Get specific dataset manifest details | [x] Implemented |
-| `GET` | `/api/v1/health/quarantine` | Quality Assurance | Inspect dead-letter quarantined telemetry events | [ ] **Upcoming (P3-B)** |
+| `GET` | `/api/v1/health/quarantine` | Quality Assurance | Inspect dead-letter quarantined telemetry events | [x] Implemented |
 | `POST` | `/api/v1/environment/anomaly/evaluate` | Anomaly Detection | Direct API evaluation of ambient air quality readings | [ ] **Upcoming** |
 
 ---
@@ -164,13 +164,19 @@
    - Standardized machine-readable JSON dataset manifests (`manifest_osm_network.json`, `manifest_pune_traffic_history.json`, `manifest_phoenix_energy.json`, `manifest_pune_air_quality.json`, `manifest_sumo_simulation.json`, `manifest_openmeteo_weather.json`).
    - Backend catalog & detail endpoints (`GET /api/v1/datasets/manifests` and `/api/v1/datasets/manifests/{id}`).
    - Interactive Dataset Governance & Manifest Registry inspector in `SystemHealthView` with prominent mandatory prohibited claims alerts.
-8. **Backend Test Suite:**
-   - 48 of 48 unit, integration, and benchmark tests passing in `pytest`.
+8. **Formal Data Quarantine Table & Dead-Letter Queue (P3-B):**
+   - Database table `quarantine_observations` in PostgreSQL and resilient local fallback SQLite (`data/quarantine.db`).
+   - `IngestionValidator` auto-quarantine recording with standardized rejection codes (`SPEED_OUT_OF_BOUNDS`, `FUTURE_TIMESTAMP_REJECTED`, `SCHEMA_VALIDATION_FAILED`, `POWER_OUT_OF_BOUNDS`, `MALFORMED_PAYLOAD`).
+   - Endpoint `GET /api/v1/health/quarantine` with pagination and reason filtering.
+   - Interactive Quarantine Dead-Letter Inspection Modal in `SystemHealthView` with raw payload JSON inspection.
+   - Enforced non-actuation and state isolation invariants (quarantined events NEVER alter authoritative twin state).
+9. **Backend Test Suite:**
+   - 55 of 55 unit, integration, and benchmark tests passing in `pytest`.
 
 ### What's Left:
-1. **Formal Data Quarantine Table & Dead-Letter Queue (P3-B)**: Database table `quarantine_observations` in PostgreSQL/SQLite, validator persistence, and `GET /api/v1/health/quarantine`.
-2. **Multi-Storage Persistence & Background Rollups (P4-A, P4-B)**: SQLite/PostgreSQL dynamic adapter and automated rollup pipeline.
+1. **Multi-Storage Resilient Persistence Layer (P4-A)**: Dynamic database adapter switching seamlessly between SQLite (zero-dependency local dev) and PostgreSQL/TimescaleDB/PostGIS, plus automatic startup DDL migrations.
+2. **Native Continuous Aggregates & Background Telemetry Worker (P4-B)**: Automated continuous rollup pipeline for speed and volume metrics.
 
 ### What's Next:
-> **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**  
-> We will create the `quarantine_observations` schema, update `IngestionValidator` to route rejected telemetry (out-of-bounds speed, future timestamps, schema errors) to the quarantine table with explicit rejection reasons, and expose `GET /api/v1/health/quarantine` for operator inspection.
+> **P4-A: Multi-Storage Resilient Persistence Layer**  
+> We will ensure the database persistence layer smoothly migrates between SQLite (zero-dependency local development) and PostgreSQL/TimescaleDB/PostGIS without code changes, and implement automatic schema initialization on startup.

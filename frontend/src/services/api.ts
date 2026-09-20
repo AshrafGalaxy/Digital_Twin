@@ -368,3 +368,42 @@ export async function fetchDatasetManifest(id: string): Promise<DetailedDatasetM
   }
 }
 
+export interface QuarantineRecord {
+  id: number;
+  quarantinedAt: string;
+  entityId?: string;
+  entityType?: string;
+  sourceMode?: string;
+  observedAt?: string;
+  rejectionReason: string;
+  rawPayload: Record<string, any>;
+  validationDetails: Record<string, any>;
+}
+
+export interface QuarantineQueueResponse {
+  totalQuarantined: number;
+  reasonsBreakdown: Record<string, number>;
+  lastQuarantinedAt?: string;
+  dataHonestyStatus: string;
+  records: QuarantineRecord[];
+}
+
+export async function fetchQuarantineQueue(
+  limit: number = 50,
+  offset: number = 0,
+  reason?: string
+): Promise<QuarantineQueueResponse | null> {
+  try {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+    if (reason) params.append('reason', reason);
+
+    const res = await fetch(`${API_BASE}/health/quarantine?${params.toString()}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+

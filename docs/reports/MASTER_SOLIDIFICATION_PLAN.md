@@ -71,7 +71,7 @@ An honest audit of the current codebase against the root contract files confirms
     - `manifest_pune_air_quality.json` (Corridor air quality monitoring data)
   - Expose dataset catalog via `GET /api/v1/datasets/manifests` and `/api/v1/datasets/manifests/{id}`.
 
-* [ ] **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**
+* [x] **P3-B: Formal Data Quarantine Table & Dead-Letter Queue**
   - Create database schema `quarantine_observations` in PostgreSQL/SQLite.
   - Update `IngestionValidator` to write rejected events (out-of-bounds speed, future timestamps, schema errors) to the quarantine table with explicit `rejection_reason`.
   - Expose `GET /api/v1/health/quarantine` to inspect quarantined records in the System Health view.
