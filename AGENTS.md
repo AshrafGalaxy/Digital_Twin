@@ -91,3 +91,4 @@ A contribution is complete only when:
 - [ ] All automated tests pass (`pytest tests/` 100% pass rate).
 - [ ] Frontend builds cleanly with 0 TypeScript/build errors (`npm run build`).
 - [ ] It contains zero hardcoded secrets or unlicensed data.
+- [ ] Commit messages follow concise conventional syntax (<60 chars). Strictly NEVER include the word "phase" or phase tags (e.g. "Phase 8", "P4B").
