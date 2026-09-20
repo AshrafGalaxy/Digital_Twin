@@ -67,6 +67,8 @@ class TelemetryStreamerWorker:
         self.ticks_count: int = 0
         self.last_tick_at: Optional[str] = None
         self._task: Optional[asyncio.Task] = None
+        from backend.ingestion.weather_client import OpenMeteoWeatherClient
+        self.weather_client = OpenMeteoWeatherClient()
 
     def get_status(self) -> Dict[str, Any]:
         return {
@@ -265,12 +267,15 @@ class TelemetryStreamerWorker:
                     "metrics": json.dumps(bld_metrics)
                 })
 
-                # 3. Generate & Persist Environmental Air Quality Observation
+                # 3. Generate & Persist Environmental Air Quality & Weather Observation
+                weather = await self.weather_client.get_current_weather()
+                temp = weather.get("temperature_c", round(28.0 + 4.0 * math.sin((hour - 8.0) * math.pi / 12.0), 1))
+                humidity = weather.get("humidity_pct", round(62.0 - 15.0 * math.sin((hour - 8.0) * math.pi / 12.0), 1))
+                weather_mode = weather.get("source_mode", self.mode)
+
                 aqi = round(110.0 + 35.0 * rush_intensity + random.uniform(-5, 5), 1)
                 pm25 = round(40.0 + 22.0 * rush_intensity + random.uniform(-2, 2), 1)
                 pm10 = round(75.0 + 30.0 * rush_intensity + random.uniform(-4, 4), 1)
-                temp = round(28.0 + 4.0 * math.sin((hour - 8.0) * math.pi / 12.0) + random.uniform(-0.5, 0.5), 1)
-                humidity = round(62.0 - 15.0 * math.sin((hour - 8.0) * math.pi / 12.0) + random.uniform(-2, 2), 1)
 
                 env_stmt = text("""
                     INSERT INTO environment_observations (
@@ -286,7 +291,7 @@ class TelemetryStreamerWorker:
                 await session.execute(env_stmt, {
                     "observed_at": now_iso,
                     "station_id": "urn:ngsi-ld:AirQualityStation:PUNE:STATION-VIMAN-AQI-01",
-                    "source_mode": self.mode,
+                    "source_mode": weather_mode,
                     "aqi_value": aqi,
                     "pm25": pm25,
                     "pm10": pm10,

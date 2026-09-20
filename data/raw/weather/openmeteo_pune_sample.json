@@ -1,0 +1,44 @@
+{
+  "latitude": 18.5679,
+  "longitude": 73.9143,
+  "generationtime_ms": 0.12,
+  "utc_offset_seconds": 0,
+  "timezone": "UTC",
+  "timezone_abbreviation": "UTC",
+  "elevation": 560.0,
+  "current_weather": {
+    "temperature": 28.4,
+    "windspeed": 12.2,
+    "winddirection": 245,
+    "weathercode": 2,
+    "is_day": 1,
+    "time": "2026-09-01T12:00"
+  },
+  "hourly_units": {
+    "time": "iso8601",
+    "temperature_2m": "°C",
+    "relativehumidity_2m": "%",
+    "apparent_temperature": "°C",
+    "precipitation": "mm",
+    "surface_pressure": "hPa"
+  },
+  "hourly": {
+    "time": [
+      "2026-09-01T00:00", "2026-09-01T01:00", "2026-09-01T02:00", "2026-09-01T03:00",
+      "2026-09-01T04:00", "2026-09-01T05:00", "2026-09-01T06:00", "2026-09-01T07:00",
+      "2026-09-01T08:00", "2026-09-01T09:00", "2026-09-01T10:00", "2026-09-01T11:00",
+      "2026-09-01T12:00"
+    ],
+    "temperature_2m": [23.5, 22.8, 22.1, 21.8, 21.5, 21.9, 22.7, 24.2, 26.0, 28.4, 30.2, 31.8, 32.5],
+    "relativehumidity_2m": [82, 85, 87, 88, 89, 88, 84, 76, 68, 60, 54, 48, 45],
+    "apparent_temperature": [24.1, 23.4, 22.7, 22.4, 22.1, 22.5, 23.3, 25.0, 27.2, 29.8, 32.1, 34.0, 35.2],
+    "precipitation": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    "surface_pressure": [948.2, 948.0, 947.8, 947.5, 947.8, 948.5, 949.2, 950.0, 950.5, 950.8, 950.2, 949.5, 948.7]
+  },
+  "metadata": {
+    "source_id": "openmeteo:pune-viman-nagar",
+    "source_mode": "REPLAY",
+    "license": "CC-BY-4.0",
+    "pilot_locality": "coordinate_based_pune"
+  }
+}

@@ -85,3 +85,49 @@ async def compute_traffic_rollups(
         rowsAffected=rows,
         hoursBack=hours_back
     )
+
+
+@router.get("/drift")
+async def get_feature_drift(
+    hours_ago: int = Query(6, ge=1, le=48, description="Lookback window for live drift evaluation"),
+    session: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Evaluates Population Stability Index (PSI) and Kolmogorov-Smirnov drift statistics
+    comparing recent traffic telemetry against the baseline Gold feature store (§9.1, §16.2).
+    """
+    from ml.drift_detector import FeatureDriftDetector
+    from ml.features.traffic_features import build_traffic_features
+    from sqlalchemy import text
+    import pandas as pd
+
+    stmt = text("""
+        SELECT observed_at AS timestamp, segment_id,
+               average_speed_kmh AS speed_kmh,
+               28.5 AS ambient_temp_c
+        FROM traffic_observations
+        WHERE observed_at >= datetime('now', :hours_param)
+        ORDER BY observed_at ASC
+    """)
+    res = await session.execute(stmt, {"hours_param": f"-{hours_ago} hours"})
+    rows = res.fetchall()
+
+    detector = FeatureDriftDetector()
+    if len(rows) >= 15:
+        records = [
+            {
+                "timestamp": pd.to_datetime(r[0]),
+                "segment_id": r[1],
+                "speed_kmh": float(r[2]),
+                "ambient_temp_c": float(r[3])
+            }
+            for r in rows
+        ]
+        raw_df = pd.DataFrame(records)
+        featured_df = build_traffic_features(raw_df)
+        return detector.evaluate_drift(featured_df)
+    else:
+        # Baseline reference sample evaluation when live window is warming up
+        sample_df = detector.reference_df.sample(min(150, len(detector.reference_df)), random_state=42)
+        return detector.evaluate_drift(sample_df)
+

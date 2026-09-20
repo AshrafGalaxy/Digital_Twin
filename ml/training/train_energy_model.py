@@ -175,6 +175,45 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
     artifact_path = MODELS_DIR / "energy_xgb_v1.joblib"
     joblib.dump(artifact, artifact_path)
     print(f"[OK] Saved model artifact to: {artifact_path}")
+
+    # 8. Log into MLflow Local Registry
+    try:
+        from ml.training.mlflow_tracker import MLflowTracker
+        tracker = MLflowTracker(experiment_name="Building_Energy_Forecasting")
+        tracker.log_training_run(
+            run_name="energy-xgb-v1-60m-load",
+            parameters={
+                "model_type": "XGBRegressor",
+                "n_estimators": 140,
+                "max_depth": 5,
+                "learning_rate": 0.05,
+                "horizon_minutes": 60,
+                "training_days": days,
+                "random_seed": seed,
+                "train_pct": 0.70,
+                "val_pct": 0.15,
+                "test_pct": 0.15
+            },
+            metrics={
+                "test_mae": round(test_mae, 2),
+                "test_rmse": round(test_rmse, 2),
+                "improvement_vs_persistence_pct": round(improvement_pct, 1),
+                "baseline_persistence_mae": round(persist_mae, 2),
+                "baseline_same_hour_mae": round(baseline_metrics["same_hour_average"]["mae"], 2)
+            },
+            tags={
+                "domain": "ENERGY",
+                "model_id": "energy-xgb-v1",
+                "target_entity": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+                "locality_caveat": "Representative commercial building load patterns.",
+                "source_mode": "PREDICTED"
+            },
+            artifact_paths={"model_weights": artifact_path},
+            feature_names=ENERGY_FEATURE_COLUMNS
+        )
+    except Exception as e:
+        print(f"[!] Warning: MLflow run logging encountered: {e}")
+
     return artifact
 
 

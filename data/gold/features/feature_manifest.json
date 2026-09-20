@@ -1,0 +1,69 @@
+{
+  "pipeline_version": "v1.0.0",
+  "generated_at": "2026-09-20T13:18:00.749577+00:00",
+  "storage_tier": "GOLD",
+  "format": [
+    "parquet",
+    "csv"
+  ],
+  "compression": "snappy",
+  "datasets": {
+    "traffic": {
+      "dataset_name": "traffic_features_v1",
+      "rows": 8625,
+      "days": 30,
+      "features": [
+        "speed_lag_5m",
+        "speed_lag_10m",
+        "speed_lag_15m",
+        "speed_lag_30m",
+        "speed_lag_60m",
+        "speed_roll_mean_30m",
+        "speed_roll_std_30m",
+        "speed_roll_mean_60m",
+        "speed_roll_min_60m",
+        "speed_roll_max_60m",
+        "sin_hour",
+        "cos_hour",
+        "day_of_week",
+        "is_weekend",
+        "is_peak_hour",
+        "ambient_temp_c"
+      ],
+      "target": "target_speed_15m",
+      "parquet_path": "data/gold/features/traffic_features_v1.parquet",
+      "csv_path": "data/gold/features/traffic_features_v1.csv",
+      "sha256_parquet": "31a818df645538492d075e87583725df02f51102e971f32d21e99e0c7b9f18c7",
+      "sha256_csv": "015fcde16d991f04c7dd28a262f115c64d97bcdcc80362b412394858524247b0",
+      "start_time": "2026-09-01T01:00:00+00:00",
+      "end_time": "2026-09-30T23:40:00+00:00"
+    },
+    "energy": {
+      "dataset_name": "energy_features_v1",
+      "rows": 3260,
+      "days": 35,
+      "features": [
+        "load_lag_1h",
+        "load_lag_2h",
+        "load_lag_3h",
+        "load_lag_24h",
+        "load_roll_mean_6h",
+        "load_roll_max_6h",
+        "load_roll_std_6h",
+        "sin_hour",
+        "cos_hour",
+        "day_of_week",
+        "is_weekend",
+        "is_mall_open",
+        "ambient_temp_c"
+      ],
+      "target": "target_load_60m",
+      "parquet_path": "data/gold/features/energy_features_v1.parquet",
+      "csv_path": "data/gold/features/energy_features_v1.csv",
+      "sha256_parquet": "c4dad4c328c75f6b8abce2a1b247f788461eb8b73f272c2d7401a1433f9881d5",
+      "sha256_csv": "a0cd467ef5ff77d4e2c61d7840a5bedd7c606876f22394ef48779c9460dac5b7",
+      "start_time": "2026-08-21T00:00:00+00:00",
+      "end_time": "2026-09-23T22:45:00+00:00"
+    }
+  }
+}

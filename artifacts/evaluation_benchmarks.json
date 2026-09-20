@@ -53,5 +53,91 @@
       "intervention_throughput_vph": 2395.1,
       "throughput_delta_pct": 39.1
     }
+  },
+  "E-03": {
+    "experimentId": "E-03",
+    "title": "Traffic Feature Ablation Study",
+    "executedAt": "2026-09-20T13:20:47.533390+00:00",
+    "baselinePersistenceMae": 4.438,
+    "configurations": {
+      "Config-1 (Lags Only)": {
+        "featureCount": 5,
+        "features": [
+          "speed_lag_5m",
+          "speed_lag_10m",
+          "speed_lag_15m",
+          "speed_lag_30m",
+          "speed_lag_60m"
+        ],
+        "testMaeKmh": 3.877,
+        "testRmseKmh": 5.285,
+        "improvementVsBaselinePct": 12.6
+      },
+      "Config-2 (Lags + Rolling Stats)": {
+        "featureCount": 10,
+        "features": [
+          "speed_lag_5m",
+          "speed_lag_10m",
+          "speed_lag_15m",
+          "speed_lag_30m",
+          "speed_lag_60m",
+          "speed_roll_mean_30m",
+          "speed_roll_std_30m",
+          "speed_roll_mean_60m",
+          "speed_roll_min_60m",
+          "speed_roll_max_60m"
+        ],
+        "testMaeKmh": 3.803,
+        "testRmseKmh": 5.205,
+        "improvementVsBaselinePct": 14.3
+      },
+      "Config-3 (Lags + Rolling + Calendar)": {
+        "featureCount": 15,
+        "features": [
+          "speed_lag_5m",
+          "speed_lag_10m",
+          "speed_lag_15m",
+          "speed_lag_30m",
+          "speed_lag_60m",
+          "speed_roll_mean_30m",
+          "speed_roll_std_30m",
+          "speed_roll_mean_60m",
+          "speed_roll_min_60m",
+          "speed_roll_max_60m",
+          "sin_hour",
+          "cos_hour",
+          "day_of_week",
+          "is_weekend",
+          "is_peak_hour"
+        ],
+        "testMaeKmh": 2.916,
+        "testRmseKmh": 3.646,
+        "improvementVsBaselinePct": 34.3
+      },
+      "Config-4 (Full Features + Ambient Temp)": {
+        "featureCount": 16,
+        "features": [
+          "speed_lag_5m",
+          "speed_lag_10m",
+          "speed_lag_15m",
+          "speed_lag_30m",
+          "speed_lag_60m",
+          "speed_roll_mean_30m",
+          "speed_roll_std_30m",
+          "speed_roll_mean_60m",
+          "speed_roll_min_60m",
+          "speed_roll_max_60m",
+          "sin_hour",
+          "cos_hour",
+          "day_of_week",
+          "is_weekend",
+          "is_peak_hour",
+          "ambient_temp_c"
+        ],
+        "testMaeKmh": 2.925,
+        "testRmseKmh": 3.667,
+        "improvementVsBaselinePct": 34.1
+      }
+    }
   }
 }

@@ -176,6 +176,45 @@ def train_traffic_forecaster(days: int = 21, seed: int = 42) -> Dict[str, Any]:
     artifact_path = MODELS_DIR / "traffic_xgb_v1.joblib"
     joblib.dump(artifact, artifact_path)
     print(f"[OK] Saved model artifact to: {artifact_path}")
+
+    # 8. Log into MLflow Local Registry
+    try:
+        from ml.training.mlflow_tracker import MLflowTracker
+        tracker = MLflowTracker(experiment_name="Traffic_Speed_Forecasting")
+        tracker.log_training_run(
+            run_name="traffic-xgb-v1-15m-speed",
+            parameters={
+                "model_type": "XGBRegressor",
+                "n_estimators": 150,
+                "max_depth": 5,
+                "learning_rate": 0.06,
+                "horizon_minutes": 15,
+                "training_days": days,
+                "random_seed": seed,
+                "train_pct": 0.70,
+                "val_pct": 0.15,
+                "test_pct": 0.15
+            },
+            metrics={
+                "test_mae": round(test_mae, 3),
+                "test_rmse": round(test_rmse, 3),
+                "improvement_vs_persistence_pct": round(improvement_pct, 1),
+                "baseline_persistence_mae": round(persist_mae, 3),
+                "baseline_historical_mae": round(baseline_metrics["historical_average"]["mae"], 3)
+            },
+            tags={
+                "domain": "TRAFFIC",
+                "model_id": "traffic-xgb-v1",
+                "target_entity": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+                "locality_caveat": "Prototype model evaluated on calibrated corridor simulation/replay series.",
+                "source_mode": "PREDICTED"
+            },
+            artifact_paths={"model_weights": artifact_path},
+            feature_names=FEATURE_COLUMNS
+        )
+    except Exception as e:
+        print(f"[!] Warning: MLflow run logging encountered: {e}")
+
     return artifact
 
 

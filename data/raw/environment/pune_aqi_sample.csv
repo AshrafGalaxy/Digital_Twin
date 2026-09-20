@@ -1,0 +1,13 @@
+timestamp,station_id,station_name,aqi,pm25_ugm3,pm10_ugm3,no2_ugm3,so2_ugm3,source_mode,source_id
+2026-09-01T00:00:00Z,PUNE-STN-KARVE,Karve Road Regional,95,38.2,74.5,24.1,12.0,REPLAY,opencity:pune-air-quality
+2026-09-01T02:00:00Z,PUNE-STN-KARVE,Karve Road Regional,90,35.0,70.1,21.5,11.2,REPLAY,opencity:pune-air-quality
+2026-09-01T04:00:00Z,PUNE-STN-KARVE,Karve Road Regional,88,34.2,68.4,19.8,10.5,REPLAY,opencity:pune-air-quality
+2026-09-01T06:00:00Z,PUNE-STN-KARVE,Karve Road Regional,105,44.0,82.0,28.4,13.1,REPLAY,opencity:pune-air-quality
+2026-09-01T08:00:00Z,PUNE-STN-KARVE,Karve Road Regional,145,58.6,110.2,42.0,16.8,REPLAY,opencity:pune-air-quality
+2026-09-01T10:00:00Z,PUNE-STN-KARVE,Karve Road Regional,162,64.8,124.0,48.5,18.2,REPLAY,opencity:pune-air-quality
+2026-09-01T12:00:00Z,PUNE-STN-KARVE,Karve Road Regional,138,52.4,102.5,36.0,15.0,REPLAY,opencity:pune-air-quality
+2026-09-01T14:00:00Z,PUNE-STN-KARVE,Karve Road Regional,125,48.0,94.2,31.2,14.1,REPLAY,opencity:pune-air-quality
+2026-09-01T16:00:00Z,PUNE-STN-KARVE,Karve Road Regional,140,54.1,105.0,38.5,15.8,REPLAY,opencity:pune-air-quality
+2026-09-01T18:00:00Z,PUNE-STN-KARVE,Karve Road Regional,175,72.0,138.5,54.0,21.0,REPLAY,opencity:pune-air-quality
+2026-09-01T20:00:00Z,PUNE-STN-KARVE,Karve Road Regional,188,78.5,146.0,58.2,22.5,REPLAY,opencity:pune-air-quality
+2026-09-01T22:00:00Z,PUNE-STN-KARVE,Karve Road Regional,155,61.2,118.0,44.1,17.4,REPLAY,opencity:pune-air-quality
