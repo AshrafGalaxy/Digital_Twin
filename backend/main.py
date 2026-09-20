@@ -7,8 +7,10 @@ Main entrypoint for the Digital Twin FastAPI modular monolith backend.
 from contextlib import asynccontextmanager
 import logging
 import sys
+import json
+from datetime import datetime, timezone
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 # Ensure project root is in sys.path
@@ -106,6 +108,92 @@ async def root():
         "docsUrl": "/docs",
         "healthUrl": "/api/v1/health"
     }
+
+@app.get("/health", tags=["Root"])
+async def root_health():
+    """System health and database connectivity ping per TECHNICAL_ARCHITECTURE.md §13.2."""
+    is_healthy = await check_db_health()
+    backend_name = get_active_backend()
+    return {
+        "status": "HEALTHY" if is_healthy else "DEGRADED",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "database": {
+            "status": "HEALTHY" if is_healthy else "ERROR",
+            "activeBackend": backend_name,
+            "details": get_persistence_info(),
+            "error": None if is_healthy else "Database probe failed"
+        }
+    }
+
+# Canonical WebSocket channels per TECHNICAL_ARCHITECTURE.md §13.3
+@app.websocket("/ws/operations")
+async def ws_operations(websocket: WebSocket):
+    """Real-time operational twin feed (traffic, energy, environment state events)."""
+    await manager.connect(websocket)
+    try:
+        await websocket.send_text(json.dumps({
+            "eventType": "CONNECTION_ESTABLISHED",
+            "channel": "operations",
+            "message": "Connected to Digital Twin operational stream"
+        }))
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text(json.dumps({"eventType": "PONG", "channel": "operations"}))
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as exc:
+        logger.warning("WebSocket operations channel error: %s", exc)
+        manager.disconnect(websocket)
+
+@app.websocket("/ws/system")
+async def ws_system(websocket: WebSocket):
+    """Broker and pipeline health events, persistence status, and queue telemetry."""
+    await websocket.accept()
+    try:
+        backend_name = get_active_backend()
+        await websocket.send_text(json.dumps({
+            "eventType": "SYSTEM_STATUS",
+            "channel": "system",
+            "database": backend_name,
+            "streamerRunning": settings.TELEMETRY_STREAMER_ENABLED,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }))
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text(json.dumps({"eventType": "PONG", "channel": "system"}))
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:
+        logger.warning("WebSocket system channel error: %s", exc)
+
+@app.websocket("/ws/scenarios/{run_id}")
+async def ws_scenarios(websocket: WebSocket, run_id: str):
+    """Simulation progress and KPI telemetry stream for a specific scenario run."""
+    await websocket.accept()
+    try:
+        try:
+            from backend.services.scenario_service import ScenarioService
+        except ImportError:
+            from services.scenario_service import ScenarioService
+        sc_svc = ScenarioService()
+        run_data = sc_svc.get_run(run_id)
+        await websocket.send_text(json.dumps({
+            "eventType": "SCENARIO_PROGRESS",
+            "runId": run_id,
+            "status": run_data.get("status", "COMPLETED") if run_data else "NOT_FOUND",
+            "kpis": run_data.get("kpiOutputs") if run_data else None,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }))
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text(json.dumps({"eventType": "PONG", "runId": run_id}))
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:
+        logger.warning("WebSocket scenario stream error: %s", exc)
 
 if __name__ == "__main__":
     import uvicorn
