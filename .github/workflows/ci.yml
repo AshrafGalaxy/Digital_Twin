@@ -35,12 +35,6 @@ jobs:
         run: |
           pytest tests/ -v
 
-      - name: Run Unittest suite (run_tests.py)
-        env:
-          PYTHONPATH: .
-        run: |
-          python tests/run_tests.py
-
   # ============================================================================
   # 2. Frontend TypeScript Compilation & Production Bundle Build
   # ============================================================================
