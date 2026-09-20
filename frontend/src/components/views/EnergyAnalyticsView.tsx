@@ -152,7 +152,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
               <Clock size={18} color="#0F4C5C" />
               <span className="card-title">Diurnal Load Profiles & Threshold Rules</span>
             </div>
-            <span className="text-muted" style={{ fontSize: '11px' }}>Standard Retail-Commercial Archetype</span>
+            <span className="text-muted" style={{ fontSize: '12px' }}>Standard Retail-Commercial Archetype</span>
           </div>
 
           <div className="diurnal-profile-list">

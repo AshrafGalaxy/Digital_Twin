@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Activity,
-  Radio,
   ShieldCheck,
   Map,
   Car,
@@ -14,6 +13,7 @@ import {
   Moon
 } from 'lucide-react';
 import { SourceMode } from '../types/twin';
+import { ProvenanceBadge } from './ProvenanceBadge';
 
 export type TabId =
   | 'operations'
@@ -79,11 +79,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Source Mode Provenance Badge */}
           <div className="status-pill">
-            <Radio size={14} className="text-muted" />
             <span className="text-muted">Source:</span>
-            <span className={`provenance-badge badge-${currentMode.toLowerCase()}`}>
-              {currentMode}
-            </span>
+            <ProvenanceBadge mode={currentMode} />
           </div>
 
           {/* Freshness Timestamp */}

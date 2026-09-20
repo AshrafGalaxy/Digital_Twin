@@ -90,7 +90,7 @@ export const ScenarioStudioView: React.FC = () => {
               <Sliders size={18} color="#0F4C5C" />
               <span className="card-title">Intervention Configuration Sandbox</span>
             </div>
-            <span className="text-muted" style={{ fontSize: '11px' }}>Predefined Safe Parameters</span>
+            <span className="text-muted" style={{ fontSize: '12px' }}>Predefined Safe Parameters</span>
           </div>
 
           {/* Template Selector */}
@@ -214,11 +214,11 @@ export const ScenarioStudioView: React.FC = () => {
               <div className="recent-runs-list" style={{ maxHeight: '140px', overflowY: 'auto' }}>
                 {recentRuns.map((r, idx) => (
                   <div key={idx} className="recent-run-item">
-                    <span className="mono-cell" style={{ fontSize: '11px' }}>{r.runId || `RUN-${idx + 1}`}</span>
-                    <span className="provenance-badge badge-simulation" style={{ fontSize: '10px' }}>
+                    <span className="mono-cell" style={{ fontSize: '12px' }}>{r.runId || `RUN-${idx + 1}`}</span>
+                    <span className="provenance-badge badge-simulation" style={{ fontSize: '12px' }}>
                       {r.templateId || 'SCEN-INT-01'}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 600 }}>
+                    <span style={{ fontSize: '12px', color: '#10B981', fontWeight: 600 }}>
                       {r.deltas?.travel_time_saved_sec ? `-${r.deltas.travel_time_saved_sec}s delay` : 'Completed'}
                     </span>
                   </div>

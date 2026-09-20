@@ -116,11 +116,11 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
       <div className="drawer-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-subtle)', textTransform: 'uppercase', fontWeight: 600 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-subtle)', textTransform: 'uppercase', fontWeight: 600 }}>
               {isComparing ? 'Multi-Segment Comparative Analysis' : isSegment ? 'Road Segment' : 'Intersection'}
             </span>
             {isComparing && (
-              <span className="provenance-badge badge-replay" style={{ fontSize: 10, padding: '1px 6px' }}>
+              <span className="provenance-badge badge-replay" style={{ fontSize: 12, padding: '2px 8px' }}>
                 COMPARISON MODE
               </span>
             )}
@@ -128,7 +128,7 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
           <h2 style={{ fontSize: 16, fontWeight: 700, marginTop: 2 }}>
             {isComparing ? `${entity.name} vs ${compareEntity.name}` : entity.name}
           </h2>
-          <code style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          <code style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {isComparing ? `${entity.id} ↔ ${compareEntity.id}` : entity.id}
           </code>
         </div>
@@ -205,14 +205,14 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
           <>
             {/* Directional Imbalance Banner */}
             {loadingCompare && (
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', padding: '2px 0' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', padding: '2px 0' }}>
                 Analyzing comparative corridor telemetry...
               </div>
             )}
             {comparisonResult?.directionalImbalance && (
               <div className={`imbalance-banner imbalance-${comparisonResult.directionalImbalance.severity.toLowerCase()}`}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     Directional Imbalance: {comparisonResult.directionalImbalance.severity}
                   </span>
                   {comparisonResult.directionalImbalance.dominantCongestionDirection && (
@@ -221,7 +221,7 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 11.5, marginTop: 4, lineHeight: 1.45 }}>
+                <p style={{ fontSize: 12, marginTop: 4, lineHeight: 1.45 }}>
                   {comparisonResult.directionalImbalance.summary}
                 </p>
               </div>
@@ -379,7 +379,7 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
                   {sourceModeA}
                 </span>
               </div>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.4 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.4 }}>
                 {sourceModeA === 'SIMULATION' && 'Metrics are generated via calibrated microscopic simulation (SUMO) and do not represent empirical field sensor measurements.'}
                 {sourceModeA === 'REPLAY' && 'Metrics are replayed from historical observation surveys.'}
                 {sourceModeA === 'LIVE' && 'Metrics ingested directly from active corridor virtual detectors.'}
@@ -468,8 +468,8 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
                         <span className="text-muted">Connected Segments:</span>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
                           {(entity as IntersectionAsset).connectedSegments?.map((segId: string) => (
-                            <div key={segId} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-main)', fontSize: 11 }}>
-                              <ChevronRight size={11} color="#22D3EE" />
+                            <div key={segId} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-main)', fontSize: 12 }}>
+                              <ChevronRight size={12} color="#22D3EE" />
                               <code>{segId}</code>
                             </div>
                           ))}
@@ -494,7 +494,7 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
           gap: 'var(--space-2)'
         }}>
           <ShieldAlert size={16} color="#EF4444" style={{ flexShrink: 0, marginTop: 2 }} />
-          <span style={{ fontSize: 11, color: '#FCA5A5', lineHeight: 1.4 }}>
+          <span style={{ fontSize: 12, color: '#FCA5A5', lineHeight: 1.4 }}>
             Digital Twin Advisory Notice: Platform outputs are advisory decision support. No automated actuation or physical signal modification is permitted.
           </span>
         </div>

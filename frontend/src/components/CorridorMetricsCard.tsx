@@ -1,6 +1,7 @@
 import React from 'react';
 import { Gauge, Zap, TrendingUp, Layers } from 'lucide-react';
 import { SourceMode } from '../types/twin';
+import { ProvenanceBadge } from './ProvenanceBadge';
 
 interface CorridorMetricsCardProps {
   averageSpeed: number;
@@ -21,9 +22,7 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
     <div className="corridor-metrics-card">
       <div className="card-header">
         <span className="card-title">Corridor Telemetry</span>
-        <span className={`provenance-badge badge-${sourceMode.toLowerCase()}`}>
-          {sourceMode}
-        </span>
+        <ProvenanceBadge mode={sourceMode} />
       </div>
 
       <div className="metrics-grid">

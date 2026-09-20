@@ -275,7 +275,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     <span>{quarantineData?.totalQuarantined ?? healthData?.subsystems?.quarantinedEventsCount ?? 0}</span>
                     <button
                       className="btn-select-sm"
-                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                      style={{ padding: '2px 8px', fontSize: '12px' }}
                       onClick={() => setQuarantineModalOpen(true)}
                     >
                       Inspect Queue
@@ -309,7 +309,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     </span>
                     <button
                       className="btn-select-sm"
-                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                      style={{ padding: '2px 8px', fontSize: '12px' }}
                       onClick={() => handleStreamerAction('tick_once')}
                       disabled={tickingStreamer}
                     >
@@ -317,7 +317,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     </button>
                     <button
                       className="btn-select-sm"
-                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                      style={{ padding: '2px 8px', fontSize: '12px' }}
                       onClick={() => handleStreamerAction(streamerData?.isPaused ? 'resume' : 'pause')}
                     >
                       {streamerData?.isPaused ? 'Resume' : 'Pause'}
@@ -361,7 +361,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
               <ShieldCheck size={18} color="#10B981" />
               <span className="card-title">Provenance & Data Honesty Classification</span>
             </div>
-            <span className="text-muted" style={{ fontSize: '11px' }}>Mandatory Invariants</span>
+            <span className="text-muted" style={{ fontSize: '12px' }}>Mandatory Invariants</span>
           </div>
 
           <div style={{ marginBottom: '16px', fontSize: '13px', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
@@ -477,7 +477,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     </td>
                     <td>
                       <div style={{ fontWeight: 500 }}>{item.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{item.intendedUse}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{item.intendedUse}</div>
                     </td>
                     <td>
                       <span
@@ -772,7 +772,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 className={`btn-select-sm ${selectedQuarantineReason === 'ALL' ? 'btn-active' : ''}`}
                 style={{
                   padding: '3px 10px',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   background: selectedQuarantineReason === 'ALL' ? '#0F4C5C' : 'transparent',
                   color: selectedQuarantineReason === 'ALL' ? '#fff' : 'inherit'
                 }}
@@ -786,7 +786,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                   className={`btn-select-sm ${selectedQuarantineReason === reason ? 'btn-active' : ''}`}
                   style={{
                     padding: '3px 10px',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     background: selectedQuarantineReason === reason ? '#0F4C5C' : 'transparent',
                     color: selectedQuarantineReason === reason ? '#fff' : 'inherit'
                   }}
@@ -822,12 +822,12 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                       .map((r) => (
                         <tr key={r.id}>
                           <td className="font-mono" style={{ fontWeight: 600, color: '#DC2626' }}>#{r.id}</td>
-                          <td className="font-mono" style={{ fontSize: '11px' }}>
+                          <td className="font-mono" style={{ fontSize: '12px' }}>
                             {new Date(r.quarantinedAt).toLocaleTimeString()}
                           </td>
                           <td>
-                            <div className="font-mono" style={{ fontSize: '11px', fontWeight: 600 }}>{r.entityId || 'N/A'}</div>
-                            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{r.entityType} • {r.sourceMode}</div>
+                            <div className="font-mono" style={{ fontSize: '12px', fontWeight: 600 }}>{r.entityId || 'N/A'}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{r.entityType} • {r.sourceMode}</div>
                           </td>
                           <td>
                             <span
@@ -836,24 +836,24 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                                 background: '#FEE2E2',
                                 color: '#B91C1C',
                                 border: '1px solid #FCA5A5',
-                                fontSize: '11px'
+                                fontSize: '12px'
                               }}
                             >
                               {r.rejectionReason}
                             </span>
                           </td>
                           <td>
-                            <div style={{ fontSize: '11px', color: '#B91C1C', marginBottom: '4px' }}>
+                            <div style={{ fontSize: '12px', color: '#B91C1C', marginBottom: '4px' }}>
                               {r.validationDetails?.error || 'Validation constraint violated'}
                             </div>
-                            <details style={{ cursor: 'pointer', fontSize: '11px' }}>
+                            <details style={{ cursor: 'pointer', fontSize: '12px' }}>
                               <summary style={{ color: '#0F4C5C' }}>View Raw JSON</summary>
                               <pre style={{
                                 background: '#1E293B',
                                 color: '#E2E8F0',
                                 padding: '8px',
                                 borderRadius: '4px',
-                                fontSize: '10px',
+                                fontSize: '12px',
                                 overflowX: 'auto',
                                 marginTop: '4px',
                                 maxHeight: '150px'

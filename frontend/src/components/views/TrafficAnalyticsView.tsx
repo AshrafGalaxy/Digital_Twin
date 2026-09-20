@@ -144,7 +144,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               <TrendingUp size={18} color="#F59E0B" />
               <span className="card-title">Corridor Segment Health & Rankings</span>
             </div>
-            <span className="text-muted" style={{ fontSize: '11px' }}>Sorted by Congestion</span>
+            <span className="text-muted" style={{ fontSize: '12px' }}>Sorted by Congestion</span>
           </div>
 
           <div className="table-responsive">
@@ -169,7 +169,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                   >
                     <td>
                       <div style={{ fontWeight: 600 }}>{seg.name}</div>
-                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{seg.id.split(':').pop()}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{seg.id.split(':').pop()}</div>
                     </td>
                     <td>
                       <span className="dir-tag">{seg.direction}</span>

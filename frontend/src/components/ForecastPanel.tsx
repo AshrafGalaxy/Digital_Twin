@@ -246,7 +246,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <Clock size={12} /> Target: {new Date(energyForecast.targetTimestamp).toLocaleTimeString()}
             </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#10B981' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#10B981' }}>
               Contracted: 5,500 kW
             </span>
           </div>
