@@ -1,8 +1,8 @@
 # Technical Architecture Specification
 ## Digital Twin-Enabled Smart City Analytics Platform
 
-> **Status:** Authoritative Engineering Architecture Blueprint  
-> **Pilot Boundary:** Viman Nagar Chowk ↔ Somnath Nagar Chowk (1.8 km arterial, Nagar Road, Pune)  
+> **Document Status:** Authoritative Engineering Architecture Blueprint  
+> **Pilot Corridor:** Viman Nagar Chowk ↔ Somnath Nagar Chowk (1.8 km arterial, Nagar Road, Pune, Maharashtra)  
 > **Deployment Model:** Docker Compose modular monolith with resilient local multi-storage engine
 
 ---
@@ -11,20 +11,20 @@
 
 | Layer | Component | Approved Technology | Role & Responsibility |
 |---|---|---|---|
-| **Frontend** | Application Shell | React 18 + TypeScript + Vite | Civic operations dashboard (responsive desktop/tablet) |
-| **Geospatial UI** | 2D Operations Map | MapLibre GL JS + OpenStreetMap | Interactive vector basemap, road segments, intersection markers |
-| **Backend Core** | Modular Monolith | Python 3.11 + FastAPI + Uvicorn | Async REST APIs, WebSockets, background consumers, rule engine |
-| **Transport** | Message Broker | Eclipse Mosquitto (MQTT 3.1.1/5.0) | High-throughput sensor telemetry transport (`nagartwin/#`) |
+| **Frontend** | Application Shell | React 18 + TypeScript + Vite | Civic operations dashboard |
+| **Geospatial UI** | Vector Map Canvas | MapLibre GL JS + OpenStreetMap | Interactive vector basemap, road segments, intersection markers |
+| **Backend Core** | Modular Monolith | Python 3.11 + FastAPI + Uvicorn | Async REST APIs (`/api/v1`), WebSockets, background consumers |
+| **Transport** | Message Broker | Eclipse Mosquitto (MQTT 3.1.1/5.0) | High-throughput sensor telemetry transport (`nagartwin/#`, `dt/v1/corridor/#`) |
 | **Persistence** | Multi-Storage DB | PostgreSQL 16 + TimescaleDB + PostGIS | Canonical entity store, spatial queries, hypertable time-series |
-| **Local Resilient** | Local Storage Fallback | SQLite 3 (WAL mode) + aiosqlite | Zero-dependency local persistence with automatic failover |
+| **Local Resilient**| Local Storage Fallback | SQLite 3 (WAL mode) + aiosqlite | Zero-dependency local persistence with automatic failover |
 | **Traffic Simulation**| Micro-simulation | Eclipse SUMO 1.20+ via libsumo/TraCI | Baseline (`SCEN-BASE-01`) vs intervention (`SCEN-INT-01`) simulation |
-| **Machine Learning** | Tabular Forecaster | XGBoost Regressors (joblib artifacts) | 15-min traffic speed & 60-min building power forecasts |
+| **Machine Learning**| Tabular Forecaster | XGBoost Regressors (joblib artifacts) | 15-min traffic speed & 60-min building power forecasts |
 | **Uncertainty & XAI**| Calibration / SHAP | Conformal Prediction & TreeSHAP | 80%/90% confidence bands and local feature attributions |
-| **Decision Support** | Advisory Engine | Deterministic Python Rule Engine | Transparent rules with mandatory human authorization |
+| **Decision Support**| Advisory Engine | Deterministic Python Rule Engine | Transparent rules with mandatory human authorization |
 
 ---
 
-## 2. Architecture Invariants
+## 2. Non-Negotiable Architecture Invariants
 
 1. **System of Record:** PostgreSQL/TimescaleDB (or resilient SQLite fallback) is authoritative. MQTT is message transport only.
 2. **State Separation Invariant:** Observed (`LIVE`/`REPLAY`), `SIMULATION`, and `PREDICTED` records are strictly separated into distinct tables. Predictions and simulations never overwrite observed twin current state.
@@ -33,7 +33,7 @@
 
 ---
 
-## 3. Storage Architecture (19 Core Tables)
+## 3. Storage Architecture
 
 ```text
                +----------------------------------------------------+
@@ -82,15 +82,19 @@
 17. `audit_events`: System configuration and administrative action logs.
 18. `quarantine_observations`: Dead-letter queue capturing rejected payloads with reasons.
 19. `traffic_15m_aggregates`: Continuous 15-minute analytical rollups (p85 speed, max queue).
+20. `spatial_road_segment_map`: PostGIS <-> SUMO edge mappings with per-lane widths and offsets.
+21. `spatial_intersection_map`: Junction coordinates, cycle times, approach edges, and TLS IDs.
+22. `spatial_signal_controller_map`: Controller parameters and signal group mappings.
+23. `spatial_building_zone_map`: Building footprint, extrusion heights (28m), levels, and categories.
+24. `spatial_sensor_map`: Sensor mounting coordinates, elevation, and sampling intervals.
+25. `spatial_scenario_geometry_map`: Scenario templates mapped to corridor edges and junctions.
 
 ---
 
 ## 4. Ingestion & Event Transport
 
-### 4.1 Approved Topic Hierarchy
+### 4.1 Topic Hierarchy
 - **Canonical:** `nagartwin/{environment}/{sourceMode}/{domain}/{entityId}`
-  - Example: `nagartwin/dev/simulation/traffic/seg-viman-01`
-  - Example: `nagartwin/dev/simulation/energy/bld-phoenix-01`
 - **Corridor Wildcard:** `dt/v1/corridor/#`
 
 ### 4.2 Ingestion Validation Pipeline
@@ -113,6 +117,10 @@ Incoming payloads must pass Pydantic schema validation, coordinate sanity, physi
 - `GET /api/v1/scenario-runs/{id}`: Query run status, baseline vs intervention KPIs.
 - `GET /api/v1/models`: List active ML model cards, metrics, and baseline comparisons.
 - `GET /api/v1/data-quality`: Ingestion health, schema compliance rates, quarantine summary.
+- `GET /api/v1/spatial/registry`: Full PostGIS <-> SUMO spatial mapping registry.
+- `GET /api/v1/spatial/corridor-3d`: GeoJSON FeatureCollection with 3D extrusions and lane centerlines.
+- `GET /api/v1/spatial/layers/{layer_name}`: Filtered spatial layers (`roads`, `buildings`, `signals`, etc.).
+- `GET /api/v1/spatial/resolve/{entity_id}`: Resolves NGSI-LD ID to spatial and simulation attributes.
 
 ### 5.2 Canonical WebSocket Channels
 - `/ws/operations`: Real-time operational twin feed (traffic, energy, environment state).

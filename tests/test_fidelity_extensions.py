@@ -1,7 +1,7 @@
 """
-test_phase8_extensions.py
+test_fidelity_extensions.py
 
-Comprehensive test suite verifying Phase 8 extensions (D-13 & D-14):
+Comprehensive test suite verifying analytical and fidelity extensions:
 1. Conformal Prediction uncertainty calibration bounds.
 2. TreeSHAP local feature attribution explainability.
 3. Environmental Anomaly Detection on sensor telemetry.

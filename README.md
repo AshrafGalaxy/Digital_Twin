@@ -3,7 +3,7 @@
 
 > **Type:** Urban Digital Twin & Municipal Decision-Support Platform Prototype  
 > **Pilot Study Area:** Viman Nagar Chowk (Phoenix Marketcity) ↔ Somnath Nagar Chowk, Nagar Road, Pune (`[18.5575, 73.9120]` to `[18.5665, 73.9325]`)  
-> **Status:** Fully Implemented & Tested (91 of 91 automated tests passing, 100% complete)
+> **Status:** Fully Implemented & Tested (99 of 99 automated tests passing, 100% complete)
 
 ---
 
@@ -15,25 +15,19 @@ This **Digital Twin** is an integrated corridor-scale urban analytics and decisi
 
 ## 2. Documentation Architecture
 
-All project documentation is organized hierarchically:
+Project documentation is structured concisely:
 
 ### Root Essential Documents
-- [README.md](README.md) — System summary, quickstart commands, and documentation directory.
-- [AGENTS.md](AGENTS.md) — Mandatory execution contract, core invariants, provenance rules, and Definition of Done.
+- [README.md](README.md) — System summary, quickstart commands, and directory navigation.
+- [AGENTS.md](AGENTS.md) — Mandatory execution contract, core invariants, provenance rules, workspace hygiene, and Definition of Done.
 - [PRD.md](PRD.md) — Executive Product Requirements Document (FR-01 to FR-10, NFRs, acceptance criteria).
 
-### Technical Specifications (`docs/specifications/`)
-- [technical_architecture.md](docs/specifications/technical_architecture.md) — Modular monolith architecture, multi-storage DB schemas, MQTT topic hierarchy, and REST/WS API contracts.
-- [data_and_ml_plan.md](docs/specifications/data_and_ml_plan.md) — Medallion data lakehouse, feature store schemas, XGBoost models, conformal intervals, and drift monitoring.
-- [design_system.md](docs/specifications/design_system.md) — Dual-theme CSS color tokens, Satoshi typography, 4px spacing scale, and WCAG 2.2 AA rules.
-- [ui_ux_spec.md](docs/specifications/ui_ux_spec.md) — Operations dashboard screens, MapLibre 2D layer rules, and contextual drawer interaction flows.
-- [project_context.md](docs/specifications/project_context.md) — Corridor boundaries, coordinates, arterial parameters, and municipal justification.
-- [PROJECT_DELIVERABLES.md](docs/PROJECT_DELIVERABLES.md) — Verification matrix for all Deliverables (D-01 to D-14) and Phase 1–8 milestones.
+### Technical Architecture
+- [docs/architecture.md](docs/architecture.md) — Authoritative engineering blueprint: modular monolith architecture, 25 multi-storage DB schemas, MQTT topic hierarchy, spatial registry, and REST/WebSocket API contracts.
 
-### Decisions, Datasets, and Reports
-- [docs/decisions/](docs/decisions/) — Architecture Decision Records (ADR-001 to ADR-004).
-- [docs/datasets/](docs/datasets/) — Corridor spatial metadata and OpenStreetMap validation notes.
-- [docs/reports/](docs/reports/) — Model cards (`MODEL_CARD_*.md`), operational runbook, demo script, and academic research evaluation report.
+### Dataset Catalogs
+- [data/manifests/DATASET_REGISTRY.md](data/manifests/DATASET_REGISTRY.md) — Full data governance catalog, licensing, and schema definitions.
+- [data/spatial/corridor_spatial_registry.json](data/spatial/corridor_spatial_registry.json) — Canonical PostGIS-to-SUMO cross-referencing and 3D spatial definitions.
 
 ---
 
@@ -41,8 +35,8 @@ All project documentation is organized hierarchically:
 
 | Layer | Technology | Role |
 |---|---|---|
-| **Frontend** | React 18 + TypeScript + Vite | Civic operations dashboard with dual themes |
-| **Geospatial Map** | MapLibre GL JS + OpenStreetMap tiles | 2D vector map canvas (3D strictly deferred) |
+| **Frontend** | React 18 + TypeScript + Vite | Civic operations dashboard |
+| **Geospatial Map** | MapLibre GL JS + OpenStreetMap | 2D vector map canvas and layer overlays |
 | **Backend Monolith** | Python 3.11 + FastAPI modular monolith | Async REST APIs (`/api/v1`), WebSockets, rule engine |
 | **Message Broker** | Eclipse Mosquitto (MQTT 3.1.1/5.0) | Sensor telemetry transport (`nagartwin/#`, `dt/v1/corridor/#`) |
 | **Primary DB** | PostgreSQL 16 + TimescaleDB + PostGIS | Canonical entity store, spatial queries, hypertable time-series |
@@ -90,22 +84,16 @@ docker compose --profile full up -d
 ├── README.md                 # Project overview and navigation
 ├── AGENTS.md                 # Mandatory agent operating rules and invariants
 ├── PRD.md                    # Executive Product Requirements Document
-├── docs/                     # Specifications, ADRs, datasets, and reports
-│   ├── PROJECT_DELIVERABLES.md # Milestone & deliverables completion matrix
-│   ├── decisions/            # ADR-001 through ADR-004
-│   ├── datasets/             # Corridor spatial metadata
-│   ├── diagrams/             # System and dataflow architecture diagrams
-│   ├── reference/            # Architecture & tech stack research reference
-│   ├── reports/              # Model cards, runbook, demo script, research report
-│   └── specifications/       # Deep engineering blueprints (Architecture, ML, UI, Tokens)
-├── data/                     # Medallion lakehouse (raw, bronze, silver, gold, manifests)
+├── docs/                     # Authoritative system architecture blueprint
+│   └── architecture.md       # Technical architecture specification
+├── data/                     # Data assets, spatial registry, and manifests
 ├── backend/                  # FastAPI modular monolith application
 ├── frontend/                 # React + TypeScript + MapLibre UI
 ├── simulation/               # Eclipse SUMO network, routes & scenarios
 ├── ml/                       # Feature pipelines, XGBoost models & calibrator
 ├── infrastructure/           # Docker Compose, Mosquitto & DB configurations
 ├── scripts/                  # run_local.py, publish_stream.py, benchmarks
-└── tests/                    # 13 modular pytest test suites (100% passing)
+└── tests/                    # 15 modular pytest test suites (100% passing)
 ```
 
 ---
