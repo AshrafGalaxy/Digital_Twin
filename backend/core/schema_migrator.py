@@ -324,6 +324,94 @@ SQLITE_TABLE_DDL = [
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (bucket_15m, segment_id)
     );
+    """,
+    # 20. Spatial Road Segment Map (Phase 8A)
+    """
+    CREATE TABLE IF NOT EXISTS spatial_road_segment_map (
+        segment_id TEXT PRIMARY KEY,
+        sumo_edge_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        from_junction TEXT,
+        to_junction TEXT,
+        length_meters REAL NOT NULL,
+        lane_count INTEGER NOT NULL,
+        speed_limit_kmh REAL NOT NULL,
+        osm_highway TEXT DEFAULT 'primary',
+        coordinates TEXT NOT NULL,
+        lanes_json TEXT NOT NULL DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 21. Spatial Intersection Map (Phase 8A)
+    """
+    CREATE TABLE IF NOT EXISTS spatial_intersection_map (
+        intersection_id TEXT PRIMARY KEY,
+        sumo_junction_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        control_type TEXT NOT NULL DEFAULT 'SIGNALIZED',
+        coordinates TEXT NOT NULL,
+        cycle_time_sec INTEGER DEFAULT 120,
+        phases_count INTEGER DEFAULT 4,
+        approach_edges TEXT NOT NULL DEFAULT '[]',
+        departure_edges TEXT NOT NULL DEFAULT '[]',
+        tls_program_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 22. Spatial Signal Controller Map (Phase 8A)
+    """
+    CREATE TABLE IF NOT EXISTS spatial_signal_controller_map (
+        controller_id TEXT PRIMARY KEY,
+        intersection_id TEXT NOT NULL,
+        sumo_tls_id TEXT NOT NULL,
+        cycle_time_sec INTEGER DEFAULT 120,
+        signal_groups_json TEXT NOT NULL DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 23. Spatial Building Zone Map (Phase 8A)
+    """
+    CREATE TABLE IF NOT EXISTS spatial_building_zone_map (
+        building_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'COMMERCIAL_RETAIL',
+        gross_floor_area_sqm REAL NOT NULL,
+        contract_demand_kw REAL NOT NULL,
+        height_meters REAL NOT NULL DEFAULT 28.0,
+        building_levels INTEGER NOT NULL DEFAULT 6,
+        model_fidelity_level TEXT NOT NULL DEFAULT 'B2',
+        roof_type TEXT DEFAULT 'FLAT_COMMERCIAL',
+        color_tint TEXT DEFAULT '#2A4B54',
+        centroid TEXT NOT NULL,
+        footprint_polygon TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 24. Spatial Sensor Map (Phase 8A)
+    """
+    CREATE TABLE IF NOT EXISTS spatial_sensor_map (
+        sensor_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        segment_id TEXT,
+        sumo_edge_id TEXT,
+        direction TEXT NOT NULL DEFAULT 'EASTBOUND',
+        coordinates TEXT NOT NULL,
+        elevation_meters REAL DEFAULT 1.5,
+        sensor_type TEXT NOT NULL,
+        sampling_interval_sec INTEGER DEFAULT 60,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 25. Spatial Scenario Geometry Map (Phase 8A)
+    """
+    CREATE TABLE IF NOT EXISTS spatial_scenario_geometry_map (
+        scenario_template_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        corridor_edge_ids TEXT NOT NULL DEFAULT '[]',
+        junction_ids TEXT NOT NULL DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -335,7 +423,10 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_quarantine_rejection_reason ON quarantine_observations(rejection_reason);",
     "CREATE INDEX IF NOT EXISTS idx_quarantine_quarantined_at ON quarantine_observations(quarantined_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(entity_id);",
-    "CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_spatial_road_sumo_edge ON spatial_road_segment_map(sumo_edge_id);",
+    "CREATE INDEX IF NOT EXISTS idx_spatial_inter_sumo_junc ON spatial_intersection_map(sumo_junction_id);",
+    "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);"
 ]
 
 
@@ -750,6 +841,171 @@ async def _seed_initial_current_state(session: AsyncSession) -> int:
     return count
 
 
+async def _seed_spatial_registry(session: AsyncSession, is_pg: bool) -> Dict[str, int]:
+    """
+    Seeds the spatial mapping tables (Phase 8A) from corridor_spatial_registry.json.
+    Establishes versioned PostGIS <-> SUMO mappings for segments, junctions, signals, and buildings.
+    """
+    counts = {"segments": 0, "intersections": 0, "signals": 0, "buildings": 0, "sensors": 0}
+    registry_file = DATA_DIR / "spatial" / "corridor_spatial_registry.json"
+    if not registry_file.exists():
+        return counts
+
+    try:
+        with open(registry_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # 1. Road Segments
+        for seg in data.get("roadSegmentMappings", []):
+            stmt = text("""
+                INSERT OR IGNORE INTO spatial_road_segment_map (
+                    segment_id, sumo_edge_id, name, direction, from_junction,
+                    to_junction, length_meters, lane_count, speed_limit_kmh,
+                    osm_highway, coordinates, lanes_json
+                ) VALUES (
+                    :segment_id, :sumo_edge_id, :name, :direction, :from_junction,
+                    :to_junction, :length_meters, :lane_count, :speed_limit_kmh,
+                    :osm_highway, :coordinates, :lanes_json
+                );
+            """)
+            await session.execute(stmt, {
+                "segment_id": seg["segmentId"],
+                "sumo_edge_id": seg["sumoEdgeId"],
+                "name": seg["name"],
+                "direction": seg["direction"],
+                "from_junction": seg.get("fromJunction"),
+                "to_junction": seg.get("toJunction"),
+                "length_meters": seg["lengthMeters"],
+                "lane_count": seg["laneCount"],
+                "speed_limit_kmh": seg["speedLimitKmh"],
+                "osm_highway": seg.get("osmHighway", "primary"),
+                "coordinates": json.dumps(seg.get("coordinates", [])),
+                "lanes_json": json.dumps(seg.get("lanes", []))
+            })
+            counts["segments"] += 1
+
+        # 2. Intersections
+        for inter in data.get("intersectionMappings", []):
+            stmt = text("""
+                INSERT OR IGNORE INTO spatial_intersection_map (
+                    intersection_id, sumo_junction_id, name, control_type,
+                    coordinates, cycle_time_sec, phases_count, approach_edges,
+                    departure_edges, tls_program_id
+                ) VALUES (
+                    :intersection_id, :sumo_junction_id, :name, :control_type,
+                    :coordinates, :cycle_time_sec, :phases_count, :approach_edges,
+                    :departure_edges, :tls_program_id
+                );
+            """)
+            await session.execute(stmt, {
+                "intersection_id": inter["intersectionId"],
+                "sumo_junction_id": inter["sumoJunctionId"],
+                "name": inter["name"],
+                "control_type": inter["controlType"],
+                "coordinates": json.dumps(inter.get("coordinates", [])),
+                "cycle_time_sec": inter.get("cycleTimeSec", 120),
+                "phases_count": inter.get("phasesCount", 4),
+                "approach_edges": json.dumps(inter.get("approachEdges", [])),
+                "departure_edges": json.dumps(inter.get("departureEdges", [])),
+                "tls_program_id": inter.get("tlsProgramId")
+            })
+            counts["intersections"] += 1
+
+        # 3. Signal Controllers
+        for tsc in data.get("signalControllers", []):
+            stmt = text("""
+                INSERT OR IGNORE INTO spatial_signal_controller_map (
+                    controller_id, intersection_id, sumo_tls_id, cycle_time_sec, signal_groups_json
+                ) VALUES (
+                    :controller_id, :intersection_id, :sumo_tls_id, :cycle_time_sec, :signal_groups_json
+                );
+            """)
+            await session.execute(stmt, {
+                "controller_id": tsc["controllerId"],
+                "intersection_id": tsc["intersectionId"],
+                "sumo_tls_id": tsc["sumoTlsId"],
+                "cycle_time_sec": tsc.get("cycleTimeSec", 120),
+                "signal_groups_json": json.dumps(tsc.get("signalGroups", []))
+            })
+            counts["signals"] += 1
+
+        # 4. Building Zones
+        for bld in data.get("buildingZoneMappings", []):
+            stmt = text("""
+                INSERT OR IGNORE INTO spatial_building_zone_map (
+                    building_id, name, category, gross_floor_area_sqm,
+                    contract_demand_kw, height_meters, building_levels,
+                    model_fidelity_level, roof_type, color_tint,
+                    centroid, footprint_polygon
+                ) VALUES (
+                    :building_id, :name, :category, :gross_floor_area_sqm,
+                    :contract_demand_kw, :height_meters, :building_levels,
+                    :model_fidelity_level, :roof_type, :color_tint,
+                    :centroid, :footprint_polygon
+                );
+            """)
+            await session.execute(stmt, {
+                "building_id": bld["buildingId"],
+                "name": bld["name"],
+                "category": bld.get("category", "COMMERCIAL_RETAIL"),
+                "gross_floor_area_sqm": bld["grossFloorAreaSqm"],
+                "contract_demand_kw": bld["contractDemandKw"],
+                "height_meters": bld.get("heightMeters", 28.0),
+                "building_levels": bld.get("buildingLevels", 6),
+                "model_fidelity_level": bld.get("modelFidelityLevel", "B2"),
+                "roof_type": bld.get("roofType", "FLAT_COMMERCIAL"),
+                "color_tint": bld.get("colorTint", "#2A4B54"),
+                "centroid": json.dumps(bld.get("centroid", [])),
+                "footprint_polygon": json.dumps(bld.get("footprintPolygon", []))
+            })
+            counts["buildings"] += 1
+
+        # 5. Sensors
+        for sns in data.get("sensorMappings", []):
+            stmt = text("""
+                INSERT OR IGNORE INTO spatial_sensor_map (
+                    sensor_id, name, segment_id, sumo_edge_id, direction,
+                    coordinates, elevation_meters, sensor_type, sampling_interval_sec
+                ) VALUES (
+                    :sensor_id, :name, :segment_id, :sumo_edge_id, :direction,
+                    :coordinates, :elevation_meters, :sensor_type, :sampling_interval_sec
+                );
+            """)
+            await session.execute(stmt, {
+                "sensor_id": sns["sensorId"],
+                "name": sns["name"],
+                "segment_id": sns.get("segmentId"),
+                "sumo_edge_id": sns.get("sumoEdgeId"),
+                "direction": sns.get("direction", "EASTBOUND"),
+                "coordinates": json.dumps(sns.get("coordinates", [])),
+                "elevation_meters": sns.get("elevationMeters", 1.5),
+                "sensor_type": sns.get("sensorType", "INDUCTIVE_LOOP_EMULATION"),
+                "sampling_interval_sec": sns.get("samplingIntervalSec", 60)
+            })
+            counts["sensors"] += 1
+
+        # 6. Scenario Geometry
+        for sc in data.get("scenarioGeometryMappings", []):
+            stmt = text("""
+                INSERT OR IGNORE INTO spatial_scenario_geometry_map (
+                    scenario_template_id, name, corridor_edge_ids, junction_ids
+                ) VALUES (
+                    :scenario_template_id, :name, :corridor_edge_ids, :junction_ids
+                );
+            """)
+            await session.execute(stmt, {
+                "scenario_template_id": sc["scenarioTemplateId"],
+                "name": sc["name"],
+                "corridor_edge_ids": json.dumps(sc.get("corridorEdgeIds", [])),
+                "junction_ids": json.dumps(sc.get("junctionIds", []))
+            })
+
+    except Exception as e:
+        logger.warning("Spatial registry seeding notice: %s", e)
+
+    return counts
+
+
 async def init_db_schema() -> Dict[str, Any]:
     """
     Primary entrypoint called on FastAPI startup lifespan.
@@ -783,6 +1039,15 @@ async def init_db_schema() -> Dict[str, Any]:
                 logger.info("Authoritative corridor spatial assets seeded successfully.")
             else:
                 logger.info("Corridor assets already present (%s study areas found).", study_count)
+
+            # Check if spatial registry needs seeding
+            check_spatial = await session.execute(text("SELECT COUNT(*) FROM spatial_road_segment_map"))
+            spatial_count = check_spatial.scalar() or 0
+            if spatial_count == 0:
+                logger.info("Seeding spatial registry mappings...")
+                seeded_assets["spatial"] = await _seed_spatial_registry(session, is_pg)
+                await session.commit()
+                logger.info("Spatial registry seeded successfully: %s", seeded_assets.get("spatial"))
 
             # Ensure continuous aggregates are seeded if empty
             try:

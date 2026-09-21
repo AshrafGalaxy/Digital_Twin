@@ -1,0 +1,428 @@
+{
+  "registryVersion": "1.0.0",
+  "crs": "EPSG:4326",
+  "studyAreaId": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+  "name": "Nagar Road Corridor Spatial Registry",
+  "boundaryCoordinates": [
+    [73.9100, 18.5560],
+    [73.9310, 18.5560],
+    [73.9310, 18.5660],
+    [73.9100, 18.5660],
+    [73.9100, 18.5560]
+  ],
+  "roadSegmentMappings": [
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+      "sumoEdgeId": "SEG-NR-EB-01",
+      "name": "Nagar Road EB Approach to Viman Nagar Chowk",
+      "direction": "EASTBOUND",
+      "fromJunction": "NR-EB-START",
+      "toJunction": "VN-01",
+      "lengthMeters": 480.0,
+      "laneCount": 3,
+      "speedLimitKmh": 50.0,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9125, 18.5592],
+        [73.9168, 18.5602]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-NR-EB-01_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
+        {"laneIndex": 1, "sumoLaneId": "SEG-NR-EB-01_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
+        {"laneIndex": 2, "sumoLaneId": "SEG-NR-EB-01_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+      "sumoEdgeId": "SEG-NR-EB-02",
+      "name": "Nagar Road EB (Viman Nagar to Somnath Nagar)",
+      "direction": "EASTBOUND",
+      "fromJunction": "VN-01",
+      "toJunction": "SN-01",
+      "lengthMeters": 1180.0,
+      "laneCount": 3,
+      "speedLimitKmh": 50.0,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9168, 18.5602],
+        [73.9280, 18.5630]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-NR-EB-02_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
+        {"laneIndex": 1, "sumoLaneId": "SEG-NR-EB-02_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
+        {"laneIndex": 2, "sumoLaneId": "SEG-NR-EB-02_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03",
+      "sumoEdgeId": "SEG-NR-EB-03",
+      "name": "Nagar Road EB Departure from Somnath Nagar Chowk",
+      "direction": "EASTBOUND",
+      "fromJunction": "SN-01",
+      "toJunction": "NR-EB-END",
+      "lengthMeters": 450.0,
+      "laneCount": 3,
+      "speedLimitKmh": 50.0,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9280, 18.5630],
+        [73.9320, 18.5640]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-NR-EB-03_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
+        {"laneIndex": 1, "sumoLaneId": "SEG-NR-EB-03_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
+        {"laneIndex": 2, "sumoLaneId": "SEG-NR-EB-03_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01",
+      "sumoEdgeId": "SEG-NR-WB-01",
+      "name": "Nagar Road WB Approach to Somnath Nagar Chowk",
+      "direction": "WESTBOUND",
+      "fromJunction": "NR-EB-END",
+      "toJunction": "SN-01",
+      "lengthMeters": 450.0,
+      "laneCount": 3,
+      "speedLimitKmh": 50.0,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9320, 18.5642],
+        [73.9280, 18.5632]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-NR-WB-01_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
+        {"laneIndex": 1, "sumoLaneId": "SEG-NR-WB-01_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
+        {"laneIndex": 2, "sumoLaneId": "SEG-NR-WB-01_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+      "sumoEdgeId": "SEG-NR-WB-02",
+      "name": "Nagar Road WB (Somnath Nagar to Viman Nagar)",
+      "direction": "WESTBOUND",
+      "fromJunction": "SN-01",
+      "toJunction": "VN-01",
+      "lengthMeters": 1180.0,
+      "laneCount": 3,
+      "speedLimitKmh": 50.0,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9280, 18.5632],
+        [73.9168, 18.5604]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-NR-WB-02_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
+        {"laneIndex": 1, "sumoLaneId": "SEG-NR-WB-02_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
+        {"laneIndex": 2, "sumoLaneId": "SEG-NR-WB-02_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03",
+      "sumoEdgeId": "SEG-NR-WB-03",
+      "name": "Nagar Road WB Departure from Viman Nagar Chowk",
+      "direction": "WESTBOUND",
+      "fromJunction": "VN-01",
+      "toJunction": "NR-EB-START",
+      "lengthMeters": 480.0,
+      "laneCount": 3,
+      "speedLimitKmh": 50.0,
+      "osmHighway": "primary",
+      "coordinates": [
+        [73.9168, 18.5604],
+        [73.9125, 18.5594]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-NR-WB-03_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
+        {"laneIndex": 1, "sumoLaneId": "SEG-NR-WB-03_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
+        {"laneIndex": 2, "sumoLaneId": "SEG-NR-WB-03_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
+      "sumoEdgeId": "SEG-VN-NB-01",
+      "name": "Viman Nagar Road NB Cross Approach",
+      "direction": "NORTHBOUND",
+      "fromJunction": "VN-NB-START",
+      "toJunction": "VN-01",
+      "lengthMeters": 350.0,
+      "laneCount": 2,
+      "speedLimitKmh": 40.0,
+      "osmHighway": "secondary",
+      "coordinates": [
+        [73.9166, 18.5570],
+        [73.9168, 18.5602]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-VN-NB-01_0", "type": "CURBSIDE", "widthMeters": 3.25, "offsetMeters": -2.0},
+        {"laneIndex": 1, "sumoLaneId": "SEG-VN-NB-01_1", "type": "THROUGH", "widthMeters": 3.25, "offsetMeters": 2.0}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01",
+      "sumoEdgeId": "SEG-VN-SB-01",
+      "name": "Phoenix Mall Commercial Branch SB",
+      "direction": "SOUTHBOUND",
+      "fromJunction": "VN-01",
+      "toJunction": "VN-SB-END",
+      "lengthMeters": 400.0,
+      "laneCount": 2,
+      "speedLimitKmh": 40.0,
+      "osmHighway": "secondary",
+      "coordinates": [
+        [73.9168, 18.5602],
+        [73.9170, 18.5635]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-VN-SB-01_0", "type": "CURBSIDE", "widthMeters": 3.25, "offsetMeters": -2.0},
+        {"laneIndex": 1, "sumoLaneId": "SEG-VN-SB-01_1", "type": "THROUGH", "widthMeters": 3.25, "offsetMeters": 2.0}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
+      "sumoEdgeId": "SEG-SN-NB-01",
+      "name": "Somnath Nagar Road NB Cross Approach",
+      "direction": "NORTHBOUND",
+      "fromJunction": "SN-NB-START",
+      "toJunction": "SN-01",
+      "lengthMeters": 300.0,
+      "laneCount": 2,
+      "speedLimitKmh": 35.0,
+      "osmHighway": "tertiary",
+      "coordinates": [
+        [73.9278, 18.5605],
+        [73.9280, 18.5630]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-SN-NB-01_0", "type": "CURBSIDE", "widthMeters": 3.0, "offsetMeters": -1.75},
+        {"laneIndex": 1, "sumoLaneId": "SEG-SN-NB-01_1", "type": "THROUGH", "widthMeters": 3.0, "offsetMeters": 1.75}
+      ]
+    },
+    {
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01",
+      "sumoEdgeId": "SEG-SN-SB-01",
+      "name": "Somnath Nagar Road SB Departure",
+      "direction": "SOUTHBOUND",
+      "fromJunction": "SN-01",
+      "toJunction": "SN-SB-END",
+      "lengthMeters": 300.0,
+      "laneCount": 2,
+      "speedLimitKmh": 35.0,
+      "osmHighway": "tertiary",
+      "coordinates": [
+        [73.9280, 18.5630],
+        [73.9282, 18.5655]
+      ],
+      "lanes": [
+        {"laneIndex": 0, "sumoLaneId": "SEG-SN-SB-01_0", "type": "CURBSIDE", "widthMeters": 3.0, "offsetMeters": -1.75},
+        {"laneIndex": 1, "sumoLaneId": "SEG-SN-SB-01_1", "type": "THROUGH", "widthMeters": 3.0, "offsetMeters": 1.75}
+      ]
+    }
+  ],
+  "intersectionMappings": [
+    {
+      "intersectionId": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "sumoJunctionId": "VN-01",
+      "name": "Viman Nagar Chowk (Phoenix Mall Junction)",
+      "controlType": "SIGNALIZED",
+      "coordinates": [73.9168, 18.5602],
+      "cycleTimeSec": 120,
+      "phasesCount": 4,
+      "approachEdges": ["SEG-NR-EB-01", "SEG-NR-WB-02", "SEG-VN-NB-01"],
+      "departureEdges": ["SEG-NR-EB-02", "SEG-NR-WB-03", "SEG-VN-SB-01"],
+      "tlsProgramId": "VN-01"
+    },
+    {
+      "intersectionId": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "sumoJunctionId": "SN-01",
+      "name": "Somnath Nagar Chowk",
+      "controlType": "SIGNALIZED",
+      "coordinates": [73.9280, 18.5630],
+      "cycleTimeSec": 90,
+      "phasesCount": 3,
+      "approachEdges": ["SEG-NR-EB-02", "SEG-NR-WB-01", "SEG-SN-NB-01"],
+      "departureEdges": ["SEG-NR-EB-03", "SEG-NR-WB-02", "SEG-SN-SB-01"],
+      "tlsProgramId": "SN-01"
+    }
+  ],
+  "signalControllers": [
+    {
+      "controllerId": "urn:ngsi-ld:TrafficSignalController:PUNE:TSC-VN-01",
+      "intersectionId": "urn:ngsi-ld:Intersection:PUNE:VN-01",
+      "sumoTlsId": "VN-01",
+      "cycleTimeSec": 120,
+      "signalGroups": [
+        {
+          "groupId": "SG-VN-EB-MAIN",
+          "name": "Nagar Road EB Main Through",
+          "approachEdge": "SEG-NR-EB-01",
+          "sumoLinks": [0, 1, 2],
+          "stopLineCoordinate": [73.9167, 18.56015],
+          "headingDegrees": 82.0,
+          "greenDurationSec": 35,
+          "yellowDurationSec": 3
+        },
+        {
+          "groupId": "SG-VN-WB-MAIN",
+          "name": "Nagar Road WB Main Through",
+          "approachEdge": "SEG-NR-WB-02",
+          "sumoLinks": [3, 4, 5],
+          "stopLineCoordinate": [73.9169, 18.56025],
+          "headingDegrees": 262.0,
+          "greenDurationSec": 35,
+          "yellowDurationSec": 3
+        },
+        {
+          "groupId": "SG-VN-NB-CROSS",
+          "name": "Viman Nagar Road NB Cross Approach",
+          "approachEdge": "SEG-VN-NB-01",
+          "sumoLinks": [6, 7, 8],
+          "stopLineCoordinate": [73.91675, 18.5601],
+          "headingDegrees": 352.0,
+          "greenDurationSec": 25,
+          "yellowDurationSec": 3
+        },
+        {
+          "groupId": "SG-VN-SB-COMMERCIAL",
+          "name": "Mall / Commercial Access SB Branch",
+          "approachEdge": "SEG-VN-SB-01",
+          "sumoLinks": [9, 10, 11],
+          "stopLineCoordinate": [73.91685, 18.5603],
+          "headingDegrees": 172.0,
+          "greenDurationSec": 13,
+          "yellowDurationSec": 3
+        }
+      ]
+    },
+    {
+      "controllerId": "urn:ngsi-ld:TrafficSignalController:PUNE:TSC-SN-01",
+      "intersectionId": "urn:ngsi-ld:Intersection:PUNE:SN-01",
+      "sumoTlsId": "SN-01",
+      "cycleTimeSec": 90,
+      "signalGroups": [
+        {
+          "groupId": "SG-SN-EB-WB-THROUGH",
+          "name": "Nagar Road EB / WB Through",
+          "approachEdge": "SEG-NR-EB-02",
+          "sumoLinks": [0, 1, 2],
+          "stopLineCoordinate": [73.9279, 18.56295],
+          "headingDegrees": 80.0,
+          "greenDurationSec": 50,
+          "yellowDurationSec": 3
+        },
+        {
+          "groupId": "SG-SN-NB-CROSS",
+          "name": "Somnath Nagar Road NB Cross",
+          "approachEdge": "SEG-SN-NB-01",
+          "sumoLinks": [3, 4, 5],
+          "stopLineCoordinate": [73.92795, 18.5629],
+          "headingDegrees": 350.0,
+          "greenDurationSec": 20,
+          "yellowDurationSec": 3
+        },
+        {
+          "groupId": "SG-SN-TURNING",
+          "name": "Secondary Turning Movements",
+          "approachEdge": "SEG-NR-WB-01",
+          "sumoLinks": [6, 7, 8],
+          "stopLineCoordinate": [73.9281, 18.56305],
+          "headingDegrees": 260.0,
+          "greenDurationSec": 11,
+          "yellowDurationSec": 3
+        }
+      ]
+    }
+  ],
+  "buildingZoneMappings": [
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01",
+      "name": "Phoenix Marketcity Mall (Commercial Retail Zone)",
+      "category": "COMMERCIAL_RETAIL",
+      "grossFloorAreaSqm": 110000.0,
+      "contractDemandKw": 4800.0,
+      "heightMeters": 28.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2A4B54",
+      "centroid": [73.9172, 18.5585],
+      "footprintPolygon": [
+        [73.9160, 18.5575],
+        [73.9185, 18.5575],
+        [73.9185, 18.5595],
+        [73.9160, 18.5595],
+        [73.9160, 18.5575]
+      ]
+    }
+  ],
+  "sensorMappings": [
+    {
+      "sensorId": "urn:ngsi-ld:TrafficSensor:PUNE:SNS-NR-EB-01",
+      "name": "Nagar Road EB Inductive Loop 01",
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+      "sumoEdgeId": "SEG-NR-EB-01",
+      "direction": "EASTBOUND",
+      "coordinates": [73.9145, 18.5597],
+      "elevationMeters": 1.5,
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "samplingIntervalSec": 60
+    },
+    {
+      "sensorId": "urn:ngsi-ld:TrafficSensor:PUNE:SNS-NR-EB-02",
+      "name": "Nagar Road EB Inductive Loop 02",
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
+      "sumoEdgeId": "SEG-NR-EB-02",
+      "direction": "EASTBOUND",
+      "coordinates": [73.9220, 18.5616],
+      "elevationMeters": 1.5,
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "samplingIntervalSec": 60
+    },
+    {
+      "sensorId": "urn:ngsi-ld:TrafficSensor:PUNE:SNS-NR-WB-02",
+      "name": "Nagar Road WB Inductive Loop 02",
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
+      "sumoEdgeId": "SEG-NR-WB-02",
+      "direction": "WESTBOUND",
+      "coordinates": [73.9220, 18.5617],
+      "elevationMeters": 1.5,
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "samplingIntervalSec": 60
+    },
+    {
+      "sensorId": "urn:ngsi-ld:TrafficSensor:PUNE:SNS-NR-WB-03",
+      "name": "Nagar Road WB Inductive Loop 03",
+      "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03",
+      "sumoEdgeId": "SEG-NR-WB-03",
+      "direction": "WESTBOUND",
+      "coordinates": [73.9145, 18.5598],
+      "elevationMeters": 1.5,
+      "sensorType": "INDUCTIVE_LOOP_EMULATION",
+      "samplingIntervalSec": 60
+    },
+    {
+      "sensorId": "urn:ngsi-ld:EnvironmentSensor:PUNE:ENV-VN-AIR-01",
+      "name": "Viman Nagar Air Quality & Met Station",
+      "segmentId": null,
+      "sumoEdgeId": null,
+      "direction": "AMBIENT",
+      "coordinates": [73.9165, 18.5605],
+      "elevationMeters": 4.0,
+      "sensorType": "AMBIENT_AQI_METEOROLOGY",
+      "samplingIntervalSec": 300
+    }
+  ],
+  "scenarioGeometryMappings": [
+    {
+      "scenarioTemplateId": "SCEN-BASE-01",
+      "name": "Fixed-Time Isolated Arterial Baseline",
+      "corridorEdgeIds": ["SEG-NR-EB-01", "SEG-NR-EB-02", "SEG-NR-EB-03", "SEG-NR-WB-01", "SEG-NR-WB-02", "SEG-NR-WB-03"],
+      "junctionIds": ["VN-01", "SN-01"]
+    },
+    {
+      "scenarioTemplateId": "SCEN-INT-01",
+      "name": "Dynamic Split & Coordinated Progression",
+      "corridorEdgeIds": ["SEG-NR-EB-01", "SEG-NR-EB-02", "SEG-NR-EB-03", "SEG-NR-WB-01", "SEG-NR-WB-02", "SEG-NR-WB-03"],
+      "junctionIds": ["VN-01", "SN-01"]
+    }
+  ]
+}

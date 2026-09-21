@@ -15,6 +15,7 @@ from .endpoints import (
     interop,
     recommendations,
     scenarios,
+    spatial,
     state,
     stream,
     study_area,
@@ -26,6 +27,7 @@ api_v1_router.include_router(health.router)
 api_v1_router.include_router(canonical_resources.router)
 api_v1_router.include_router(study_area.router)
 api_v1_router.include_router(assets.router)
+api_v1_router.include_router(spatial.router)
 api_v1_router.include_router(state.router)
 api_v1_router.include_router(stream.router)
 api_v1_router.include_router(analytics.router)
