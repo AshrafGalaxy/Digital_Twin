@@ -1,11 +1,11 @@
 """
-test_technical_architecture_contracts.py
+test_api_endpoints.py
 
-Verifies compliance with TECHNICAL_ARCHITECTURE.md contracts:
-- §13.2 Canonical REST Resources (/health, /roads, /intersections, /entities/{id},
+Comprehensive test suite verifying canonical REST and WebSocket API endpoints:
+- Canonical REST Resources (/health, /roads, /intersections, /entities/{id},
   /observations, /forecasts, /scenarios, /scenario-runs/{id}, /models, /data-quality)
-- §13.3 WebSocket Channel Endpoints (/ws/operations, /ws/system, /ws/scenarios/{runId})
-- §6 Architectural Invariants (State separation, advisory recommendations, provenance tagging)
+- WebSocket Channel Endpoints (/ws/operations, /ws/system, /ws/scenarios/{runId})
+- Architectural Invariants (State separation, advisory recommendations, provenance tagging)
 """
 
 import pytest

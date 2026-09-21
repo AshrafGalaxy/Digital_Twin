@@ -7,17 +7,22 @@ Comprehensive test suite verifying analytical and fidelity extensions:
 3. Environmental Anomaly Detection on sensor telemetry.
 4. FIWARE Orion-LD / NGSI-LD 1.3 interoperability exports.
 5. FastAPI forecast and interop API endpoints.
+6. Open-Meteo weather client and diurnal fallback.
+7. Population Stability Index (PSI) feature drift detection and analytics API.
 """
 
+from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 
 from backend.main import app
+from backend.ingestion.weather_client import OpenMeteoWeatherClient
 from backend.services.anomaly_detector import EnvironmentalAnomalyDetector
 from backend.services.fiware_adapter import FIWAREOrionLDAdapter
 from backend.services.rule_engine import rule_engine
 from backend.schemas.recommendations import RecommendationDomain, RecommendationSeverity
 from ml.conformal_calibrator import ConformalPredictionCalibrator
+from ml.drift_detector import FeatureDriftDetector
 from ml.explainer import LocalModelExplainer
 from ml.inference.forecaster import CorridorForecaster
 
@@ -162,3 +167,56 @@ def test_api_interop_endpoints():
     ents = ent_resp.json()
     assert len(ents) >= 8
     assert all(e["type"] == "RoadSegment" for e in ents)
+
+
+@pytest.mark.asyncio
+async def test_weather_client_live_and_fallback():
+    """Verifies that OpenMeteoWeatherClient fetches or falls back gracefully."""
+    weather_client = OpenMeteoWeatherClient(timeout_seconds=3.0)
+    weather = await weather_client.get_current_weather()
+
+    assert "temperature_c" in weather
+    assert "humidity_pct" in weather
+    assert weather["source_mode"] in ["LIVE", "SIMULATION"]
+    assert 10.0 <= weather["temperature_c"] <= 50.0
+    assert 0.0 <= weather["humidity_pct"] <= 100.0
+
+    # Test diurnal fallback explicitly
+    fallback = weather_client._compute_diurnal_fallback(datetime(2026, 9, 20, 14, 0, tzinfo=timezone.utc))
+    assert fallback["source_mode"] == "SIMULATION"
+    assert fallback["source_id"] == "diurnal-model:pune-viman-nagar"
+    assert 20.0 <= fallback["temperature_c"] <= 40.0
+
+
+def test_feature_drift_detector():
+    """Verifies that FeatureDriftDetector calculates PSI and classifies drift correctly."""
+    detector = FeatureDriftDetector()
+    assert len(detector.reference_df) > 0
+
+    # Inlier sample from reference distribution -> STABLE
+    sample_ref = detector.reference_df.sample(200, random_state=42)
+    stable_eval = detector.evaluate_drift(sample_ref)
+    assert stable_eval["overallStatus"] == "STABLE"
+    assert stable_eval["qualityFlag"] == "valid"
+    assert stable_eval["maxPsi"] < 0.15
+
+    # Artificially shifted sample -> DRIFT_DETECTED
+    shifted_sample = sample_ref.copy()
+    shifted_sample["speed_lag_5m"] = shifted_sample["speed_lag_5m"] + 30.0
+    drift_eval = detector.evaluate_drift(shifted_sample)
+    assert drift_eval["overallStatus"] == "DRIFT_DETECTED"
+    assert drift_eval["qualityFlag"] == "suspect"
+    assert drift_eval["maxPsi"] >= 0.25
+    assert "speed_lag_5m" in drift_eval["driftedFeatures"]
+
+
+def test_analytics_drift_api_endpoint():
+    """Tests the GET /api/v1/analytics/drift endpoint."""
+    resp = client.get("/api/v1/analytics/drift?hours_ago=6")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "overallStatus" in data
+    assert "maxPsi" in data
+    assert "qualityFlag" in data
+    assert "perFeatureMetrics" in data
+    assert data["overallStatus"] in ["STABLE", "EARLY_WARNING", "DRIFT_DETECTED"]
