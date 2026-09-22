@@ -5,8 +5,7 @@ import {
   RotateCcw,
   RotateCw,
   Clock,
-  Zap,
-  Radio
+  Zap
 } from 'lucide-react';
 
 interface TimeScrubberProps {
@@ -107,7 +106,6 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
         {minutesAgo === 0 ? (
           <div className="scrubber-mode-badge live" title="Real-time corridor telemetry stream">
             <span className="live-dot-ping" />
-            <Radio size={12} />
             <span>LIVE</span>
           </div>
         ) : (
