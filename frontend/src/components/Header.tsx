@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Activity,
   ShieldCheck,
   Map,
   Car,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SourceMode, MunicipalRole, AuthUser } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
+import { DigitalTwinLogo } from './common/DigitalTwinLogo';
 
 export type TabId =
   | 'landing'
@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
             tabIndex={0}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
           >
-            <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
+            <DigitalTwinLogo size={22} glow />
             <span className="brand-title">Digital Twin</span>
           </div>
           <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>

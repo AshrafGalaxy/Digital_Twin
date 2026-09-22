@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { MunicipalRole, AuthUser } from '../../types/twin';
 import { loginMunicipalUser, registerMunicipalUser } from '../../services/api';
+import { DigitalTwinLogo } from '../common/DigitalTwinLogo';
 
 interface AuthPageViewProps {
   onAuthSuccess: (user: AuthUser) => void;
@@ -156,8 +157,8 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
     <div className="auth-root">
       {/* Top Floating Mini Header */}
       <header className="auth-top-bar">
-        <div className="auth-brand" onClick={onNavigateHome}>
-          <Activity size={18} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
+        <div className="auth-brand" onClick={onNavigateHome} style={{ cursor: 'pointer' }}>
+          <DigitalTwinLogo size={22} glow />
           <span className="brand-title">Digital Twin</span>
           <span className="brand-corridor">Pune Nagar Road</span>
         </div>
@@ -172,9 +173,12 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
         <div className="auth-card">
           {/* Card Header & Municipal Security Badge */}
           <div className="auth-card-header">
-            <div className="auth-security-badge">
-              <ShieldCheck size={13} color="var(--color-primary)" />
-              <span>Restricted Municipal Access • Nagar Road Corridor</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div className="auth-security-badge">
+                <ShieldCheck size={13} color="var(--color-primary)" />
+                <span>Restricted Municipal Access • Nagar Road Corridor</span>
+              </div>
+              <DigitalTwinLogo size={32} glow />
             </div>
             <h1 className="auth-title">
               {authMode === 'signin' ? 'Municipal Gateway Sign In' : 'Register Municipal Officer'}

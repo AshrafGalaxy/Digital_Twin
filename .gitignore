@@ -32,3 +32,6 @@ Thumbs.db
 *.sqlite3
 mlruns/
 scratch/
+
+# Local design skills and agent configurations (local only)
+.agents/

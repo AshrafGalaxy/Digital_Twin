@@ -16,10 +16,19 @@ import {
   Lock,
   BarChart3,
   User,
-  LogOut
+  LogOut,
+  Gauge,
+  MapPin
 } from 'lucide-react';
 import { TabId } from '../Header';
 import { AuthUser } from '../../types/twin';
+import { DigitalTwinLogo } from '../common/DigitalTwinLogo';
+import { ArterialWaveAsset } from '../landing/ArterialWaveAsset';
+import { EnergyCurveAsset } from '../landing/EnergyCurveAsset';
+import { ConformalBandsAsset } from '../landing/ConformalBandsAsset';
+import { MicroscopicPhysicsAsset } from '../landing/MicroscopicPhysicsAsset';
+import { CorridorDioramaAsset } from '../landing/CorridorDioramaAsset';
+import { CorridorAssetsShowcase } from '../landing/CorridorAssetsShowcase';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
@@ -36,7 +45,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [activePreviewMode, setActivePreviewMode] = useState<'simulation' | 'replay'>('simulation');
+  const [previewSpeed, setPreviewSpeed] = useState<number>(34.2);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    setPreviewSpeed(activePreviewMode === 'simulation' ? 34.2 : 28.6);
+  }, [activePreviewMode]);
 
   // Scroll Reveal Observer for Sections
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
@@ -134,17 +148,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
   return (
     <div className="landing-root">
-      {/* 1. Fluid Island Navigation per B7 */}
-      <nav className="landing-island-nav" aria-label="Main Navigation">
+      {/* 1. Structured Command Navigation */}
+      <nav className="landing-command-nav" aria-label="Main Navigation">
         <div className="landing-nav-inner">
           <div className="landing-nav-brand" onClick={() => scrollToAnchor('hero')}>
-            <Activity size={18} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
-            <span className="brand-name">Digital Twin</span>
-            <span className="brand-corridor">Pune Nagar Road</span>
+            <DigitalTwinLogo size={24} glow />
+            <div className="brand-text-lockup">
+              <span className="brand-name">Digital Twin</span>
+              <span className="brand-corridor font-mono">PUNE NAGAR ROAD</span>
+            </div>
           </div>
 
           <div className="landing-nav-links">
-            <button className="landing-nav-link" onClick={() => scrollToAnchor('pillars')}>Pillars</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('pillars')}>Telemetry</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('assets-showcase')}>Physical Assets</button>
             <button className="landing-nav-link" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
             <button className="landing-nav-link" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-nav-link" onClick={() => scrollToAnchor('faq')}>FAQ</button>
@@ -172,7 +189,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 type="button"
                 className="landing-btn-signin"
                 onClick={onNavigateAuth}
-                title="Sign in with municipal credentials"
+                title="Sign in with authorized credentials"
               >
                 <span>Sign In</span>
               </button>
@@ -200,7 +217,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         {/* Mobile Dropdown Panel */}
         {isMobileMenuOpen && (
           <div className="landing-mobile-menu">
-            <button className="landing-mobile-item" onClick={() => scrollToAnchor('pillars')}>Pillars</button>
+            <button className="landing-mobile-item" onClick={() => scrollToAnchor('pillars')}>Telemetry</button>
+            <button className="landing-mobile-item" onClick={() => scrollToAnchor('assets-showcase')}>Physical Assets</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('faq')}>FAQ</button>
@@ -382,112 +400,124 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
-      {/* 4. Core Pillars Section (Asymmetric Grid) */}
+      {/* 4. Core Capabilities (Interactive Animated Bento Grid) */}
       <section id="pillars" className="landing-section" ref={(el) => (revealRefs.current[0] = el)}>
         <div className="section-header">
-          <span className="section-eyebrow">Corridor Capabilities</span>
-          <h2 className="section-title">Four architectural pillars engineered for municipal rigor</h2>
+          <div className="landing-badge font-mono">
+            <Activity size={13} color="var(--color-primary)" />
+            <span>REAL-TIME CORRIDOR TELEMETRY • VIMAN NAGAR ↔ SOMNATH NAGAR</span>
+          </div>
+          <h2 className="section-title">High-Fidelity Corridor Intelligence Architecture</h2>
           <p className="section-subtitle">
-            Purpose-built to replace speculative dashboards with deterministic, reproducible urban engineering.
+            Engineered with microscopic kinematic physics, conformal machine learning uncertainty envelopes, and commercial energy load analytics.
           </p>
         </div>
 
-        <div className="pillars-asymmetric-grid">
-          {/* Card 1: Traffic Velocity */}
-          <div className="pillar-card large-feature">
-            <div className="pillar-icon-wrapper">
-              <Car size={22} color="var(--color-primary)" />
+        <div className="landing-bento-grid">
+          {/* Bento Cell 1: Span 2 cols - Arterial Kinematics Waveform */}
+          <div className="bento-card bento-span-2">
+            <div className="bento-card-header">
+              <div className="bento-title-group">
+                <div className="bento-icon-box"><Car size={18} color="var(--color-primary)" /></div>
+                <div>
+                  <h3 className="bento-title">Arterial Kinematics & Velocity Synchronization</h3>
+                  <span className="bento-sub font-mono">10 Monitored Segments • Nagar Road Corridor</span>
+                </div>
+              </div>
+              <button className="bento-link-btn" onClick={() => onLaunchConsole('traffic')}>
+                <span>Console</span> <ArrowRight size={13} />
+              </button>
             </div>
-            <h3 className="pillar-title">Traffic Velocity Synchronization</h3>
-            <p className="pillar-desc">
-              Continuous microscopic velocity tracking across 10 corridor segments on Nagar Road. Calibrated with physics-grounded SUMO simulation feeds and historical loop-detector replays.
+            <p className="bento-text">
+              Real-time velocity tracking across 10 corridor segments calibrated against physical loop detector arrays and microscopic SUMO traffic simulations.
             </p>
-            <div className="pillar-metrics-strip">
-              <div className="pillar-mini-stat">
-                <span className="stat-num font-mono">1.8 km</span>
-                <span className="stat-desc">Arterial length</span>
-              </div>
-              <div className="pillar-mini-stat">
-                <span className="stat-num font-mono">10</span>
-                <span className="stat-desc">Monitored segments</span>
-              </div>
-              <div className="pillar-mini-stat">
-                <span className="stat-num font-mono">2</span>
-                <span className="stat-desc">Signalized junctions</span>
-              </div>
-            </div>
-            <button className="pillar-action-link" onClick={() => onLaunchConsole('traffic')}>
-              <span>View Traffic Analytics</span>
-              <ArrowRight size={13} />
-            </button>
+            <ArterialWaveAsset speed={previewSpeed} />
           </div>
 
-          {/* Card 2: Commercial Energy */}
-          <div className="pillar-card">
-            <div className="pillar-icon-wrapper">
-              <Zap size={22} color="var(--color-warning)" />
+          {/* Bento Cell 2: Span 1 col - Commercial Building Energy Load */}
+          <div className="bento-card bento-span-1">
+            <div className="bento-card-header">
+              <div className="bento-title-group">
+                <div className="bento-icon-box"><Zap size={18} color="var(--color-warning)" /></div>
+                <div>
+                  <h3 className="bento-title">Commercial Chiller Demands</h3>
+                  <span className="bento-sub font-mono">BLD-PHOENIX-01 • 15m Telemetry</span>
+                </div>
+              </div>
+              <button className="bento-link-btn" onClick={() => onLaunchConsole('energy')}>
+                <span>Load</span> <ArrowRight size={13} />
+              </button>
             </div>
-            <h3 className="pillar-title">Commercial Energy Intelligence</h3>
-            <p className="pillar-desc">
-              High-resolution commercial load profiling for the Phoenix Marketcity building zone. Correlates outdoor temperature, solar irradiation, and commuter ingress with building cooling demand.
+            <p className="bento-text">
+              15-minute interval power profiling with automated pre-cooling advisories to shave 380 kW during peak tariff hours.
             </p>
-            <div className="pillar-meta-badge">
-              <span className="font-mono">4,862 kW Peak • 15m Horizon</span>
-            </div>
-            <button className="pillar-action-link" onClick={() => onLaunchConsole('energy')}>
-              <span>Inspect Building Load</span>
-              <ArrowRight size={13} />
-            </button>
+            <EnergyCurveAsset />
           </div>
 
-          {/* Card 3: Conformal ML & XAI */}
-          <div className="pillar-card">
-            <div className="pillar-icon-wrapper">
-              <Cpu size={22} color="var(--color-accent-violet)" />
+          {/* Bento Cell 3: Span 1 col - Conformal Prediction Intervals & XAI */}
+          <div className="bento-card bento-span-1">
+            <div className="bento-card-header">
+              <div className="bento-title-group">
+                <div className="bento-icon-box"><Cpu size={18} color="var(--color-accent-violet)" /></div>
+                <div>
+                  <h3 className="bento-title">Conformal Uncertainty (80%/90%)</h3>
+                  <span className="bento-sub font-mono">LightGBM • TreeSHAP Explainability</span>
+                </div>
+              </div>
+              <button className="bento-link-btn" onClick={() => onLaunchConsole('scenarios')}>
+                <span>Models</span> <ArrowRight size={13} />
+              </button>
             </div>
-            <h3 className="pillar-title">Conformal Uncertainty & XAI</h3>
-            <p className="pillar-desc">
-              Never accept bare point forecasts. All travel velocity forecasts feature 80% and 90% conformal prediction intervals and top-5 TreeSHAP local feature attributions.
+            <p className="bento-text">
+              Zero speculative forecasts. Every velocity prediction is bounded by rigorous conformal uncertainty bands and TreeSHAP feature attributions.
             </p>
-            <div className="pillar-meta-badge">
-              <span className="font-mono">Coverage 90% • PSI Drift Guard</span>
-            </div>
-            <button className="pillar-action-link" onClick={() => onLaunchConsole('scenarios')}>
-              <span>Explore Scenarios</span>
-              <ArrowRight size={13} />
-            </button>
+            <ConformalBandsAsset />
           </div>
 
-          {/* Card 4: Strict Non-Actuation Advisory */}
-          <div className="pillar-card large-feature">
-            <div className="pillar-icon-wrapper">
-              <ShieldCheck size={22} color="var(--color-success)" />
+          {/* Bento Cell 4: Span 1 col - SUMO Microscopic Physics Engine */}
+          <div className="bento-card bento-span-1">
+            <div className="bento-card-header">
+              <div className="bento-title-group">
+                <div className="bento-icon-box"><Gauge size={18} color="var(--color-success)" /></div>
+                <div>
+                  <h3 className="bento-title">Microscopic Physics Engine</h3>
+                  <span className="bento-sub font-mono">Krauss Car-Following Model</span>
+                </div>
+              </div>
+              <button className="bento-link-btn" onClick={() => onLaunchConsole('scenarios')}>
+                <span>Simulate</span> <ArrowRight size={13} />
+              </button>
             </div>
-            <h3 className="pillar-title">Strict Non-Actuation Advisory Governance</h3>
-            <p className="pillar-desc">
-              Complete physical isolation between analytical models and field traffic signal controllers. Recommendations are delivered as structured advisories requiring human authorization outside the platform before any field action.
+            <p className="bento-text">
+              Multi-lane microscopic vehicle physics with calibrated gap-acceptance, queue dissipation, and BRTS transit priority lanes.
             </p>
-            <div className="pillar-metrics-strip">
-              <div className="pillar-mini-stat">
-                <span className="stat-num font-mono">0</span>
-                <span className="stat-desc">Field writes</span>
+            <MicroscopicPhysicsAsset />
+          </div>
+
+          {/* Bento Cell 5: Span 2 cols - Corridor Physical Topology & Diorama */}
+          <div className="bento-card bento-span-2">
+            <div className="bento-card-header">
+              <div className="bento-title-group">
+                <div className="bento-icon-box"><MapPin size={18} color="var(--color-primary-hover)" /></div>
+                <div>
+                  <h3 className="bento-title">Monitored Corridor Physical Topology</h3>
+                  <span className="bento-sub font-mono">1.8 km Nagar Road • Viman Nagar Chowk ↔ Somnath Nagar Chowk</span>
+                </div>
               </div>
-              <div className="pillar-mini-stat">
-                <span className="stat-num font-mono">100%</span>
-                <span className="stat-desc">Human authorized</span>
-              </div>
-              <div className="pillar-mini-stat">
-                <span className="stat-num font-mono">4</span>
-                <span className="stat-desc">Municipal roles</span>
-              </div>
+              <button className="bento-link-btn" onClick={() => onLaunchConsole('operations')}>
+                <span>3D Diorama</span> <ArrowRight size={13} />
+              </button>
             </div>
-            <button className="pillar-action-link" onClick={() => onLaunchConsole('recommendations')}>
-              <span>Inspect Governance Advisories</span>
-              <ArrowRight size={13} />
-            </button>
+            <p className="bento-text">
+              Architectural diorama registering Viman Nagar Chowk (INT-VN-01), Somnath Nagar Chowk (INT-SN-01), and the Phoenix Marketcity complex.
+            </p>
+            <CorridorDioramaAsset />
           </div>
         </div>
       </section>
+
+      {/* 5. Corridor Physical Assets Interactive Showcase */}
+      <CorridorAssetsShowcase />
 
       {/* 5. How It Works Section (3-Step Pipeline) */}
       <section id="how-it-works" className="landing-section dark-alt" ref={(el) => (revealRefs.current[1] = el)}>
@@ -730,7 +760,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="footer-top-row">
           <div className="footer-brand-column">
             <div className="footer-brand">
-              <Activity size={18} color="var(--color-primary)" />
+              <DigitalTwinLogo size={20} />
               <span className="brand-title">Digital Twin Analytics</span>
             </div>
             <p className="footer-description">
