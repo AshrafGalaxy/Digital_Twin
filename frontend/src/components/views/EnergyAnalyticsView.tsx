@@ -46,11 +46,11 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
         </div>
       </div>
 
-      {/* Mandatory Data Integrity Banner per UI_UX_SPEC §10.3 */}
+      {/* Mandatory Data Integrity Banner */}
       <div className="integrity-caveat-banner">
         <AlertTriangle size={18} style={{ flexShrink: 0 }} />
         <div>
-          <strong>Mandatory Data Integrity Caveat (UI_UX_SPEC §10.3):</strong> This pilot energy stream is replayed benchmark/synthetic data and is not a measured meter feed from the Pune pilot corridor. Commercial profiles are calibrated to typical Indian retail-commercial facilities.
+          <strong>Mandatory Data Integrity Caveat:</strong> This pilot energy stream is replayed benchmark/synthetic data and is not a measured meter feed from the Pune pilot corridor. Commercial profiles are calibrated to typical Indian retail-commercial facilities.
         </div>
       </div>
 

@@ -115,7 +115,7 @@ export const ScenarioStudioView: React.FC = () => {
       <div className="integrity-caveat-banner">
         <Info size={18} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
         <div>
-          <strong>Advisory Decision Support Notice (UI_UX_SPEC §12):</strong> All simulation models are mathematical approximations executed under calibrated arterial conditions. Outputs are strictly non-binding evidence and do not actuate physical traffic controllers or signals.
+          <strong>Advisory Decision Support Notice:</strong> All simulation models are mathematical approximations executed under calibrated arterial conditions. Outputs are strictly non-binding evidence and do not actuate physical traffic controllers or signals.
         </div>
       </div>
 

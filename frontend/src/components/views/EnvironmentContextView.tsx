@@ -67,11 +67,11 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
         </div>
       </div>
 
-      {/* Mandatory Geographic Caveat per UI_UX_SPEC §11.3 */}
+      {/* Mandatory Geographic Caveat */}
       <div className="integrity-caveat-banner">
         <AlertTriangle size={18} style={{ flexShrink: 0 }} />
         <div>
-          <strong>Mandatory Regional Caveat (UI_UX_SPEC §11.3):</strong> This reading is sourced from a Pune monitoring station and may not represent micro-level conditions at the pilot corridor. Local canyon effects and micro-scale vehicle idling may produce distinct corridor concentrations.
+          <strong>Mandatory Regional Caveat:</strong> This reading is sourced from a Pune monitoring station and may not represent micro-level conditions at the pilot corridor. Local canyon effects and micro-scale vehicle idling may produce distinct corridor concentrations.
         </div>
       </div>
 

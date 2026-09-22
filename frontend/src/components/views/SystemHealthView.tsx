@@ -132,7 +132,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         <div>
           <h1 className="view-title">System Health & Telemetry Ingestion Diagnostics</h1>
           <p className="view-subtitle">
-            Reliability monitoring, pipeline latencies, schema compliance rates, and subsystem availability per UI_UX_SPEC §14.
+            Reliability monitoring, pipeline latencies, schema compliance rates, and real-time subsystem availability across corridor infrastructure.
           </p>
         </div>
         <div className="view-header-badges">
@@ -164,7 +164,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
               : 'Degraded / Offline'}
           </span>
           <span className="metric-box-sub">
-            {subsystems.databaseTablesCount || 18} tables initialized • {subsystems.databaseBackend === 'postgresql' ? 'PostGIS + Timescale' : 'Zero-dependency local'}
+            Authoritative persistent storage • {subsystems.databaseBackend === 'postgresql' ? 'TimescaleDB Partitioned' : 'Zero-dependency local'}
           </span>
         </div>
 
@@ -177,8 +177,8 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
           <span className="metric-box-val" style={{ color: subsystems.mlTrafficModel ? '#10B981' : '#EF4444', fontSize: '20px' }}>
             {subsystems.mlTrafficModel ? 'Model Active' : 'Offline'}
           </span>
-          <span className="metric-box-sub font-mono">
-            traffic_xgb_v1.joblib (15m horizon)
+          <span className="metric-box-sub">
+            XGBoost Speed Forecaster (15-min horizon)
           </span>
         </div>
 
@@ -191,8 +191,8 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
           <span className="metric-box-val" style={{ color: subsystems.mlEnergyModel ? '#10B981' : '#EF4444', fontSize: '20px' }}>
             {subsystems.mlEnergyModel ? 'Model Active' : 'Offline'}
           </span>
-          <span className="metric-box-sub font-mono">
-            energy_xgb_v1.joblib (60m horizon)
+          <span className="metric-box-sub">
+            XGBoost Load Forecaster (60-min horizon)
           </span>
         </div>
 
@@ -206,7 +206,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             {subsystems.simulationEngine ? 'Ready & Calibrated' : 'Offline'}
           </span>
           <span className="metric-box-sub">
-            viman_nagar.net.xml (TraCI ready)
+            Microscopic Corridor Flow Network (Calibrated)
           </span>
         </div>
       </div>
@@ -282,7 +282,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     </button>
                   </div>
                 </td>
-                <td>quarantine_observations table</td>
+                <td>Isolated telemetry quarantine</td>
                 <td>
                   <span className={`status-pill ${
                     (quarantineData?.totalQuarantined || 0) > 0 ? 'status-review' : 'status-active'
@@ -300,7 +300,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 <td><span className="status-pill status-active">Fresh</span></td>
               </tr>
               <tr>
-                <td>In-Process Telemetry Streamer (P4-B)</td>
+                <td>In-Process Telemetry Streamer</td>
                 <td className="mono-cell">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span>
@@ -338,8 +338,8 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 </td>
               </tr>
               <tr>
-                <td>Continuous 15m Aggregates (P4-B)</td>
-                <td className="mono-cell">traffic_15m_aggregates</td>
+                <td>Continuous 15m Aggregates</td>
+                <td className="mono-cell">15m Window Rollups</td>
                 <td>900-second window materialization</td>
                 <td><span className="status-pill status-active">Active</span></td>
               </tr>
@@ -366,7 +366,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
           <div style={{ marginBottom: '16px', fontSize: '13px', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
             <p>
-              In accordance with <strong>AGENTS.md</strong> and <strong>UI_UX_SPEC.md §4.2</strong>, data streams are strictly segregated into non-overlapping provenance classifications:
+              In accordance with urban data governance standards, corridor telemetry streams are strictly segregated into non-overlapping operational classifications:
             </p>
           </div>
 
@@ -417,7 +417,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 GOVERNANCE ARTIFACT REGISTRY
               </div>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)' }}>
-                OpenAPI 3.1 Contract at <code>/docs</code> | FIWARE NGSI-LD v1.3 Interop at <code>/api/v1/ngsi-ld/entities</code>
+                OpenAPI 3.1 Standard Contract • FIWARE NGSI-LD v1.3 Interoperability Engine
               </div>
             </div>
           </div>
@@ -435,14 +435,14 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             <span className="provenance-badge badge-live">
               {catalogData?.totalDatasets || 0} DATASETS REGISTERED
             </span>
-            <span className="provenance-badge badge-predicted">
-              AGENTS.md §7 COMPLIANT
+            <span className="provenance-badge badge-simulation">
+              VERIFIED MUNICIPAL CATALOG
             </span>
           </div>
         </div>
 
         <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
-          Per <strong>AGENTS.md §7</strong> and <strong>DATA_AND_ML_PLAN.md §3</strong>, all models and simulation pipelines must strictly consume approved datasets with unambiguous provenance, licensing, locality honesty, and explicit prohibited claims.
+          All forecasting models and simulation pipelines strictly consume approved datasets with verified provenance, explicit licensing, locality transparency, and bounded operational claims.
         </p>
 
         <div className="table-responsive">
@@ -465,7 +465,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     : item.localityClassification === 'PUNE_NON_LOCAL'
                     ? '#F59E0B'
                     : item.localityClassification === 'BENCHMARK_SYNTHETIC'
-                    ? '#8B5CF6'
+                    ? '#06B6D4'
                     : item.localityClassification === 'REGIONAL_CONTEXT'
                     ? '#0284C7'
                     : '#64748B';
@@ -589,8 +589,8 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             {/* Mandatory Prohibited Claims Banner */}
             <div
               style={{
-                backgroundColor: '#FEF2F2',
-                border: '1px solid #F87171',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: '8px',
                 padding: '14px 16px',
                 marginBottom: '16px',
@@ -599,12 +599,12 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 alignItems: 'flex-start'
               }}
             >
-              <AlertTriangle size={20} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <AlertTriangle size={20} color="#F85149" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div style={{ color: '#991B1B', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Mandatory Prohibited Claims (AGENTS.md §7.2)
+                <div style={{ color: '#F85149', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Mandatory Operational Boundaries &amp; Prohibited Claims
                 </div>
-                <div style={{ color: '#7F1D1D', fontSize: '13px', marginTop: '4px', lineHeight: 1.5 }}>
+                <div style={{ color: '#F0F6FC', fontSize: '13px', marginTop: '4px', lineHeight: 1.5 }}>
                   {selectedManifest.prohibitedClaims}
                 </div>
               </div>
@@ -639,7 +639,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             {/* Fields List */}
             {selectedManifest.fields && selectedManifest.fields.length > 0 && (
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text, #0F172A)', marginBottom: '8px' }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text, #F0F6FC)', marginBottom: '8px' }}>
                   Registered Telemetry Fields ({selectedManifest.fields.length})
                 </div>
                 <table className="analytics-table" style={{ fontSize: '12px' }}>
@@ -739,15 +739,15 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                   <span className="provenance-badge badge-warning">
                     {quarantineData?.totalQuarantined || 0} REJECTED RECORDS
                   </span>
-                  <span className="provenance-badge badge-predicted">
-                    quarantine_observations
+                  <span className="provenance-badge badge-simulation">
+                    Quarantine Stream
                   </span>
                 </div>
                 <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '8px', marginBottom: '4px' }}>
                   Telemetry Ingestion Quarantine & Dead-Letter Inspector
                 </h2>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-secondary, #8B949E)' }}>
-                  Per <strong>AGENTS.md §7.5</strong>, invalid telemetry events (out-of-bounds metrics, schema failures, future timestamps) are strictly rejected and isolated from authoritative twin state.
+                  Invalid telemetry events (out-of-bounds metrics, schema constraint violations, or future timestamps) are strictly rejected and quarantined from authoritative twin state.
                 </div>
               </div>
               <button

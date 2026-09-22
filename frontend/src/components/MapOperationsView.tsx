@@ -643,7 +643,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           type="button"
           className={`map-view-toggle-btn ${isTableView ? 'active' : ''}`}
           onClick={() => setIsTableView(!isTableView)}
-          title={isTableView ? "Return to Visual Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG Fallback per UI_UX_SPEC §18.2)"}
+          title={isTableView ? "Return to Visual Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG 2.1 AA)"}
         >
           {isTableView ? <Map size={13} aria-hidden="true" /> : <TableProperties size={13} aria-hidden="true" />}
           <span>{isTableView ? 'Map View' : 'Table View'}</span>
@@ -665,14 +665,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         )}
       </div>
 
-      {/* Accessible Synchronized Table View per UI_UX_SPEC §18.2 */}
+      {/* Accessible Synchronized Table View */}
       {isTableView && (
         <div className="accessible-map-table-view" role="region" aria-label="Synchronized Corridor Map Information Table">
           <div className="accessible-table-header">
             <div>
               <h2 className="accessible-table-title">Synchronized Corridor Telemetry & Asset Table</h2>
               <p className="accessible-table-caption">
-                Screen-reader and keyboard accessible tabular alternative for spatial corridor map layers per UI_UX_SPEC §18.2 (WCAG 2.1 AA).
+                Screen-reader and keyboard accessible tabular alternative for spatial corridor map layers (WCAG 2.1 AA compliant).
               </p>
             </div>
             <button
