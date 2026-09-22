@@ -232,7 +232,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
         const isEB = (props.direction || '').toUpperCase() === 'EASTBOUND';
         const roadColor = Cesium.Color.fromCssColorString(
-          isEB ? '#00F2FE' : '#F59E0B'
+          isEB ? '#2F81F7' : '#D29922'
         ).withAlpha(0.85);
 
         // Road Surface Ribbon
@@ -266,7 +266,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           position: Cesium.Cartesian3.fromDegrees(lng, lat, 2.0),
           point: {
             pixelSize: 14,
-            color: Cesium.Color.fromCssColorString(isLight ? '#006B6F' : '#00F2FE'),
+            color: Cesium.Color.fromCssColorString('#2F81F7'),
             outlineColor: Cesium.Color.WHITE,
             outlineWidth: 2,
             disableDepthTestDistance: Number.POSITIVE_INFINITY

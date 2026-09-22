@@ -9,8 +9,6 @@ import {
   Sliders,
   ShieldAlert,
   Server,
-  Sun,
-  Moon,
   User,
   FileText
 } from 'lucide-react';
@@ -34,8 +32,6 @@ interface HeaderProps {
   activeTab: TabId;
   onSelectTab: (tab: TabId) => void;
   activeAdvisoriesCount?: number;
-  theme: 'light' | 'dark';
-  onToggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,9 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   lastUpdated,
   activeTab,
   onSelectTab,
-  activeAdvisoriesCount,
-  theme,
-  onToggleTheme
+  activeAdvisoriesCount
 }) => {
   const navTabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'operations', label: 'Operations', icon: <Map size={14} /> },
@@ -69,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Strip: Brand + Global Telemetry / Governance Badges + Theme Switcher (UI_UX_SPEC §6.1) */}
       <div className="header-top-row">
         <div className="brand-section">
-          <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 6px rgba(0, 242, 254, 0.6))' }} />
+          <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
           <span className="brand-title">Digital Twin</span>
           <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>
         </div>
@@ -110,27 +104,6 @@ export const Header: React.FC<HeaderProps> = ({
             <ShieldCheck size={13} color="#10B981" />
             <span style={{ color: '#10B981', fontWeight: 600 }}>Advisory Only</span>
           </div>
-
-          {/* Theme Switcher Toggle per DESIGN_SYSTEM.md §4 */}
-          <button
-            className="theme-toggle-btn"
-            onClick={onToggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Theme (Civic Cartography)' : 'Switch to Dark Theme (Operations Console)'}
-            aria-label={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-            type="button"
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun size={13} className="theme-toggle-icon sun" />
-                <span>Light</span>
-              </>
-            ) : (
-              <>
-                <Moon size={13} className="theme-toggle-icon moon" />
-                <span>Dark</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
 

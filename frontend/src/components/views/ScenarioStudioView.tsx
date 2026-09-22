@@ -113,7 +113,7 @@ export const ScenarioStudioView: React.FC = () => {
 
       {/* Mandatory Advisory Notice Banner */}
       <div className="integrity-caveat-banner">
-        <Info size={18} style={{ flexShrink: 0, color: '#00F2FE' }} />
+        <Info size={18} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
         <div>
           <strong>Advisory Decision Support Notice (UI_UX_SPEC §12):</strong> All simulation models are mathematical approximations executed under calibrated arterial conditions. Outputs are strictly non-binding evidence and do not actuate physical traffic controllers or signals.
         </div>
@@ -125,7 +125,7 @@ export const ScenarioStudioView: React.FC = () => {
         <div className="analytics-card">
           <div className="analytics-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sliders size={18} color="#00F2FE" />
+              <Sliders size={18} color="var(--color-primary)" />
               <span className="card-title">Intervention Configuration Sandbox</span>
             </div>
             <span className="text-muted" style={{ fontSize: '12px' }}>Predefined Safe Parameters</span>
@@ -378,7 +378,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
                     EVALUATION VERDICT
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#00F2FE', marginTop: '2px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-primary)', marginTop: '2px' }}>
                     {runResult.deltas.overall_verdict.replace(/_/g, ' ')}
                   </div>
                 </div>
@@ -559,7 +559,7 @@ export const ScenarioStudioView: React.FC = () => {
                       <button
                         type="button"
                         className="run-scenario-btn"
-                        style={{ flex: 1, padding: '8px 14px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)', color: '#FFFFFF' }}
+                        style={{ flex: 1, padding: '8px 14px', fontSize: '12px', background: 'var(--color-primary)', color: '#FFFFFF' }}
                         onClick={handleProposeAdvisory}
                         disabled={isSubmittingAdvisory}
                       >

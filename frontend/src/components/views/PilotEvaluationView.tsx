@@ -114,7 +114,7 @@ export const PilotEvaluationView: React.FC = () => {
           <button
             type="button"
             className="preset-pill-btn"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(0, 242, 254, 0.1)', borderColor: 'rgba(0, 242, 254, 0.4)', color: '#00F2FE' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(47, 129, 247, 0.1)', borderColor: 'rgba(47, 129, 247, 0.35)', color: 'var(--color-primary)' }}
             onClick={handleDownloadBundle}
           >
             <Database size={13} />
@@ -141,7 +141,7 @@ export const PilotEvaluationView: React.FC = () => {
 
       {/* Mandatory Decision Support Notice */}
       <div className="integrity-caveat-banner">
-        <ShieldCheck size={18} style={{ flexShrink: 0, color: '#00F2FE' }} />
+        <ShieldCheck size={18} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
         <div>
           <strong>Municipal Decision-Support Protocol:</strong> All forecasting models and simulation interventions are evaluated strictly against chronological holdout data with persistence baselines. Platform outputs are advisory; zero automated physical signal actuation is performed.
         </div>
@@ -160,7 +160,7 @@ export const PilotEvaluationView: React.FC = () => {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 700, color: '#00F2FE', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>
               {h15?.modelMae || 2.45}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
@@ -272,7 +272,7 @@ export const PilotEvaluationView: React.FC = () => {
           <div className="analytics-card">
             <div className="analytics-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <TrendingUp size={18} color="#00F2FE" />
+                <TrendingUp size={18} color="var(--color-primary)" />
                 <span className="card-title">Chronological Holdout Model Benchmarks</span>
               </div>
               <span className="text-muted" style={{ fontSize: '12px' }}>70/15/15 Split</span>
@@ -295,7 +295,7 @@ export const PilotEvaluationView: React.FC = () => {
                     <div className="metric-row-sub">Nagar Road EB Speed</div>
                   </td>
                   <td className="mono-cell">{h15?.persistenceMae || 3.25} km/h</td>
-                  <td className="mono-cell" style={{ color: '#00F2FE' }}>{h15?.modelMae || 2.45} km/h</td>
+                  <td className="mono-cell" style={{ color: 'var(--color-primary)' }}>{h15?.modelMae || 2.45} km/h</td>
                   <td className="mono-cell" style={{ color: '#34D399' }}>{h15?.skillScore || 0.245}</td>
                   <td>
                     <span className="delta-badge delta-positive">+{h15?.improvementPct || 24.5}%</span>
@@ -364,7 +364,7 @@ export const PilotEvaluationView: React.FC = () => {
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>
                     90% Nominal Confidence Interval
                   </span>
-                  <span className="mono-cell" style={{ color: '#00F2FE' }}>
+                  <span className="mono-cell" style={{ color: 'var(--color-primary)' }}>
                     {cov?.target90?.empiricalCoveragePct || 90.5}% Coverage
                   </span>
                 </div>
@@ -372,7 +372,7 @@ export const PilotEvaluationView: React.FC = () => {
                   Empirical non-conformity threshold: <strong style={{ color: 'var(--text-main)' }}>±{cov?.target90?.halfWidthKmh || 4.80} km/h</strong> around point prediction.
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${cov?.target90?.empiricalCoveragePct || 90.5}%`, height: '100%', background: 'linear-gradient(90deg, #00F2FE 0%, #34D399 100%)' }} />
+                  <div style={{ width: `${cov?.target90?.empiricalCoveragePct || 90.5}%`, height: '100%', background: '#3FB950' }} />
                 </div>
               </div>
 
@@ -381,7 +381,7 @@ export const PilotEvaluationView: React.FC = () => {
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>
                     95% Nominal Confidence Interval
                   </span>
-                  <span className="mono-cell" style={{ color: '#34D399' }}>
+                  <span className="mono-cell" style={{ color: '#3FB950' }}>
                     {cov?.target95?.empiricalCoveragePct || 95.2}% Coverage
                   </span>
                 </div>
@@ -389,7 +389,7 @@ export const PilotEvaluationView: React.FC = () => {
                   Empirical non-conformity threshold: <strong style={{ color: 'var(--text-main)' }}>±{cov?.target95?.halfWidthKmh || 5.66} km/h</strong> around point prediction.
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${cov?.target95?.empiricalCoveragePct || 95.2}%`, height: '100%', background: 'linear-gradient(90deg, #34D399 0%, #10B981 100%)' }} />
+                  <div style={{ width: `${cov?.target95?.empiricalCoveragePct || 95.2}%`, height: '100%', background: '#3FB950' }} />
                 </div>
               </div>
 
@@ -459,7 +459,7 @@ export const PilotEvaluationView: React.FC = () => {
           <div className="analytics-card">
             <div className="analytics-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Layers size={18} color="#00F2FE" />
+                <Layers size={18} color="var(--color-primary)" />
                 <span className="card-title">Telemetry Provenance Breakdown</span>
               </div>
               <span className="provenance-badge badge-live">AUDITED</span>
