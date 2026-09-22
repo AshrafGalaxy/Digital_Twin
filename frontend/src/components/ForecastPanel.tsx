@@ -148,12 +148,18 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
         {/* TreeSHAP Local Feature Explainability */}
         {trafficForecast.explanation?.topContributors && trafficForecast.explanation.topContributors.length > 0 && (
           <div className="forecast-explanation-box">
-            <div className="explanation-title">Local Feature Attributions (TreeSHAP)</div>
+            <div className="explanation-header">
+              <span className="explanation-title">Local Feature Attributions (TreeSHAP)</span>
+              <span className="explanation-subtitle font-mono">Top contributors</span>
+            </div>
             <div className="explanation-chips">
               {trafficForecast.explanation.topContributors.map((c, i) => (
                 <div key={i} className={`explanation-chip ${c.contribution >= 0 ? 'contrib-pos' : 'contrib-neg'}`}>
-                  <span className="chip-name">{c.displayName}:</span>
-                  <span className="chip-val">{c.contribution >= 0 ? `+${c.contribution.toFixed(1)}` : c.contribution.toFixed(1)} km/h</span>
+                  <div className="chip-left">
+                    <span className="chip-indicator" />
+                    <span className="chip-name">{c.displayName}</span>
+                  </div>
+                  <span className="chip-val font-mono">{c.contribution >= 0 ? `+${c.contribution.toFixed(1)}` : c.contribution.toFixed(1)} km/h</span>
                 </div>
               ))}
             </div>
@@ -269,12 +275,18 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
         {/* TreeSHAP Local Feature Explainability */}
         {energyForecast.explanation?.topContributors && energyForecast.explanation.topContributors.length > 0 && (
           <div className="forecast-explanation-box">
-            <div className="explanation-title">Local Feature Attributions (TreeSHAP)</div>
+            <div className="explanation-header">
+              <span className="explanation-title">Local Feature Attributions (TreeSHAP)</span>
+              <span className="explanation-subtitle font-mono">Top contributors</span>
+            </div>
             <div className="explanation-chips">
               {energyForecast.explanation.topContributors.map((c, i) => (
                 <div key={i} className={`explanation-chip ${c.contribution >= 0 ? 'contrib-pos' : 'contrib-neg'}`}>
-                  <span className="chip-name">{c.displayName}:</span>
-                  <span className="chip-val">{c.contribution >= 0 ? `+${c.contribution.toFixed(0)}` : c.contribution.toFixed(0)} kW</span>
+                  <div className="chip-left">
+                    <span className="chip-indicator" />
+                    <span className="chip-name">{c.displayName}</span>
+                  </div>
+                  <span className="chip-val font-mono">{c.contribution >= 0 ? `+${c.contribution.toFixed(0)}` : c.contribution.toFixed(0)} kW</span>
                 </div>
               ))}
             </div>

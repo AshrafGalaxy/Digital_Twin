@@ -2609,64 +2609,102 @@ body {
 
 /* Local TreeSHAP Feature Explainability */
 .forecast-explanation-box {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--color-border);
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  padding: 10px 12px;
   margin-top: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 8px;
+}
+
+.explanation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .explanation-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #8B949E);
+}
+
+.explanation-subtitle {
+  font-size: 10px;
+  color: #6E7681;
 }
 
 .explanation-chips {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .explanation-chip {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  transition: all 0.15s ease;
+}
+
+.chip-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip-indicator {
+  width: 4px;
+  height: 14px;
+  border-radius: 9999px;
+  flex-shrink: 0;
 }
 
 .explanation-chip.contrib-pos {
-  background: rgba(16, 185, 129, 0.12);
-  border-left: 2px solid #10B981;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.10) 0%, rgba(22, 27, 34, 0.5) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.explanation-chip.contrib-pos .chip-indicator {
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .explanation-chip.contrib-neg {
-  background: rgba(239, 68, 68, 0.12);
-  border-left: 2px solid #EF4444;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.10) 0%, rgba(22, 27, 34, 0.5) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.explanation-chip.contrib-neg .chip-indicator {
+  background: #EF4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
 }
 
 .chip-name {
-  color: var(--color-text-secondary);
+  color: #C9D1D9;
+  font-weight: 500;
 }
 
 .chip-val {
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .contrib-pos .chip-val {
-  color: #10B981;
+  color: #34D399;
 }
 
 .contrib-neg .chip-val {
-  color: #EF4444;
+  color: #F87171;
 }
 
 /* ==========================================================================
