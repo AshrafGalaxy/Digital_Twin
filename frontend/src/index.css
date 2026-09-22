@@ -2303,12 +2303,66 @@ body {
 .action-btns-left,
 .action-btns-right {
   display: flex;
+  align-items: center;
   gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Theme Action Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.btn-primary {
+  background: var(--color-primary, #2F81F7);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #388bfd;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(47, 129, 247, 0.3);
+}
+
+.btn-secondary {
+  background: #21262D;
+  color: #F0F6FC;
+  border: 1px solid #30363D;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #30363D;
+  border-color: #8B949E;
+  color: #FFFFFF;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .review-workflow-panel {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border-color);
+  background: rgba(22, 27, 34, 0.95);
+  border: 1px solid #30363D;
   border-radius: var(--radius-sm);
   padding: var(--space-3);
   display: flex;
@@ -2320,7 +2374,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--text-primary);
+  color: var(--color-text, #F0F6FC);
   margin: 0;
 }
 
@@ -2328,6 +2382,45 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #8B949E);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  background: #0D1117;
+  color: #F0F6FC;
+  border: 1px solid #30363D;
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--color-primary, #2F81F7);
+  box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
 }
 
 .review-submit-row {
