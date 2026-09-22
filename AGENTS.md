@@ -57,6 +57,7 @@ Use only these standardized provenance source modes:
 - **No Transient Scripts:** Never store one-off or throwaway utility scripts in `scripts/` or any repository directory.
 - **Ephemeral Scratch:** All exploratory or debugging scripts must be run ephemerally and deleted immediately upon completion.
 - **Zero Cache Check-in:** Always purge transient caches (`__pycache__`, `.pytest_cache`, `dist/`) before committing.
+- **Standardized Structure & Pre-Approval:** Maintain standard directory conventions; never introduce non-standard folder names or major structural changes without detailing them in the implementation plan and securing explicit user approval.
 
 ---
 

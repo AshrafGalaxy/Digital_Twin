@@ -3,6 +3,7 @@ import maplibregl from 'maplibre-gl';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import buildings3dGeoJson from '../assets/corridor_buildings_3d.json';
 import { ProvenanceBadge } from './ProvenanceBadge';
+import { CesiumCorridorViewer } from './CesiumCorridorViewer';
 
 interface MapOperationsViewProps {
   studyAreaGeoJson: any;
@@ -357,60 +358,41 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   }, [studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme]);
 
   const toggle3DMode = () => {
-    const currentMap = map.current;
-    if (!currentMap) return;
-
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (!is3DMode) {
-      // Transition camera to 3D Extrusion perspective
-      if (prefersReducedMotion) {
-        currentMap.jumpTo({
-          pitch: 58,
-          bearing: -22,
-          zoom: 15.3
-        });
-      } else {
-        currentMap.easeTo({
-          pitch: 58,
-          bearing: -22,
-          zoom: 15.3,
-          duration: 1400
-        });
+    setIs3DMode(prev => {
+      const next = !prev;
+      if (!next && map.current) {
+        setTimeout(() => {
+          map.current?.resize();
+        }, 60);
       }
-      if (currentMap.getLayer('corridor-buildings-extrusion')) {
-        currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', 'visible');
-      }
-      setIs3DMode(true);
-    } else {
-      // Return to 2D Operational Baseline
-      if (prefersReducedMotion) {
-        currentMap.jumpTo({
-          pitch: 20,
-          bearing: 0,
-          zoom: 14.5
-        });
-      } else {
-        currentMap.easeTo({
-          pitch: 20,
-          bearing: 0,
-          zoom: 14.5,
-          duration: 1100
-        });
-      }
-      if (currentMap.getLayer('corridor-buildings-extrusion')) {
-        currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', 'none');
-      }
-      setIs3DMode(false);
-    }
+      return next;
+    });
   };
 
   return (
     <div className="map-container-relative" style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div ref={mapContainer} className="map-viewport" />
+      {/* 2D MapLibre Operational Map */}
+      <div
+        ref={mapContainer}
+        className="map-viewport"
+        style={{
+          width: '100%',
+          height: '100%',
+          display: is3DMode ? 'none' : 'block'
+        }}
+      />
+
+      {/* 3D Cesium Corridor Digital Twin */}
+      {is3DMode && (
+        <CesiumCorridorViewer
+          roadSegments={roadSegments}
+          intersections={intersections}
+          liveStates={liveStates}
+          selectedEntity={selectedEntity}
+          currentTheme={currentTheme}
+          onSelectEntity={onSelectEntity}
+        />
+      )}
 
       {/* 3D Presentation & Accessibility Mode Overlay Controls */}
       <div className="map-3d-controls-overlay">
@@ -418,23 +400,23 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           type="button"
           className={`map-view-toggle-btn ${isTableView ? 'active' : ''}`}
           onClick={() => setIsTableView(!isTableView)}
-          title={isTableView ? "Return to Visual 2D Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG Fallback per UI_UX_SPEC §18.2)"}
+          title={isTableView ? "Return to Visual Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG Fallback per UI_UX_SPEC §18.2)"}
         >
-          <span>{isTableView ? '🗺️ 2D Map View' : '📋 Accessible Table View'}</span>
+          <span>{isTableView ? '🗺️ Map View' : '📋 Accessible Table View'}</span>
         </button>
 
         <button
           type="button"
           className={`map-3d-toggle-btn ${is3DMode ? 'active' : ''}`}
           onClick={toggle3DMode}
-          title={is3DMode ? "Return to 2D Operations Map" : "Enable 3D Corridor Extrusions Presentation"}
+          title={is3DMode ? "Switch to 2D MapLibre View" : "Enable Cesium 3D Corridor Digital Twin"}
         >
-          <span className="btn-icon">{is3DMode ? '🌐' : '🏢'}</span>
-          <span>{is3DMode ? '3D Extrusions Active' : 'Enable 3D View'}</span>
+          <span className="btn-icon">{is3DMode ? '🗺️' : '🌐'}</span>
+          <span>{is3DMode ? '2D Map View' : '3D Corridor Twin'}</span>
         </button>
         {is3DMode && (
           <span className="provenance-badge badge-simulation" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-            3D SIMULATION
+            3D DIGITAL TWIN
           </span>
         )}
       </div>
