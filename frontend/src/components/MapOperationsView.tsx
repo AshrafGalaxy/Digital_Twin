@@ -14,6 +14,8 @@ interface MapOperationsViewProps {
   selectedEntity?: RoadSegmentAsset | IntersectionAsset | null;
   compareEntity?: RoadSegmentAsset | null;
   currentTheme?: 'light' | 'dark';
+  isTableView?: boolean;
+  onToggleTableView?: (isTable: boolean) => void;
   onSelectEntity: (entity: RoadSegmentAsset | IntersectionAsset) => void;
   onSelectCompareEntity?: (entity: RoadSegmentAsset | null) => void;
 }
@@ -126,6 +128,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   selectedEntity,
   compareEntity,
   currentTheme = 'dark',
+  isTableView: isTableViewProp,
+  onToggleTableView,
   onSelectEntity,
   onSelectCompareEntity
 }) => {
@@ -133,7 +137,13 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
-  const [isTableView, setIsTableView] = useState<boolean>(false);
+  const [internalTableView, setInternalTableView] = useState<boolean>(false);
+
+  const isTableView = isTableViewProp !== undefined ? isTableViewProp : internalTableView;
+  const handleToggleTableView = (val: boolean) => {
+    setInternalTableView(val);
+    if (onToggleTableView) onToggleTableView(val);
+  };
 
   // Initialize MapLibre GL Map with High-Resolution Carto Dark Matter Retina Tiles
   useEffect(() => {
@@ -637,51 +647,61 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         />
       )}
 
-      {/* 3D Presentation & Accessibility Mode Overlay Controls */}
-      <div className="map-3d-controls-overlay" role="toolbar" aria-label="Map Presentation Controls">
-        <button
-          type="button"
-          className={`map-view-toggle-btn ${isTableView ? 'active' : ''}`}
-          onClick={() => setIsTableView(!isTableView)}
-          title={isTableView ? "Return to Visual Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG 2.1 AA)"}
-        >
-          {isTableView ? <Map size={13} aria-hidden="true" /> : <TableProperties size={13} aria-hidden="true" />}
-          <span>{isTableView ? 'Map View' : 'Table View'}</span>
-        </button>
+      {/* 3D Presentation & Accessibility Mode Overlay Controls (Hidden in Table View to eliminate overlap) */}
+      {!isTableView && (
+        <div className="map-3d-controls-overlay" role="toolbar" aria-label="Map Presentation Controls">
+          <button
+            type="button"
+            className="map-view-toggle-btn"
+            onClick={() => handleToggleTableView(true)}
+            title="Switch to Synchronized Accessible Table View (WCAG 2.1 AA)"
+          >
+            <TableProperties size={13} aria-hidden="true" />
+            <span>Table View</span>
+          </button>
 
-        <button
-          type="button"
-          className={`map-3d-toggle-btn ${is3DMode ? 'active' : ''}`}
-          onClick={toggle3DMode}
-          title={is3DMode ? "Switch to 2D MapLibre View" : "Enable Cesium 3D Corridor Digital Twin"}
-        >
-          {is3DMode ? <Map size={13} aria-hidden="true" /> : <Globe size={13} aria-hidden="true" />}
-          <span>{is3DMode ? '2D Map' : '3D Twin'}</span>
-        </button>
-        {is3DMode && (
-          <span className="provenance-badge badge-simulation" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-            3D DIGITAL TWIN
-          </span>
-        )}
-      </div>
+          <button
+            type="button"
+            className={`map-3d-toggle-btn ${is3DMode ? 'active' : ''}`}
+            onClick={toggle3DMode}
+            title={is3DMode ? "Switch to 2D MapLibre View" : "Enable Cesium 3D Corridor Digital Twin"}
+          >
+            {is3DMode ? <Map size={13} aria-hidden="true" /> : <Globe size={13} aria-hidden="true" />}
+            <span>{is3DMode ? '2D Map' : '3D Twin'}</span>
+          </button>
+          {is3DMode && (
+            <span className="provenance-badge badge-simulation" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+              3D DIGITAL TWIN
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Accessible Synchronized Table View */}
       {isTableView && (
         <div className="accessible-map-table-view" role="region" aria-label="Synchronized Corridor Map Information Table">
           <div className="accessible-table-header">
             <div>
-              <h2 className="accessible-table-title">Synchronized Corridor Telemetry & Asset Table</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <TableProperties size={18} color="var(--color-primary, #2F81F7)" />
+                <h2 className="accessible-table-title">Synchronized Corridor Telemetry & Asset Table</h2>
+                <span className="provenance-badge badge-live" style={{ fontSize: '11px', height: '22px' }}>WCAG 2.1 AA</span>
+              </div>
               <p className="accessible-table-caption">
-                Screen-reader and keyboard accessible tabular alternative for spatial corridor map layers (WCAG 2.1 AA compliant).
+                Screen-reader and keyboard accessible tabular alternative for spatial corridor map layers. Real-time telemetry, levels of service, and intersection controllers.
               </p>
             </div>
-            <button
-              className="map-view-toggle-btn"
-              onClick={() => setIsTableView(false)}
-              style={{ fontSize: '12px' }}
-            >
-              Close Table & Return to Map
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => handleToggleTableView(false)}
+                style={{ height: '32px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Map size={14} />
+                <span>Return to Visual Map Canvas</span>
+              </button>
+            </div>
           </div>
 
           <h3 style={{ fontSize: '14px', fontWeight: 600, marginTop: '12px', marginBottom: '8px' }}>
@@ -739,7 +759,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                           className="btn-select-sm"
                           onClick={() => {
                             onSelectEntity(seg);
-                            setIsTableView(false);
+                            handleToggleTableView(false);
                           }}
                         >
                           Inspect
@@ -783,7 +803,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                         className="btn-select-sm"
                         onClick={() => {
                           onSelectEntity(ix);
-                          setIsTableView(false);
+                          handleToggleTableView(false);
                         }}
                       >
                         Inspect

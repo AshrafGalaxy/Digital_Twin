@@ -99,6 +99,7 @@ export const App: React.FC = () => {
   const [scrubberMinutesAgo, setScrubberMinutesAgo] = useState<number>(0);
   const [isScrubberPlaying, setIsScrubberPlaying] = useState<boolean>(false);
   const [scrubberSpeed, setScrubberSpeed] = useState<number>(1);
+  const [isOperationsTableView, setIsOperationsTableView] = useState<boolean>(false);
   const [historicalStates, setHistoricalStates] = useState<Record<string, EntityCurrentState>>({});
 
   // Debounced historical snapshot fetching when scrubber position changes
@@ -366,13 +367,15 @@ export const App: React.FC = () => {
         {/* VIEW 1: Operations Map & Live Corridor Overview */}
         {activeTab === 'operations' && (
           <div className="operations-view-layout">
-            <CorridorMetricsCard
-              averageSpeed={aggregates.avgSpeed}
-              congestionIndex={aggregates.congestionIndex}
-              energyDemandKw={aggregates.energyDemandKw}
-              activeSensors={aggregates.activeSensors}
-              sourceMode={effectiveMode}
-            />
+            {!isOperationsTableView && (
+              <CorridorMetricsCard
+                averageSpeed={aggregates.avgSpeed}
+                congestionIndex={aggregates.congestionIndex}
+                energyDemandKw={aggregates.energyDemandKw}
+                activeSensors={aggregates.activeSensors}
+                sourceMode={effectiveMode}
+              />
+            )}
 
             <MapOperationsView
               studyAreaGeoJson={studyAreaGeoJson}
@@ -382,6 +385,8 @@ export const App: React.FC = () => {
               selectedEntity={selectedEntity}
               compareEntity={compareEntity}
               currentTheme="dark"
+              isTableView={isOperationsTableView}
+              onToggleTableView={setIsOperationsTableView}
               onSelectEntity={(entity) => {
                 setSelectedEntity(entity);
                 if (compareEntity && compareEntity.id === entity.id) {
@@ -391,10 +396,12 @@ export const App: React.FC = () => {
               onSelectCompareEntity={(comp) => setCompareEntity(comp)}
             />
 
-            <MapLegend
-              isDrawerOpen={Boolean(selectedEntity)}
-              isComparisonMode={Boolean(compareEntity)}
-            />
+            {!isOperationsTableView && (
+              <MapLegend
+                isDrawerOpen={Boolean(selectedEntity)}
+                isComparisonMode={Boolean(compareEntity)}
+              />
+            )}
 
             <EntityDetailDrawer
               entity={selectedEntity}
@@ -409,15 +416,17 @@ export const App: React.FC = () => {
             />
 
             {/* P1-B: Interactive Historical Time Scrubber */}
-            <TimeScrubber
-              minutesAgo={scrubberMinutesAgo}
-              isPlaying={isScrubberPlaying}
-              playbackSpeed={scrubberSpeed}
-              onScrubChange={handleScrubChange}
-              onTogglePlay={handleTogglePlay}
-              onSpeedChange={handleSpeedChange}
-              onJumpToLive={handleJumpToLive}
-            />
+            {!isOperationsTableView && (
+              <TimeScrubber
+                minutesAgo={scrubberMinutesAgo}
+                isPlaying={isScrubberPlaying}
+                playbackSpeed={scrubberSpeed}
+                onScrubChange={handleScrubChange}
+                onTogglePlay={handleTogglePlay}
+                onSpeedChange={handleSpeedChange}
+                onJumpToLive={handleJumpToLive}
+              />
+            )}
           </div>
         )}
 

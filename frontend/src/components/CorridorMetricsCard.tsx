@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gauge, Zap, TrendingUp, Layers } from 'lucide-react';
+import { Gauge, Zap, TrendingUp, Layers, Activity } from 'lucide-react';
 import { SourceMode } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 
@@ -29,7 +29,8 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
     <div className="corridor-metrics-card">
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {sourceMode !== 'REPLAY' && (
+          <Activity size={14} color="var(--color-primary, #2F81F7)" style={{ flexShrink: 0 }} />
+          {sourceMode === 'LIVE' && (
             <span className="live-dot-ping" title="Real-time live telemetry stream active" />
           )}
           <span className="card-title">Corridor Telemetry</span>

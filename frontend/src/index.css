@@ -6,6 +6,7 @@
 
 :root,
 [data-theme="dark"] {
+  color-scheme: dark;
   /* Typography Stack: General Sans (Fontshare) & JetBrains Mono (Google Fonts) */
   --font-sans: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-body: var(--font-sans);
@@ -435,19 +436,56 @@ table,
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+html,
+body,
+#root {
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-app);
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
-  height: 100vh;
-  width: 100vw;
+}
+
+/* Precision Dark Operational Scrollbar (Eliminates native light sidebar on Windows) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #30363D transparent;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363D;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #58A6FF;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* App Container */
 .app-layout {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -800,16 +838,19 @@ body {
 .corridor-state-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  min-height: 22px;
-  padding: 2px 8px;
+  min-height: 24px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--radius-full);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   line-height: 1;
+  box-sizing: border-box;
 }
 
 .metrics-grid {
@@ -851,15 +892,18 @@ body {
 .provenance-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   min-height: 24px;
-  padding: 4px 8px;
+  height: 24px;
+  padding: 0 8px;
   border-radius: var(--radius-full);
   font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   text-transform: uppercase;
   line-height: 1;
+  box-sizing: border-box;
 }
 
 .provenance-badge .badge-icon {
@@ -3685,29 +3729,73 @@ body {
 .accessible-map-table-view {
   position: absolute;
   inset: 0;
-  background: var(--bg-surface);
-  z-index: 5;
+  background: var(--bg-app);
+  z-index: 35;
   overflow-y: auto;
-  padding: var(--space-4);
+  padding: var(--space-5);
+  padding-bottom: 110px;
 }
 
 .accessible-table-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .accessible-table-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-main);
+  margin: 0;
 }
 
 .accessible-table-caption {
   font-size: 12px;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 3px;
+}
+
+/* Dark Console Styling for MapLibre Controls */
+.maplibregl-ctrl-group {
+  background: rgba(22, 27, 34, 0.94) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+}
+
+.maplibregl-ctrl-group button {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.maplibregl-ctrl-group button:last-child {
+  border-bottom: none !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(1) brightness(1.8) !important;
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(14, 21, 38, 0.88) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 10px !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--color-primary-hover) !important;
 }
 
 /* ==========================================================================
