@@ -153,10 +153,13 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          {/* Source Mode Provenance Badge */}
-          <div className="status-pill">
-            <span className="text-muted">Source:</span>
-            <ProvenanceBadge mode={currentMode} />
+          {/* Source Mode Provenance Pill */}
+          <div
+            className="status-pill status-pill-source"
+            title={`Authoritative corridor telemetry provenance mode: ${currentMode}`}
+          >
+            <span className="text-muted" style={{ fontSize: '11px' }}>Source:</span>
+            <ProvenanceBadge mode={currentMode} className="header-provenance-clean" />
           </div>
 
           {/* Freshness Timestamp */}

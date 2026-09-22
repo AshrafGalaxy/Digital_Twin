@@ -583,12 +583,61 @@ body {
   white-space: nowrap;
 }
 
-.status-pill .provenance-badge {
-  min-height: 20px;
-  height: 20px;
-  padding: 0 6px;
-  font-size: 11px;
-  line-height: 20px;
+.status-pill .provenance-badge,
+.header-provenance-clean {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: unset !important;
+  height: auto !important;
+  box-shadow: none !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-pill .provenance-badge.badge-simulation,
+.header-provenance-clean.badge-simulation {
+  color: #00D2D3 !important;
+}
+
+.status-pill .provenance-badge.badge-live,
+.header-provenance-clean.badge-live {
+  color: #10B981 !important;
+}
+
+.status-pill .provenance-badge.badge-replay,
+.header-provenance-clean.badge-replay {
+  color: #58A6FF !important;
+}
+
+.status-pill .provenance-badge.badge-predicted,
+.header-provenance-clean.badge-predicted {
+  color: #38BDF8 !important;
+}
+
+.status-pill .provenance-badge.badge-stale,
+.header-provenance-clean.badge-stale {
+  color: #F59E0B !important;
+}
+
+.status-pill .provenance-badge.badge-invalid,
+.header-provenance-clean.badge-invalid {
+  color: #F87171 !important;
+}
+
+.status-pill-source {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.status-pill-source:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
 }
 
 .role-selector-pill {
