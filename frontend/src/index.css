@@ -2563,6 +2563,127 @@ body {
   box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
 }
 
+/* Forecast Panel Layout & Isolated Number Animations */
+.forecast-panel-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(13, 17, 23, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.forecast-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.forecast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forecast-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.forecast-hero-card {
+  background: rgba(22, 27, 34, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.forecast-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.forecast-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.forecast-main-val {
+  font-size: 26px;
+  font-weight: 700;
+  color: #F0F6FC;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.forecast-main-val.metric-pulse {
+  animation: numberPulse 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.forecast-interval-val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: #79C0FF;
+}
+
+.forecast-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.forecast-sub-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.forecast-delta {
+  font-weight: 600;
+}
+
+.forecast-delta.text-positive {
+  color: #3FB950;
+}
+
+.forecast-delta.text-negative {
+  color: #F87171;
+}
+
+@keyframes numberPulse {
+  0% {
+    transform: scale(1);
+    color: #38BDF8;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+  }
+  50% {
+    transform: scale(1.05);
+    color: #38BDF8;
+    text-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    color: #F0F6FC;
+    text-shadow: none;
+  }
+}
+
 /* Conformal Prediction Box */
 .forecast-conformal-box {
   background: rgba(15, 76, 92, 0.18);

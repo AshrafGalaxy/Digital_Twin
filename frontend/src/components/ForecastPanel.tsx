@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   TrendingUp,
   Zap,
@@ -25,44 +25,70 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
 }) => {
   const [trafficForecast, setTrafficForecast] = useState<TrafficForecast | null>(null);
   const [energyForecast, setEnergyForecast] = useState<EnergyForecast | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
+  const [isPulsing, setIsPulsing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const prevEntityIdRef = useRef<string>(entityId);
+  const prevPredictedRef = useRef<number | null>(null);
 
   useEffect(() => {
     let isSubscribed = true;
-    setLoading(true);
+
+    // Reset initial loading only if the selected entity changed
+    if (prevEntityIdRef.current !== entityId) {
+      prevEntityIdRef.current = entityId;
+      prevPredictedRef.current = null;
+      setIsInitialLoading(true);
+      setTrafficForecast(null);
+      setEnergyForecast(null);
+    }
     setError(null);
 
-    if (entityType === 'RoadSegment') {
-      fetchTrafficForecast(entityId, currentValue)
-        .then((data) => {
-          if (isSubscribed) setTrafficForecast(data);
-        })
-        .catch((err) => {
-          if (isSubscribed) setError(err.message || 'Failed loading traffic forecast');
-        })
-        .finally(() => {
-          if (isSubscribed) setLoading(false);
-        });
-    } else if (entityType === 'Building') {
-      fetchEnergyForecast(entityId, currentValue)
-        .then((data) => {
-          if (isSubscribed) setEnergyForecast(data);
-        })
-        .catch((err) => {
-          if (isSubscribed) setError(err.message || 'Failed loading energy forecast');
-        })
-        .finally(() => {
-          if (isSubscribed) setLoading(false);
-        });
-    }
+    const debounceTimer = setTimeout(() => {
+      if (entityType === 'RoadSegment') {
+        fetchTrafficForecast(entityId, currentValue)
+          .then((data) => {
+            if (!isSubscribed) return;
+            setTrafficForecast(data);
+            if (prevPredictedRef.current !== null && prevPredictedRef.current !== data.predictedValue) {
+              setIsPulsing(true);
+              setTimeout(() => setIsPulsing(false), 700);
+            }
+            prevPredictedRef.current = data.predictedValue;
+          })
+          .catch((err) => {
+            if (isSubscribed) setError(err.message || 'Failed loading traffic forecast');
+          })
+          .finally(() => {
+            if (isSubscribed) setIsInitialLoading(false);
+          });
+      } else if (entityType === 'Building') {
+        fetchEnergyForecast(entityId, currentValue)
+          .then((data) => {
+            if (!isSubscribed) return;
+            setEnergyForecast(data);
+            if (prevPredictedRef.current !== null && prevPredictedRef.current !== data.predictedValue) {
+              setIsPulsing(true);
+              setTimeout(() => setIsPulsing(false), 700);
+            }
+            prevPredictedRef.current = data.predictedValue;
+          })
+          .catch((err) => {
+            if (isSubscribed) setError(err.message || 'Failed loading energy forecast');
+          })
+          .finally(() => {
+            if (isSubscribed) setIsInitialLoading(false);
+          });
+      }
+    }, 250);
 
     return () => {
       isSubscribed = false;
+      clearTimeout(debounceTimer);
     };
   }, [entityType, entityId, currentValue]);
 
-  if (loading) {
+  if (isInitialLoading && !trafficForecast && !energyForecast) {
     return (
       <div className="forecast-panel-loading">
         <Activity size={18} className="animate-spin text-muted" />
@@ -73,7 +99,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
     );
   }
 
-  if (error) {
+  if (error && !trafficForecast && !energyForecast) {
     return (
       <div className="forecast-error-box">
         <AlertTriangle size={14} />
@@ -104,7 +130,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
           <div className="forecast-metric-row">
             <div>
               <div className="forecast-label">Projected Speed (t + 15m)</div>
-              <div className="forecast-main-val">
+              <div className={`forecast-main-val ${isPulsing ? 'metric-pulse' : ''}`}>
                 {trafficForecast.predictedValue.toFixed(1)}
                 <span className="forecast-unit"> km/h</span>
               </div>
@@ -233,7 +259,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
           <div className="forecast-metric-row">
             <div>
               <div className="forecast-label">Projected Demand (t + 60m)</div>
-              <div className="forecast-main-val">
+              <div className={`forecast-main-val ${isPulsing ? 'metric-pulse' : ''}`}>
                 {energyForecast.predictedValue.toFixed(0)}
                 <span className="forecast-unit"> kW</span>
               </div>
