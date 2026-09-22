@@ -29,6 +29,15 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const vehiclesCollectionRef = useRef<Cesium.CustomDataSource | null>(null);
   const signalsCollectionRef = useRef<Cesium.CustomDataSource | null>(null);
   const [activeViewpointId, setActiveViewpointId] = useState<string>('corridor-overview');
+  const [basemap3D, setBasemap3D] = useState<'satellite' | 'streets' | 'dark'>('satellite');
+  const [hoveredBuilding3D, setHoveredBuilding3D] = useState<{
+    name: string;
+    category: string;
+    height: number;
+    levels: number;
+    demandKw?: number;
+  } | null>(null);
+  const [hoverPos3D, setHoverPos3D] = useState<{ x: number; y: number } | null>(null);
   const [corridorGeoJson, setCorridorGeoJson] = useState<Corridor3DFeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
@@ -77,7 +86,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         baseLayer: new Cesium.ImageryLayer(
           new Cesium.UrlTemplateImageryProvider({
             url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            maximumLevel: 19
+            maximumLevel: 18 // CLAMP to 18 to eliminate "map data not yet available"!
           })
         )
       });
@@ -98,15 +107,16 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       vehiclesCollectionRef.current = vehicleDataSource;
       signalsCollectionRef.current = signalDataSource;
 
-      // Click Handler for Entity Picking
+      // Screen-Space Handlers: Click Picking and Dynamic Mouse Hover
       const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+
+      // Left Click: Select Entity
       handler.setInputAction((movement: any) => {
         const pickedObject = scene.pick(movement.position);
         if (Cesium.defined(pickedObject) && pickedObject.id) {
           const entity = pickedObject.id;
-          const entityId = entity.id || (entity.properties && entity.properties.entityId?.getValue());
+          const entityId = entity.id || (entity.properties && entity.properties.entityId?.getValue?.());
           if (entityId) {
-            // Find matching road segment or intersection
             const foundRoad = roadSegments.find((r) => r.id === entityId);
             if (foundRoad) {
               onSelectEntity(foundRoad);
@@ -120,6 +130,28 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           }
         }
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+      // Mouse Move: Dynamic Building Hover Tooltip
+      handler.setInputAction((movement: any) => {
+        const pickedObject = scene.pick(movement.endPosition);
+        if (Cesium.defined(pickedObject) && pickedObject.id) {
+          const entity = pickedObject.id;
+          const eType = entity.properties?.entityType?.getValue?.() || entity.properties?.entityType;
+          if (eType === 'BuildingZone') {
+            setHoveredBuilding3D({
+              name: entity.name || 'Corridor Building',
+              category: entity.properties?.category?.getValue?.() || entity.properties?.category || 'COMMERCIAL',
+              height: entity.properties?.heightMeters?.getValue?.() || entity.properties?.heightMeters || 24,
+              levels: entity.properties?.levels?.getValue?.() || entity.properties?.levels || 6,
+              demandKw: entity.properties?.contractDemandKw?.getValue?.() || entity.properties?.contractDemandKw
+            });
+            setHoverPos3D({ x: movement.endPosition.x, y: movement.endPosition.y });
+            return;
+          }
+        }
+        setHoveredBuilding3D(null);
+        setHoverPos3D(null);
+      }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
       viewerRef.current = viewer;
 
@@ -152,6 +184,33 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     }
   }, [currentTheme]);
 
+  // 2.5 Dynamic 3D Basemap Swapping (Satellite, Google-Style Streets, Dark Canvas)
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    const layers = viewer.imageryLayers;
+    layers.removeAll();
+
+    let provider: Cesium.ImageryProvider;
+    if (basemap3D === 'streets') {
+      provider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        maximumLevel: 19
+      });
+    } else if (basemap3D === 'dark') {
+      provider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        maximumLevel: 16
+      });
+    } else {
+      provider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        maximumLevel: 18
+      });
+    }
+    layers.addImageryProvider(provider);
+  }, [basemap3D]);
+
   // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -160,13 +219,11 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     // Clear static entities (keep dynamic vehicles & signals in dataSources)
     viewer.entities.removeAll();
 
-    const isLight = currentTheme === 'light';
-
     corridorGeoJson.features.forEach((feature) => {
       const props = feature.properties || {};
       const layer = props.layer;
 
-      // A. Building Extrusion (Phoenix Marketcity and 45 Corridor Buildings)
+      // A. Building Extrusion (89 Surveyed Buildings with Functional Category Color Tints)
       if (layer === 'buildings' && feature.geometry.type === 'Polygon') {
         const coords = feature.geometry.coordinates[0];
         const flatHierarchy = coords.map((c: number[]) =>
@@ -174,27 +231,22 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         );
 
         const height = props.heightMeters || 24.0;
-        const isMajorLandmark = props.name && (
-          props.name.includes('Phoenix') ||
-          props.name.includes('Hyatt') ||
-          props.name.includes('Solitaire') ||
-          props.name.includes('Weikfield') ||
-          props.name.includes('Inorbit') ||
-          props.name.includes('Somnath') ||
-          props.name.includes('Four Points') ||
-          props.name.includes('Ibis') ||
-          props.name.includes('Bajaj') ||
-          props.name.includes('Sky Max') ||
-          props.name.includes('Finswell')
-        );
-
-        const buildingColor = Cesium.Color.fromCssColorString(
-          props.colorTint || (isMajorLandmark ? '#1E3A5F' : (isLight ? '#64748B' : '#1E293B'))
-        ).withAlpha(isMajorLandmark ? 0.88 : 0.72);
-
-        const outlineColor = Cesium.Color.fromCssColorString(
-          isMajorLandmark ? (isLight ? '#0284C7' : '#38BDF8') : (isLight ? '#94A3B8' : '#475569')
-        ).withAlpha(0.9);
+        const category = props.category || 'COMMERCIAL_RETAIL';
+        const categoryColors: Record<string, { fill: string; outline: string }> = {
+          COMMERCIAL_RETAIL: { fill: '#0284C7', outline: '#38BDF8' },
+          COMMERCIAL_IT: { fill: '#2563EB', outline: '#60A5FA' },
+          COMMERCIAL_OFFICE: { fill: '#2563EB', outline: '#60A5FA' },
+          CORPORATE_HQ: { fill: '#2563EB', outline: '#60A5FA' },
+          HOSPITALITY_HOTEL: { fill: '#D97706', outline: '#FBBF24' },
+          RESIDENTIAL_COMPLEX: { fill: '#059669', outline: '#34D399' },
+          CIVIC_EDUCATION: { fill: '#7C3AED', outline: '#A78BFA' },
+          HEALTHCARE: { fill: '#DC2626', outline: '#F87171' },
+          MIXED_USE: { fill: '#0D9488', outline: '#2DD4BF' },
+          TRANSIT_INFRASTRUCTURE: { fill: '#0891B2', outline: '#22D3EE' },
+        };
+        const colors = categoryColors[category] || { fill: '#0284C7', outline: '#38BDF8' };
+        const buildingColor = Cesium.Color.fromCssColorString(colors.fill).withAlpha(0.85);
+        const outlineColor = Cesium.Color.fromCssColorString(colors.outline).withAlpha(0.95);
 
         viewer.entities.add({
           id: feature.id,
@@ -206,55 +258,53 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
             material: buildingColor,
             outline: true,
             outlineColor: outlineColor,
-            outlineWidth: isMajorLandmark ? 2 : 1
+            outlineWidth: 2
           },
           properties: {
             entityId: feature.id,
             entityType: 'BuildingZone',
+            category: category,
             heightMeters: height,
-            levels: props.buildingLevels || 4
+            levels: props.buildingLevels || 6,
+            contractDemandKw: props.contractDemandKw
+          }
+        });
+      }
+
+      // B. Realistic 3D Sidewalk Trees (Wood Trunk Cylinder + Organic Foliage Ellipsoid along sidewalks)
+      if (layer === 'trees' && feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+        const treeH = props.heightMeters || 7.5;
+        const trunkH = props.trunkHeightMeters || 2.6;
+        const canopyH = Math.max(2.4, treeH - trunkH);
+        const canopyR = (props.canopyDiameterMeters || 5.5) / 2;
+        const isFlowering = Boolean(props.isFlowering);
+
+        // 1. Natural Wood Trunk (Slender cylinder planted on sidewalk)
+        viewer.entities.add({
+          name: `${props.species || 'Street Tree'} Trunk`,
+          position: Cesium.Cartesian3.fromDegrees(lng, lat, trunkH / 2),
+          cylinder: {
+            length: trunkH,
+            topRadius: 0.22,
+            bottomRadius: 0.28,
+            material: Cesium.Color.fromCssColorString('#4A2E18'),
+            outline: false
           }
         });
 
-        // Building Floating Label (Rendered for Key Landmarks)
-        if (coords.length > 0 && isMajorLandmark) {
-          const centerLng = coords.reduce((acc: number, c: number[]) => acc + c[0], 0) / coords.length;
-          const centerLat = coords.reduce((acc: number, c: number[]) => acc + c[1], 0) / coords.length;
-
-          viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(centerLng, centerLat, height + 6.0),
-            label: {
-              text: `${props.name} (${height}m)`,
-              font: "600 12px 'General Sans', -apple-system, sans-serif",
-              fillColor: Cesium.Color.WHITE,
-              outlineColor: Cesium.Color.fromCssColorString('#0F172A'),
-              outlineWidth: 3,
-              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-              verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-              pixelOffset: new Cesium.Cartesian2(0, -6),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY
-            }
-          });
-        }
-      }
-
-      // B. Urban Tree Canopies (3D Cylinders along the Nagar Road Central Median)
-      if (layer === 'trees' && feature.geometry.type === 'Point') {
-        const [lng, lat] = feature.geometry.coordinates;
-        const treeH = props.heightMeters || 7.0;
-        const treeD = props.canopyDiameterMeters || 5.0;
-
+        // 2. Leafy / Flowering Organic Canopy (Ellipsoid sitting atop trunk)
         viewer.entities.add({
           id: feature.id,
-          name: props.species || 'Street Tree Canopy',
-          position: Cesium.Cartesian3.fromDegrees(lng, lat, treeH / 2),
-          cylinder: {
-            length: treeH,
-            topRadius: treeD / 2,
-            bottomRadius: (treeD / 2) * 0.6,
-            material: Cesium.Color.fromCssColorString('#2D6A4F').withAlpha(0.9),
+          name: props.species || 'Sidewalk Tree Canopy',
+          position: Cesium.Cartesian3.fromDegrees(lng, lat, trunkH + canopyH * 0.65),
+          ellipsoid: {
+            radii: new Cesium.Cartesian3(canopyR, canopyR, canopyH * 0.75),
+            material: isFlowering
+              ? Cesium.Color.fromCssColorString('#D9531E').withAlpha(0.92) // Gulmohar fiery bloom
+              : Cesium.Color.fromCssColorString('#2E7D32').withAlpha(0.92), // Lush Neem foliage
             outline: true,
-            outlineColor: Cesium.Color.fromCssColorString('#52B788').withAlpha(0.6)
+            outlineColor: Cesium.Color.fromCssColorString(isFlowering ? '#EA580C' : '#15803D').withAlpha(0.6)
           },
           properties: {
             entityId: feature.id,
@@ -513,6 +563,127 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         onFlyToViewpoint={handleFlyTo}
       />
 
+      {/* 3D Basemap Selector Bar */}
+      <div
+        className="cesium-basemap-toolbar"
+        style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          zIndex: 20,
+          display: 'flex',
+          gap: '3px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)',
+          padding: '3px',
+          borderRadius: '8px',
+          border: '1px solid rgba(255, 255, 255, 0.12)'
+        }}
+        role="toolbar"
+        aria-label="3D Basemap Selection"
+      >
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${basemap3D === 'satellite' ? 'active' : ''}`}
+          onClick={() => setBasemap3D('satellite')}
+          title="High-Resolution Satellite Imagery"
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '5px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: basemap3D === 'satellite' ? '#2F81F7' : 'transparent',
+            color: '#FFFFFF'
+          }}
+        >
+          <span>🛰️ Satellite</span>
+        </button>
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${basemap3D === 'streets' ? 'active' : ''}`}
+          onClick={() => setBasemap3D('streets')}
+          title="Google Maps-Style Clean Street Map"
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '5px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: basemap3D === 'streets' ? '#2F81F7' : 'transparent',
+            color: '#FFFFFF'
+          }}
+        >
+          <span>🗺️ Streets</span>
+        </button>
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${basemap3D === 'dark' ? 'active' : ''}`}
+          onClick={() => setBasemap3D('dark')}
+          title="Dark Operations Canvas"
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '5px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: basemap3D === 'dark' ? '#2F81F7' : 'transparent',
+            color: '#FFFFFF'
+          }}
+        >
+          <span>🌃 Dark</span>
+        </button>
+      </div>
+
+      {/* 3D Building Dynamic Hover Tooltip Card */}
+      {hoveredBuilding3D && hoverPos3D && (
+        <div
+          className="cesium-building-hover-card"
+          style={{
+            position: 'absolute',
+            left: Math.min(hoverPos3D.x + 14, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
+            top: Math.max(10, hoverPos3D.y - 12),
+            pointerEvents: 'none',
+            zIndex: 40,
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            borderRadius: '8px',
+            padding: '10px 14px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+            maxWidth: '280px',
+            color: '#FFFFFF'
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px', color: '#F8FAFC' }}>
+            {hoveredBuilding3D.name}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                color: '#38BDF8'
+              }}
+            >
+              {hoveredBuilding3D.category?.replace(/_/g, ' ')}
+            </span>
+            <span style={{ fontSize: '11px', color: '#94A3B8' }}>
+              {hoveredBuilding3D.height}m ({hoveredBuilding3D.levels} floors)
+            </span>
+          </div>
+          {hoveredBuilding3D.demandKw && (
+            <div style={{ fontSize: '11px', color: '#F0883E', fontWeight: 600 }}>
+              ⚡ Sanctioned Demand: {hoveredBuilding3D.demandKw.toLocaleString()} kW
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top Legend / Status Overlay */}
       <div className="cesium-overlay-legend">
         <div className="cesium-status-badge">
@@ -521,20 +692,20 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         </div>
         <div className="cesium-legend-items">
           <span className="legend-chip">
-            <span className="chip-color" style={{ backgroundColor: '#0F4C5C' }} />
-            <span>Phoenix (45m)</span>
+            <span className="chip-color" style={{ backgroundColor: '#0284C7' }} />
+            <span>Retail / Malls</span>
           </span>
           <span className="legend-chip">
-            <span className="chip-color" style={{ backgroundColor: '#10B981' }} />
-            <span>Flowing (&gt;40)</span>
+            <span className="chip-color" style={{ backgroundColor: '#2563EB' }} />
+            <span>IT / Tech Parks</span>
           </span>
           <span className="legend-chip">
-            <span className="chip-color" style={{ backgroundColor: '#F59E0B' }} />
-            <span>Dense (20-40)</span>
+            <span className="chip-color" style={{ backgroundColor: '#D97706' }} />
+            <span>Hotels</span>
           </span>
           <span className="legend-chip">
-            <span className="chip-color" style={{ backgroundColor: '#EF4444' }} />
-            <span>Queued (&lt;20)</span>
+            <span className="chip-color" style={{ backgroundColor: '#059669' }} />
+            <span>Residential</span>
           </span>
         </div>
       </div>

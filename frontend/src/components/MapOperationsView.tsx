@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
-import { Map, Globe, TableProperties, Layers } from 'lucide-react';
+import { Map, Globe, TableProperties } from 'lucide-react';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { CesiumCorridorViewer } from './CesiumCorridorViewer';
@@ -138,9 +138,19 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
-  const [basemapMode, setBasemapMode] = useState<'satellite' | 'dark'>('satellite');
+  const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets' | 'dark'>('satellite');
+  const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [corridorGeoJson, setCorridorGeoJson] = useState<Corridor3DFeatureCollection | null>(null);
   const [internalTableView, setInternalTableView] = useState<boolean>(false);
+  const [hoveredBuilding, setHoveredBuilding] = useState<{
+    name: string;
+    category: string;
+    height: number;
+    levels: number;
+    demandKw?: number;
+    areaSqm?: number;
+  } | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
 
   const isTableView = isTableViewProp !== undefined ? isTableViewProp : internalTableView;
   const handleToggleTableView = (val: boolean) => {
@@ -155,11 +165,11 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       .catch(err => console.warn('Could not load corridor 3D GeoJSON for 2D map:', err));
   }, []);
 
-  // Initialize MapLibre GL Map with Premium Esri Satellite and Dark Canvas Layers (0 Watermarks)
+  // Initialize MapLibre GL Map with Premium Esri Satellite, Google-style Streets, and Dark Canvas (0 Watermarks)
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    map.current = new maplibregl.Map({
+    const newMap = new maplibregl.Map({
       container: mapContainer.current,
       style: {
         version: 8,
@@ -170,7 +180,17 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
             ],
             tileSize: 256,
-            attribution: '&copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a>, Maxar, Earthstar Geographics'
+            maxzoom: 18,
+            attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+          },
+          'esri-streets': {
+            type: 'raster',
+            tiles: [
+              'https://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+            ],
+            tileSize: 256,
+            maxzoom: 19,
+            attribution: '&copy; Esri, HERE, Garmin, USGS, NGA'
           },
           'esri-dark-base': {
             type: 'raster',
@@ -178,14 +198,16 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
             ],
             tileSize: 256,
-            attribution: '&copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a>, HERE, Garmin'
+            maxzoom: 16,
+            attribution: '&copy; Esri, HERE, Garmin'
           },
           'esri-dark-ref': {
             type: 'raster',
             tiles: [
               'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
             ],
-            tileSize: 256
+            tileSize: 256,
+            maxzoom: 16
           }
         },
         layers: [
@@ -197,6 +219,16 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             maxzoom: 20,
             layout: {
               visibility: 'visible'
+            }
+          },
+          {
+            id: 'esri-streets-layer',
+            type: 'raster',
+            source: 'esri-streets',
+            minzoom: 0,
+            maxzoom: 20,
+            layout: {
+              visibility: 'none'
             }
           },
           {
@@ -216,38 +248,53 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             minzoom: 0,
             maxzoom: 20,
             layout: {
-              visibility: 'visible'
+              visibility: 'none'
             }
           }
         ]
       },
       center: [73.9220, 18.5615], // Corridor midpoint
       zoom: 14.8,
+      maxZoom: 19,
       pitch: 0,
       attributionControl: false
     });
 
-    map.current.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
-    map.current.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+    newMap.on('load', () => {
+      setMapLoaded(true);
+    });
+
+    newMap.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+    newMap.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+    map.current = newMap;
 
     return () => {
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
-      map.current?.remove();
+      newMap.remove();
       map.current = null;
+      setMapLoaded(false);
     };
   }, []);
 
-  // Dynamically update basemap layer visibility when switching between Satellite and Dark Canvas
+  // Dynamically update basemap layer visibility when switching between Satellite, Streets, and Dark Canvas
   useEffect(() => {
     const currentMap = map.current;
-    if (!currentMap || !currentMap.isStyleLoaded()) return;
+    if (!currentMap || !mapLoaded) return;
 
     if (currentMap.getLayer('esri-satellite-layer')) {
       currentMap.setLayoutProperty(
         'esri-satellite-layer',
         'visibility',
         basemapMode === 'satellite' ? 'visible' : 'none'
+      );
+    }
+    if (currentMap.getLayer('esri-streets-layer')) {
+      currentMap.setLayoutProperty(
+        'esri-streets-layer',
+        'visibility',
+        basemapMode === 'streets' ? 'visible' : 'none'
       );
     }
     if (currentMap.getLayer('esri-dark-base-layer')) {
@@ -257,7 +304,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         basemapMode === 'dark' ? 'visible' : 'none'
       );
     }
-  }, [basemapMode]);
+    if (currentMap.getLayer('esri-dark-ref-layer')) {
+      currentMap.setLayoutProperty(
+        'esri-dark-ref-layer',
+        'visibility',
+        basemapMode === 'dark' ? 'visible' : 'none'
+      );
+    }
+  }, [basemapMode, mapLoaded]);
 
   // Dynamically update map styling on theme toggle
   useEffect(() => {
@@ -627,31 +681,79 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         });
       }
 
-      // 4. Add 3D Building Extrusions Layer (Loaded from corridor spatial GeoJSON)
+      // 4. Add 2D & 3D Building Layers (Category Color-Coded with Interactive Hover Tooltips)
       const bldFeatures = corridorGeoJson?.features.filter(f => f.properties?.layer === 'buildings') || [];
-      const buildingsExtrusionGeoJson = {
-        type: 'FeatureCollection',
-        features: bldFeatures.map(f => ({
-          ...f,
-          properties: {
-            ...f.properties,
-            color: f.properties?.colorTint || '#1E3A5F',
-            height: f.properties?.heightMeters || 24,
-            base_height: 0
-          }
-        }))
+      const categoryColorMap: Record<string, { fill: string; border: string }> = {
+        COMMERCIAL_RETAIL: { fill: '#0284C7', border: '#38BDF8' },
+        COMMERCIAL_IT: { fill: '#2563EB', border: '#60A5FA' },
+        COMMERCIAL_OFFICE: { fill: '#2563EB', border: '#60A5FA' },
+        CORPORATE_HQ: { fill: '#2563EB', border: '#60A5FA' },
+        HOSPITALITY_HOTEL: { fill: '#D97706', border: '#FBBF24' },
+        RESIDENTIAL_COMPLEX: { fill: '#059669', border: '#34D399' },
+        CIVIC_EDUCATION: { fill: '#7C3AED', border: '#A78BFA' },
+        HEALTHCARE: { fill: '#DC2626', border: '#F87171' },
+        MIXED_USE: { fill: '#0D9488', border: '#2DD4BF' },
+        TRANSIT_INFRASTRUCTURE: { fill: '#0891B2', border: '#22D3EE' },
       };
 
-      if (!currentMap.getSource('corridor-buildings-3d')) {
-        currentMap.addSource('corridor-buildings-3d', {
+      const buildingsGeoJson = {
+        type: 'FeatureCollection',
+        features: bldFeatures.map(f => {
+          const cat = f.properties?.category || 'COMMERCIAL_RETAIL';
+          const colors = categoryColorMap[cat] || { fill: '#0284C7', border: '#38BDF8' };
+          return {
+            ...f,
+            properties: {
+              ...f.properties,
+              color: colors.fill,
+              borderColor: colors.border,
+              height: f.properties?.heightMeters || 24,
+              base_height: 0
+            }
+          };
+        })
+      };
+
+      if (!currentMap.getSource('corridor-buildings-source')) {
+        currentMap.addSource('corridor-buildings-source', {
           type: 'geojson',
-          data: buildingsExtrusionGeoJson as any
+          data: buildingsGeoJson as any
         });
 
+        // 2D Building Footprint Fill
+        currentMap.addLayer({
+          id: 'corridor-buildings-2d-fill',
+          type: 'fill',
+          source: 'corridor-buildings-source',
+          layout: {
+            visibility: is3DMode ? 'none' : 'visible'
+          },
+          paint: {
+            'fill-color': ['get', 'color'],
+            'fill-opacity': 0.58
+          }
+        });
+
+        // 2D Building Perimeter Outline
+        currentMap.addLayer({
+          id: 'corridor-buildings-2d-line',
+          type: 'line',
+          source: 'corridor-buildings-source',
+          layout: {
+            visibility: is3DMode ? 'none' : 'visible'
+          },
+          paint: {
+            'line-color': ['get', 'borderColor'],
+            'line-width': 1.5,
+            'line-opacity': 0.9
+          }
+        });
+
+        // 3D Building Extrusion (active in 3D pitch/isometric view)
         currentMap.addLayer({
           id: 'corridor-buildings-extrusion',
           type: 'fill-extrusion',
-          source: 'corridor-buildings-3d',
+          source: 'corridor-buildings-source',
           layout: {
             visibility: is3DMode ? 'visible' : 'none'
           },
@@ -662,14 +764,38 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             'fill-extrusion-opacity': 0.88
           }
         });
+
+        // Interactive Cursor Hover Tooltip for Buildings
+        currentMap.on('mousemove', 'corridor-buildings-2d-fill', (e) => {
+          if (!e.features || !e.features[0]) return;
+          const p = e.features[0].properties || {};
+          setHoveredBuilding({
+            name: p.name || 'Corridor Building',
+            category: p.category || 'COMMERCIAL',
+            height: p.heightMeters || p.height || 24,
+            levels: p.buildingLevels || 6,
+            demandKw: p.contractDemandKw,
+            areaSqm: p.grossFloorAreaSqm
+          });
+          setHoverPos({ x: e.point.x, y: e.point.y });
+          currentMap.getCanvas().style.cursor = 'pointer';
+        });
+
+        currentMap.on('mouseleave', 'corridor-buildings-2d-fill', () => {
+          setHoveredBuilding(null);
+          setHoverPos(null);
+          currentMap.getCanvas().style.cursor = '';
+        });
       } else {
-        (currentMap.getSource('corridor-buildings-3d') as maplibregl.GeoJSONSource).setData(buildingsExtrusionGeoJson as any);
+        (currentMap.getSource('corridor-buildings-source') as maplibregl.GeoJSONSource).setData(buildingsGeoJson as any);
+        if (currentMap.getLayer('corridor-buildings-2d-fill')) {
+          currentMap.setLayoutProperty('corridor-buildings-2d-fill', 'visibility', is3DMode ? 'none' : 'visible');
+        }
+        if (currentMap.getLayer('corridor-buildings-2d-line')) {
+          currentMap.setLayoutProperty('corridor-buildings-2d-line', 'visibility', is3DMode ? 'none' : 'visible');
+        }
         if (currentMap.getLayer('corridor-buildings-extrusion')) {
-          currentMap.setLayoutProperty(
-            'corridor-buildings-extrusion',
-            'visibility',
-            is3DMode ? 'visible' : 'none'
-          );
+          currentMap.setLayoutProperty('corridor-buildings-extrusion', 'visibility', is3DMode ? 'visible' : 'none');
         }
       }
 
@@ -764,12 +890,9 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       markersRef.current.push(envMarker);
     };
 
-    if (currentMap.isStyleLoaded()) {
-      onMapLoad();
-    } else {
-      currentMap.once('load', onMapLoad);
-    }
-  }, [studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme, corridorGeoJson]);
+    if (!mapLoaded) return;
+    onMapLoad();
+  }, [mapLoaded, studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme, corridorGeoJson]);
 
   const toggle3DMode = () => {
     setIs3DMode(prev => {
@@ -798,6 +921,55 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         aria-label="Interactive 2D Corridor Map Canvas"
       />
 
+      {/* 2D Building Interactive Hover Tooltip Card */}
+      {hoveredBuilding && hoverPos && !is3DMode && (
+        <div
+          className="building-hover-card"
+          style={{
+            position: 'absolute',
+            left: Math.min(hoverPos.x + 14, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
+            top: Math.max(10, hoverPos.y - 12),
+            pointerEvents: 'none',
+            zIndex: 40,
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            borderRadius: '8px',
+            padding: '10px 14px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+            maxWidth: '280px',
+            color: '#FFFFFF'
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '4px', color: '#F8FAFC' }}>
+            {hoveredBuilding.name}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                color: '#38BDF8'
+              }}
+            >
+              {hoveredBuilding.category?.replace(/_/g, ' ')}
+            </span>
+            <span style={{ fontSize: '11px', color: '#94A3B8' }}>
+              {hoveredBuilding.height}m ({hoveredBuilding.levels} floors)
+            </span>
+          </div>
+          {hoveredBuilding.demandKw && (
+            <div style={{ fontSize: '11px', color: '#F0883E', fontWeight: 600 }}>
+              ⚡ Sanctioned Demand: {hoveredBuilding.demandKw.toLocaleString()} kW
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 3D Cesium WebGL Digital Twin Viewer */}
       {is3DMode && (
         <CesiumCorridorViewer
@@ -824,15 +996,32 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           </button>
 
           {!is3DMode && (
-            <button
-              type="button"
-              className={`map-view-toggle-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
-              onClick={() => setBasemapMode(prev => prev === 'satellite' ? 'dark' : 'satellite')}
-              title={basemapMode === 'satellite' ? "Switch to Dark Operations Canvas" : "Switch to High-Resolution Photorealistic Satellite View"}
-            >
-              <Layers size={13} aria-hidden="true" />
-              <span>{basemapMode === 'satellite' ? '🛰️ Satellite' : '🌃 Dark Canvas'}</span>
-            </button>
+            <div style={{ display: 'flex', gap: '3px', background: 'rgba(15,23,42,0.85)', padding: '2px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <button
+                type="button"
+                className={`map-view-toggle-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
+                onClick={() => setBasemapMode('satellite')}
+                title="Photorealistic Satellite Imagery"
+              >
+                <span>🛰️ Satellite</span>
+              </button>
+              <button
+                type="button"
+                className={`map-view-toggle-btn ${basemapMode === 'streets' ? 'active' : ''}`}
+                onClick={() => setBasemapMode('streets')}
+                title="Google Maps-Style Clean Street Map"
+              >
+                <span>🗺️ Streets</span>
+              </button>
+              <button
+                type="button"
+                className={`map-view-toggle-btn ${basemapMode === 'dark' ? 'active' : ''}`}
+                onClick={() => setBasemapMode('dark')}
+                title="Dark Operations Canvas"
+              >
+                <span>🌃 Dark</span>
+              </button>
+            </div>
           )}
 
           <button

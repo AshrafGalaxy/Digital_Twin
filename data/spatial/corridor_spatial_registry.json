@@ -1133,7 +1133,7 @@
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0284C7",
       "centroid": [
         73.916691,
         18.561945
@@ -1444,14 +1444,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01",
       "name": "Solitaire Business Hub Viman Nagar",
-      "category": "COMMERCIAL_OFFICE",
+      "category": "COMMERCIAL_IT",
       "grossFloorAreaSqm": 112690.3,
       "contractDemandKw": 6010.2,
       "heightMeters": 32.0,
       "buildingLevels": 8,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#2563EB",
       "centroid": [
         73.914516,
         18.562543
@@ -1553,7 +1553,7 @@
       "buildingLevels": 10,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#D97706",
       "centroid": [
         73.912107,
         18.559692
@@ -1667,7 +1667,7 @@
       "buildingLevels": 11,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#059669",
       "centroid": [
         73.913024,
         18.563029
@@ -1710,14 +1710,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-169257650",
       "name": "Suyog Enclave",
-      "category": "URBAN_FABRIC",
+      "category": "RESIDENTIAL_COMPLEX",
       "grossFloorAreaSqm": 19792.6,
       "contractDemandKw": 1055.6,
       "heightMeters": 44.0,
       "buildingLevels": 12,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#059669",
       "centroid": [
         73.912742,
         18.563153
@@ -1755,7 +1755,7 @@
       "buildingLevels": 9,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#D97706",
       "centroid": [
         73.922161,
         18.562687
@@ -1794,14 +1794,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-169257649",
       "name": "Bajaj Finserv Corporate Campus",
-      "category": "CORPORATE_HQ",
+      "category": "COMMERCIAL_IT",
       "grossFloorAreaSqm": 15000.2,
       "contractDemandKw": 800.0,
       "heightMeters": 35.0,
       "buildingLevels": 9,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#2563EB",
       "centroid": [
         73.912637,
         18.562288
@@ -1839,7 +1839,7 @@
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#2563EB",
       "centroid": [
         73.913714,
         18.565422
@@ -1885,7 +1885,7 @@
       "buildingLevels": 7,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#D97706",
       "centroid": [
         73.912987,
         18.559656
@@ -1932,14 +1932,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1103546830",
       "name": "Alfa Premio",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 4775.0,
       "contractDemandKw": 254.7,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.915154,
         18.564934
@@ -1970,14 +1970,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702388",
       "name": "Chandhare Complex",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 4168.0,
       "contractDemandKw": 222.3,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.921726,
         18.56237
@@ -2016,14 +2016,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1394134860",
       "name": "Build 1",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 3207.1,
       "contractDemandKw": 171.0,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.914358,
         18.561455
@@ -2054,14 +2054,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769347",
       "name": "Gaia Apex",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 2929.8,
       "contractDemandKw": 156.3,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.914225,
         18.560748
@@ -2092,14 +2092,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718486",
       "name": "Ashish",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 2541.1,
       "contractDemandKw": 135.5,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.919315,
         18.559048
@@ -2134,14 +2134,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359927156",
       "name": "Build 2",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 2284.4,
       "contractDemandKw": 121.8,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.930086,
         18.56261
@@ -2172,14 +2172,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359747704",
       "name": "St. Francis De Sales School",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 2168.4,
       "contractDemandKw": 115.6,
       "heightMeters": 9.0,
       "buildingLevels": 2,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923925,
         18.560406
@@ -2210,14 +2210,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-169256033",
       "name": "Prime Academy",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 1863.7,
       "contractDemandKw": 99.4,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.917822,
         18.56118
@@ -2248,14 +2248,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718464",
       "name": "Build 3",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 1767.7,
       "contractDemandKw": 94.3,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.929432,
         18.562586
@@ -2286,14 +2286,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359747320",
       "name": "St. Francis De Sales Church",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 1719.6,
       "contractDemandKw": 91.7,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923874,
         18.561306
@@ -2324,14 +2324,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718855",
       "name": "Build 1",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 1671.2,
       "contractDemandKw": 89.1,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.929136,
         18.562563
@@ -2362,14 +2362,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359794081",
       "name": "b11",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 1517.0,
       "contractDemandKw": 80.9,
       "heightMeters": 19.5,
       "buildingLevels": 5,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923974,
         18.557601
@@ -2400,14 +2400,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718600",
       "name": "Build 2",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 1446.1,
       "contractDemandKw": 77.1,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.929278,
         18.562573
@@ -2438,14 +2438,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359794021",
       "name": "b10",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 974.4,
       "contractDemandKw": 52.0,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923793,
         18.557658
@@ -2476,14 +2476,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793360",
       "name": "b4",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 819.9,
       "contractDemandKw": 43.7,
       "heightMeters": 12.5,
       "buildingLevels": 3,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923503,
         18.557638
@@ -2514,14 +2514,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793924",
       "name": "b7",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 771.4,
       "contractDemandKw": 41.1,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923971,
         18.557793
@@ -2552,14 +2552,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793522",
       "name": "b6",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 728.4,
       "contractDemandKw": 38.8,
       "heightMeters": 12.5,
       "buildingLevels": 3,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923364,
         18.557325
@@ -2590,14 +2590,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718753",
       "name": "Build 4",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 645.3,
       "contractDemandKw": 34.4,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.929434,
         18.562339
@@ -2628,14 +2628,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793390",
       "name": "g5",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 600.6,
       "contractDemandKw": 32.0,
       "heightMeters": 12.5,
       "buildingLevels": 3,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923412,
         18.557446
@@ -2666,14 +2666,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1258189456",
       "name": "Datta Mandir",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 454.1,
       "contractDemandKw": 24.2,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.925323,
         18.558705
@@ -2704,14 +2704,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359794003",
       "name": "b1",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 418.7,
       "contractDemandKw": 22.3,
       "heightMeters": 9.0,
       "buildingLevels": 2,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923287,
         18.557635
@@ -2742,14 +2742,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793658",
       "name": "b3",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 406.5,
       "contractDemandKw": 21.7,
       "heightMeters": 9.0,
       "buildingLevels": 2,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923192,
         18.5574
@@ -2780,14 +2780,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-360001483",
       "name": "b8",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 398.8,
       "contractDemandKw": 21.3,
       "heightMeters": 12.5,
       "buildingLevels": 3,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923587,
         18.557889
@@ -2818,14 +2818,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793574",
       "name": "b2",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 299.9,
       "contractDemandKw": 16.0,
       "heightMeters": 9.0,
       "buildingLevels": 2,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923234,
         18.557519
@@ -2856,14 +2856,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1258097748",
       "name": "Tate Niwas",
-      "category": "URBAN_FABRIC",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 285.9,
       "contractDemandKw": 15.2,
       "heightMeters": 16.0,
       "buildingLevels": 4,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#264653",
+      "colorTint": "#0D9488",
       "centroid": [
         73.924248,
         18.559582
@@ -2894,14 +2894,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-WEIKFIELD-01",
       "name": "Weikfield IT City & Tech Park",
-      "category": "IT_PARK",
+      "category": "COMMERCIAL_IT",
       "grossFloorAreaSqm": 187213.9,
       "contractDemandKw": 9984.7,
       "heightMeters": 42.0,
       "buildingLevels": 12,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#2563EB",
       "centroid": [
         73.920601,
         18.560456
@@ -2948,14 +2948,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359910262",
       "name": "Corridor Commercial Block 359910262",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 49802.3,
       "contractDemandKw": 2656.1,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.920366,
         18.562323
@@ -3017,7 +3017,7 @@
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0284C7",
       "centroid": [
         73.923325,
         18.563959
@@ -3080,14 +3080,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769072",
       "name": "Corridor Commercial Block 359769072",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 41696.6,
       "contractDemandKw": 2223.8,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.914095,
         18.560192
@@ -3150,14 +3150,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359748405",
       "name": "Corridor Commercial Block 359748405",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 38488.6,
       "contractDemandKw": 2052.7,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.923479,
         18.560987
@@ -3208,14 +3208,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1534172525",
       "name": "Corridor Commercial Block 1534172525",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 34203.8,
       "contractDemandKw": 1824.2,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.918781,
         18.564062
@@ -3342,14 +3342,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702321",
       "name": "Corridor Commercial Block 359702321",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 29149.9,
       "contractDemandKw": 1554.7,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.921946,
         18.564227
@@ -3444,14 +3444,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702320",
       "name": "Corridor Commercial Block 359702320",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 29145.9,
       "contractDemandKw": 1554.4,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.921835,
         18.563622
@@ -3546,14 +3546,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702319",
       "name": "Corridor Commercial Block 359702319",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 29142.0,
       "contractDemandKw": 1554.2,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.921984,
         18.564801
@@ -3648,14 +3648,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769261",
       "name": "Corridor Commercial Block 359769261",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 25710.9,
       "contractDemandKw": 1371.2,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.91686,
         18.564305
@@ -3686,14 +3686,14 @@
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769183",
       "name": "Corridor Commercial Block 359769183",
-      "category": "COMMERCIAL_FRONTAGE",
+      "category": "MIXED_USE",
       "grossFloorAreaSqm": 25300.6,
       "contractDemandKw": 1349.4,
       "heightMeters": 23.0,
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#1E3A5F",
+      "colorTint": "#0D9488",
       "centroid": [
         73.915151,
         18.564428
@@ -3718,6 +3718,1678 @@
         [
           73.915723,
           18.564491
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-EASTCOURT-01",
+      "name": "East Court Commercial & Office Complex",
+      "category": "COMMERCIAL_RETAIL",
+      "grossFloorAreaSqm": 45000.0,
+      "contractDemandKw": 2400.0,
+      "heightMeters": 26.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0284C7",
+      "centroid": [
+        73.918,
+        18.5628
+      ],
+      "footprintPolygon": [
+        [
+          73.917525,
+          18.562475
+        ],
+        [
+          73.918475,
+          18.562475
+        ],
+        [
+          73.918475,
+          18.563125
+        ],
+        [
+          73.917525,
+          18.563125
+        ],
+        [
+          73.917525,
+          18.562475
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-WEIKFIELD-A",
+      "name": "Weikfield IT Citi InfoPark - Tower A",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 55000.0,
+      "contractDemandKw": 3200.0,
+      "heightMeters": 38.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9142,
+        18.5583
+      ],
+      "footprintPolygon": [
+        [
+          73.913775,
+          18.558
+        ],
+        [
+          73.914625,
+          18.558
+        ],
+        [
+          73.914625,
+          18.5586
+        ],
+        [
+          73.913775,
+          18.5586
+        ],
+        [
+          73.913775,
+          18.558
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-WEIKFIELD-B",
+      "name": "Weikfield IT Citi InfoPark - Tower B",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 52000.0,
+      "contractDemandKw": 3000.0,
+      "heightMeters": 38.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9152,
+        18.5584
+      ],
+      "footprintPolygon": [
+        [
+          73.9148,
+          18.5581
+        ],
+        [
+          73.9156,
+          18.5581
+        ],
+        [
+          73.9156,
+          18.5587
+        ],
+        [
+          73.9148,
+          18.5587
+        ],
+        [
+          73.9148,
+          18.5581
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-WEIKFIELD-C",
+      "name": "Vascon Weikfield Chambers",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 48000.0,
+      "contractDemandKw": 2800.0,
+      "heightMeters": 42.0,
+      "buildingLevels": 10,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9148,
+        18.5576
+      ],
+      "footprintPolygon": [
+        [
+          73.914375,
+          18.557325
+        ],
+        [
+          73.915225,
+          18.557325
+        ],
+        [
+          73.915225,
+          18.557875
+        ],
+        [
+          73.914375,
+          18.557875
+        ],
+        [
+          73.914375,
+          18.557325
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-GIGASPACE-01",
+      "name": "Giga Space IT Park - Alpha Block",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 62000.0,
+      "contractDemandKw": 3600.0,
+      "heightMeters": 36.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9242,
+        18.5615
+      ],
+      "footprintPolygon": [
+        [
+          73.92375,
+          18.561175
+        ],
+        [
+          73.92465,
+          18.561175
+        ],
+        [
+          73.92465,
+          18.561825
+        ],
+        [
+          73.92375,
+          18.561825
+        ],
+        [
+          73.92375,
+          18.561175
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-GIGASPACE-02",
+      "name": "Giga Space IT Park - Beta Block",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 58000.0,
+      "contractDemandKw": 3400.0,
+      "heightMeters": 36.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9253,
+        18.5616
+      ],
+      "footprintPolygon": [
+        [
+          73.924875,
+          18.561275
+        ],
+        [
+          73.925725,
+          18.561275
+        ],
+        [
+          73.925725,
+          18.561925
+        ],
+        [
+          73.924875,
+          18.561925
+        ],
+        [
+          73.924875,
+          18.561275
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-GIGASPACE-03",
+      "name": "Giga Space IT Park - Gamma Tech Center",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 45000.0,
+      "contractDemandKw": 2900.0,
+      "heightMeters": 32.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9248,
+        18.5608
+      ],
+      "footprintPolygon": [
+        [
+          73.9244,
+          18.560525
+        ],
+        [
+          73.9252,
+          18.560525
+        ],
+        [
+          73.9252,
+          18.561075
+        ],
+        [
+          73.9244,
+          18.561075
+        ],
+        [
+          73.9244,
+          18.560525
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-TOWNSQUARE-01",
+      "name": "Town Square Shopping & Retail Plaza",
+      "category": "COMMERCIAL_RETAIL",
+      "grossFloorAreaSqm": 32000.0,
+      "contractDemandKw": 1800.0,
+      "heightMeters": 22.0,
+      "buildingLevels": 5,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0284C7",
+      "centroid": [
+        73.9188,
+        18.5636
+      ],
+      "footprintPolygon": [
+        [
+          73.918425,
+          18.563325
+        ],
+        [
+          73.919175,
+          18.563325
+        ],
+        [
+          73.919175,
+          18.563875
+        ],
+        [
+          73.918425,
+          18.563875
+        ],
+        [
+          73.918425,
+          18.563325
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SKYVISTA-01",
+      "name": "Lunkad Sky Vista Commercial Hub",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 40000.0,
+      "contractDemandKw": 2200.0,
+      "heightMeters": 34.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9198,
+        18.5638
+      ],
+      "footprintPolygon": [
+        [
+          73.9194,
+          18.563525
+        ],
+        [
+          73.9202,
+          18.563525
+        ],
+        [
+          73.9202,
+          18.564075
+        ],
+        [
+          73.9194,
+          18.564075
+        ],
+        [
+          73.9194,
+          18.563525
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SKYSTATION-01",
+      "name": "Lunkad Sky Station Business Center",
+      "category": "COMMERCIAL_OFFICE",
+      "grossFloorAreaSqm": 36000.0,
+      "contractDemandKw": 2000.0,
+      "heightMeters": 30.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9205,
+        18.5642
+      ],
+      "footprintPolygon": [
+        [
+          73.920125,
+          18.56395
+        ],
+        [
+          73.920875,
+          18.56395
+        ],
+        [
+          73.920875,
+          18.56445
+        ],
+        [
+          73.920125,
+          18.56445
+        ],
+        [
+          73.920125,
+          18.56395
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-02",
+      "name": "Solitaire Business Hub - Tower 2",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 46000.0,
+      "contractDemandKw": 2600.0,
+      "heightMeters": 45.0,
+      "buildingLevels": 11,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.915,
+        18.5612
+      ],
+      "footprintPolygon": [
+        [
+          73.914625,
+          18.560925
+        ],
+        [
+          73.915375,
+          18.560925
+        ],
+        [
+          73.915375,
+          18.561475
+        ],
+        [
+          73.914625,
+          18.561475
+        ],
+        [
+          73.914625,
+          18.560925
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-03",
+      "name": "Solitaire Business Hub - Tower 3",
+      "category": "COMMERCIAL_IT",
+      "grossFloorAreaSqm": 42000.0,
+      "contractDemandKw": 2400.0,
+      "heightMeters": 45.0,
+      "buildingLevels": 11,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9142,
+        18.5611
+      ],
+      "footprintPolygon": [
+        [
+          73.91385,
+          18.560825
+        ],
+        [
+          73.91455,
+          18.560825
+        ],
+        [
+          73.91455,
+          18.561375
+        ],
+        [
+          73.91385,
+          18.561375
+        ],
+        [
+          73.91385,
+          18.560825
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-NOVOTEL-01",
+      "name": "Novotel Pune Nagar Road",
+      "category": "HOSPITALITY_HOTEL",
+      "grossFloorAreaSqm": 38000.0,
+      "contractDemandKw": 2200.0,
+      "heightMeters": 35.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#D97706",
+      "centroid": [
+        73.9135,
+        18.5592
+      ],
+      "footprintPolygon": [
+        [
+          73.913125,
+          18.5589
+        ],
+        [
+          73.913875,
+          18.5589
+        ],
+        [
+          73.913875,
+          18.5595
+        ],
+        [
+          73.913125,
+          18.5595
+        ],
+        [
+          73.913125,
+          18.5589
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-LEMON-01",
+      "name": "Lemon Tree Hotel Viman Nagar",
+      "category": "HOSPITALITY_HOTEL",
+      "grossFloorAreaSqm": 25000.0,
+      "contractDemandKw": 1400.0,
+      "heightMeters": 28.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#D97706",
+      "centroid": [
+        73.921,
+        18.5648
+      ],
+      "footprintPolygon": [
+        [
+          73.920675,
+          18.56455
+        ],
+        [
+          73.921325,
+          18.56455
+        ],
+        [
+          73.921325,
+          18.56505
+        ],
+        [
+          73.920675,
+          18.56505
+        ],
+        [
+          73.920675,
+          18.56455
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SYMBIOSIS-DESIGN",
+      "name": "Symbiosis Institute of Design Campus",
+      "category": "CIVIC_EDUCATION",
+      "grossFloorAreaSqm": 48000.0,
+      "contractDemandKw": 1800.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#7C3AED",
+      "centroid": [
+        73.9175,
+        18.5655
+      ],
+      "footprintPolygon": [
+        [
+          73.917025,
+          18.56515
+        ],
+        [
+          73.917975,
+          18.56515
+        ],
+        [
+          73.917975,
+          18.56585
+        ],
+        [
+          73.917025,
+          18.56585
+        ],
+        [
+          73.917025,
+          18.56515
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SYMBIOSIS-LAW",
+      "name": "Symbiosis Law School Block A",
+      "category": "CIVIC_EDUCATION",
+      "grossFloorAreaSqm": 42000.0,
+      "contractDemandKw": 1600.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#7C3AED",
+      "centroid": [
+        73.9188,
+        18.5658
+      ],
+      "footprintPolygon": [
+        [
+          73.918375,
+          18.565475
+        ],
+        [
+          73.919225,
+          18.565475
+        ],
+        [
+          73.919225,
+          18.566125
+        ],
+        [
+          73.918375,
+          18.566125
+        ],
+        [
+          73.918375,
+          18.565475
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SYMBIOSIS-MGMT",
+      "name": "Symbiosis Center for Management Studies",
+      "category": "CIVIC_EDUCATION",
+      "grossFloorAreaSqm": 36000.0,
+      "contractDemandKw": 1400.0,
+      "heightMeters": 22.0,
+      "buildingLevels": 5,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#7C3AED",
+      "centroid": [
+        73.9198,
+        18.5662
+      ],
+      "footprintPolygon": [
+        [
+          73.9194,
+          18.5659
+        ],
+        [
+          73.9202,
+          18.5659
+        ],
+        [
+          73.9202,
+          18.5665
+        ],
+        [
+          73.9194,
+          18.5665
+        ],
+        [
+          73.9194,
+          18.5659
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SAHYADRI-01",
+      "name": "Sahyadri Super Speciality Hospital Viman Nagar",
+      "category": "HEALTHCARE",
+      "grossFloorAreaSqm": 35000.0,
+      "contractDemandKw": 1900.0,
+      "heightMeters": 32.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#DC2626",
+      "centroid": [
+        73.9162,
+        18.5642
+      ],
+      "footprintPolygon": [
+        [
+          73.915825,
+          18.5639
+        ],
+        [
+          73.916575,
+          18.5639
+        ],
+        [
+          73.916575,
+          18.5645
+        ],
+        [
+          73.915825,
+          18.5645
+        ],
+        [
+          73.915825,
+          18.5639
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-APOLLO-01",
+      "name": "Apollo Clinic & Diagnostic Hub",
+      "category": "HEALTHCARE",
+      "grossFloorAreaSqm": 18000.0,
+      "contractDemandKw": 950.0,
+      "heightMeters": 20.0,
+      "buildingLevels": 5,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#DC2626",
+      "centroid": [
+        73.9225,
+        18.5622
+      ],
+      "footprintPolygon": [
+        [
+          73.922225,
+          18.561975
+        ],
+        [
+          73.922775,
+          18.561975
+        ],
+        [
+          73.922775,
+          18.562425
+        ],
+        [
+          73.922225,
+          18.562425
+        ],
+        [
+          73.922225,
+          18.561975
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-ROHAN-01",
+      "name": "Rohan Mithila High-Rise Tower 1",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 34000.0,
+      "contractDemandKw": 1200.0,
+      "heightMeters": 42.0,
+      "buildingLevels": 12,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9155,
+        18.565
+      ],
+      "footprintPolygon": [
+        [
+          73.915175,
+          18.564725
+        ],
+        [
+          73.915825,
+          18.564725
+        ],
+        [
+          73.915825,
+          18.565275
+        ],
+        [
+          73.915175,
+          18.565275
+        ],
+        [
+          73.915175,
+          18.564725
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-ROHAN-02",
+      "name": "Rohan Mithila High-Rise Tower 2",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 34000.0,
+      "contractDemandKw": 1200.0,
+      "heightMeters": 42.0,
+      "buildingLevels": 12,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9162,
+        18.5652
+      ],
+      "footprintPolygon": [
+        [
+          73.915875,
+          18.564925
+        ],
+        [
+          73.916525,
+          18.564925
+        ],
+        [
+          73.916525,
+          18.565475
+        ],
+        [
+          73.915875,
+          18.565475
+        ],
+        [
+          73.915875,
+          18.564925
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-ROHAN-03",
+      "name": "Rohan Mithila High-Rise Tower 3",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 34000.0,
+      "contractDemandKw": 1200.0,
+      "heightMeters": 42.0,
+      "buildingLevels": 12,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.917,
+        18.5651
+      ],
+      "footprintPolygon": [
+        [
+          73.916675,
+          18.564825
+        ],
+        [
+          73.917325,
+          18.564825
+        ],
+        [
+          73.917325,
+          18.565375
+        ],
+        [
+          73.916675,
+          18.565375
+        ],
+        [
+          73.916675,
+          18.564825
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-CLOVER-01",
+      "name": "Clover Park Premium Society - Block A",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 28000.0,
+      "contractDemandKw": 980.0,
+      "heightMeters": 30.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.913,
+        18.5635
+      ],
+      "footprintPolygon": [
+        [
+          73.91265,
+          18.56325
+        ],
+        [
+          73.91335,
+          18.56325
+        ],
+        [
+          73.91335,
+          18.56375
+        ],
+        [
+          73.91265,
+          18.56375
+        ],
+        [
+          73.91265,
+          18.56325
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-CLOVER-02",
+      "name": "Clover Park Premium Society - Block B",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 28000.0,
+      "contractDemandKw": 980.0,
+      "heightMeters": 30.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9138,
+        18.5638
+      ],
+      "footprintPolygon": [
+        [
+          73.91345,
+          18.56355
+        ],
+        [
+          73.91415,
+          18.56355
+        ],
+        [
+          73.91415,
+          18.56405
+        ],
+        [
+          73.91345,
+          18.56405
+        ],
+        [
+          73.91345,
+          18.56355
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-LUNKAD-COL-01",
+      "name": "Lunkad Colonnade Residences",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 26000.0,
+      "contractDemandKw": 890.0,
+      "heightMeters": 28.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9215,
+        18.5652
+      ],
+      "footprintPolygon": [
+        [
+          73.921175,
+          18.56495
+        ],
+        [
+          73.921825,
+          18.56495
+        ],
+        [
+          73.921825,
+          18.56545
+        ],
+        [
+          73.921175,
+          18.56545
+        ],
+        [
+          73.921175,
+          18.56495
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-GOODWILL-01",
+      "name": "Goodwill Enclave Residential Wing 1",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 24000.0,
+      "contractDemandKw": 820.0,
+      "heightMeters": 28.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9228,
+        18.5655
+      ],
+      "footprintPolygon": [
+        [
+          73.9225,
+          18.565275
+        ],
+        [
+          73.9231,
+          18.565275
+        ],
+        [
+          73.9231,
+          18.565725
+        ],
+        [
+          73.9225,
+          18.565725
+        ],
+        [
+          73.9225,
+          18.565275
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-GOODWILL-02",
+      "name": "Goodwill Enclave Residential Wing 2",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 24000.0,
+      "contractDemandKw": 820.0,
+      "heightMeters": 28.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9236,
+        18.5656
+      ],
+      "footprintPolygon": [
+        [
+          73.9233,
+          18.565375
+        ],
+        [
+          73.9239,
+          18.565375
+        ],
+        [
+          73.9239,
+          18.565825
+        ],
+        [
+          73.9233,
+          18.565825
+        ],
+        [
+          73.9233,
+          18.565375
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-MARVEL-CERISE-01",
+      "name": "Marvel Cerise Luxury Residences",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 32000.0,
+      "contractDemandKw": 1100.0,
+      "heightMeters": 38.0,
+      "buildingLevels": 10,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9248,
+        18.5658
+      ],
+      "footprintPolygon": [
+        [
+          73.92445,
+          18.56555
+        ],
+        [
+          73.92515,
+          18.56555
+        ],
+        [
+          73.92515,
+          18.56605
+        ],
+        [
+          73.92445,
+          18.56605
+        ],
+        [
+          73.92445,
+          18.56555
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-NYATI-01",
+      "name": "Nyati Meadows Residential Towers",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 36000.0,
+      "contractDemandKw": 1300.0,
+      "heightMeters": 40.0,
+      "buildingLevels": 11,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9262,
+        18.5654
+      ],
+      "footprintPolygon": [
+        [
+          73.925825,
+          18.565125
+        ],
+        [
+          73.926575,
+          18.565125
+        ],
+        [
+          73.926575,
+          18.565675
+        ],
+        [
+          73.925825,
+          18.565675
+        ],
+        [
+          73.925825,
+          18.565125
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-GANGA-NEBULA-01",
+      "name": "Ganga Nebula Housing Society",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 30000.0,
+      "contractDemandKw": 1050.0,
+      "heightMeters": 32.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9272,
+        18.5648
+      ],
+      "footprintPolygon": [
+        [
+          73.92685,
+          18.56455
+        ],
+        [
+          73.92755,
+          18.56455
+        ],
+        [
+          73.92755,
+          18.56505
+        ],
+        [
+          73.92685,
+          18.56505
+        ],
+        [
+          73.92685,
+          18.56455
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-KONARK-01",
+      "name": "Konark Nagar Residential Block A",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 22000.0,
+      "contractDemandKw": 780.0,
+      "heightMeters": 25.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.926,
+        18.562
+      ],
+      "footprintPolygon": [
+        [
+          73.9257,
+          18.561775
+        ],
+        [
+          73.9263,
+          18.561775
+        ],
+        [
+          73.9263,
+          18.562225
+        ],
+        [
+          73.9257,
+          18.562225
+        ],
+        [
+          73.9257,
+          18.561775
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-KONARK-02",
+      "name": "Konark Nagar Residential Block B",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 22000.0,
+      "contractDemandKw": 780.0,
+      "heightMeters": 25.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9268,
+        18.5621
+      ],
+      "footprintPolygon": [
+        [
+          73.9265,
+          18.561875
+        ],
+        [
+          73.9271,
+          18.561875
+        ],
+        [
+          73.9271,
+          18.562325
+        ],
+        [
+          73.9265,
+          18.562325
+        ],
+        [
+          73.9265,
+          18.561875
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOMNATH-COMM-01",
+      "name": "Somnath Nagar Commercial Arcade",
+      "category": "MIXED_USE",
+      "grossFloorAreaSqm": 26000.0,
+      "contractDemandKw": 1200.0,
+      "heightMeters": 22.0,
+      "buildingLevels": 5,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0D9488",
+      "centroid": [
+        73.9282,
+        18.5638
+      ],
+      "footprintPolygon": [
+        [
+          73.92785,
+          18.56355
+        ],
+        [
+          73.92855,
+          18.56355
+        ],
+        [
+          73.92855,
+          18.56405
+        ],
+        [
+          73.92785,
+          18.56405
+        ],
+        [
+          73.92785,
+          18.56355
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOMNATH-COMM-02",
+      "name": "Somnath Plaza Retail & Business Hub",
+      "category": "COMMERCIAL_RETAIL",
+      "grossFloorAreaSqm": 28000.0,
+      "contractDemandKw": 1400.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0284C7",
+      "centroid": [
+        73.929,
+        18.564
+      ],
+      "footprintPolygon": [
+        [
+          73.928625,
+          18.56375
+        ],
+        [
+          73.929375,
+          18.56375
+        ],
+        [
+          73.929375,
+          18.56425
+        ],
+        [
+          73.928625,
+          18.56425
+        ],
+        [
+          73.928625,
+          18.56375
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-CHANDAN-01",
+      "name": "Chandan Nagar Market Plaza West",
+      "category": "MIXED_USE",
+      "grossFloorAreaSqm": 20000.0,
+      "contractDemandKw": 900.0,
+      "heightMeters": 20.0,
+      "buildingLevels": 5,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0D9488",
+      "centroid": [
+        73.9302,
+        18.5615
+      ],
+      "footprintPolygon": [
+        [
+          73.929875,
+          18.561275
+        ],
+        [
+          73.930525,
+          18.561275
+        ],
+        [
+          73.930525,
+          18.561725
+        ],
+        [
+          73.929875,
+          18.561725
+        ],
+        [
+          73.929875,
+          18.561275
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-CHANDAN-02",
+      "name": "Chandan Nagar Commercial Tower East",
+      "category": "MIXED_USE",
+      "grossFloorAreaSqm": 24000.0,
+      "contractDemandKw": 1100.0,
+      "heightMeters": 26.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0D9488",
+      "centroid": [
+        73.9306,
+        18.5624
+      ],
+      "footprintPolygon": [
+        [
+          73.930275,
+          18.56216
+        ],
+        [
+          73.930925,
+          18.56216
+        ],
+        [
+          73.930925,
+          18.56264
+        ],
+        [
+          73.930275,
+          18.56264
+        ],
+        [
+          73.930275,
+          18.56216
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-MHADA-01",
+      "name": "MHADA Housing Colony - Sector 1",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 35000.0,
+      "contractDemandKw": 1150.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.922,
+        18.5585
+      ],
+      "footprintPolygon": [
+        [
+          73.9216,
+          18.5582
+        ],
+        [
+          73.9224,
+          18.5582
+        ],
+        [
+          73.9224,
+          18.5588
+        ],
+        [
+          73.9216,
+          18.5588
+        ],
+        [
+          73.9216,
+          18.5582
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-MHADA-02",
+      "name": "MHADA Housing Colony - Sector 2",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 35000.0,
+      "contractDemandKw": 1150.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#059669",
+      "centroid": [
+        73.9232,
+        18.5586
+      ],
+      "footprintPolygon": [
+        [
+          73.9228,
+          18.5583
+        ],
+        [
+          73.9236,
+          18.5583
+        ],
+        [
+          73.9236,
+          18.5589
+        ],
+        [
+          73.9228,
+          18.5589
+        ],
+        [
+          73.9228,
+          18.5583
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-METRO-VN-01",
+      "name": "Pune Metro Line 3 - Viman Nagar Station Concourse",
+      "category": "TRANSIT_INFRASTRUCTURE",
+      "grossFloorAreaSqm": 12000.0,
+      "contractDemandKw": 650.0,
+      "heightMeters": 18.0,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0891B2",
+      "centroid": [
+        73.9184,
+        18.5606
+      ],
+      "footprintPolygon": [
+        [
+          73.918,
+          18.56045
+        ],
+        [
+          73.9188,
+          18.56045
+        ],
+        [
+          73.9188,
+          18.56075
+        ],
+        [
+          73.918,
+          18.56075
+        ],
+        [
+          73.918,
+          18.56045
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-METRO-SN-01",
+      "name": "Pune Metro Line 3 - Somnath Nagar Station Concourse",
+      "category": "TRANSIT_INFRASTRUCTURE",
+      "grossFloorAreaSqm": 12000.0,
+      "contractDemandKw": 650.0,
+      "heightMeters": 18.0,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0891B2",
+      "centroid": [
+        73.9282,
+        18.5624
+      ],
+      "footprintPolygon": [
+        [
+          73.9278,
+          18.56225
+        ],
+        [
+          73.9286,
+          18.56225
+        ],
+        [
+          73.9286,
+          18.56255
+        ],
+        [
+          73.9278,
+          18.56255
+        ],
+        [
+          73.9278,
+          18.56225
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-DATTAMANDIR-01",
+      "name": "Datta Mandir Cultural & Community Hall",
+      "category": "CIVIC_EDUCATION",
+      "grossFloorAreaSqm": 15000.0,
+      "contractDemandKw": 450.0,
+      "heightMeters": 16.0,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#7C3AED",
+      "centroid": [
+        73.9202,
+        18.563
+      ],
+      "footprintPolygon": [
+        [
+          73.9199,
+          18.562775
+        ],
+        [
+          73.9205,
+          18.562775
+        ],
+        [
+          73.9205,
+          18.563225
+        ],
+        [
+          73.9199,
+          18.563225
+        ],
+        [
+          73.9199,
+          18.562775
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-BAJAJ-02",
+      "name": "Bajaj Finserv Innovation Campus",
+      "category": "CORPORATE_HQ",
+      "grossFloorAreaSqm": 50000.0,
+      "contractDemandKw": 3100.0,
+      "heightMeters": 42.0,
+      "buildingLevels": 10,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.922,
+        18.5605
+      ],
+      "footprintPolygon": [
+        [
+          73.921575,
+          18.5602
+        ],
+        [
+          73.922425,
+          18.5602
+        ],
+        [
+          73.922425,
+          18.5608
+        ],
+        [
+          73.921575,
+          18.5608
+        ],
+        [
+          73.921575,
+          18.5602
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-MARVEL-ALCALA-01",
+      "name": "Marvel Alcala Corporate Suites",
+      "category": "COMMERCIAL_OFFICE",
+      "grossFloorAreaSqm": 32000.0,
+      "contractDemandKw": 1900.0,
+      "heightMeters": 36.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#2563EB",
+      "centroid": [
+        73.9232,
+        18.5608
+      ],
+      "footprintPolygon": [
+        [
+          73.922825,
+          18.560525
+        ],
+        [
+          73.923575,
+          18.560525
+        ],
+        [
+          73.923575,
+          18.561075
+        ],
+        [
+          73.922825,
+          18.561075
+        ],
+        [
+          73.922825,
+          18.560525
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-VIMAN-PLATINUM",
+      "name": "Viman Platinum Commercial Plaza",
+      "category": "COMMERCIAL_RETAIL",
+      "grossFloorAreaSqm": 25000.0,
+      "contractDemandKw": 1300.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#0284C7",
+      "centroid": [
+        73.9172,
+        18.5645
+      ],
+      "footprintPolygon": [
+        [
+          73.916875,
+          18.56425
+        ],
+        [
+          73.917525,
+          18.56425
+        ],
+        [
+          73.917525,
+          18.56475
+        ],
+        [
+          73.916875,
+          18.56475
+        ],
+        [
+          73.916875,
+          18.56425
         ]
       ]
     }
@@ -3830,264 +5502,784 @@
   ],
   "urbanTreeMappings": [
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-001",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N01",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.911641,
-        18.558809
+        73.9116,
+        18.55913
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-002",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S02",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.912607,
-        18.559124
+        73.9116,
+        18.55867
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-003",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N03",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.913,
-        18.559244
+        73.912234,
+        18.559225
       ],
-      "heightMeters": 8.1,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-004",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S04",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.913782,
-        18.559522
+        73.912234,
+        18.558865
       ],
-      "heightMeters": 8.9,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-005",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N05",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.915043,
-        18.560001
+        73.912869,
+        18.55942
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-006",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S06",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.915533,
-        18.560186
+        73.912869,
+        18.55896
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-007",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N07",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.916128,
-        18.560381
+        73.913503,
+        18.559514
       ],
-      "heightMeters": 8.1,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-008",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S08",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.916683,
-        18.560558
+        73.913503,
+        18.559154
       ],
-      "heightMeters": 8.9,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-009",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N09",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.917827,
-        18.560914
+        73.914138,
+        18.559709
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-010",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S10",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.918391,
-        18.561084
+        73.914138,
+        18.559249
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-011",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N11",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.918857,
-        18.561216
+        73.914772,
+        18.559804
       ],
-      "heightMeters": 8.1,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-012",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S12",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.919411,
-        18.561381
+        73.914772,
+        18.559444
       ],
-      "heightMeters": 8.9,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-013",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N13",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.91985,
-        18.561502
+        73.915407,
+        18.559999
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-014",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S14",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.920424,
-        18.561662
+        73.915407,
+        18.559539
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-015",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N15",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.921127,
-        18.561858
+        73.916041,
+        18.560094
       ],
-      "heightMeters": 8.1,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-016",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S16",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.92144,
-        18.561941
+        73.916041,
+        18.559734
       ],
-      "heightMeters": 8.9,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-017",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N17",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.922092,
-        18.562103
+        73.916676,
+        18.560289
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-018",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S18",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.922253,
-        18.562143
+        73.916676,
+        18.559829
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-019",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N19",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.922991,
-        18.562332
+        73.91731,
+        18.560383
       ],
-      "heightMeters": 8.1,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-020",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S20",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.923933,
-        18.56257
+        73.91731,
+        18.560023
       ],
-      "heightMeters": 8.9,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-021",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N21",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.924941,
-        18.562766
+        73.917945,
+        18.560578
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-022",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S22",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.92558,
-        18.562839
+        73.917945,
+        18.560118
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-023",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N23",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.926909,
-        18.562933
+        73.918579,
+        18.560673
       ],
-      "heightMeters": 8.1,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-024",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S24",
+      "species": "Neem (Azadirachta Indica)",
       "coordinates": [
-        73.92777,
-        18.562974
+        73.918579,
+        18.560313
       ],
-      "heightMeters": 8.9,
-      "canopyDiameterMeters": 6.2
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-025",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N25",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.929139,
-        18.56309
+        73.919214,
+        18.560868
       ],
-      "heightMeters": 6.5,
-      "canopyDiameterMeters": 5.0
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
     },
     {
-      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-026",
-      "species": "Gulmohar / Neem Street Canopy",
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S26",
+      "species": "Gulmohar (Delonix Regia)",
       "coordinates": [
-        73.93071,
-        18.56323
+        73.919214,
+        18.560408
       ],
-      "heightMeters": 7.3,
-      "canopyDiameterMeters": 5.6
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N27",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.919848,
+        18.560963
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S28",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.919848,
+        18.560603
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N29",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.920483,
+        18.561158
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S30",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.920483,
+        18.560698
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N31",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.921117,
+        18.561252
+      ],
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S32",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.921117,
+        18.560892
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N33",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.921752,
+        18.561447
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S34",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.921752,
+        18.560987
+      ],
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N35",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.922386,
+        18.561542
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S36",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.922386,
+        18.561182
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N37",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.923021,
+        18.561737
+      ],
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S38",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.923021,
+        18.561277
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N39",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.923655,
+        18.561832
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S40",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.923655,
+        18.561472
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N41",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.92429,
+        18.562027
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S42",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.92429,
+        18.561567
+      ],
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N43",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.924924,
+        18.562121
+      ],
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S44",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.924924,
+        18.561761
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N45",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.925559,
+        18.562316
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S46",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.925559,
+        18.561856
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N47",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.926193,
+        18.562411
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S48",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.926193,
+        18.562051
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N49",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.926828,
+        18.562606
+      ],
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S50",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.926828,
+        18.562146
+      ],
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N51",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.927462,
+        18.562701
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S52",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.927462,
+        18.562341
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N53",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.928097,
+        18.562896
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S54",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.928097,
+        18.562436
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N55",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.928731,
+        18.56299
+      ],
+      "heightMeters": 7.5,
+      "canopyDiameterMeters": 5.5,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": true,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S56",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.928731,
+        18.56263
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N57",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.929366,
+        18.563185
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S58",
+      "species": "Gulmohar (Delonix Regia)",
+      "coordinates": [
+        73.929366,
+        18.562725
+      ],
+      "heightMeters": 7.2,
+      "canopyDiameterMeters": 5.2,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": true,
+      "locationSide": "SOUTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-N59",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.93,
+        18.56328
+      ],
+      "heightMeters": 8.5,
+      "canopyDiameterMeters": 6.2,
+      "trunkHeightMeters": 2.6,
+      "isFlowering": false,
+      "locationSide": "NORTH_SIDEWALK"
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-S60",
+      "species": "Neem (Azadirachta Indica)",
+      "coordinates": [
+        73.93,
+        18.56292
+      ],
+      "heightMeters": 8.0,
+      "canopyDiameterMeters": 6.0,
+      "trunkHeightMeters": 2.5,
+      "isFlowering": false,
+      "locationSide": "SOUTH_SIDEWALK"
     }
   ],
   "secondaryStreetMappings": [

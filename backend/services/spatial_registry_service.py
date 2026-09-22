@@ -206,6 +206,7 @@ class SpatialRegistryService:
                     "layer": "buildings",
                     "entityType": "BuildingZone",
                     "name": bld.name,
+                    "category": getattr(bld, "category", "COMMERCIAL_RETAIL"),
                     "heightMeters": bld.heightMeters,
                     "buildingLevels": bld.buildingLevels,
                     "modelFidelityLevel": bld.modelFidelityLevel,
@@ -320,8 +321,11 @@ class SpatialRegistryService:
                     "layer": "trees",
                     "entityType": "UrbanTreeCanopy",
                     "species": tree.get("species", "Gulmohar / Neem"),
-                    "heightMeters": tree.get("heightMeters", 7.0),
-                    "canopyDiameterMeters": tree.get("canopyDiameterMeters", 5.0),
+                    "heightMeters": tree.get("heightMeters", 7.5),
+                    "canopyDiameterMeters": tree.get("canopyDiameterMeters", 5.5),
+                    "trunkHeightMeters": tree.get("trunkHeightMeters", 2.5),
+                    "isFlowering": tree.get("isFlowering", False),
+                    "locationSide": tree.get("locationSide", "SIDEWALK"),
                 },
             })
 
