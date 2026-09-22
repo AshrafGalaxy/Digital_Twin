@@ -307,6 +307,41 @@ class SpatialRegistryService:
                 },
             })
 
+        # 7. Urban Tree Canopies (Points with canopy diameter & height)
+        for tree in getattr(cat, "urbanTreeMappings", []) or []:
+            features.append({
+                "type": "Feature",
+                "id": tree.get("treeId", "TREE-01"),
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": tree.get("coordinates", [73.918, 18.561]),
+                },
+                "properties": {
+                    "layer": "trees",
+                    "entityType": "UrbanTreeCanopy",
+                    "species": tree.get("species", "Gulmohar / Neem"),
+                    "heightMeters": tree.get("heightMeters", 7.0),
+                    "canopyDiameterMeters": tree.get("canopyDiameterMeters", 5.0),
+                },
+            })
+
+        # 8. Secondary & Connector Streets (LineStrings with highway types)
+        for st in getattr(cat, "secondaryStreetMappings", []) or []:
+            features.append({
+                "type": "Feature",
+                "id": st.get("streetId", "SEC-01"),
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": st.get("coordinates", []),
+                },
+                "properties": {
+                    "layer": "secondary_streets",
+                    "entityType": "SecondaryStreet",
+                    "name": st.get("name", "Connector"),
+                    "highwayType": st.get("highwayType", "residential"),
+                },
+            })
+
         return {
             "type": "FeatureCollection",
             "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},

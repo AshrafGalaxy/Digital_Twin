@@ -75,8 +75,9 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         scene3DOnly: true,
         shadows: false,
         baseLayer: new Cesium.ImageryLayer(
-          new Cesium.OpenStreetMapImageryProvider({
-            url: 'https://tile.openstreetmap.org/'
+          new Cesium.UrlTemplateImageryProvider({
+            url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            maximumLevel: 19
           })
         )
       });
@@ -151,7 +152,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     }
   }, [currentTheme]);
 
-  // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors)
+  // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || !corridorGeoJson) return;
@@ -165,25 +166,39 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       const props = feature.properties || {};
       const layer = props.layer;
 
-      // A. Building Extrusion (Phoenix Marketcity)
+      // A. Building Extrusion (Phoenix Marketcity and 45 Corridor Buildings)
       if (layer === 'buildings' && feature.geometry.type === 'Polygon') {
         const coords = feature.geometry.coordinates[0];
         const flatHierarchy = coords.map((c: number[]) =>
           Cesium.Cartesian3.fromDegrees(c[0], c[1], 0)
         );
 
-        const height = props.heightMeters || 45.0;
+        const height = props.heightMeters || 24.0;
+        const isMajorLandmark = props.name && (
+          props.name.includes('Phoenix') ||
+          props.name.includes('Hyatt') ||
+          props.name.includes('Solitaire') ||
+          props.name.includes('Weikfield') ||
+          props.name.includes('Inorbit') ||
+          props.name.includes('Somnath') ||
+          props.name.includes('Four Points') ||
+          props.name.includes('Ibis') ||
+          props.name.includes('Bajaj') ||
+          props.name.includes('Sky Max') ||
+          props.name.includes('Finswell')
+        );
+
         const buildingColor = Cesium.Color.fromCssColorString(
-          props.colorTint || (isLight ? '#006B6F' : '#0F4C5C')
-        ).withAlpha(0.88);
+          props.colorTint || (isMajorLandmark ? '#1E3A5F' : (isLight ? '#64748B' : '#1E293B'))
+        ).withAlpha(isMajorLandmark ? 0.88 : 0.72);
 
         const outlineColor = Cesium.Color.fromCssColorString(
-          isLight ? '#004A4D' : '#38BDF8'
-        ).withAlpha(0.95);
+          isMajorLandmark ? (isLight ? '#0284C7' : '#38BDF8') : (isLight ? '#94A3B8' : '#475569')
+        ).withAlpha(0.9);
 
         viewer.entities.add({
           id: feature.id,
-          name: props.name || 'Phoenix Marketcity',
+          name: props.name || 'Building Zone',
           polygon: {
             hierarchy: new Cesium.PolygonHierarchy(flatHierarchy),
             extrudedHeight: height,
@@ -191,26 +206,26 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
             material: buildingColor,
             outline: true,
             outlineColor: outlineColor,
-            outlineWidth: 2
+            outlineWidth: isMajorLandmark ? 2 : 1
           },
           properties: {
             entityId: feature.id,
             entityType: 'BuildingZone',
             heightMeters: height,
-            levels: props.buildingLevels || 6
+            levels: props.buildingLevels || 4
           }
         });
 
-        // Building Floating Label
-        if (coords.length > 0) {
+        // Building Floating Label (Rendered for Key Landmarks)
+        if (coords.length > 0 && isMajorLandmark) {
           const centerLng = coords.reduce((acc: number, c: number[]) => acc + c[0], 0) / coords.length;
           const centerLat = coords.reduce((acc: number, c: number[]) => acc + c[1], 0) / coords.length;
 
           viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(centerLng, centerLat, height + 6.0),
             label: {
-              text: `${props.name || 'Phoenix Marketcity'} (${height}m)`,
-              font: "600 13px 'General Sans', -apple-system, sans-serif",
+              text: `${props.name} (${height}m)`,
+              font: "600 12px 'General Sans', -apple-system, sans-serif",
               fillColor: Cesium.Color.WHITE,
               outlineColor: Cesium.Color.fromCssColorString('#0F172A'),
               outlineWidth: 3,
@@ -223,7 +238,57 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         }
       }
 
-      // B. Road Segment Centerlines & Ribbons
+      // B. Urban Tree Canopies (3D Cylinders along the Nagar Road Central Median)
+      if (layer === 'trees' && feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+        const treeH = props.heightMeters || 7.0;
+        const treeD = props.canopyDiameterMeters || 5.0;
+
+        viewer.entities.add({
+          id: feature.id,
+          name: props.species || 'Street Tree Canopy',
+          position: Cesium.Cartesian3.fromDegrees(lng, lat, treeH / 2),
+          cylinder: {
+            length: treeH,
+            topRadius: treeD / 2,
+            bottomRadius: (treeD / 2) * 0.6,
+            material: Cesium.Color.fromCssColorString('#2D6A4F').withAlpha(0.9),
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString('#52B788').withAlpha(0.6)
+          },
+          properties: {
+            entityId: feature.id,
+            entityType: 'UrbanTreeCanopy',
+            species: props.species
+          }
+        });
+      }
+
+      // C. Secondary Connector Streets
+      if (layer === 'secondary_streets' && feature.geometry.type === 'LineString') {
+        const coords = feature.geometry.coordinates;
+        const positions = coords.map((c: number[]) =>
+          Cesium.Cartesian3.fromDegrees(c[0], c[1], 0.5)
+        );
+
+        viewer.entities.add({
+          id: feature.id,
+          name: props.name || 'Connector Street',
+          polyline: {
+            positions: positions,
+            width: 3.5,
+            material: Cesium.Color.fromCssColorString('#475569').withAlpha(0.65),
+            clampToGround: true
+          },
+          properties: {
+            entityId: feature.id,
+            entityType: 'SecondaryStreet',
+            highwayType: props.highwayType
+          }
+        });
+      }
+
+      // D. Road Segment Centerlines & Curved 3D Ribbons
       if (layer === 'roads' && feature.geometry.type === 'LineString') {
         const coords = feature.geometry.coordinates;
         const positions = coords.map((c: number[]) =>

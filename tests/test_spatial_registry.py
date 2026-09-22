@@ -34,8 +34,8 @@ def test_spatial_catalog_structure():
     assert len(cat.intersectionMappings) == 2
     # 2 Signal Controllers with signal groups
     assert len(cat.signalControllers) == 2
-    # 1 Building Zone (Phoenix Marketcity) with 3D height
-    assert len(cat.buildingZoneMappings) == 1
+    # Building Zones (Phoenix Marketcity and corridor landmarks) with 3D heights
+    assert len(cat.buildingZoneMappings) >= 1
     # 5 Sensors
     assert len(cat.sensorMappings) == 5
     # 2 Scenario Geometries
@@ -108,7 +108,7 @@ def test_api_get_spatial_registry():
     assert len(data["roadSegmentMappings"]) == 10
     assert len(data["intersectionMappings"]) == 2
     assert len(data["signalControllers"]) == 2
-    assert len(data["buildingZoneMappings"]) == 1
+    assert len(data["buildingZoneMappings"]) >= 1
     assert len(data["sensorMappings"]) == 5
 
 

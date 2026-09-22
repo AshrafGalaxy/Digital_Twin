@@ -111,6 +111,8 @@ class SpatialRegistryCatalog(BaseModel):
     buildingZoneMappings: List[BuildingZoneSpatialMap]
     sensorMappings: List[SensorSpatialMap]
     scenarioGeometryMappings: List[ScenarioGeometryMap]
+    urbanTreeMappings: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
+    secondaryStreetMappings: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
 
 class SpatialEntityResolution(BaseModel):

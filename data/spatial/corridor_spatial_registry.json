@@ -4,11 +4,26 @@
   "studyAreaId": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
   "name": "Nagar Road Corridor Spatial Registry",
   "boundaryCoordinates": [
-    [73.9100, 18.5560],
-    [73.9310, 18.5560],
-    [73.9310, 18.5660],
-    [73.9100, 18.5660],
-    [73.9100, 18.5560]
+    [
+      73.91,
+      18.556
+    ],
+    [
+      73.931,
+      18.556
+    ],
+    [
+      73.931,
+      18.566
+    ],
+    [
+      73.91,
+      18.566
+    ],
+    [
+      73.91,
+      18.556
+    ]
   ],
   "roadSegmentMappings": [
     {
@@ -23,13 +38,105 @@
       "speedLimitKmh": 50.0,
       "osmHighway": "primary",
       "coordinates": [
-        [73.9125, 18.5592],
-        [73.9168, 18.5602]
+        [
+          73.911611,
+          18.558764
+        ],
+        [
+          73.91167,
+          18.558785
+        ],
+        [
+          73.912533,
+          18.559065
+        ],
+        [
+          73.912681,
+          18.559113
+        ],
+        [
+          73.912845,
+          18.559161
+        ],
+        [
+          73.913154,
+          18.559256
+        ],
+        [
+          73.913644,
+          18.559434
+        ],
+        [
+          73.91392,
+          18.559541
+        ],
+        [
+          73.914905,
+          18.559913
+        ],
+        [
+          73.915182,
+          18.560018
+        ],
+        [
+          73.915271,
+          18.560052
+        ],
+        [
+          73.915795,
+          18.56025
+        ],
+        [
+          73.916061,
+          18.560327
+        ],
+        [
+          73.916194,
+          18.560365
+        ],
+        [
+          73.916543,
+          18.56048
+        ],
+        [
+          73.916822,
+          18.560567
+        ],
+        [
+          73.917712,
+          18.560843
+        ],
+        [
+          73.917943,
+          18.560914
+        ],
+        [
+          73.918195,
+          18.560992
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-NR-EB-01_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
-        {"laneIndex": 1, "sumoLaneId": "SEG-NR-EB-01_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
-        {"laneIndex": 2, "sumoLaneId": "SEG-NR-EB-01_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-NR-EB-01_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.5,
+          "offsetMeters": -3.5
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-NR-EB-01_1",
+          "type": "THROUGH",
+          "widthMeters": 3.5,
+          "offsetMeters": 0.0
+        },
+        {
+          "laneIndex": 2,
+          "sumoLaneId": "SEG-NR-EB-01_2",
+          "type": "MEDIAN_OVERTAKING",
+          "widthMeters": 3.5,
+          "offsetMeters": 3.5
+        }
       ]
     },
     {
@@ -44,13 +151,149 @@
       "speedLimitKmh": 50.0,
       "osmHighway": "primary",
       "coordinates": [
-        [73.9168, 18.5602],
-        [73.9280, 18.5630]
+        [
+          73.918279,
+          18.561016
+        ],
+        [
+          73.918502,
+          18.561082
+        ],
+        [
+          73.918648,
+          18.561124
+        ],
+        [
+          73.919065,
+          18.561238
+        ],
+        [
+          73.919344,
+          18.561328
+        ],
+        [
+          73.919478,
+          18.561364
+        ],
+        [
+          73.919745,
+          18.561438
+        ],
+        [
+          73.919956,
+          18.561496
+        ],
+        [
+          73.920113,
+          18.56154
+        ],
+        [
+          73.920736,
+          18.561713
+        ],
+        [
+          73.921088,
+          18.561811
+        ],
+        [
+          73.921166,
+          18.561835
+        ],
+        [
+          73.921348,
+          18.561883
+        ],
+        [
+          73.921532,
+          18.561929
+        ],
+        [
+          73.92206,
+          18.56206
+        ],
+        [
+          73.922124,
+          18.562076
+        ],
+        [
+          73.922168,
+          18.562087
+        ],
+        [
+          73.922338,
+          18.562129
+        ],
+        [
+          73.922463,
+          18.562161
+        ],
+        [
+          73.92352,
+          18.562432
+        ],
+        [
+          73.923639,
+          18.562462
+        ],
+        [
+          73.924227,
+          18.562609
+        ],
+        [
+          73.924689,
+          18.562697
+        ],
+        [
+          73.925193,
+          18.562765
+        ],
+        [
+          73.92529,
+          18.562775
+        ],
+        [
+          73.925871,
+          18.562832
+        ],
+        [
+          73.926648,
+          18.562886
+        ],
+        [
+          73.92717,
+          18.56291
+        ],
+        [
+          73.927693,
+          18.562936
+        ],
+        [
+          73.927847,
+          18.562942
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-NR-EB-02_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
-        {"laneIndex": 1, "sumoLaneId": "SEG-NR-EB-02_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
-        {"laneIndex": 2, "sumoLaneId": "SEG-NR-EB-02_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-NR-EB-02_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.5,
+          "offsetMeters": -3.5
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-NR-EB-02_1",
+          "type": "THROUGH",
+          "widthMeters": 3.5,
+          "offsetMeters": 0.0
+        },
+        {
+          "laneIndex": 2,
+          "sumoLaneId": "SEG-NR-EB-02_2",
+          "type": "MEDIAN_OVERTAKING",
+          "widthMeters": 3.5,
+          "offsetMeters": 3.5
+        }
       ]
     },
     {
@@ -65,13 +308,49 @@
       "speedLimitKmh": 50.0,
       "osmHighway": "primary",
       "coordinates": [
-        [73.9280, 18.5630],
-        [73.9320, 18.5640]
+        [
+          73.927914,
+          18.562944
+        ],
+        [
+          73.930365,
+          18.563165
+        ],
+        [
+          73.930516,
+          18.563179
+        ],
+        [
+          73.930904,
+          18.563211
+        ],
+        [
+          73.932208,
+          18.563341
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-NR-EB-03_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
-        {"laneIndex": 1, "sumoLaneId": "SEG-NR-EB-03_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
-        {"laneIndex": 2, "sumoLaneId": "SEG-NR-EB-03_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-NR-EB-03_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.5,
+          "offsetMeters": -3.5
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-NR-EB-03_1",
+          "type": "THROUGH",
+          "widthMeters": 3.5,
+          "offsetMeters": 0.0
+        },
+        {
+          "laneIndex": 2,
+          "sumoLaneId": "SEG-NR-EB-03_2",
+          "type": "MEDIAN_OVERTAKING",
+          "widthMeters": 3.5,
+          "offsetMeters": 3.5
+        }
       ]
     },
     {
@@ -86,13 +365,57 @@
       "speedLimitKmh": 50.0,
       "osmHighway": "primary",
       "coordinates": [
-        [73.9320, 18.5642],
-        [73.9280, 18.5632]
+        [
+          73.932231,
+          18.563119
+        ],
+        [
+          73.931813,
+          18.563087
+        ],
+        [
+          73.930926,
+          18.562981
+        ],
+        [
+          73.930529,
+          18.562945
+        ],
+        [
+          73.93039,
+          18.562933
+        ],
+        [
+          73.929002,
+          18.562815
+        ],
+        [
+          73.927937,
+          18.562723
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-NR-WB-01_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
-        {"laneIndex": 1, "sumoLaneId": "SEG-NR-WB-01_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
-        {"laneIndex": 2, "sumoLaneId": "SEG-NR-WB-01_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-NR-WB-01_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.5,
+          "offsetMeters": -3.5
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-NR-WB-01_1",
+          "type": "THROUGH",
+          "widthMeters": 3.5,
+          "offsetMeters": 0.0
+        },
+        {
+          "laneIndex": 2,
+          "sumoLaneId": "SEG-NR-WB-01_2",
+          "type": "MEDIAN_OVERTAKING",
+          "widthMeters": 3.5,
+          "offsetMeters": 3.5
+        }
       ]
     },
     {
@@ -107,13 +430,165 @@
       "speedLimitKmh": 50.0,
       "osmHighway": "primary",
       "coordinates": [
-        [73.9280, 18.5632],
-        [73.9168, 18.5604]
+        [
+          73.927864,
+          18.562717
+        ],
+        [
+          73.92734,
+          18.562695
+        ],
+        [
+          73.927188,
+          18.562689
+        ],
+        [
+          73.927045,
+          18.562681
+        ],
+        [
+          73.926896,
+          18.562672
+        ],
+        [
+          73.926655,
+          18.562657
+        ],
+        [
+          73.926546,
+          18.56265
+        ],
+        [
+          73.926064,
+          18.562617
+        ],
+        [
+          73.925308,
+          18.562566
+        ],
+        [
+          73.924983,
+          18.562531
+        ],
+        [
+          73.924722,
+          18.562502
+        ],
+        [
+          73.924444,
+          18.562449
+        ],
+        [
+          73.924346,
+          18.562431
+        ],
+        [
+          73.924275,
+          18.562417
+        ],
+        [
+          73.92419,
+          18.562396
+        ],
+        [
+          73.923693,
+          18.562271
+        ],
+        [
+          73.923162,
+          18.562126
+        ],
+        [
+          73.92281,
+          18.56203
+        ],
+        [
+          73.922553,
+          18.561972
+        ],
+        [
+          73.922392,
+          18.561938
+        ],
+        [
+          73.922285,
+          18.561912
+        ],
+        [
+          73.922191,
+          18.561888
+        ],
+        [
+          73.921549,
+          18.561729
+        ],
+        [
+          73.920977,
+          18.561568
+        ],
+        [
+          73.920783,
+          18.561509
+        ],
+        [
+          73.920481,
+          18.561413
+        ],
+        [
+          73.920066,
+          18.561283
+        ],
+        [
+          73.920013,
+          18.561266
+        ],
+        [
+          73.9196,
+          18.561137
+        ],
+        [
+          73.919536,
+          18.561134
+        ],
+        [
+          73.919056,
+          18.560995
+        ],
+        [
+          73.918691,
+          18.560898
+        ],
+        [
+          73.918587,
+          18.56087
+        ],
+        [
+          73.918343,
+          18.560807
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-NR-WB-02_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
-        {"laneIndex": 1, "sumoLaneId": "SEG-NR-WB-02_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
-        {"laneIndex": 2, "sumoLaneId": "SEG-NR-WB-02_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-NR-WB-02_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.5,
+          "offsetMeters": -3.5
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-NR-WB-02_1",
+          "type": "THROUGH",
+          "widthMeters": 3.5,
+          "offsetMeters": 0.0
+        },
+        {
+          "laneIndex": 2,
+          "sumoLaneId": "SEG-NR-WB-02_2",
+          "type": "MEDIAN_OVERTAKING",
+          "widthMeters": 3.5,
+          "offsetMeters": 3.5
+        }
       ]
     },
     {
@@ -128,13 +603,85 @@
       "speedLimitKmh": 50.0,
       "osmHighway": "primary",
       "coordinates": [
-        [73.9168, 18.5604],
-        [73.9125, 18.5594]
+        [
+          73.918251,
+          18.560786
+        ],
+        [
+          73.918005,
+          18.560726
+        ],
+        [
+          73.916257,
+          18.560177
+        ],
+        [
+          73.915864,
+          18.560063
+        ],
+        [
+          73.915694,
+          18.559999
+        ],
+        [
+          73.915342,
+          18.559866
+        ],
+        [
+          73.915256,
+          18.559833
+        ],
+        [
+          73.914976,
+          18.559727
+        ],
+        [
+          73.91497,
+          18.559725
+        ],
+        [
+          73.914888,
+          18.559694
+        ],
+        [
+          73.913993,
+          18.559356
+        ],
+        [
+          73.912536,
+          18.558867
+        ],
+        [
+          73.91174,
+          18.558599
+        ],
+        [
+          73.9116,
+          18.55855
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-NR-WB-03_0", "type": "CURBSIDE", "widthMeters": 3.5, "offsetMeters": -3.5},
-        {"laneIndex": 1, "sumoLaneId": "SEG-NR-WB-03_1", "type": "THROUGH", "widthMeters": 3.5, "offsetMeters": 0.0},
-        {"laneIndex": 2, "sumoLaneId": "SEG-NR-WB-03_2", "type": "MEDIAN_OVERTAKING", "widthMeters": 3.5, "offsetMeters": 3.5}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-NR-WB-03_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.5,
+          "offsetMeters": -3.5
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-NR-WB-03_1",
+          "type": "THROUGH",
+          "widthMeters": 3.5,
+          "offsetMeters": 0.0
+        },
+        {
+          "laneIndex": 2,
+          "sumoLaneId": "SEG-NR-WB-03_2",
+          "type": "MEDIAN_OVERTAKING",
+          "widthMeters": 3.5,
+          "offsetMeters": 3.5
+        }
       ]
     },
     {
@@ -149,12 +696,42 @@
       "speedLimitKmh": 40.0,
       "osmHighway": "secondary",
       "coordinates": [
-        [73.9166, 18.5570],
-        [73.9168, 18.5602]
+        [
+          73.91808,
+          18.5575
+        ],
+        [
+          73.91812,
+          18.5583
+        ],
+        [
+          73.91816,
+          18.5592
+        ],
+        [
+          73.9182,
+          18.5601
+        ],
+        [
+          73.91825,
+          18.5609
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-VN-NB-01_0", "type": "CURBSIDE", "widthMeters": 3.25, "offsetMeters": -2.0},
-        {"laneIndex": 1, "sumoLaneId": "SEG-VN-NB-01_1", "type": "THROUGH", "widthMeters": 3.25, "offsetMeters": 2.0}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-VN-NB-01_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.25,
+          "offsetMeters": -2.0
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-VN-NB-01_1",
+          "type": "THROUGH",
+          "widthMeters": 3.25,
+          "offsetMeters": 2.0
+        }
       ]
     },
     {
@@ -169,12 +746,42 @@
       "speedLimitKmh": 40.0,
       "osmHighway": "secondary",
       "coordinates": [
-        [73.9168, 18.5602],
-        [73.9170, 18.5635]
+        [
+          73.91825,
+          18.5609
+        ],
+        [
+          73.91822,
+          18.5618
+        ],
+        [
+          73.91818,
+          18.5627
+        ],
+        [
+          73.91812,
+          18.5636
+        ],
+        [
+          73.9182,
+          18.5645
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-VN-SB-01_0", "type": "CURBSIDE", "widthMeters": 3.25, "offsetMeters": -2.0},
-        {"laneIndex": 1, "sumoLaneId": "SEG-VN-SB-01_1", "type": "THROUGH", "widthMeters": 3.25, "offsetMeters": 2.0}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-VN-SB-01_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.25,
+          "offsetMeters": -2.0
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-VN-SB-01_1",
+          "type": "THROUGH",
+          "widthMeters": 3.25,
+          "offsetMeters": 2.0
+        }
       ]
     },
     {
@@ -189,12 +796,58 @@
       "speedLimitKmh": 35.0,
       "osmHighway": "tertiary",
       "coordinates": [
-        [73.9278, 18.5605],
-        [73.9280, 18.5630]
+        [
+          73.928086,
+          18.559492
+        ],
+        [
+          73.928082,
+          18.559589
+        ],
+        [
+          73.92808,
+          18.559945
+        ],
+        [
+          73.928089,
+          18.560128
+        ],
+        [
+          73.928099,
+          18.560344
+        ],
+        [
+          73.928101,
+          18.560448
+        ],
+        [
+          73.928107,
+          18.560762
+        ],
+        [
+          73.928106,
+          18.560782
+        ],
+        [
+          73.9279,
+          18.56283
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-SN-NB-01_0", "type": "CURBSIDE", "widthMeters": 3.0, "offsetMeters": -1.75},
-        {"laneIndex": 1, "sumoLaneId": "SEG-SN-NB-01_1", "type": "THROUGH", "widthMeters": 3.0, "offsetMeters": 1.75}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-SN-NB-01_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.0,
+          "offsetMeters": -1.75
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-SN-NB-01_1",
+          "type": "THROUGH",
+          "widthMeters": 3.0,
+          "offsetMeters": 1.75
+        }
       ]
     },
     {
@@ -209,12 +862,78 @@
       "speedLimitKmh": 35.0,
       "osmHighway": "tertiary",
       "coordinates": [
-        [73.9280, 18.5630],
-        [73.9282, 18.5655]
+        [
+          73.9279,
+          18.56283
+        ],
+        [
+          73.927693,
+          18.562936
+        ],
+        [
+          73.927677,
+          18.563092
+        ],
+        [
+          73.927663,
+          18.563157
+        ],
+        [
+          73.927648,
+          18.563228
+        ],
+        [
+          73.92748,
+          18.563448
+        ],
+        [
+          73.927804,
+          18.563453
+        ],
+        [
+          73.928164,
+          18.563459
+        ],
+        [
+          73.928205,
+          18.563467
+        ],
+        [
+          73.928221,
+          18.563495
+        ],
+        [
+          73.92823,
+          18.56362
+        ],
+        [
+          73.92822,
+          18.563657
+        ],
+        [
+          73.928189,
+          18.563689
+        ],
+        [
+          73.927747,
+          18.56391
+        ]
       ],
       "lanes": [
-        {"laneIndex": 0, "sumoLaneId": "SEG-SN-SB-01_0", "type": "CURBSIDE", "widthMeters": 3.0, "offsetMeters": -1.75},
-        {"laneIndex": 1, "sumoLaneId": "SEG-SN-SB-01_1", "type": "THROUGH", "widthMeters": 3.0, "offsetMeters": 1.75}
+        {
+          "laneIndex": 0,
+          "sumoLaneId": "SEG-SN-SB-01_0",
+          "type": "CURBSIDE",
+          "widthMeters": 3.0,
+          "offsetMeters": -1.75
+        },
+        {
+          "laneIndex": 1,
+          "sumoLaneId": "SEG-SN-SB-01_1",
+          "type": "THROUGH",
+          "widthMeters": 3.0,
+          "offsetMeters": 1.75
+        }
       ]
     }
   ],
@@ -224,11 +943,22 @@
       "sumoJunctionId": "VN-01",
       "name": "Viman Nagar Chowk (Phoenix Mall Junction)",
       "controlType": "SIGNALIZED",
-      "coordinates": [73.9168, 18.5602],
+      "coordinates": [
+        73.91825,
+        18.5609
+      ],
       "cycleTimeSec": 120,
       "phasesCount": 4,
-      "approachEdges": ["SEG-NR-EB-01", "SEG-NR-WB-02", "SEG-VN-NB-01"],
-      "departureEdges": ["SEG-NR-EB-02", "SEG-NR-WB-03", "SEG-VN-SB-01"],
+      "approachEdges": [
+        "SEG-NR-EB-01",
+        "SEG-NR-WB-02",
+        "SEG-VN-NB-01"
+      ],
+      "departureEdges": [
+        "SEG-NR-EB-02",
+        "SEG-NR-WB-03",
+        "SEG-VN-SB-01"
+      ],
       "tlsProgramId": "VN-01"
     },
     {
@@ -236,11 +966,22 @@
       "sumoJunctionId": "SN-01",
       "name": "Somnath Nagar Chowk",
       "controlType": "SIGNALIZED",
-      "coordinates": [73.9280, 18.5630],
+      "coordinates": [
+        73.9279,
+        18.56283
+      ],
       "cycleTimeSec": 90,
       "phasesCount": 3,
-      "approachEdges": ["SEG-NR-EB-02", "SEG-NR-WB-01", "SEG-SN-NB-01"],
-      "departureEdges": ["SEG-NR-EB-03", "SEG-NR-WB-02", "SEG-SN-SB-01"],
+      "approachEdges": [
+        "SEG-NR-EB-02",
+        "SEG-NR-WB-01",
+        "SEG-SN-NB-01"
+      ],
+      "departureEdges": [
+        "SEG-NR-EB-03",
+        "SEG-NR-WB-02",
+        "SEG-SN-SB-01"
+      ],
       "tlsProgramId": "SN-01"
     }
   ],
@@ -255,8 +996,15 @@
           "groupId": "SG-VN-EB-MAIN",
           "name": "Nagar Road EB Main Through",
           "approachEdge": "SEG-NR-EB-01",
-          "sumoLinks": [0, 1, 2],
-          "stopLineCoordinate": [73.9167, 18.56015],
+          "sumoLinks": [
+            0,
+            1,
+            2
+          ],
+          "stopLineCoordinate": [
+            73.91815,
+            18.56095
+          ],
           "headingDegrees": 82.0,
           "greenDurationSec": 35,
           "yellowDurationSec": 3
@@ -265,8 +1013,15 @@
           "groupId": "SG-VN-WB-MAIN",
           "name": "Nagar Road WB Main Through",
           "approachEdge": "SEG-NR-WB-02",
-          "sumoLinks": [3, 4, 5],
-          "stopLineCoordinate": [73.9169, 18.56025],
+          "sumoLinks": [
+            3,
+            4,
+            5
+          ],
+          "stopLineCoordinate": [
+            73.91835,
+            18.56085
+          ],
           "headingDegrees": 262.0,
           "greenDurationSec": 35,
           "yellowDurationSec": 3
@@ -275,8 +1030,15 @@
           "groupId": "SG-VN-NB-CROSS",
           "name": "Viman Nagar Road NB Cross Approach",
           "approachEdge": "SEG-VN-NB-01",
-          "sumoLinks": [6, 7, 8],
-          "stopLineCoordinate": [73.91675, 18.5601],
+          "sumoLinks": [
+            6,
+            7,
+            8
+          ],
+          "stopLineCoordinate": [
+            73.91825,
+            18.5608
+          ],
           "headingDegrees": 352.0,
           "greenDurationSec": 25,
           "yellowDurationSec": 3
@@ -285,8 +1047,15 @@
           "groupId": "SG-VN-SB-COMMERCIAL",
           "name": "Mall / Commercial Access SB Branch",
           "approachEdge": "SEG-VN-SB-01",
-          "sumoLinks": [9, 10, 11],
-          "stopLineCoordinate": [73.91685, 18.5603],
+          "sumoLinks": [
+            9,
+            10,
+            11
+          ],
+          "stopLineCoordinate": [
+            73.91825,
+            18.561
+          ],
           "headingDegrees": 172.0,
           "greenDurationSec": 13,
           "yellowDurationSec": 3
@@ -303,8 +1072,15 @@
           "groupId": "SG-SN-EB-WB-THROUGH",
           "name": "Nagar Road EB / WB Through",
           "approachEdge": "SEG-NR-EB-02",
-          "sumoLinks": [0, 1, 2],
-          "stopLineCoordinate": [73.9279, 18.56295],
+          "sumoLinks": [
+            0,
+            1,
+            2
+          ],
+          "stopLineCoordinate": [
+            73.9278,
+            18.5629
+          ],
           "headingDegrees": 80.0,
           "greenDurationSec": 50,
           "yellowDurationSec": 3
@@ -313,8 +1089,15 @@
           "groupId": "SG-SN-NB-CROSS",
           "name": "Somnath Nagar Road NB Cross",
           "approachEdge": "SEG-SN-NB-01",
-          "sumoLinks": [3, 4, 5],
-          "stopLineCoordinate": [73.92795, 18.5629],
+          "sumoLinks": [
+            3,
+            4,
+            5
+          ],
+          "stopLineCoordinate": [
+            73.9279,
+            18.56275
+          ],
           "headingDegrees": 350.0,
           "greenDurationSec": 20,
           "yellowDurationSec": 3
@@ -323,8 +1106,15 @@
           "groupId": "SG-SN-TURNING",
           "name": "Secondary Turning Movements",
           "approachEdge": "SEG-NR-WB-01",
-          "sumoLinks": [6, 7, 8],
-          "stopLineCoordinate": [73.9281, 18.56305],
+          "sumoLinks": [
+            6,
+            7,
+            8
+          ],
+          "stopLineCoordinate": [
+            73.928,
+            18.56275
+          ],
           "headingDegrees": 260.0,
           "greenDurationSec": 11,
           "yellowDurationSec": 3
@@ -335,7 +1125,7 @@
   "buildingZoneMappings": [
     {
       "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01",
-      "name": "Phoenix Marketcity Mall (Commercial Retail Zone)",
+      "name": "Phoenix Marketcity Mall",
       "category": "COMMERCIAL_RETAIL",
       "grossFloorAreaSqm": 110000.0,
       "contractDemandKw": 4800.0,
@@ -343,14 +1133,2592 @@
       "buildingLevels": 6,
       "modelFidelityLevel": "B2",
       "roofType": "FLAT_COMMERCIAL",
-      "colorTint": "#2A4B54",
-      "centroid": [73.9172, 18.5585],
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.916691,
+        18.561945
+      ],
       "footprintPolygon": [
-        [73.9160, 18.5575],
-        [73.9185, 18.5575],
-        [73.9185, 18.5595],
-        [73.9160, 18.5595],
-        [73.9160, 18.5575]
+        [
+          73.916782,
+          18.562963
+        ],
+        [
+          73.916725,
+          18.563004
+        ],
+        [
+          73.916658,
+          18.563028
+        ],
+        [
+          73.916637,
+          18.563075
+        ],
+        [
+          73.916603,
+          18.563112
+        ],
+        [
+          73.916558,
+          18.563153
+        ],
+        [
+          73.916504,
+          18.563175
+        ],
+        [
+          73.91642,
+          18.563192
+        ],
+        [
+          73.916042,
+          18.563224
+        ],
+        [
+          73.916031,
+          18.563069
+        ],
+        [
+          73.915997,
+          18.563115
+        ],
+        [
+          73.915956,
+          18.563156
+        ],
+        [
+          73.91591,
+          18.563172
+        ],
+        [
+          73.915858,
+          18.563175
+        ],
+        [
+          73.915824,
+          18.56316
+        ],
+        [
+          73.915784,
+          18.563137
+        ],
+        [
+          73.91576,
+          18.563109
+        ],
+        [
+          73.915748,
+          18.563085
+        ],
+        [
+          73.915706,
+          18.563086
+        ],
+        [
+          73.91566,
+          18.56185
+        ],
+        [
+          73.915694,
+          18.561849
+        ],
+        [
+          73.915691,
+          18.561778
+        ],
+        [
+          73.915668,
+          18.561779
+        ],
+        [
+          73.915665,
+          18.56169
+        ],
+        [
+          73.915826,
+          18.561685
+        ],
+        [
+          73.915871,
+          18.561696
+        ],
+        [
+          73.915899,
+          18.561712
+        ],
+        [
+          73.915927,
+          18.561739
+        ],
+        [
+          73.915931,
+          18.561691
+        ],
+        [
+          73.91647,
+          18.561689
+        ],
+        [
+          73.916493,
+          18.561678
+        ],
+        [
+          73.916523,
+          18.56165
+        ],
+        [
+          73.916536,
+          18.561628
+        ],
+        [
+          73.916539,
+          18.561611
+        ],
+        [
+          73.916641,
+          18.561055
+        ],
+        [
+          73.916664,
+          18.561009
+        ],
+        [
+          73.916697,
+          18.560984
+        ],
+        [
+          73.916733,
+          18.560972
+        ],
+        [
+          73.916776,
+          18.560967
+        ],
+        [
+          73.916815,
+          18.560975
+        ],
+        [
+          73.916857,
+          18.560997
+        ],
+        [
+          73.916882,
+          18.561023
+        ],
+        [
+          73.916903,
+          18.56106
+        ],
+        [
+          73.916908,
+          18.561093
+        ],
+        [
+          73.916906,
+          18.561125
+        ],
+        [
+          73.916954,
+          18.561104
+        ],
+        [
+          73.916993,
+          18.561095
+        ],
+        [
+          73.917035,
+          18.561094
+        ],
+        [
+          73.917093,
+          18.561102
+        ],
+        [
+          73.917086,
+          18.561066
+        ],
+        [
+          73.917094,
+          18.561025
+        ],
+        [
+          73.91711,
+          18.560996
+        ],
+        [
+          73.91714,
+          18.560978
+        ],
+        [
+          73.917176,
+          18.560971
+        ],
+        [
+          73.917341,
+          18.561025
+        ],
+        [
+          73.917356,
+          18.561006
+        ],
+        [
+          73.917488,
+          18.56105
+        ],
+        [
+          73.917541,
+          18.561092
+        ],
+        [
+          73.917573,
+          18.561139
+        ],
+        [
+          73.917596,
+          18.56119
+        ],
+        [
+          73.917598,
+          18.561233
+        ],
+        [
+          73.917548,
+          18.56152
+        ],
+        [
+          73.917807,
+          18.561548
+        ],
+        [
+          73.917778,
+          18.561715
+        ],
+        [
+          73.917731,
+          18.561881
+        ],
+        [
+          73.917689,
+          18.561978
+        ],
+        [
+          73.91763,
+          18.562107
+        ],
+        [
+          73.917561,
+          18.562244
+        ],
+        [
+          73.917468,
+          18.56238
+        ],
+        [
+          73.91733,
+          18.562553
+        ],
+        [
+          73.917148,
+          18.562736
+        ],
+        [
+          73.916877,
+          18.562968
+        ],
+        [
+          73.916835,
+          18.562977
+        ],
+        [
+          73.916804,
+          18.562972
+        ],
+        [
+          73.916782,
+          18.562963
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01",
+      "name": "Solitaire Business Hub Viman Nagar",
+      "category": "COMMERCIAL_OFFICE",
+      "grossFloorAreaSqm": 112690.3,
+      "contractDemandKw": 6010.2,
+      "heightMeters": 32.0,
+      "buildingLevels": 8,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.914516,
+        18.562543
+      ],
+      "footprintPolygon": [
+        [
+          73.914622,
+          18.561721
+        ],
+        [
+          73.914478,
+          18.561701
+        ],
+        [
+          73.914351,
+          18.561739
+        ],
+        [
+          73.914164,
+          18.56189
+        ],
+        [
+          73.914077,
+          18.562047
+        ],
+        [
+          73.914049,
+          18.56237
+        ],
+        [
+          73.914184,
+          18.563095
+        ],
+        [
+          73.914157,
+          18.563165
+        ],
+        [
+          73.914167,
+          18.563335
+        ],
+        [
+          73.914267,
+          18.563445
+        ],
+        [
+          73.914456,
+          18.563463
+        ],
+        [
+          73.914706,
+          18.56339
+        ],
+        [
+          73.914882,
+          18.563282
+        ],
+        [
+          73.91495,
+          18.563197
+        ],
+        [
+          73.91496,
+          18.563109
+        ],
+        [
+          73.914756,
+          18.562724
+        ],
+        [
+          73.914702,
+          18.562304
+        ],
+        [
+          73.914799,
+          18.562024
+        ],
+        [
+          73.914785,
+          18.56189
+        ],
+        [
+          73.914709,
+          18.561788
+        ],
+        [
+          73.914622,
+          18.561721
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-HYATT-01",
+      "name": "Hyatt Regency Pune",
+      "category": "HOSPITALITY_HOTEL",
+      "grossFloorAreaSqm": 93580.4,
+      "contractDemandKw": 4991.0,
+      "heightMeters": 36.0,
+      "buildingLevels": 10,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.912107,
+        18.559692
+      ],
+      "footprintPolygon": [
+        [
+          73.911792,
+          18.55914
+        ],
+        [
+          73.911917,
+          18.559131
+        ],
+        [
+          73.91192,
+          18.559169
+        ],
+        [
+          73.911996,
+          18.559163
+        ],
+        [
+          73.911999,
+          18.559202
+        ],
+        [
+          73.9121,
+          18.559195
+        ],
+        [
+          73.912104,
+          18.559238
+        ],
+        [
+          73.912187,
+          18.559232
+        ],
+        [
+          73.91219,
+          18.559272
+        ],
+        [
+          73.912272,
+          18.559266
+        ],
+        [
+          73.912275,
+          18.559311
+        ],
+        [
+          73.91238,
+          18.559303
+        ],
+        [
+          73.912389,
+          18.559415
+        ],
+        [
+          73.912488,
+          18.560617
+        ],
+        [
+          73.912166,
+          18.560641
+        ],
+        [
+          73.912163,
+          18.560607
+        ],
+        [
+          73.912104,
+          18.560611
+        ],
+        [
+          73.912107,
+          18.560651
+        ],
+        [
+          73.911925,
+          18.560664
+        ],
+        [
+          73.911877,
+          18.560081
+        ],
+        [
+          73.912307,
+          18.560049
+        ],
+        [
+          73.912282,
+          18.559742
+        ],
+        [
+          73.911845,
+          18.559774
+        ],
+        [
+          73.911792,
+          18.55914
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1228801322",
+      "name": "Finswell Woods Residential Complex",
+      "category": "RESIDENTIAL_COMPLEX",
+      "grossFloorAreaSqm": 24179.7,
+      "contractDemandKw": 1289.6,
+      "heightMeters": 38.0,
+      "buildingLevels": 11,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.913024,
+        18.563029
+      ],
+      "footprintPolygon": [
+        [
+          73.912987,
+          18.563296
+        ],
+        [
+          73.913264,
+          18.563278
+        ],
+        [
+          73.913196,
+          18.562573
+        ],
+        [
+          73.912917,
+          18.562596
+        ],
+        [
+          73.912951,
+          18.562974
+        ],
+        [
+          73.912928,
+          18.562973
+        ],
+        [
+          73.912958,
+          18.563245
+        ],
+        [
+          73.912987,
+          18.563296
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-169257650",
+      "name": "Suyog Enclave",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 19792.6,
+      "contractDemandKw": 1055.6,
+      "heightMeters": 44.0,
+      "buildingLevels": 12,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.912742,
+        18.563153
+      ],
+      "footprintPolygon": [
+        [
+          73.912627,
+          18.562911
+        ],
+        [
+          73.91284,
+          18.562888
+        ],
+        [
+          73.912915,
+          18.563517
+        ],
+        [
+          73.912702,
+          18.56354
+        ],
+        [
+          73.912627,
+          18.562911
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-242245544",
+      "name": "Four Points by Sheraton",
+      "category": "HOSPITALITY_HOTEL",
+      "grossFloorAreaSqm": 17214.7,
+      "contractDemandKw": 918.1,
+      "heightMeters": 32.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.922161,
+        18.562687
+      ],
+      "footprintPolygon": [
+        [
+          73.922352,
+          18.562423
+        ],
+        [
+          73.922092,
+          18.562422
+        ],
+        [
+          73.92209,
+          18.562816
+        ],
+        [
+          73.921944,
+          18.562816
+        ],
+        [
+          73.921943,
+          18.562955
+        ],
+        [
+          73.92235,
+          18.562956
+        ],
+        [
+          73.922352,
+          18.562423
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-169257649",
+      "name": "Bajaj Finserv Corporate Campus",
+      "category": "CORPORATE_HQ",
+      "grossFloorAreaSqm": 15000.2,
+      "contractDemandKw": 800.0,
+      "heightMeters": 35.0,
+      "buildingLevels": 9,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.912637,
+        18.562288
+      ],
+      "footprintPolygon": [
+        [
+          73.912511,
+          18.562068
+        ],
+        [
+          73.91275,
+          18.56204
+        ],
+        [
+          73.912825,
+          18.562618
+        ],
+        [
+          73.912587,
+          18.562646
+        ],
+        [
+          73.912511,
+          18.562068
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-176067598",
+      "name": "Lunkad Sky Max Commercial Centre",
+      "category": "COMMERCIAL_OFFICE",
+      "grossFloorAreaSqm": 5662.9,
+      "contractDemandKw": 302.0,
+      "heightMeters": 24.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.913714,
+        18.565422
+      ],
+      "footprintPolygon": [
+        [
+          73.913543,
+          18.565322
+        ],
+        [
+          73.913784,
+          18.565315
+        ],
+        [
+          73.913786,
+          18.565386
+        ],
+        [
+          73.913891,
+          18.565383
+        ],
+        [
+          73.913898,
+          18.565608
+        ],
+        [
+          73.913552,
+          18.565618
+        ],
+        [
+          73.913543,
+          18.565322
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-168413352",
+      "name": "Ibis Hotel Viman Nagar",
+      "category": "HOSPITALITY_HOTEL",
+      "grossFloorAreaSqm": 5373.2,
+      "contractDemandKw": 286.6,
+      "heightMeters": 28.0,
+      "buildingLevels": 7,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.912987,
+        18.559656
+      ],
+      "footprintPolygon": [
+        [
+          73.912894,
+          18.559563
+        ],
+        [
+          73.912937,
+          18.559561
+        ],
+        [
+          73.912936,
+          18.559533
+        ],
+        [
+          73.913088,
+          18.559525
+        ],
+        [
+          73.913094,
+          18.559622
+        ],
+        [
+          73.91305,
+          18.559624
+        ],
+        [
+          73.91307,
+          18.559954
+        ],
+        [
+          73.912918,
+          18.559962
+        ],
+        [
+          73.912894,
+          18.559563
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1103546830",
+      "name": "Alfa Premio",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 4775.0,
+      "contractDemandKw": 254.7,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.915154,
+        18.564934
+      ],
+      "footprintPolygon": [
+        [
+          73.915037,
+          18.56508
+        ],
+        [
+          73.91537,
+          18.565044
+        ],
+        [
+          73.91533,
+          18.564714
+        ],
+        [
+          73.914998,
+          18.56475
+        ],
+        [
+          73.915037,
+          18.56508
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702388",
+      "name": "Chandhare Complex",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 4168.0,
+      "contractDemandKw": 222.3,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.921726,
+        18.56237
+      ],
+      "footprintPolygon": [
+        [
+          73.921589,
+          18.562389
+        ],
+        [
+          73.921713,
+          18.562416
+        ],
+        [
+          73.921702,
+          18.562463
+        ],
+        [
+          73.921893,
+          18.562505
+        ],
+        [
+          73.921955,
+          18.56225
+        ],
+        [
+          73.921639,
+          18.562181
+        ],
+        [
+          73.921589,
+          18.562389
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1394134860",
+      "name": "Build 1",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 3207.1,
+      "contractDemandKw": 171.0,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.914358,
+        18.561455
+      ],
+      "footprintPolygon": [
+        [
+          73.914189,
+          18.561538
+        ],
+        [
+          73.914617,
+          18.561524
+        ],
+        [
+          73.914603,
+          18.561325
+        ],
+        [
+          73.914189,
+          18.561351
+        ],
+        [
+          73.914189,
+          18.561538
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769347",
+      "name": "Gaia Apex",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 2929.8,
+      "contractDemandKw": 156.3,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.914225,
+        18.560748
+      ],
+      "footprintPolygon": [
+        [
+          73.914113,
+          18.560856
+        ],
+        [
+          73.914405,
+          18.560829
+        ],
+        [
+          73.914398,
+          18.560615
+        ],
+        [
+          73.914095,
+          18.560586
+        ],
+        [
+          73.914113,
+          18.560856
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718486",
+      "name": "Ashish",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 2541.1,
+      "contractDemandKw": 135.5,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.919315,
+        18.559048
+      ],
+      "footprintPolygon": [
+        [
+          73.919256,
+          18.55914
+        ],
+        [
+          73.919282,
+          18.559134
+        ],
+        [
+          73.919471,
+          18.559096
+        ],
+        [
+          73.919419,
+          18.558868
+        ],
+        [
+          73.919204,
+          18.558912
+        ],
+        [
+          73.919256,
+          18.55914
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359927156",
+      "name": "Build 2",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 2284.4,
+      "contractDemandKw": 121.8,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.930086,
+        18.56261
+      ],
+      "footprintPolygon": [
+        [
+          73.930042,
+          18.562766
+        ],
+        [
+          73.93018,
+          18.562757
+        ],
+        [
+          73.930151,
+          18.562375
+        ],
+        [
+          73.930013,
+          18.562384
+        ],
+        [
+          73.930042,
+          18.562766
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359747704",
+      "name": "St. Francis De Sales School",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 2168.4,
+      "contractDemandKw": 115.6,
+      "heightMeters": 9.0,
+      "buildingLevels": 2,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923925,
+        18.560406
+      ],
+      "footprintPolygon": [
+        [
+          73.923784,
+          18.560527
+        ],
+        [
+          73.924164,
+          18.560491
+        ],
+        [
+          73.924136,
+          18.560225
+        ],
+        [
+          73.923755,
+          18.560261
+        ],
+        [
+          73.923784,
+          18.560527
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-169256033",
+      "name": "Prime Academy",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 1863.7,
+      "contractDemandKw": 99.4,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.917822,
+        18.56118
+      ],
+      "footprintPolygon": [
+        [
+          73.917751,
+          18.561109
+        ],
+        [
+          73.917949,
+          18.561127
+        ],
+        [
+          73.917932,
+          18.56121
+        ],
+        [
+          73.917726,
+          18.561346
+        ],
+        [
+          73.917751,
+          18.561109
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718464",
+      "name": "Build 3",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 1767.7,
+      "contractDemandKw": 94.3,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.929432,
+        18.562586
+      ],
+      "footprintPolygon": [
+        [
+          73.92937,
+          18.562708
+        ],
+        [
+          73.929497,
+          18.562718
+        ],
+        [
+          73.929525,
+          18.562402
+        ],
+        [
+          73.929397,
+          18.562392
+        ],
+        [
+          73.92937,
+          18.562708
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359747320",
+      "name": "St. Francis De Sales Church",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 1719.6,
+      "contractDemandKw": 91.7,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923874,
+        18.561306
+      ],
+      "footprintPolygon": [
+        [
+          73.923825,
+          18.561421
+        ],
+        [
+          73.923971,
+          18.56141
+        ],
+        [
+          73.923947,
+          18.561133
+        ],
+        [
+          73.923801,
+          18.561145
+        ],
+        [
+          73.923825,
+          18.561421
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718855",
+      "name": "Build 1",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 1671.2,
+      "contractDemandKw": 89.1,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.929136,
+        18.562563
+      ],
+      "footprintPolygon": [
+        [
+          73.929075,
+          18.562683
+        ],
+        [
+          73.929208,
+          18.56269
+        ],
+        [
+          73.929227,
+          18.562385
+        ],
+        [
+          73.929094,
+          18.562377
+        ],
+        [
+          73.929075,
+          18.562683
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359794081",
+      "name": "b11",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 1517.0,
+      "contractDemandKw": 80.9,
+      "heightMeters": 19.5,
+      "buildingLevels": 5,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923974,
+        18.557601
+      ],
+      "footprintPolygon": [
+        [
+          73.923926,
+          18.557667
+        ],
+        [
+          73.92409,
+          18.557603
+        ],
+        [
+          73.924046,
+          18.557501
+        ],
+        [
+          73.923881,
+          18.557566
+        ],
+        [
+          73.923926,
+          18.557667
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718600",
+      "name": "Build 2",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 1446.1,
+      "contractDemandKw": 77.1,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.929278,
+        18.562573
+      ],
+      "footprintPolygon": [
+        [
+          73.929225,
+          18.562694
+        ],
+        [
+          73.929338,
+          18.5627
+        ],
+        [
+          73.929357,
+          18.562392
+        ],
+        [
+          73.929245,
+          18.562386
+        ],
+        [
+          73.929225,
+          18.562694
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359794021",
+      "name": "b10",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 974.4,
+      "contractDemandKw": 52.0,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923793,
+        18.557658
+      ],
+      "footprintPolygon": [
+        [
+          73.923748,
+          18.557717
+        ],
+        [
+          73.923899,
+          18.557659
+        ],
+        [
+          73.923861,
+          18.55757
+        ],
+        [
+          73.92371,
+          18.557627
+        ],
+        [
+          73.923748,
+          18.557717
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793360",
+      "name": "b4",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 819.9,
+      "contractDemandKw": 43.7,
+      "heightMeters": 12.5,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923503,
+        18.557638
+      ],
+      "footprintPolygon": [
+        [
+          73.923445,
+          18.557696
+        ],
+        [
+          73.923623,
+          18.55763
+        ],
+        [
+          73.92359,
+          18.557549
+        ],
+        [
+          73.923412,
+          18.557615
+        ],
+        [
+          73.923445,
+          18.557696
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793924",
+      "name": "b7",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 771.4,
+      "contractDemandKw": 41.1,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923971,
+        18.557793
+      ],
+      "footprintPolygon": [
+        [
+          73.92402,
+          18.557848
+        ],
+        [
+          73.923969,
+          18.557689
+        ],
+        [
+          73.923898,
+          18.55771
+        ],
+        [
+          73.923949,
+          18.557869
+        ],
+        [
+          73.92402,
+          18.557848
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793522",
+      "name": "b6",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 728.4,
+      "contractDemandKw": 38.8,
+      "heightMeters": 12.5,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923364,
+        18.557325
+      ],
+      "footprintPolygon": [
+        [
+          73.923319,
+          18.557384
+        ],
+        [
+          73.92347,
+          18.557319
+        ],
+        [
+          73.923431,
+          18.557238
+        ],
+        [
+          73.92328,
+          18.557303
+        ],
+        [
+          73.923319,
+          18.557384
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359718753",
+      "name": "Build 4",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 645.3,
+      "contractDemandKw": 34.4,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.929434,
+        18.562339
+      ],
+      "footprintPolygon": [
+        [
+          73.929383,
+          18.562388
+        ],
+        [
+          73.929496,
+          18.562399
+        ],
+        [
+          73.929511,
+          18.562266
+        ],
+        [
+          73.929398,
+          18.562255
+        ],
+        [
+          73.929383,
+          18.562388
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793390",
+      "name": "g5",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 600.6,
+      "contractDemandKw": 32.0,
+      "heightMeters": 12.5,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923412,
+        18.557446
+      ],
+      "footprintPolygon": [
+        [
+          73.923378,
+          18.557501
+        ],
+        [
+          73.923503,
+          18.557448
+        ],
+        [
+          73.923463,
+          18.557363
+        ],
+        [
+          73.923338,
+          18.557416
+        ],
+        [
+          73.923378,
+          18.557501
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1258189456",
+      "name": "Datta Mandir",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 454.1,
+      "contractDemandKw": 24.2,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.925323,
+        18.558705
+      ],
+      "footprintPolygon": [
+        [
+          73.925265,
+          18.558738
+        ],
+        [
+          73.925415,
+          18.558728
+        ],
+        [
+          73.925409,
+          18.558655
+        ],
+        [
+          73.925259,
+          18.558665
+        ],
+        [
+          73.925265,
+          18.558738
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359794003",
+      "name": "b1",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 418.7,
+      "contractDemandKw": 22.3,
+      "heightMeters": 9.0,
+      "buildingLevels": 2,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923287,
+        18.557635
+      ],
+      "footprintPolygon": [
+        [
+          73.923243,
+          18.557689
+        ],
+        [
+          73.923386,
+          18.557634
+        ],
+        [
+          73.923352,
+          18.557554
+        ],
+        [
+          73.923209,
+          18.557608
+        ],
+        [
+          73.923243,
+          18.557689
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793658",
+      "name": "b3",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 406.5,
+      "contractDemandKw": 21.7,
+      "heightMeters": 9.0,
+      "buildingLevels": 2,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923192,
+        18.5574
+      ],
+      "footprintPolygon": [
+        [
+          73.923147,
+          18.557452
+        ],
+        [
+          73.923293,
+          18.557389
+        ],
+        [
+          73.92326,
+          18.557322
+        ],
+        [
+          73.923115,
+          18.557386
+        ],
+        [
+          73.923147,
+          18.557452
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-360001483",
+      "name": "b8",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 398.8,
+      "contractDemandKw": 21.3,
+      "heightMeters": 12.5,
+      "buildingLevels": 3,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923587,
+        18.557889
+      ],
+      "footprintPolygon": [
+        [
+          73.923551,
+          18.557932
+        ],
+        [
+          73.923666,
+          18.557895
+        ],
+        [
+          73.923641,
+          18.557825
+        ],
+        [
+          73.923525,
+          18.557862
+        ],
+        [
+          73.923551,
+          18.557932
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359793574",
+      "name": "b2",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 299.9,
+      "contractDemandKw": 16.0,
+      "heightMeters": 9.0,
+      "buildingLevels": 2,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.923234,
+        18.557519
+      ],
+      "footprintPolygon": [
+        [
+          73.923189,
+          18.557562
+        ],
+        [
+          73.923325,
+          18.557515
+        ],
+        [
+          73.923302,
+          18.557454
+        ],
+        [
+          73.923166,
+          18.5575
+        ],
+        [
+          73.923189,
+          18.557562
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1258097748",
+      "name": "Tate Niwas",
+      "category": "URBAN_FABRIC",
+      "grossFloorAreaSqm": 285.9,
+      "contractDemandKw": 15.2,
+      "heightMeters": 16.0,
+      "buildingLevels": 4,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#264653",
+      "centroid": [
+        73.924248,
+        18.559582
+      ],
+      "footprintPolygon": [
+        [
+          73.924202,
+          18.559608
+        ],
+        [
+          73.924322,
+          18.559599
+        ],
+        [
+          73.924318,
+          18.559543
+        ],
+        [
+          73.924198,
+          18.559551
+        ],
+        [
+          73.924202,
+          18.559608
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-WEIKFIELD-01",
+      "name": "Weikfield IT City & Tech Park",
+      "category": "IT_PARK",
+      "grossFloorAreaSqm": 187213.9,
+      "contractDemandKw": 9984.7,
+      "heightMeters": 42.0,
+      "buildingLevels": 12,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.920601,
+        18.560456
+      ],
+      "footprintPolygon": [
+        [
+          73.920261,
+          18.560839
+        ],
+        [
+          73.920057,
+          18.560778
+        ],
+        [
+          73.920057,
+          18.559832
+        ],
+        [
+          73.920529,
+          18.55968
+        ],
+        [
+          73.920647,
+          18.560157
+        ],
+        [
+          73.921226,
+          18.560076
+        ],
+        [
+          73.92128,
+          18.560768
+        ],
+        [
+          73.921087,
+          18.561134
+        ],
+        [
+          73.920261,
+          18.560839
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359910262",
+      "name": "Corridor Commercial Block 359910262",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 49802.3,
+      "contractDemandKw": 2656.1,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.920366,
+        18.562323
+      ],
+      "footprintPolygon": [
+        [
+          73.920114,
+          18.561787
+        ],
+        [
+          73.919966,
+          18.562309
+        ],
+        [
+          73.920098,
+          18.562343
+        ],
+        [
+          73.920063,
+          18.562464
+        ],
+        [
+          73.920372,
+          18.562543
+        ],
+        [
+          73.920347,
+          18.562628
+        ],
+        [
+          73.920468,
+          18.562659
+        ],
+        [
+          73.920526,
+          18.562453
+        ],
+        [
+          73.920903,
+          18.562549
+        ],
+        [
+          73.921052,
+          18.562027
+        ],
+        [
+          73.920114,
+          18.561787
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-INORBIT-01",
+      "name": "Inorbit & Wadgaon Sheri Commercial Hub",
+      "category": "COMMERCIAL_RETAIL",
+      "grossFloorAreaSqm": 47832.1,
+      "contractDemandKw": 2551.0,
+      "heightMeters": 26.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.923325,
+        18.563959
+      ],
+      "footprintPolygon": [
+        [
+          73.92317,
+          18.56469
+        ],
+        [
+          73.923642,
+          18.564649
+        ],
+        [
+          73.923583,
+          18.564033
+        ],
+        [
+          73.9235,
+          18.56404
+        ],
+        [
+          73.923469,
+          18.563713
+        ],
+        [
+          73.923549,
+          18.563707
+        ],
+        [
+          73.923493,
+          18.563121
+        ],
+        [
+          73.923062,
+          18.563158
+        ],
+        [
+          73.923128,
+          18.56385
+        ],
+        [
+          73.92317,
+          18.563847
+        ],
+        [
+          73.923183,
+          18.563979
+        ],
+        [
+          73.923103,
+          18.563986
+        ],
+        [
+          73.92317,
+          18.56469
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769072",
+      "name": "Corridor Commercial Block 359769072",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 41696.6,
+      "contractDemandKw": 2223.8,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.914095,
+        18.560192
+      ],
+      "footprintPolygon": [
+        [
+          73.913976,
+          18.560297
+        ],
+        [
+          73.913971,
+          18.560336
+        ],
+        [
+          73.914994,
+          18.560426
+        ],
+        [
+          73.91501,
+          18.560285
+        ],
+        [
+          73.913999,
+          18.560178
+        ],
+        [
+          73.913992,
+          18.560171
+        ],
+        [
+          73.914008,
+          18.559771
+        ],
+        [
+          73.913868,
+          18.559766
+        ],
+        [
+          73.91385,
+          18.560187
+        ],
+        [
+          73.91387,
+          18.560188
+        ],
+        [
+          73.91381,
+          18.560238
+        ],
+        [
+          73.913914,
+          18.560349
+        ],
+        [
+          73.913976,
+          18.560297
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359748405",
+      "name": "Corridor Commercial Block 359748405",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 38488.6,
+      "contractDemandKw": 2052.7,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.923479,
+        18.560987
+      ],
+      "footprintPolygon": [
+        [
+          73.923253,
+          18.561575
+        ],
+        [
+          73.923693,
+          18.561576
+        ],
+        [
+          73.923685,
+          18.561381
+        ],
+        [
+          73.923612,
+          18.561384
+        ],
+        [
+          73.923488,
+          18.561296
+        ],
+        [
+          73.923452,
+          18.560455
+        ],
+        [
+          73.923587,
+          18.560352
+        ],
+        [
+          73.923582,
+          18.560134
+        ],
+        [
+          73.923186,
+          18.560144
+        ],
+        [
+          73.923253,
+          18.561575
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-1534172525",
+      "name": "Corridor Commercial Block 1534172525",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 34203.8,
+      "contractDemandKw": 1824.2,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.918781,
+        18.564062
+      ],
+      "footprintPolygon": [
+        [
+          73.918537,
+          18.564106
+        ],
+        [
+          73.918545,
+          18.564195
+        ],
+        [
+          73.91839,
+          18.564208
+        ],
+        [
+          73.918375,
+          18.564052
+        ],
+        [
+          73.918353,
+          18.564053
+        ],
+        [
+          73.918332,
+          18.563823
+        ],
+        [
+          73.918352,
+          18.563821
+        ],
+        [
+          73.918346,
+          18.563757
+        ],
+        [
+          73.919021,
+          18.5637
+        ],
+        [
+          73.919057,
+          18.564078
+        ],
+        [
+          73.919148,
+          18.56407
+        ],
+        [
+          73.919146,
+          18.564049
+        ],
+        [
+          73.919169,
+          18.564048
+        ],
+        [
+          73.91917,
+          18.564058
+        ],
+        [
+          73.919234,
+          18.564053
+        ],
+        [
+          73.919261,
+          18.564378
+        ],
+        [
+          73.918974,
+          18.5644
+        ],
+        [
+          73.918954,
+          18.564157
+        ],
+        [
+          73.918882,
+          18.564162
+        ],
+        [
+          73.918874,
+          18.564062
+        ],
+        [
+          73.918933,
+          18.564058
+        ],
+        [
+          73.918929,
+          18.564015
+        ],
+        [
+          73.918851,
+          18.56402
+        ],
+        [
+          73.918852,
+          18.564034
+        ],
+        [
+          73.918661,
+          18.564049
+        ],
+        [
+          73.918663,
+          18.564079
+        ],
+        [
+          73.918555,
+          18.564088
+        ],
+        [
+          73.918556,
+          18.564105
+        ],
+        [
+          73.918537,
+          18.564106
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702321",
+      "name": "Corridor Commercial Block 359702321",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 29149.9,
+      "contractDemandKw": 1554.7,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.921946,
+        18.564227
+      ],
+      "footprintPolygon": [
+        [
+          73.92183,
+          18.564282
+        ],
+        [
+          73.921981,
+          18.564279
+        ],
+        [
+          73.921982,
+          18.564304
+        ],
+        [
+          73.922104,
+          18.564301
+        ],
+        [
+          73.922097,
+          18.564051
+        ],
+        [
+          73.922224,
+          18.56405
+        ],
+        [
+          73.922224,
+          18.564069
+        ],
+        [
+          73.922335,
+          18.564069
+        ],
+        [
+          73.922333,
+          18.563802
+        ],
+        [
+          73.922073,
+          18.563804
+        ],
+        [
+          73.922075,
+          18.564035
+        ],
+        [
+          73.921819,
+          18.564041
+        ],
+        [
+          73.921825,
+          18.564258
+        ],
+        [
+          73.921575,
+          18.564261
+        ],
+        [
+          73.921579,
+          18.564505
+        ],
+        [
+          73.921729,
+          18.564502
+        ],
+        [
+          73.92173,
+          18.564531
+        ],
+        [
+          73.921848,
+          18.564528
+        ],
+        [
+          73.921845,
+          18.564406
+        ],
+        [
+          73.921832,
+          18.564407
+        ],
+        [
+          73.92183,
+          18.564282
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702320",
+      "name": "Corridor Commercial Block 359702320",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 29145.9,
+      "contractDemandKw": 1554.4,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.921835,
+        18.563622
+      ],
+      "footprintPolygon": [
+        [
+          73.921718,
+          18.563677
+        ],
+        [
+          73.92187,
+          18.563673
+        ],
+        [
+          73.921871,
+          18.563699
+        ],
+        [
+          73.921993,
+          18.563696
+        ],
+        [
+          73.921986,
+          18.563446
+        ],
+        [
+          73.922113,
+          18.563445
+        ],
+        [
+          73.922113,
+          18.563464
+        ],
+        [
+          73.922224,
+          18.563463
+        ],
+        [
+          73.922222,
+          18.563197
+        ],
+        [
+          73.921962,
+          18.563199
+        ],
+        [
+          73.921964,
+          18.56343
+        ],
+        [
+          73.921708,
+          18.563436
+        ],
+        [
+          73.921714,
+          18.563652
+        ],
+        [
+          73.921464,
+          18.563656
+        ],
+        [
+          73.921468,
+          18.5639
+        ],
+        [
+          73.921618,
+          18.563897
+        ],
+        [
+          73.921619,
+          18.563925
+        ],
+        [
+          73.921737,
+          18.563923
+        ],
+        [
+          73.921734,
+          18.563801
+        ],
+        [
+          73.921721,
+          18.563802
+        ],
+        [
+          73.921718,
+          18.563677
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359702319",
+      "name": "Corridor Commercial Block 359702319",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 29142.0,
+      "contractDemandKw": 1554.2,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.921984,
+        18.564801
+      ],
+      "footprintPolygon": [
+        [
+          73.921867,
+          18.564856
+        ],
+        [
+          73.922018,
+          18.564852
+        ],
+        [
+          73.922019,
+          18.564878
+        ],
+        [
+          73.922142,
+          18.564875
+        ],
+        [
+          73.922135,
+          18.564625
+        ],
+        [
+          73.922262,
+          18.564624
+        ],
+        [
+          73.922262,
+          18.564643
+        ],
+        [
+          73.922373,
+          18.564642
+        ],
+        [
+          73.92237,
+          18.564376
+        ],
+        [
+          73.922111,
+          18.564377
+        ],
+        [
+          73.922112,
+          18.564608
+        ],
+        [
+          73.921856,
+          18.564615
+        ],
+        [
+          73.921862,
+          18.564831
+        ],
+        [
+          73.921612,
+          18.564835
+        ],
+        [
+          73.921616,
+          18.565078
+        ],
+        [
+          73.921767,
+          18.565076
+        ],
+        [
+          73.921767,
+          18.565104
+        ],
+        [
+          73.921885,
+          18.565102
+        ],
+        [
+          73.921882,
+          18.56498
+        ],
+        [
+          73.921869,
+          18.56498
+        ],
+        [
+          73.921867,
+          18.564856
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769261",
+      "name": "Corridor Commercial Block 359769261",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 25710.9,
+      "contractDemandKw": 1371.2,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.91686,
+        18.564305
+      ],
+      "footprintPolygon": [
+        [
+          73.916315,
+          18.564445
+        ],
+        [
+          73.917695,
+          18.564369
+        ],
+        [
+          73.917678,
+          18.564095
+        ],
+        [
+          73.916298,
+          18.56417
+        ],
+        [
+          73.916315,
+          18.564445
+        ]
+      ]
+    },
+    {
+      "buildingId": "urn:ngsi-ld:BuildingZone:PUNE:BLD-359769183",
+      "name": "Corridor Commercial Block 359769183",
+      "category": "COMMERCIAL_FRONTAGE",
+      "grossFloorAreaSqm": 25300.6,
+      "contractDemandKw": 1349.4,
+      "heightMeters": 23.0,
+      "buildingLevels": 6,
+      "modelFidelityLevel": "B2",
+      "roofType": "FLAT_COMMERCIAL",
+      "colorTint": "#1E3A5F",
+      "centroid": [
+        73.915151,
+        18.564428
+      ],
+      "footprintPolygon": [
+        [
+          73.915723,
+          18.564491
+        ],
+        [
+          73.915699,
+          18.564242
+        ],
+        [
+          73.9143,
+          18.564335
+        ],
+        [
+          73.914312,
+          18.56458
+        ],
+        [
+          73.915723,
+          18.564491
+        ]
       ]
     }
   ],
@@ -361,7 +3729,10 @@
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
       "sumoEdgeId": "SEG-NR-EB-01",
       "direction": "EASTBOUND",
-      "coordinates": [73.9145, 18.5597],
+      "coordinates": [
+        73.9145,
+        18.5597
+      ],
       "elevationMeters": 1.5,
       "sensorType": "INDUCTIVE_LOOP_EMULATION",
       "samplingIntervalSec": 60
@@ -372,7 +3743,10 @@
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02",
       "sumoEdgeId": "SEG-NR-EB-02",
       "direction": "EASTBOUND",
-      "coordinates": [73.9220, 18.5616],
+      "coordinates": [
+        73.922,
+        18.5616
+      ],
       "elevationMeters": 1.5,
       "sensorType": "INDUCTIVE_LOOP_EMULATION",
       "samplingIntervalSec": 60
@@ -383,7 +3757,10 @@
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02",
       "sumoEdgeId": "SEG-NR-WB-02",
       "direction": "WESTBOUND",
-      "coordinates": [73.9220, 18.5617],
+      "coordinates": [
+        73.922,
+        18.5617
+      ],
       "elevationMeters": 1.5,
       "sensorType": "INDUCTIVE_LOOP_EMULATION",
       "samplingIntervalSec": 60
@@ -394,7 +3771,10 @@
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03",
       "sumoEdgeId": "SEG-NR-WB-03",
       "direction": "WESTBOUND",
-      "coordinates": [73.9145, 18.5598],
+      "coordinates": [
+        73.9145,
+        18.5598
+      ],
       "elevationMeters": 1.5,
       "sensorType": "INDUCTIVE_LOOP_EMULATION",
       "samplingIntervalSec": 60
@@ -405,7 +3785,10 @@
       "segmentId": null,
       "sumoEdgeId": null,
       "direction": "AMBIENT",
-      "coordinates": [73.9165, 18.5605],
+      "coordinates": [
+        73.9165,
+        18.5605
+      ],
       "elevationMeters": 4.0,
       "sensorType": "AMBIENT_AQI_METEOROLOGY",
       "samplingIntervalSec": 300
@@ -415,14 +3798,2060 @@
     {
       "scenarioTemplateId": "SCEN-BASE-01",
       "name": "Fixed-Time Isolated Arterial Baseline",
-      "corridorEdgeIds": ["SEG-NR-EB-01", "SEG-NR-EB-02", "SEG-NR-EB-03", "SEG-NR-WB-01", "SEG-NR-WB-02", "SEG-NR-WB-03"],
-      "junctionIds": ["VN-01", "SN-01"]
+      "corridorEdgeIds": [
+        "SEG-NR-EB-01",
+        "SEG-NR-EB-02",
+        "SEG-NR-EB-03",
+        "SEG-NR-WB-01",
+        "SEG-NR-WB-02",
+        "SEG-NR-WB-03"
+      ],
+      "junctionIds": [
+        "VN-01",
+        "SN-01"
+      ]
     },
     {
       "scenarioTemplateId": "SCEN-INT-01",
       "name": "Dynamic Split & Coordinated Progression",
-      "corridorEdgeIds": ["SEG-NR-EB-01", "SEG-NR-EB-02", "SEG-NR-EB-03", "SEG-NR-WB-01", "SEG-NR-WB-02", "SEG-NR-WB-03"],
-      "junctionIds": ["VN-01", "SN-01"]
+      "corridorEdgeIds": [
+        "SEG-NR-EB-01",
+        "SEG-NR-EB-02",
+        "SEG-NR-EB-03",
+        "SEG-NR-WB-01",
+        "SEG-NR-WB-02",
+        "SEG-NR-WB-03"
+      ],
+      "junctionIds": [
+        "VN-01",
+        "SN-01"
+      ]
+    }
+  ],
+  "urbanTreeMappings": [
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-001",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.911641,
+        18.558809
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-002",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.912607,
+        18.559124
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-003",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.913,
+        18.559244
+      ],
+      "heightMeters": 8.1,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-004",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.913782,
+        18.559522
+      ],
+      "heightMeters": 8.9,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-005",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.915043,
+        18.560001
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-006",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.915533,
+        18.560186
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-007",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.916128,
+        18.560381
+      ],
+      "heightMeters": 8.1,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-008",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.916683,
+        18.560558
+      ],
+      "heightMeters": 8.9,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-009",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.917827,
+        18.560914
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-010",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.918391,
+        18.561084
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-011",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.918857,
+        18.561216
+      ],
+      "heightMeters": 8.1,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-012",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.919411,
+        18.561381
+      ],
+      "heightMeters": 8.9,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-013",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.91985,
+        18.561502
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-014",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.920424,
+        18.561662
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-015",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.921127,
+        18.561858
+      ],
+      "heightMeters": 8.1,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-016",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.92144,
+        18.561941
+      ],
+      "heightMeters": 8.9,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-017",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.922092,
+        18.562103
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-018",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.922253,
+        18.562143
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-019",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.922991,
+        18.562332
+      ],
+      "heightMeters": 8.1,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-020",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.923933,
+        18.56257
+      ],
+      "heightMeters": 8.9,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-021",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.924941,
+        18.562766
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-022",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.92558,
+        18.562839
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-023",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.926909,
+        18.562933
+      ],
+      "heightMeters": 8.1,
+      "canopyDiameterMeters": 5.6
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-024",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.92777,
+        18.562974
+      ],
+      "heightMeters": 8.9,
+      "canopyDiameterMeters": 6.2
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-025",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.929139,
+        18.56309
+      ],
+      "heightMeters": 6.5,
+      "canopyDiameterMeters": 5.0
+    },
+    {
+      "treeId": "urn:ngsi-ld:UrbanTree:PUNE:TREE-026",
+      "species": "Gulmohar / Neem Street Canopy",
+      "coordinates": [
+        73.93071,
+        18.56323
+      ],
+      "heightMeters": 7.3,
+      "canopyDiameterMeters": 5.6
+    }
+  ],
+  "secondaryStreetMappings": [
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-22841645",
+      "name": "Viman Nagar Road",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.918293,
+          18.565132
+        ],
+        [
+          73.918274,
+          18.56493
+        ],
+        [
+          73.918155,
+          18.563631
+        ],
+        [
+          73.918155,
+          18.563447
+        ],
+        [
+          73.918155,
+          18.563425
+        ],
+        [
+          73.918157,
+          18.563116
+        ],
+        [
+          73.918169,
+          18.562426
+        ],
+        [
+          73.918172,
+          18.562318
+        ],
+        [
+          73.918198,
+          18.561424
+        ],
+        [
+          73.918217,
+          18.561304
+        ],
+        [
+          73.918235,
+          18.561221
+        ],
+        [
+          73.918253,
+          18.561136
+        ],
+        [
+          73.918279,
+          18.561016
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-27850903",
+      "name": "Viman Nagar Avenue 2",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.913803,
+          18.561646
+        ],
+        [
+          73.913832,
+          18.561961
+        ],
+        [
+          73.913947,
+          18.563176
+        ],
+        [
+          73.913981,
+          18.563495
+        ],
+        [
+          73.913995,
+          18.563626
+        ],
+        [
+          73.914014,
+          18.563797
+        ],
+        [
+          73.914038,
+          18.564018
+        ],
+        [
+          73.91406,
+          18.564262
+        ],
+        [
+          73.914067,
+          18.564323
+        ],
+        [
+          73.914069,
+          18.564342
+        ],
+        [
+          73.914073,
+          18.564373
+        ],
+        [
+          73.914085,
+          18.564477
+        ],
+        [
+          73.914094,
+          18.564554
+        ],
+        [
+          73.914108,
+          18.564671
+        ],
+        [
+          73.914172,
+          18.565178
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-50106079",
+      "name": "Viman Nagar Avenue 2",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.913803,
+          18.561646
+        ],
+        [
+          73.913771,
+          18.561463
+        ],
+        [
+          73.913694,
+          18.560477
+        ],
+        [
+          73.913663,
+          18.560113
+        ],
+        [
+          73.913639,
+          18.559609
+        ],
+        [
+          73.913644,
+          18.559434
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-106498527",
+      "name": "Connector 106498527",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.92801,
+          18.559493
+        ],
+        [
+          73.928086,
+          18.559492
+        ],
+        [
+          73.928573,
+          18.559486
+        ],
+        [
+          73.929013,
+          18.559483
+        ],
+        [
+          73.929434,
+          18.559475
+        ],
+        [
+          73.929584,
+          18.55947
+        ],
+        [
+          73.930021,
+          18.559455
+        ],
+        [
+          73.930194,
+          18.55945
+        ],
+        [
+          73.930881,
+          18.559426
+        ],
+        [
+          73.931204,
+          18.559416
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-117218162",
+      "name": "Old Mundhwa Road",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.92801,
+          18.559493
+        ],
+        [
+          73.928006,
+          18.559587
+        ],
+        [
+          73.928005,
+          18.559906
+        ],
+        [
+          73.928005,
+          18.559946
+        ],
+        [
+          73.928017,
+          18.560223
+        ],
+        [
+          73.928023,
+          18.560347
+        ],
+        [
+          73.928029,
+          18.560577
+        ],
+        [
+          73.92803,
+          18.560781
+        ],
+        [
+          73.928025,
+          18.560901
+        ],
+        [
+          73.928015,
+          18.561217
+        ],
+        [
+          73.928009,
+          18.56123
+        ],
+        [
+          73.927948,
+          18.561864
+        ],
+        [
+          73.927937,
+          18.561974
+        ],
+        [
+          73.927892,
+          18.562397
+        ],
+        [
+          73.927873,
+          18.562597
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-117218167",
+      "name": "Old Mundhwa Road",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.928086,
+          18.559492
+        ],
+        [
+          73.928116,
+          18.558758
+        ],
+        [
+          73.928123,
+          18.558609
+        ],
+        [
+          73.92814,
+          18.558386
+        ],
+        [
+          73.928144,
+          18.558326
+        ],
+        [
+          73.928175,
+          18.557975
+        ],
+        [
+          73.928198,
+          18.557721
+        ],
+        [
+          73.9282,
+          18.557699
+        ],
+        [
+          73.928169,
+          18.557641
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-117218176",
+      "name": "Old Mundhwa Road",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.928169,
+          18.557641
+        ],
+        [
+          73.928124,
+          18.557693
+        ],
+        [
+          73.928069,
+          18.55832
+        ],
+        [
+          73.928047,
+          18.558605
+        ],
+        [
+          73.928041,
+          18.558742
+        ],
+        [
+          73.92803,
+          18.559017
+        ],
+        [
+          73.92801,
+          18.559493
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-122024102",
+      "name": "Connector 122024102",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.919394,
+          18.55955
+        ],
+        [
+          73.919411,
+          18.559663
+        ],
+        [
+          73.919455,
+          18.56005
+        ],
+        [
+          73.919492,
+          18.560361
+        ],
+        [
+          73.919552,
+          18.56089
+        ],
+        [
+          73.919564,
+          18.561012
+        ],
+        [
+          73.9196,
+          18.561137
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-192612785",
+      "name": "Connector 192612785",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.922564,
+          18.557525
+        ],
+        [
+          73.923017,
+          18.557341
+        ],
+        [
+          73.92348,
+          18.557148
+        ],
+        [
+          73.923723,
+          18.557049
+        ],
+        [
+          73.923785,
+          18.557012
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-192612787",
+      "name": "Connector 192612787",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.924388,
+          18.557781
+        ],
+        [
+          73.924153,
+          18.557464
+        ],
+        [
+          73.923847,
+          18.557083
+        ],
+        [
+          73.923785,
+          18.557012
+        ],
+        [
+          73.923618,
+          18.556817
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-192612790",
+      "name": "Connector 192612790",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.921737,
+          18.556819
+        ],
+        [
+          73.921881,
+          18.557128
+        ],
+        [
+          73.922006,
+          18.557344
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-192612793",
+      "name": "Connector 192612793",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.921446,
+          18.557934
+        ],
+        [
+          73.921829,
+          18.557939
+        ],
+        [
+          73.921857,
+          18.557941
+        ],
+        [
+          73.921888,
+          18.557942
+        ],
+        [
+          73.921971,
+          18.557946
+        ],
+        [
+          73.922088,
+          18.557975
+        ],
+        [
+          73.922141,
+          18.557993
+        ],
+        [
+          73.92224,
+          18.558055
+        ],
+        [
+          73.922341,
+          18.558149
+        ],
+        [
+          73.922677,
+          18.558474
+        ],
+        [
+          73.922768,
+          18.558415
+        ],
+        [
+          73.922965,
+          18.558243
+        ],
+        [
+          73.923077,
+          18.558196
+        ],
+        [
+          73.923338,
+          18.558113
+        ],
+        [
+          73.923961,
+          18.557921
+        ],
+        [
+          73.924388,
+          18.557781
+        ],
+        [
+          73.924526,
+          18.558032
+        ],
+        [
+          73.924881,
+          18.557932
+        ],
+        [
+          73.925065,
+          18.557921
+        ],
+        [
+          73.925395,
+          18.557881
+        ],
+        [
+          73.925702,
+          18.557831
+        ],
+        [
+          73.926006,
+          18.557806
+        ],
+        [
+          73.926292,
+          18.557734
+        ],
+        [
+          73.926604,
+          18.557658
+        ],
+        [
+          73.926778,
+          18.557599
+        ],
+        [
+          73.926849,
+          18.557582
+        ],
+        [
+          73.927051,
+          18.557531
+        ],
+        [
+          73.927282,
+          18.557482
+        ],
+        [
+          73.927471,
+          18.557439
+        ],
+        [
+          73.927533,
+          18.557425
+        ],
+        [
+          73.927689,
+          18.557391
+        ],
+        [
+          73.92771,
+          18.557386
+        ],
+        [
+          73.928185,
+          18.557351
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-208059746",
+      "name": "Lane Number 11",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.928101,
+          18.560448
+        ],
+        [
+          73.928151,
+          18.560451
+        ],
+        [
+          73.928378,
+          18.560467
+        ],
+        [
+          73.928686,
+          18.560505
+        ],
+        [
+          73.92922,
+          18.560543
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-208059747",
+      "name": "Lane Number 4",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.929002,
+          18.562815
+        ],
+        [
+          73.929013,
+          18.562696
+        ],
+        [
+          73.929064,
+          18.562178
+        ],
+        [
+          73.929074,
+          18.562044
+        ],
+        [
+          73.929098,
+          18.561832
+        ],
+        [
+          73.9291,
+          18.561816
+        ],
+        [
+          73.929107,
+          18.561763
+        ],
+        [
+          73.92911,
+          18.561733
+        ],
+        [
+          73.929137,
+          18.561523
+        ],
+        [
+          73.929139,
+          18.561505
+        ],
+        [
+          73.929142,
+          18.561481
+        ],
+        [
+          73.929162,
+          18.561178
+        ],
+        [
+          73.929191,
+          18.560867
+        ],
+        [
+          73.92922,
+          18.560543
+        ],
+        [
+          73.929239,
+          18.56023
+        ],
+        [
+          73.929252,
+          18.56004
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-218691404",
+      "name": "Connector 218691404",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.914038,
+          18.564018
+        ],
+        [
+          73.916215,
+          18.563806
+        ],
+        [
+          73.918065,
+          18.563681
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-233804663",
+      "name": "Connector 233804663",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.924526,
+          18.558032
+        ],
+        [
+          73.924465,
+          18.55805
+        ],
+        [
+          73.92423,
+          18.558121
+        ],
+        [
+          73.924032,
+          18.55818
+        ],
+        [
+          73.923819,
+          18.558246
+        ],
+        [
+          73.923613,
+          18.558308
+        ],
+        [
+          73.92339,
+          18.558372
+        ],
+        [
+          73.923275,
+          18.558398
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996155",
+      "name": "Connector 293996155",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.915814,
+          18.563484
+        ],
+        [
+          73.916256,
+          18.563439
+        ],
+        [
+          73.916484,
+          18.563409
+        ],
+        [
+          73.91664,
+          18.563367
+        ],
+        [
+          73.916822,
+          18.563271
+        ],
+        [
+          73.916972,
+          18.563177
+        ],
+        [
+          73.917147,
+          18.563048
+        ],
+        [
+          73.917369,
+          18.562863
+        ],
+        [
+          73.917558,
+          18.562674
+        ],
+        [
+          73.917675,
+          18.562518
+        ],
+        [
+          73.917946,
+          18.562125
+        ],
+        [
+          73.917979,
+          18.562097
+        ],
+        [
+          73.918016,
+          18.562077
+        ],
+        [
+          73.91809,
+          18.562031
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996157",
+      "name": "Connector 293996157",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.922426,
+          18.563158
+        ],
+        [
+          73.922273,
+          18.563158
+        ],
+        [
+          73.921941,
+          18.563158
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996163",
+      "name": "Connector 293996163",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.914507,
+          18.560565
+        ],
+        [
+          73.914528,
+          18.560858
+        ],
+        [
+          73.914544,
+          18.561069
+        ],
+        [
+          73.914558,
+          18.561259
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996179",
+      "name": "Connector 293996179",
+      "highwayType": "service",
+      "coordinates": [
+        [
+          73.916363,
+          18.561507
+        ],
+        [
+          73.916457,
+          18.560969
+        ],
+        [
+          73.916543,
+          18.56048
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996182",
+      "name": "Connector 293996182",
+      "highwayType": "service",
+      "coordinates": [
+        [
+          73.912155,
+          18.561793
+        ],
+        [
+          73.912166,
+          18.561912
+        ],
+        [
+          73.912203,
+          18.56232
+        ],
+        [
+          73.912286,
+          18.563141
+        ],
+        [
+          73.912335,
+          18.563633
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996189",
+      "name": "Connector 293996189",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.922468,
+          18.56512
+        ],
+        [
+          73.92247,
+          18.565091
+        ],
+        [
+          73.922451,
+          18.564628
+        ],
+        [
+          73.922416,
+          18.563762
+        ],
+        [
+          73.922419,
+          18.563588
+        ],
+        [
+          73.922426,
+          18.563158
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996201",
+      "name": "Connector 293996201",
+      "highwayType": "service",
+      "coordinates": [
+        [
+          73.915814,
+          18.563484
+        ],
+        [
+          73.915812,
+          18.563433
+        ],
+        [
+          73.915808,
+          18.563345
+        ],
+        [
+          73.915804,
+          18.563278
+        ],
+        [
+          73.915778,
+          18.563232
+        ],
+        [
+          73.91574,
+          18.563179
+        ],
+        [
+          73.915709,
+          18.563139
+        ],
+        [
+          73.915684,
+          18.5631
+        ],
+        [
+          73.915675,
+          18.563057
+        ],
+        [
+          73.915612,
+          18.561529
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-293996207",
+      "name": "Connector 293996207",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.921341,
+          18.564993
+        ],
+        [
+          73.921326,
+          18.56491
+        ],
+        [
+          73.921304,
+          18.564834
+        ],
+        [
+          73.921266,
+          18.564713
+        ],
+        [
+          73.921249,
+          18.564589
+        ],
+        [
+          73.921276,
+          18.564331
+        ],
+        [
+          73.921321,
+          18.564135
+        ],
+        [
+          73.921376,
+          18.563965
+        ],
+        [
+          73.921409,
+          18.563611
+        ],
+        [
+          73.921426,
+          18.563411
+        ],
+        [
+          73.921438,
+          18.563395
+        ],
+        [
+          73.921462,
+          18.563388
+        ],
+        [
+          73.92167,
+          18.563392
+        ],
+        [
+          73.921682,
+          18.563402
+        ],
+        [
+          73.921684,
+          18.563417
+        ],
+        [
+          73.921685,
+          18.563617
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294679688",
+      "name": "Sopan Nagar Road",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.918691,
+          18.560898
+        ],
+        [
+          73.91872,
+          18.560779
+        ],
+        [
+          73.918774,
+          18.560466
+        ],
+        [
+          73.918901,
+          18.559352
+        ],
+        [
+          73.918901,
+          18.559248
+        ],
+        [
+          73.918888,
+          18.559149
+        ],
+        [
+          73.918863,
+          18.558927
+        ],
+        [
+          73.918792,
+          18.55861
+        ],
+        [
+          73.91879,
+          18.558464
+        ],
+        [
+          73.918809,
+          18.558257
+        ],
+        [
+          73.918732,
+          18.557861
+        ],
+        [
+          73.918709,
+          18.557765
+        ],
+        [
+          73.918674,
+          18.557609
+        ],
+        [
+          73.918642,
+          18.557443
+        ],
+        [
+          73.918592,
+          18.557171
+        ],
+        [
+          73.918577,
+          18.557091
+        ],
+        [
+          73.918575,
+          18.557079
+        ],
+        [
+          73.91853,
+          18.556778
+        ],
+        [
+          73.918524,
+          18.556736
+        ],
+        [
+          73.918496,
+          18.556549
+        ],
+        [
+          73.918418,
+          18.555979
+        ],
+        [
+          73.91839,
+          18.5557
+        ],
+        [
+          73.918349,
+          18.555288
+        ],
+        [
+          73.918332,
+          18.555118
+        ],
+        [
+          73.918319,
+          18.554956
+        ],
+        [
+          73.918284,
+          18.554567
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712031",
+      "name": "Connector 294712031",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.919964,
+          18.55858
+        ],
+        [
+          73.919944,
+          18.558575
+        ],
+        [
+          73.919923,
+          18.558578
+        ],
+        [
+          73.919905,
+          18.558586
+        ],
+        [
+          73.919891,
+          18.5586
+        ],
+        [
+          73.919883,
+          18.558618
+        ],
+        [
+          73.919882,
+          18.558637
+        ],
+        [
+          73.919887,
+          18.558656
+        ],
+        [
+          73.919899,
+          18.558672
+        ],
+        [
+          73.919916,
+          18.558682
+        ],
+        [
+          73.919936,
+          18.558687
+        ],
+        [
+          73.919957,
+          18.558685
+        ],
+        [
+          73.919975,
+          18.558676
+        ],
+        [
+          73.919989,
+          18.558662
+        ],
+        [
+          73.919997,
+          18.558644
+        ],
+        [
+          73.919999,
+          18.558625
+        ],
+        [
+          73.919993,
+          18.558606
+        ],
+        [
+          73.919981,
+          18.558591
+        ],
+        [
+          73.919964,
+          18.55858
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712069",
+      "name": "Connector 294712069",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.919845,
+          18.557241
+        ],
+        [
+          73.91985,
+          18.557252
+        ],
+        [
+          73.919881,
+          18.557394
+        ],
+        [
+          73.919924,
+          18.557534
+        ],
+        [
+          73.919954,
+          18.557631
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712070",
+      "name": "Connector 294712070",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.920729,
+          18.557241
+        ],
+        [
+          73.920733,
+          18.557441
+        ],
+        [
+          73.920709,
+          18.55761
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712072",
+      "name": "Lane Number 4",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.918642,
+          18.557443
+        ],
+        [
+          73.919167,
+          18.557343
+        ],
+        [
+          73.91918,
+          18.557341
+        ],
+        [
+          73.919834,
+          18.557235
+        ],
+        [
+          73.919845,
+          18.557241
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712073",
+      "name": "Connector 294712073",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.920348,
+          18.558263
+        ],
+        [
+          73.920237,
+          18.557968
+        ],
+        [
+          73.920185,
+          18.557828
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712074",
+      "name": "Connector 294712074",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.920179,
+          18.55943
+        ],
+        [
+          73.920055,
+          18.559013
+        ],
+        [
+          73.919957,
+          18.558685
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712083",
+      "name": "Connector 294712083",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.919923,
+          18.558578
+        ],
+        [
+          73.919788,
+          18.55812
+        ],
+        [
+          73.919702,
+          18.557829
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712084",
+      "name": "Connector 294712084",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.918901,
+          18.559248
+        ],
+        [
+          73.919053,
+          18.559227
+        ],
+        [
+          73.920055,
+          18.559013
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712085",
+      "name": "Connector 294712085",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.919411,
+          18.559663
+        ],
+        [
+          73.919939,
+          18.559541
+        ],
+        [
+          73.920179,
+          18.55943
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712094",
+      "name": "Lane Number 1",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.919954,
+          18.557631
+        ],
+        [
+          73.919685,
+          18.557687
+        ],
+        [
+          73.918854,
+          18.557837
+        ],
+        [
+          73.918732,
+          18.557861
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712095",
+      "name": "Connector 294712095",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.921452,
+          18.557641
+        ],
+        [
+          73.920817,
+          18.557605
+        ],
+        [
+          73.920709,
+          18.55761
+        ],
+        [
+          73.920381,
+          18.557571
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712099",
+      "name": "Connector 294712099",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.920421,
+          18.557921
+        ],
+        [
+          73.920297,
+          18.557679
+        ],
+        [
+          73.920268,
+          18.557527
+        ],
+        [
+          73.920338,
+          18.55746
+        ],
+        [
+          73.920357,
+          18.557405
+        ],
+        [
+          73.92035,
+          18.557298
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712100",
+      "name": "Connector 294712100",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.920021,
+          18.557347
+        ],
+        [
+          73.920165,
+          18.557326
+        ],
+        [
+          73.92035,
+          18.557298
+        ],
+        [
+          73.920729,
+          18.557241
+        ],
+        [
+          73.921294,
+          18.557167
+        ],
+        [
+          73.921451,
+          18.557156
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294712103",
+      "name": "Connector 294712103",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.920237,
+          18.557968
+        ],
+        [
+          73.920421,
+          18.557921
+        ],
+        [
+          73.920496,
+          18.557904
+        ],
+        [
+          73.920681,
+          18.557849
+        ],
+        [
+          73.920864,
+          18.557836
+        ],
+        [
+          73.92145,
+          18.55787
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715383",
+      "name": "Connector 294715383",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.924849,
+          18.560486
+        ],
+        [
+          73.924919,
+          18.560868
+        ],
+        [
+          73.924955,
+          18.561145
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715386",
+      "name": "Connector 294715386",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.92387,
+          18.559193
+        ],
+        [
+          73.923802,
+          18.558979
+        ],
+        [
+          73.923613,
+          18.558308
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715393",
+      "name": "Connector 294715393",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.92322,
+          18.559857
+        ],
+        [
+          73.923188,
+          18.559527
+        ],
+        [
+          73.923138,
+          18.559201
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715410",
+      "name": "Connector 294715410",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.926393,
+          18.560299
+        ],
+        [
+          73.92639,
+          18.560115
+        ],
+        [
+          73.926388,
+          18.559909
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715420",
+      "name": "Connector 294715420",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.922249,
+          18.560321
+        ],
+        [
+          73.922483,
+          18.560312
+        ],
+        [
+          73.922885,
+          18.560296
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715422",
+      "name": "Connector 294715422",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.924486,
+          18.559977
+        ],
+        [
+          73.924542,
+          18.560488
+        ],
+        [
+          73.924621,
+          18.561194
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715423",
+      "name": "Connector 294715423",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.922485,
+          18.559921
+        ],
+        [
+          73.922488,
+          18.559809
+        ],
+        [
+          73.92242,
+          18.559272
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715424",
+      "name": "Connector 294715424",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.926867,
+          18.559011
+        ],
+        [
+          73.926898,
+          18.559413
+        ],
+        [
+          73.926919,
+          18.559908
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715425",
+      "name": "Connector 294715425",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.926479,
+          18.560473
+        ],
+        [
+          73.927903,
+          18.560575
+        ],
+        [
+          73.928029,
+          18.560577
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715426",
+      "name": "Connector 294715426",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.926097,
+          18.558993
+        ],
+        [
+          73.926143,
+          18.55956
+        ],
+        [
+          73.926174,
+          18.559907
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-294715427",
+      "name": "Connector 294715427",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.924813,
+          18.559881
+        ],
+        [
+          73.924735,
+          18.55988
+        ],
+        [
+          73.924591,
+          18.559883
+        ]
+      ]
     }
   ]
 }
