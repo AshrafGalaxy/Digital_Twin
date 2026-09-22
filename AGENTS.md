@@ -60,13 +60,21 @@ Use only these standardized provenance source modes:
 
 ---
 
-## 6. Definition of Done Checklist
+## 6. Test Hermeticity & CI Invariants
+
+- **Hermetic Test Isolation:** Tests must be 100% self-contained and order-invariant. Never rely on alphabetical file execution order or pre-existing local database files (`data/digital_twin.db`).
+- **Session-Scoped Schema Provisioning:** All test runs on clean CI environments must provision schemas and authoritative seed records via a session-scoped fixture in `tests/conftest.py` (`autouse=True`) invoking `init_db_schema()`.
+- **Order-Invariance Contract:** Every individual test file must pass when executed in total isolation (`pytest tests/<file>.py`) on a fresh checkout with no pre-existing `.db` files.
+
+---
+
+## 7. Definition of Done Checklist
 
 A contribution is complete only when:
 - [ ] It maps to an approved requirement and preserves all architectural invariants.
 - [ ] It handles normal, stale, empty, and error failure states.
 - [ ] It strictly separates observed, predicted, and simulated state classes.
-- [ ] All automated tests pass (`pytest tests/` 100% pass rate).
+- [ ] All automated tests pass (`pytest tests/` 100% pass rate hermetically on clean runners).
 - [ ] Frontend builds cleanly with 0 TypeScript/build errors (`npm run build`).
 - [ ] Transient scripts, scratch files, and caches are deleted immediately after execution.
 - [ ] It contains zero hardcoded secrets or unlicensed data.
