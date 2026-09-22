@@ -14,6 +14,7 @@ import { ScenarioStudioView } from './components/views/ScenarioStudioView';
 import { RecommendationsView } from './components/views/RecommendationsView';
 import { SystemHealthView } from './components/views/SystemHealthView';
 import { PilotEvaluationView } from './components/views/PilotEvaluationView';
+import { LandingPageView } from './components/views/LandingPageView';
 import { TimeScrubber } from './components/TimeScrubber';
 import {
   EntityCurrentState,
@@ -256,7 +257,7 @@ export const App: React.FC = () => {
             if (seg && seg.metrics && typeof seg.metrics.averageSpeedKmh === 'number') {
               const currentSpeed = seg.metrics.averageSpeedKmh;
               const speedJitter = (Math.random() - 0.49) * 0.4;
-              const newSpeed = Math.round(Math.max(20.0, Math.min(56.0, currentSpeed + speedJitter)) * 10) / 10;
+              const newSpeed = Math.round(Math.max(0.0, Math.min(56.0, currentSpeed + speedJitter)) * 10) / 10;
               const newCongestion = Math.round(Math.max(0.06, Math.min(0.85, 1.0 - (newSpeed / 52.0))) * 100) / 100;
               next[key] = {
                 ...seg,
@@ -353,18 +354,27 @@ export const App: React.FC = () => {
         {liveAnnouncement}
       </div>
 
-      <Header
-        wsConnected={wsConnected}
-        currentMode={effectiveMode}
-        lastUpdated={effectiveUpdated}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        activeAdvisoriesCount={advisorySummary?.totalActive || 0}
-        userRole={userRole}
-        onOpenAuthModal={() => setIsRoleAuthOpen(true)}
-      />
+      {activeTab !== 'landing' && (
+        <Header
+          wsConnected={wsConnected}
+          currentMode={effectiveMode}
+          lastUpdated={effectiveUpdated}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          activeAdvisoriesCount={advisorySummary?.totalActive || 0}
+          userRole={userRole}
+          onOpenAuthModal={() => setIsRoleAuthOpen(true)}
+        />
+      )}
 
-      <main id="main-content" tabIndex={-1} className="workspace" aria-label="Main Operational Workspace">
+      <main id="main-content" tabIndex={-1} className={activeTab === 'landing' ? 'landing-workspace' : 'workspace'} aria-label="Main Operational Workspace">
+        {/* VIEW 0: Landing Page & Corridor Platform Architecture */}
+        {activeTab === 'landing' && (
+          <LandingPageView
+            onLaunchConsole={(targetTab) => setActiveTab(targetTab || 'operations')}
+          />
+        )}
+
         {/* VIEW 1: Operations Map & Live Corridor Overview */}
         {activeTab === 'operations' && (
           <div className="operations-view-layout">

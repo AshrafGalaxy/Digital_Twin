@@ -826,17 +826,24 @@ async def _seed_initial_current_state(session: AsyncSession) -> int:
             :metrics, :quality_status, :freshness_seconds
         );
     """)
-    await session.execute(stmt, {
-        "entity_id": "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01",
-        "entity_type": "BuildingZone",
-        "source_mode": "REPLAY",
-        "observed_at": now_utc,
-        "updated_at": now_utc,
-        "metrics": json.dumps(energy_metrics),
-        "quality_status": "VALID",
-        "freshness_seconds": 15.0
-    })
-    count += 1
+    # Seed Phoenix Marketcity current energy state (Canonical URN + Spatial/Legacy Aliases)
+    bld_urns = [
+        ("urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01", "Building"),
+        ("urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01", "BuildingZone"),
+        ("urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01", "BuildingZone"),
+    ]
+    for bld_id, bld_type in bld_urns:
+        await session.execute(stmt, {
+            "entity_id": bld_id,
+            "entity_type": bld_type,
+            "source_mode": "REPLAY",
+            "observed_at": now_utc,
+            "updated_at": now_utc,
+            "metrics": json.dumps(energy_metrics),
+            "quality_status": "VALID",
+            "freshness_seconds": 15.0
+        })
+        count += 1
 
     return count
 

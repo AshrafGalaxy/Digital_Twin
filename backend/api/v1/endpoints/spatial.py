@@ -22,7 +22,10 @@ async def get_spatial_registry():
     Contains versioned mappings between PostGIS entities, SUMO edges/lanes/junctions,
     traffic signal controllers, building heights, and sensors.
     """
-    return spatial_service.catalog
+    try:
+        return spatial_service.catalog
+    except (FileNotFoundError, RuntimeError):
+        raise HTTPException(status_code=503, detail="Spatial registry catalog unavailable")
 
 
 @router.get("/corridor-3d", response_model=Dict[str, Any])
@@ -32,24 +35,30 @@ async def get_corridor_3d_geojson():
     Includes extruded building footprints with height/level attributes,
     road centerlines with lane counts, signal heads at stop lines, and sensor markers.
     """
-    return spatial_service.get_corridor_3d_geojson()
+    try:
+        return spatial_service.get_corridor_3d_geojson()
+    except (FileNotFoundError, RuntimeError):
+        raise HTTPException(status_code=503, detail="Spatial registry catalog unavailable")
 
 
 @router.get("/layers/{layer_name}", response_model=Dict[str, Any])
 async def get_spatial_layer(
-    layer_name: str = Path(..., description="Target layer: buildings, roads, intersections, signals, sensors, study_area")
+    layer_name: str = Path(..., description="Target layer: buildings, roads, intersections, signals, sensors, trees, secondary_streets, study_area")
 ):
     """
     Returns a GeoJSON FeatureCollection filtered to a specific spatial layer.
     """
-    valid_layers = {"buildings", "roads", "intersections", "signals", "sensors", "study_area"}
+    valid_layers = {"buildings", "roads", "intersections", "signals", "sensors", "trees", "secondary_streets", "study_area"}
     norm_layer = layer_name.lower().strip()
     if norm_layer not in valid_layers:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid layer '{layer_name}'. Valid layers are: {', '.join(sorted(valid_layers))}"
         )
-    return spatial_service.get_layer_geojson(norm_layer)
+    try:
+        return spatial_service.get_layer_geojson(norm_layer)
+    except (FileNotFoundError, RuntimeError):
+        raise HTTPException(status_code=503, detail="Spatial registry catalog unavailable")
 
 
 @router.get("/resolve/{entity_id}", response_model=SpatialEntityResolution)
@@ -60,7 +69,10 @@ async def resolve_spatial_entity(
     Resolves any entity identifier to its PostGIS coordinates, equivalent SUMO ID,
     and associated spatial properties.
     """
-    res = spatial_service.resolve_entity(entity_id)
+    try:
+        res = spatial_service.resolve_entity(entity_id)
+    except (FileNotFoundError, RuntimeError):
+        raise HTTPException(status_code=503, detail="Spatial registry catalog unavailable")
     if not res.spatialFound:
         raise HTTPException(status_code=404, detail=f"Entity '{entity_id}' not found in spatial registry")
     return res

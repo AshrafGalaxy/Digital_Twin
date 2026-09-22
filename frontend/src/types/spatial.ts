@@ -97,7 +97,7 @@ export interface Corridor3DFeature {
   type: 'Feature';
   id: string;
   geometry: {
-    type: 'Point' | 'LineString' | 'Polygon';
+    type: 'Point' | 'LineString' | 'Polygon' | 'MultiPolygon';
     coordinates: any;
   };
   properties: {
@@ -119,12 +119,15 @@ export interface Corridor3DFeature {
 
 export interface Corridor3DFeatureCollection {
   type: 'FeatureCollection';
+  crs?: { type: string; properties: { name: string } };
   features: Corridor3DFeature[];
   metadata?: {
-    generatedAt: string;
-    crs: string;
-    featureCount: number;
-    studyArea: string;
-    corridorLengthKm: number;
+    generatedAt?: string;
+    crs?: string;
+    registryVersion?: string;
+    featureCount?: number;
+    totalFeatures?: number;
+    studyArea?: string;
+    corridorLengthKm?: number;
   };
 }

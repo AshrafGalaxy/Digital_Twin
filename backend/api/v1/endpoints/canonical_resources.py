@@ -115,8 +115,20 @@ async def get_generic_entity(entity_id: str):
         if ix["id"] == entity_id or ix["id"].endswith(entity_id):
             return {"entityType": "Intersection", "data": ix}
     # Check energy
+    phoenix_aliases = {
+        "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+        "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01",
+        "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01",
+        "BLD-PHOENIX-01",
+        "PHOENIX-01",
+    }
     for ent in energy.get("entities", []):
-        if ent["id"] == entity_id or ent["id"].endswith(entity_id):
+        ent_id = ent.get("id", "")
+        if (
+            ent_id == entity_id
+            or ent_id.endswith(entity_id)
+            or (entity_id in phoenix_aliases and any(a in ent_id for a in ("BLD-PHOENIX-01", "PHOENIX-01")))
+        ):
             return {"entityType": "BuildingZone", "data": ent}
     # Check sensors
     for s in sensors.get("sensors", []):
@@ -140,8 +152,18 @@ async def query_observations(
     sql = f"SELECT * FROM {table_name}"
     params: Dict[str, Any] = {"limit": limit}
     if entity_id:
-        sql += f" WHERE {id_col} = :entity_id"
-        params["entity_id"] = entity_id
+        phoenix_aliases = {
+            "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01",
+            "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01",
+            "BLD-PHOENIX-01",
+            "PHOENIX-01",
+        }
+        if domain == "energy" and entity_id in phoenix_aliases:
+            sql += f" WHERE {id_col} IN ('urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01', 'urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01', 'urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01')"
+        else:
+            sql += f" WHERE {id_col} = :entity_id"
+            params["entity_id"] = entity_id
     sql += " ORDER BY observed_at DESC LIMIT :limit"
 
     try:

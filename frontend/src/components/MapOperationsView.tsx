@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
-import { Map, Globe, TableProperties } from 'lucide-react';
+import { Map, Globe, TableProperties, Satellite, Moon, Zap } from 'lucide-react';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { CesiumCorridorViewer } from './CesiumCorridorViewer';
@@ -1053,7 +1053,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
 
         const beacon = document.createElement('div');
         beacon.className = 'junction-beacon';
-        beacon.innerHTML = '🚦';
+        beacon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400"><rect width="14" height="20" x="5" y="2" rx="3"/><circle cx="12" cy="7" r="1.5" fill="#EF4444"/><circle cx="12" cy="12" r="1.5" fill="#F59E0B"/><circle cx="12" cy="17" r="1.5" fill="#10B981"/></svg>';
         el.appendChild(beacon);
 
         const label = document.createElement('div');
@@ -1099,7 +1099,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       energyEl.style.color = '#F0883E';
       energyEl.style.cursor = 'pointer';
       energyEl.title = 'Phoenix Marketcity Commercial Energy Zone (Sanctioned: 8,500 kVA)';
-      energyEl.innerHTML = '<span>⚡</span><span>Phoenix Marketcity (Energy)</span>';
+      energyEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Phoenix Marketcity (Energy)</span>';
       const energyMarker = new maplibregl.Marker({ element: energyEl })
         .setLngLat([73.9170, 18.5625])
         .addTo(currentMap);
@@ -1202,8 +1202,9 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             </span>
           </div>
           {hoveredBuilding.demandKw && (
-            <div style={{ fontSize: '11px', color: '#F0883E', fontWeight: 600 }}>
-              ⚡ Sanctioned Demand: {hoveredBuilding.demandKw.toLocaleString()} kW
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#F0883E', fontWeight: 600 }}>
+              <Zap size={11} aria-hidden="true" />
+              <span>Sanctioned Demand: {hoveredBuilding.demandKw.toLocaleString()} kW</span>
             </div>
           )}
         </div>
@@ -1222,60 +1223,82 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         />
       )}
 
-      {/* 3D Presentation & Accessibility Mode Overlay Controls (Hidden in Table View to eliminate overlap) */}
+      {/* Unified Corridor Map & Presentation Controls (Hidden in Table View) */}
       {!isTableView && (
-        <div className="map-3d-controls-overlay" role="toolbar" aria-label="Map Presentation Controls">
-          <button
-            type="button"
-            className="map-view-toggle-btn"
-            onClick={() => handleToggleTableView(true)}
-            title="Switch to Synchronized Accessible Table View (WCAG 2.1 AA)"
-          >
-            <TableProperties size={13} aria-hidden="true" />
-            <span>Table View</span>
-          </button>
-
-          <div style={{ display: 'flex', gap: '3px', background: 'rgba(15,23,42,0.85)', padding: '2px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
+        <div className="map-operations-toolbar" role="toolbar" aria-label="Corridor Map & Presentation Controls">
+          {/* Basemap Selector (Clean Segmented Control) */}
+          <div className="toolbar-segmented-group" role="radiogroup" aria-label="Basemap Style">
             <button
               type="button"
-              className={`map-view-toggle-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
+              className={`toolbar-segmented-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
               onClick={() => setBasemapMode('satellite')}
-              title="Photorealistic Satellite Imagery"
+              title="Satellite Imagery"
+              role="radio"
+              aria-checked={basemapMode === 'satellite'}
             >
-              <span>🛰️ Satellite</span>
+              <Satellite size={11} aria-hidden="true" />
+              <span>Satellite</span>
             </button>
             <button
               type="button"
-              className={`map-view-toggle-btn ${basemapMode === 'streets' ? 'active' : ''}`}
+              className={`toolbar-segmented-btn ${basemapMode === 'streets' ? 'active' : ''}`}
               onClick={() => setBasemapMode('streets')}
-              title="Google Maps-Style Clean Street Map"
+              title="Clean Street Map"
+              role="radio"
+              aria-checked={basemapMode === 'streets'}
             >
-              <span>🗺️ Streets</span>
+              <Map size={11} aria-hidden="true" />
+              <span>Streets</span>
             </button>
             <button
               type="button"
-              className={`map-view-toggle-btn ${basemapMode === 'dark' ? 'active' : ''}`}
+              className={`toolbar-segmented-btn ${basemapMode === 'dark' ? 'active' : ''}`}
               onClick={() => setBasemapMode('dark')}
               title="Dark Operations Canvas"
+              role="radio"
+              aria-checked={basemapMode === 'dark'}
             >
-              <span>🌃 Dark</span>
+              <Moon size={11} aria-hidden="true" />
+              <span>Dark</span>
             </button>
           </div>
 
+          <div className="toolbar-divider" aria-hidden="true" />
+
+          {/* 2D / 3D Dimension Toggle (Clean Segmented Switch) */}
+          <div className="toolbar-segmented-group" role="group" aria-label="Map Dimension">
+            <button
+              type="button"
+              className={`toolbar-segmented-btn ${!is3DMode ? 'active' : ''}`}
+              onClick={() => { if (is3DMode) toggle3DMode(); }}
+              title="2D MapLibre Plan View"
+            >
+              <Map size={11} aria-hidden="true" />
+              <span>2D Map</span>
+            </button>
+            <button
+              type="button"
+              className={`toolbar-segmented-btn ${is3DMode ? 'active' : ''}`}
+              onClick={() => { if (!is3DMode) toggle3DMode(); }}
+              title="3D Cesium Digital Twin"
+            >
+              <Globe size={11} aria-hidden="true" />
+              <span>3D Twin</span>
+            </button>
+          </div>
+
+          <div className="toolbar-divider" aria-hidden="true" />
+
+          {/* Accessible Table View Toggle */}
           <button
             type="button"
-            className={`map-3d-toggle-btn ${is3DMode ? 'active' : ''}`}
-            onClick={toggle3DMode}
-            title={is3DMode ? "Switch to 2D MapLibre View" : "Enable Cesium 3D Corridor Digital Twin"}
+            className="toolbar-action-btn"
+            onClick={() => handleToggleTableView(true)}
+            title="Switch to Accessible Table View (WCAG 2.1 AA)"
           >
-            {is3DMode ? <Map size={13} aria-hidden="true" /> : <Globe size={13} aria-hidden="true" />}
-            <span>{is3DMode ? '2D Map' : '3D Twin'}</span>
+            <TableProperties size={11} aria-hidden="true" />
+            <span>Table</span>
           </button>
-          {is3DMode && (
-            <span className="provenance-badge badge-simulation" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-              3D DIGITAL TWIN
-            </span>
-          )}
         </div>
       )}
 
@@ -1347,7 +1370,9 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                       </td>
                       <td>
                         <span className="font-mono">
-                          {Math.max(12, speed * 0.94).toFixed(1)} km/h
+                          {state?.metrics && (state.metrics as any).forecastSpeedKmh != null
+                            ? `${(state.metrics as any).forecastSpeedKmh.toFixed(1)} km/h`
+                            : '—'}
                         </span>
                       </td>
                       <td>

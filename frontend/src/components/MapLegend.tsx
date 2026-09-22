@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Radio, Zap } from 'lucide-react';
 
 interface MapLegendProps {
   isDrawerOpen?: boolean;
@@ -47,8 +47,12 @@ export const MapLegend: React.FC<MapLegendProps> = ({
             </div>
           </div>
           <div className="legend-asset-row">
-            <span className="legend-asset-chip">🚦 Signalized Chowk</span>
-            <span className="legend-asset-chip">⚡ Phoenix Energy</span>
+            <span className="legend-asset-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Radio size={10} aria-hidden="true" color="#38BDF8" /> Signalized Chowk
+            </span>
+            <span className="legend-asset-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Zap size={10} aria-hidden="true" color="#F0883E" /> Phoenix Energy
+            </span>
           </div>
         </div>
       )}

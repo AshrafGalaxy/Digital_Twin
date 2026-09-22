@@ -204,10 +204,11 @@ class TelemetryStreamerWorker:
                             entity_id, entity_type, source_mode, observed_at,
                             updated_at, metrics, quality_status, freshness_seconds
                         ) VALUES (
-                            :entity_id, 'RoadSegment', :source_mode, :observed_at,
+                            :entity_id, :entity_type, :source_mode, :observed_at,
                             :updated_at, :metrics, 'VALID', 0.0
                         )
                         ON CONFLICT (entity_id) DO UPDATE SET
+                            entity_type = EXCLUDED.entity_type,
                             source_mode = EXCLUDED.source_mode,
                             observed_at = EXCLUDED.observed_at,
                             updated_at = EXCLUDED.updated_at,
@@ -217,6 +218,7 @@ class TelemetryStreamerWorker:
                     """)
                     await session.execute(upsert_state, {
                         "entity_id": seg_id,
+                        "entity_type": "RoadSegment",
                         "source_mode": self.mode,
                         "observed_at": now_iso,
                         "updated_at": now_iso,
@@ -241,31 +243,44 @@ class TelemetryStreamerWorker:
                         :reactive_power_kvar, :power_factor, :energy_consumption_kwh, 'VALID'
                     )
                 """)
-                bld_id = "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01"
-                await session.execute(energy_stmt, {
-                    "observed_at": now_iso,
-                    "building_id": bld_id,
-                    "source_mode": self.mode,
-                    "active_power_kw": round(energy_load_kw, 2),
-                    "reactive_power_kvar": round(reactive_kvar, 2),
-                    "power_factor": power_factor,
-                    "energy_consumption_kwh": round(energy_load_kw * 24.0, 1)
-                })
+                # Insert Energy Observation under Canonical URN and legacy alias
+                canonical_bld_id = "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01"
+                legacy_bld_id = "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01"
+                spatial_bld_id = "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01"
 
-                # Update Building Current State
+                for b_id in (canonical_bld_id, legacy_bld_id):
+                    await session.execute(energy_stmt, {
+                        "observed_at": now_iso,
+                        "building_id": b_id,
+                        "source_mode": self.mode,
+                        "active_power_kw": round(energy_load_kw, 2),
+                        "reactive_power_kvar": round(reactive_kvar, 2),
+                        "power_factor": power_factor,
+                        "energy_consumption_kwh": round(energy_load_kw * 24.0, 1)
+                    })
+
+                # Update Building Current State for canonical and alias URNs
                 bld_metrics = {
                     "activePowerKw": round(energy_load_kw, 1),
                     "reactivePowerKvar": round(reactive_kvar, 1),
                     "powerFactor": power_factor,
                     "energyConsumptionKwh": round(energy_load_kw * 24.0, 1)
                 }
-                await session.execute(upsert_state, {
-                    "entity_id": bld_id,
-                    "source_mode": self.mode,
-                    "observed_at": now_iso,
-                    "updated_at": now_iso,
-                    "metrics": json.dumps(bld_metrics)
-                })
+                for b_id, b_type in [
+                    (canonical_bld_id, "Building"),
+                    (spatial_bld_id, "BuildingZone"),
+                    (legacy_bld_id, "BuildingZone"),
+                ]:
+                    await session.execute(upsert_state, {
+                        "entity_id": b_id,
+                        "entity_type": b_type,
+                        "source_mode": self.mode,
+                        "observed_at": now_iso,
+                        "updated_at": now_iso,
+                        "metrics": json.dumps(bld_metrics),
+                        "quality_status": "VALID",
+                        "freshness_seconds": 0.0
+                    })
 
                 # 3. Generate & Persist Environmental Air Quality & Weather Observation
                 weather = await self.weather_client.get_current_weather()

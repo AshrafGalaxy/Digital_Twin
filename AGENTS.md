@@ -21,6 +21,7 @@
 2. **State Separation Invariant:** Observed (`LIVE`/`REPLAY`), `SIMULATION`, and `PREDICTED` records are strictly separated into distinct tables. Predictions and simulations must **never** overwrite observed twin state.
 3. **Strict Non-Actuation:** The platform is read-only decision support. Recommendations are advisory and require human authorization outside the platform before any field action.
 4. **Mandatory Provenance:** Every dynamic value returned by APIs or displayed in the UI must specify `sourceMode`, `observedAt`/`generatedAt`, unit, and quality status.
+5. **Strictly No Emojis:** Never use emojis in UI components, toolbars, buttons, badges, tables, tooltips, or alerts. Use professional vector iconography (Lucide React) or clean, professional text instead.
 
 ---
 
@@ -78,5 +79,6 @@ A contribution is complete only when:
 - [ ] All automated tests pass (`pytest tests/` 100% pass rate hermetically on clean runners).
 - [ ] Frontend builds cleanly with 0 TypeScript/build errors (`npm run build`).
 - [ ] Transient scripts, scratch files, and caches are deleted immediately after execution.
+- [ ] Contains zero emojis in frontend components, toolbars, and alerts (vector icons or plain text only).
 - [ ] It contains zero hardcoded secrets or unlicensed data.
 - [ ] Commit messages follow concise conventional syntax (<60 chars). Strictly NEVER include the word "phase" or phase tags (e.g. "Phase 8", "P4B").

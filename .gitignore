@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.pytest_cache/
 
 # Node / Frontend artifacts
 node_modules/

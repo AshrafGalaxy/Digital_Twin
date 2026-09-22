@@ -2,7 +2,7 @@
 <!--
   viman_nagar.nod.xml
   Junction nodes definition for Nagar Road corridor (Viman Nagar Chowk to Somnath Nagar Chowk)
-  EPSG:4326 projected coordinates centered around Pune Nagar Road
+  Local UTM Zone 43N projected metric coordinates (EPSG:32643, +proj=utm +zone=43) centered around Pune Nagar Road
 -->
 <nodes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/nodes_file.xsd">
     <!-- Corridor Intersections -->

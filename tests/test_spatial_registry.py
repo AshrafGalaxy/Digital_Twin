@@ -194,6 +194,28 @@ def test_api_resolve_spatial_entity():
     assert resp_none.status_code == 404
 
 
+def test_building_entity_resolution_isolation_and_aliases():
+    """Verify Phoenix aliases resolve strictly to Phoenix and non-Phoenix buildings do not false-match."""
+    # Canonical Building URN
+    res_can = spatial_service.resolve_entity("urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01")
+    assert res_can.spatialFound is True
+    assert "PHOENIX" in res_can.entityId.upper()
+
+    # Short form ID
+    res_short = spatial_service.resolve_entity("BLD-PHOENIX-01")
+    assert res_short.spatialFound is True
+    assert "PHOENIX" in res_short.entityId.upper()
+
+    # Non-existent building must not resolve to Phoenix
+    res_other = spatial_service.resolve_entity("BLD-NONEXISTENT-99")
+    assert res_other.spatialFound is False
+
+    # Resolution via API
+    resp_alias = client.get("/api/v1/spatial/resolve/urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01")
+    assert resp_alias.status_code == 200
+    assert resp_alias.json()["spatialFound"] is True
+
+
 from backend.core.schema_migrator import init_db_schema
 
 

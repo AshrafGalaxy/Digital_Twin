@@ -16,6 +16,7 @@ import { SourceMode, MunicipalRole } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 
 export type TabId =
+  | 'landing'
   | 'operations'
   | 'traffic'
   | 'energy'
@@ -26,10 +27,11 @@ export type TabId =
   | 'health';
 
 export const ROLE_ALLOWED_TABS: Record<MunicipalRole, TabId[]> = {
-  'Traffic Systems Engineer': ['operations', 'traffic', 'scenarios', 'recommendations'],
-  'Energy Grid Manager': ['operations', 'energy', 'environment', 'recommendations'],
-  'Executive Auditor': ['recommendations', 'evaluation', 'health'],
+  'Traffic Systems Engineer': ['landing', 'operations', 'traffic', 'scenarios', 'recommendations'],
+  'Energy Grid Manager': ['landing', 'operations', 'energy', 'environment', 'recommendations'],
+  'Executive Auditor': ['landing', 'recommendations', 'evaluation', 'health'],
   'Municipal Analyst': [
+    'landing',
     'operations',
     'traffic',
     'energy',
@@ -87,9 +89,36 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Strip: Brand + Global Telemetry / Governance Badges */}
       <div className="header-top-row">
         <div className="brand-section">
-          <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
-          <span className="brand-title">Digital Twin</span>
+          <div
+            className="brand-clickable"
+            onClick={() => onSelectTab('landing')}
+            title="Return to Platform Overview & Landing Page"
+            role="button"
+            tabIndex={0}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+          >
+            <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
+            <span className="brand-title">Digital Twin</span>
+          </div>
           <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>
+          <button
+            className="brand-overview-btn"
+            onClick={() => onSelectTab('landing')}
+            title="Platform Overview & Architecture"
+            style={{
+              background: 'rgba(47, 129, 247, 0.12)',
+              border: '1px solid rgba(47, 129, 247, 0.35)',
+              color: 'var(--color-primary-hover)',
+              padding: '2px 8px',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              marginLeft: '4px'
+            }}
+          >
+            Overview
+          </button>
         </div>
 
         <div className="status-section">

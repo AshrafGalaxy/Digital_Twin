@@ -5,7 +5,8 @@ import { EntityCurrentState, RoadSegmentAsset, IntersectionAsset } from '../type
 import { fetchCorridor3DGeoJson } from '../services/spatialApi';
 import { Corridor3DFeatureCollection } from '../types/spatial';
 import { CesiumCameraControls, CORRIDOR_VIEWPOINTS, CameraViewpoint } from './CesiumCameraControls';
-import { Activity, AlertTriangle } from 'lucide-react';
+import { Activity, AlertTriangle, Sunset, Sun, Moon, Zap } from 'lucide-react';
+import fallbackBuildingsJson from '../assets/corridor_buildings_3d.json';
 
 interface CesiumCorridorViewerProps {
   roadSegments: RoadSegmentAsset[];
@@ -24,6 +25,7 @@ interface LiveKinematicVehicle {
   coords: [number, number][];
   lengthMeters: number;
   laneIndex: number;
+  laneOffsetMeters: number;
   progress: number; // 0.0 to 1.0 along segment
   speedKmh: number;
   dimensions: Cesium.Cartesian3;
@@ -32,48 +34,81 @@ interface LiveKinematicVehicle {
   currentOrientation: Cesium.Quaternion;
 }
 
-function computePolylineLengthMeters(coords: [number, number][]): number {
-  let total = 0;
-  for (let i = 0; i < coords.length - 1; i++) {
-    const dx = (coords[i + 1][0] - coords[i][0]) * 105360.0;
-    const dy = (coords[i + 1][1] - coords[i][1]) * 111139.0;
-    total += Math.hypot(dx, dy);
-  }
-  return Math.max(50.0, total);
+interface SegmentCumulativeDist {
+  cumDistances: number[];
+  totalMeters: number;
 }
 
-// Calculates WGS84 Position and Cesium Orientation for a vehicle at fractional progress [0, 1)
+function computeCumulativeDistances(coords: [number, number][]): SegmentCumulativeDist {
+  const cumDistances = [0];
+  let total = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const dxMeters = (coords[i + 1][0] - coords[i][0]) * 105360.0;
+    const dyMeters = (coords[i + 1][1] - coords[i][1]) * 111139.0;
+    total += Math.hypot(dxMeters, dyMeters);
+    cumDistances.push(total);
+  }
+  return { cumDistances, totalMeters: Math.max(50.0, total) };
+}
+
+function computePolylineLengthMeters(coords: [number, number][]): number {
+  return computeCumulativeDistances(coords).totalMeters;
+}
+
+// Calculates geodesically accurate WGS84 Position and Cesium Orientation for a vehicle
+// using metric arc length along the polyline and metric aspect-scaled heading
 function computeKinematicPose(
   coords: [number, number][],
   progress: number,
-  laneIndex: number
+  laneOffsetMeters: number
 ): { position: Cesium.Cartesian3; orientation: Cesium.Quaternion } {
+  if (coords.length < 2) {
+    const pt = coords[0] || [73.9185, 18.5609];
+    const pos = Cesium.Cartesian3.fromDegrees(pt[0], pt[1], 1.2);
+    return { position: pos, orientation: Cesium.Quaternion.IDENTITY };
+  }
+
+  const { cumDistances, totalMeters } = computeCumulativeDistances(coords);
   const normProgress = ((progress % 1.0) + 1.0) % 1.0;
-  const index = Math.min(coords.length - 2, Math.floor(normProgress * (coords.length - 1)));
+  const targetDist = normProgress * totalMeters;
+
+  let index = 0;
+  for (let i = 0; i < cumDistances.length - 1; i++) {
+    if (targetDist >= cumDistances[i] && targetDist <= cumDistances[i + 1]) {
+      index = i;
+      break;
+    }
+  }
+  if (index >= coords.length - 1) index = coords.length - 2;
+
+  const d1 = cumDistances[index];
+  const d2 = cumDistances[index + 1];
+  const segDist = Math.max(1e-6, d2 - d1);
+  const subT = Math.max(0.0, Math.min(1.0, (targetDist - d1) / segDist));
+
   const p1 = coords[index];
   const p2 = coords[index + 1];
 
-  const subT = (normProgress * (coords.length - 1)) - index;
   const baseLng = p1[0] + (p2[0] - p1[0]) * subT;
   const baseLat = p1[1] + (p2[1] - p1[1]) * subT;
 
-  const dx = p2[0] - p1[0];
-  const dy = p2[1] - p1[1];
-  const segLen = Math.hypot(dx, dy) || 1e-6;
-  const tx = dx / segLen;
-  const ty = dy / segLen;
+  // Metric displacement deltas scaled for 18.56° latitude (1 deg lat ≈ 111139m, 1 deg lng ≈ 105360m)
+  const dxMeters = (p2[0] - p1[0]) * 105360.0;
+  const dyMeters = (p2[1] - p1[1]) * 111139.0;
+  const segLenMeters = Math.hypot(dxMeters, dyMeters) || 1e-6;
+
+  // Tangent unit vector in meters
+  const tx = dxMeters / segLenMeters;
+  const ty = dyMeters / segLenMeters;
 
   // Perpendicular normal vector pointing right of travel direction
   const nx = ty;
   const ny = -tx;
 
-  // True Heading in Cesium (measured clockwise from North)
-  const heading = Math.atan2(dx, dy);
+  // Geodesically correct Heading in Cesium (measured clockwise from North in radians)
+  const heading = Math.atan2(dxMeters, dyMeters);
 
-  // Multi-lane lateral distribution (Lane 0: -3.2m Curbside, Lane 1: 0m Through, Lane 2: +3.2m Median)
-  const laneOffsetMeters = (laneIndex - 1) * 3.2;
-
-  // Scale meters to degrees at 18.56° latitude (1 deg lat ≈ 111139m, 1 deg lng ≈ 105360m)
+  // Perpendicular lane offset converted back to WGS84 degrees
   const lng = baseLng + (nx * laneOffsetMeters) / 105360.0;
   const lat = baseLat + (ny * laneOffsetMeters) / 111139.0;
 
@@ -115,7 +150,15 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
-  // 1. Fetch Authoritative Corridor 3D GeoJSON
+  // Fresh mutable refs for click handlers to prevent stale closure bugs
+  const roadSegmentsRef = useRef(roadSegments);
+  roadSegmentsRef.current = roadSegments;
+  const intersectionsRef = useRef(intersections);
+  intersectionsRef.current = intersections;
+  const onSelectEntityRef = useRef(onSelectEntity);
+  onSelectEntityRef.current = onSelectEntity;
+
+  // 1. Fetch Authoritative Corridor 3D GeoJSON with Genuine Offline Fallback
   useEffect(() => {
     let isMounted = true;
     fetchCorridor3DGeoJson()
@@ -127,8 +170,31 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       })
       .catch((err) => {
         if (isMounted) {
-          console.error('[Cesium] Failed to fetch 3D GeoJSON:', err);
-          setErrorNotice('Unable to load corridor 3D assets. Using local fallback geometry.');
+          console.warn('[Cesium] Failed to fetch 3D GeoJSON, activating local bundled fallback:', err);
+          setErrorNotice('Unable to load remote corridor 3D assets. Using local fallback geometry.');
+          const fallbackData: Corridor3DFeatureCollection = {
+            type: 'FeatureCollection',
+            crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } },
+            metadata: {
+              generatedAt: new Date().toISOString(),
+              crs: 'urn:ogc:def:crs:OGC:1.3:CRS84',
+              featureCount: (fallbackBuildingsJson as any).features?.length || 0,
+              corridorLengthKm: 1.8,
+              studyArea: 'VN-SN'
+            },
+            features: ((fallbackBuildingsJson as any).features || []).map((f: any) => ({
+              ...f,
+              properties: {
+                ...f.properties,
+                layer: 'buildings',
+                entityType: 'BuildingZone',
+                heightMeters: f.properties?.height || 24,
+                buildingLevels: 6,
+                category: f.properties?.category || 'COMMERCIAL_RETAIL'
+              }
+            })) as any
+          };
+          setCorridorGeoJson(fallbackData);
           setIsLoading(false);
         }
       });
@@ -137,7 +203,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     };
   }, []);
 
-  // 2. Initialize Cesium Viewer
+  // 2. Initialize Cesium Viewer (Single-Mount Lifecycle, immune to theme toggles)
   useEffect(() => {
     if (!containerRef.current || viewerRef.current) return;
 
@@ -204,21 +270,43 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       // Screen-Space Handlers: Click Picking and Dynamic Mouse Hover
       const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
 
-      // Left Click: Select Entity
+      // Left Click: Select Entity (Roads, Intersections, or Buildings; filters out vehicles)
       handler.setInputAction((movement: any) => {
         const pickedObject = scene.pick(movement.position);
         if (Cesium.defined(pickedObject) && pickedObject.id) {
           const entity = pickedObject.id;
           const entityId = entity.id || (entity.properties && entity.properties.entityId?.getValue?.());
+
+          // Ignore kinematic vehicles so they don't hijack picking
+          if (entityId && typeof entityId === 'string' && entityId.startsWith('veh-')) {
+            return;
+          }
+
           if (entityId) {
-            const foundRoad = roadSegments.find((r) => r.id === entityId);
+            const foundRoad = roadSegmentsRef.current.find((r) => r.id === entityId);
             if (foundRoad) {
-              onSelectEntity(foundRoad);
+              onSelectEntityRef.current(foundRoad);
               return;
             }
-            const foundIx = intersections.find((ix) => ix.id === entityId);
+            const foundIx = intersectionsRef.current.find((ix) => ix.id === entityId);
             if (foundIx) {
-              onSelectEntity(foundIx);
+              onSelectEntityRef.current(foundIx);
+              return;
+            }
+            const eType = entity.properties?.entityType?.getValue?.() || entity.properties?.entityType;
+            if (eType === 'BuildingZone') {
+              const bldName = entity.name || 'Building Zone';
+              const bldCat = entity.properties?.category?.getValue?.() || entity.properties?.category || 'COMMERCIAL_RETAIL';
+              onSelectEntityRef.current({
+                id: entityId,
+                name: bldName,
+                direction: 'BOTH',
+                lengthMeters: 0,
+                speedLimitKmh: 0,
+                lanes: 0,
+                osmHighway: bldCat,
+                coordinates: []
+              } as any);
               return;
             }
           }
@@ -251,19 +339,21 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
       // Initial Camera Fly-To: Full Corridor Overview
       const defaultVp = CORRIDOR_VIEWPOINTS[0];
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(
-          defaultVp.longitude,
-          defaultVp.latitude,
-          defaultVp.height
-        ),
-        orientation: {
-          heading: Cesium.Math.toRadians(defaultVp.headingDegrees),
-          pitch: Cesium.Math.toRadians(defaultVp.pitchDegrees),
-          roll: Cesium.Math.toRadians(defaultVp.rollDegrees)
-        },
-        duration: 1.5
-      });
+      if (!viewer.isDestroyed()) {
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            defaultVp.longitude,
+            defaultVp.latitude,
+            defaultVp.height
+          ),
+          orientation: {
+            heading: Cesium.Math.toRadians(defaultVp.headingDegrees),
+            pitch: Cesium.Math.toRadians(defaultVp.pitchDegrees),
+            roll: Cesium.Math.toRadians(defaultVp.rollDegrees)
+          },
+          duration: 1.5
+        });
+      }
 
       return () => {
         handler.destroy();
@@ -276,6 +366,15 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       console.error('[Cesium] Viewer initialization error:', e);
       setErrorNotice('WebGL 3D engine failed to initialize.');
     }
+  }, []); // Run ONCE on mount, NEVER re-instantiate on theme change
+
+  // 2.1 Dynamic Theme Background Color (Preserves WebGL Viewer & Vehicle Listeners)
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString(
+      currentTheme === 'light' ? '#E2E8F0' : '#0B1320'
+    );
   }, [currentTheme]);
 
   // 2.5 Dynamic 3D Basemap Swapping (Satellite, OpenStreetMap Streets, Dark Canvas Shaders)
@@ -334,10 +433,10 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       Cesium.Cartesian3.fromDegrees(73.70, 18.72)
     ];
     const innerCorridorHole = [
-      Cesium.Cartesian3.fromDegrees(73.909, 18.555),
-      Cesium.Cartesian3.fromDegrees(73.934, 18.555),
-      Cesium.Cartesian3.fromDegrees(73.934, 18.5675),
-      Cesium.Cartesian3.fromDegrees(73.909, 18.5675)
+      Cesium.Cartesian3.fromDegrees(73.909, 18.5675), // Top-Left (Clockwise)
+      Cesium.Cartesian3.fromDegrees(73.934, 18.5675), // Top-Right
+      Cesium.Cartesian3.fromDegrees(73.934, 18.555),  // Bottom-Right
+      Cesium.Cartesian3.fromDegrees(73.909, 18.555)   // Bottom-Left
     ];
 
     viewer.entities.add({
@@ -377,7 +476,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       name: 'Corridor Identity Badge',
       position: Cesium.Cartesian3.fromDegrees(73.9215, 18.5672, 28.0),
       label: {
-        text: '📍 NAGAR ROAD DIGITAL TWIN • VIMAN NAGAR ↔ SOMNATH NAGAR (1.8 KM)',
+        text: 'NAGAR ROAD DIGITAL TWIN • VIMAN NAGAR ↔ SOMNATH NAGAR (1.8 KM)',
         font: "bold 11px 'General Sans', -apple-system, sans-serif",
         fillColor: Cesium.Color.fromCssColorString('#38BDF8'),
         outlineColor: Cesium.Color.fromCssColorString('#090D16'),
@@ -391,16 +490,11 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       const props = feature.properties || {};
       const layer = props.layer;
 
-      // A. Building Extrusion (Surveyed Buildings with Functional Category Color Tints)
-      if (layer === 'buildings' && feature.geometry.type === 'Polygon') {
+      // A. Building Extrusion (Surveyed Buildings with Hole & MultiPolygon Support)
+      if (layer === 'buildings' && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
         if (feature.id?.includes('BLD-METRO-') || props.category === 'TRANSIT_INFRASTRUCTURE') {
           return;
         }
-        const coords = feature.geometry.coordinates[0];
-        const flatHierarchy = coords.map((c: number[]) =>
-          Cesium.Cartesian3.fromDegrees(c[0], c[1], 0)
-        );
-
         const height = props.heightMeters || 24.0;
         const category = props.category || 'COMMERCIAL_RETAIL';
         const categoryColors: Record<string, { fill: string; outline: string }> = {
@@ -419,26 +513,38 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         const buildingColor = Cesium.Color.fromCssColorString(colors.fill).withAlpha(0.85);
         const outlineColor = Cesium.Color.fromCssColorString(colors.outline).withAlpha(0.95);
 
-        viewer.entities.add({
-          id: feature.id,
-          name: props.name || 'Building Zone',
-          polygon: {
-            hierarchy: new Cesium.PolygonHierarchy(flatHierarchy),
-            extrudedHeight: height,
-            height: 0,
-            material: buildingColor,
-            outline: true,
-            outlineColor: outlineColor,
-            outlineWidth: 2
-          },
-          properties: {
-            entityId: feature.id,
-            entityType: 'BuildingZone',
-            category: category,
-            heightMeters: height,
-            levels: props.buildingLevels || 6,
-            contractDemandKw: props.contractDemandKw
-          }
+        const polygonRings = feature.geometry.type === 'Polygon'
+          ? [feature.geometry.coordinates]
+          : (feature.geometry.coordinates as any);
+
+        polygonRings.forEach((rings: number[][][], pIdx: number) => {
+          const outerCoords = rings[0] || [];
+          const outerPositions = outerCoords.map((c: number[]) => Cesium.Cartesian3.fromDegrees(c[0], c[1], 0));
+          const holes = (rings.slice(1) || []).map((hRing: number[][]) =>
+            new Cesium.PolygonHierarchy(hRing.map((c: number[]) => Cesium.Cartesian3.fromDegrees(c[0], c[1], 0)))
+          );
+
+          viewer.entities.add({
+            id: pIdx === 0 ? feature.id : `${feature.id}-part-${pIdx}`,
+            name: props.name || 'Building Zone',
+            polygon: {
+              hierarchy: new Cesium.PolygonHierarchy(outerPositions, holes),
+              extrudedHeight: height,
+              height: 0,
+              material: buildingColor,
+              outline: true,
+              outlineColor: outlineColor,
+              outlineWidth: 2
+            },
+            properties: {
+              entityId: feature.id,
+              entityType: 'BuildingZone',
+              category: category,
+              heightMeters: height,
+              levels: props.buildingLevels || 6,
+              contractDemandKw: props.contractDemandKw
+            }
+          });
         });
       }
 
@@ -574,7 +680,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         });
       }
 
-      // D. Traffic & Environmental Sensors
+      // D. Traffic & Environmental Sensors (Grounded at terrain z=0)
       if (layer === 'sensors' && feature.geometry.type === 'Point') {
         const [lng, lat] = feature.geometry.coordinates;
         const elev = props.elevationMeters || 2.5;
@@ -582,7 +688,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         viewer.entities.add({
           id: feature.id,
           name: props.name || 'Sensor',
-          position: Cesium.Cartesian3.fromDegrees(lng, lat, elev),
+          position: Cesium.Cartesian3.fromDegrees(lng, lat, elev / 2.0),
           cylinder: {
             length: elev,
             topRadius: 0.4,
@@ -599,6 +705,67 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           properties: {
             entityId: feature.id,
             entityType: 'Sensor'
+          }
+        });
+      }
+
+      // D2. Surveyed 3D Traffic Signal Heads (Stopline Position with Heading Azimuth)
+      if (layer === 'signals' && feature.geometry.type === 'Point') {
+        const [lng, lat] = feature.geometry.coordinates;
+        const headingDeg = props.headingDegrees ?? 0;
+        const groupName = props.name || 'Signal Head';
+        const isEastbound = props.approachEdge?.includes('EB');
+
+        // Signal Mast Post (grounded at z=0, height 5.5m)
+        viewer.entities.add({
+          name: `${groupName} Mast`,
+          position: Cesium.Cartesian3.fromDegrees(lng, lat, 2.75),
+          cylinder: {
+            length: 5.5,
+            topRadius: 0.14,
+            bottomRadius: 0.18,
+            material: Cesium.Color.fromCssColorString('#334155'),
+            outline: false
+          }
+        });
+
+        // Directional Lantern Housing (oriented along stop-line approach azimuth)
+        const lanternHeading = Cesium.Math.toRadians(headingDeg);
+        const lanternPos = Cesium.Cartesian3.fromDegrees(lng, lat, 5.6);
+        const lanternOrientation = Cesium.Transforms.headingPitchRollQuaternion(
+          lanternPos,
+          new Cesium.HeadingPitchRoll(lanternHeading, 0, 0)
+        );
+
+        viewer.entities.add({
+          id: feature.id,
+          name: `${groupName} [${headingDeg}° Azimuth]`,
+          position: lanternPos,
+          orientation: lanternOrientation,
+          box: {
+            dimensions: new Cesium.Cartesian3(0.5, 0.4, 1.2),
+            material: Cesium.Color.fromCssColorString('#0F172A'),
+            outline: true,
+            outlineColor: Cesium.Color.WHITE.withAlpha(0.6)
+          },
+          properties: {
+            entityId: feature.id,
+            entityType: 'SignalHead'
+          }
+        });
+
+        // Active Emissive Phase Glow
+        viewer.entities.add({
+          name: `${groupName} Phase Glow`,
+          position: Cesium.Cartesian3.fromDegrees(lng, lat, 5.75),
+          point: {
+            pixelSize: 10,
+            color: isEastbound
+              ? Cesium.Color.fromCssColorString('#10B981')
+              : Cesium.Color.fromCssColorString('#EF4444'),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           }
         });
       }
@@ -694,7 +861,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
       label: {
-        text: '🚇 Viman Nagar Metro Station',
+        text: 'Viman Nagar Metro Station',
         font: "bold 12px 'General Sans', -apple-system, sans-serif",
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.fromCssColorString('#0F172A'),
@@ -855,10 +1022,12 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         vehicleColor = Cesium.Color.fromCssColorString('#F59E0B'); // Dense (Amber)
       }
 
+      const laneCount = segment.lanes || 3;
       const vehicleCount = Math.max(2, Math.min(5, Math.round(flow / 400)));
       for (let i = 0; i < vehicleCount; i++) {
         const vehId = `veh-${segment.id}-${i}`;
-        const laneIndex = i % 3;
+        const laneIndex = i % laneCount;
+        const laneOffsetMeters = (laneIndex - (laneCount - 1) / 2.0) * 3.2;
         const isBusOrVan = laneIndex === 0 && (i % 2 === 0);
         const dimensions = isBusOrVan
           ? new Cesium.Cartesian3(6.5, 2.3, 2.6) // Transit Bus / Mini-Van
@@ -866,7 +1035,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
         const existing = existingVehiclesMap.get(vehId);
         const progress = existing ? existing.progress : (i + 0.3) / vehicleCount;
-        const initialPose = computeKinematicPose(coords, progress, laneIndex);
+        const initialPose = computeKinematicPose(coords, progress, laneOffsetMeters);
 
         const vehItem: LiveKinematicVehicle = {
           id: vehId,
@@ -875,6 +1044,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           coords: coords,
           lengthMeters: computePolylineLengthMeters(coords),
           laneIndex: laneIndex,
+          laneOffsetMeters: laneOffsetMeters,
           progress: progress,
           speedKmh: speed,
           dimensions: dimensions,
@@ -922,9 +1092,9 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       const vehicles = activeVehiclesRef.current;
       for (let i = 0; i < vehicles.length; i++) {
         const veh = vehicles[i];
-        const speedMps = Math.max(5.0, veh.speedKmh * (1000.0 / 3600.0));
+        const speedMps = Math.max(0.0, veh.speedKmh * (1000.0 / 3600.0));
         veh.progress = (veh.progress + (speedMps * dt) / Math.max(80.0, veh.lengthMeters)) % 1.0;
-        const pose = computeKinematicPose(veh.coords, veh.progress, veh.laneIndex);
+        const pose = computeKinematicPose(veh.coords, veh.progress, veh.laneOffsetMeters);
         veh.currentPosition = pose.position;
         veh.currentOrientation = pose.orientation;
       }
@@ -1004,16 +1174,16 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         className="cesium-solar-toolbar"
         style={{
           position: 'absolute',
-          top: '54px',
+          top: '38px',
           right: '12px',
           zIndex: 10,
           display: 'flex',
-          gap: '3px',
-          background: 'rgba(15, 23, 42, 0.88)',
-          backdropFilter: 'blur(12px)',
-          padding: '3px',
-          borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          gap: '2px',
+          background: 'rgba(15, 23, 42, 0.84)',
+          backdropFilter: 'blur(16px)',
+          padding: '1px 2px',
+          borderRadius: '5px',
+          border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
         }}
         role="toolbar"
@@ -1021,54 +1191,66 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       >
         <button
           type="button"
-          className={`map-view-toggle-btn ${solarTime === 'golden' ? 'active' : ''}`}
+          className={`toolbar-segmented-btn ${solarTime === 'golden' ? 'active' : ''}`}
           onClick={() => setSolarTime('golden')}
           title="Golden Hour (4:00 PM IST) - Architectural Shadows across Nagar Road"
           style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            borderRadius: '5px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '2px 6px',
+            fontSize: '10.5px',
+            borderRadius: '3px',
             border: 'none',
             cursor: 'pointer',
-            backgroundColor: solarTime === 'golden' ? '#D97706' : 'transparent',
-            color: '#FFFFFF'
+            backgroundColor: solarTime === 'golden' ? 'rgba(217, 119, 6, 0.35)' : 'transparent',
+            color: solarTime === 'golden' ? '#FBBF24' : 'var(--text-muted, #94A3B8)'
           }}
         >
-          <span>🌅 Golden (4 PM)</span>
+          <Sunset size={10} aria-hidden="true" />
+          <span>Golden (4 PM)</span>
         </button>
         <button
           type="button"
-          className={`map-view-toggle-btn ${solarTime === 'midday' ? 'active' : ''}`}
+          className={`toolbar-segmented-btn ${solarTime === 'midday' ? 'active' : ''}`}
           onClick={() => setSolarTime('midday')}
           title="Midday (11:30 AM IST) - Overhead Sun"
           style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            borderRadius: '5px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '2px 6px',
+            fontSize: '10.5px',
+            borderRadius: '3px',
             border: 'none',
             cursor: 'pointer',
-            backgroundColor: solarTime === 'midday' ? '#2563EB' : 'transparent',
-            color: '#FFFFFF'
+            backgroundColor: solarTime === 'midday' ? 'rgba(37, 99, 235, 0.35)' : 'transparent',
+            color: solarTime === 'midday' ? '#60A5FA' : 'var(--text-muted, #94A3B8)'
           }}
         >
-          <span>☀️ Day (11 AM)</span>
+          <Sun size={10} aria-hidden="true" />
+          <span>Day (11 AM)</span>
         </button>
         <button
           type="button"
-          className={`map-view-toggle-btn ${solarTime === 'night' ? 'active' : ''}`}
+          className={`toolbar-segmented-btn ${solarTime === 'night' ? 'active' : ''}`}
           onClick={() => setSolarTime('night')}
           title="Night Operations (9:00 PM IST)"
           style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            borderRadius: '5px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '2px 6px',
+            fontSize: '10.5px',
+            borderRadius: '3px',
             border: 'none',
             cursor: 'pointer',
-            backgroundColor: solarTime === 'night' ? '#7C3AED' : 'transparent',
-            color: '#FFFFFF'
+            backgroundColor: solarTime === 'night' ? 'rgba(124, 58, 237, 0.35)' : 'transparent',
+            color: solarTime === 'night' ? '#A78BFA' : 'var(--text-muted, #94A3B8)'
           }}
         >
-          <span>🌙 Night</span>
+          <Moon size={10} aria-hidden="true" />
+          <span>Night</span>
         </button>
       </div>
 
@@ -1114,8 +1296,9 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
             </span>
           </div>
           {hoveredBuilding3D.demandKw && (
-            <div style={{ fontSize: '11px', color: '#F0883E', fontWeight: 600 }}>
-              ⚡ Sanctioned Demand: {hoveredBuilding3D.demandKw.toLocaleString()} kW
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#F0883E', fontWeight: 600 }}>
+              <Zap size={11} aria-hidden="true" />
+              <span>Sanctioned Demand: {hoveredBuilding3D.demandKw.toLocaleString()} kW</span>
             </div>
           )}
         </div>
@@ -1125,7 +1308,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       <div className="cesium-overlay-legend">
         <div className="cesium-status-badge">
           <Activity size={13} className="text-emerald-400 animate-pulse" />
-          <span>3D Simulation Twin • 1.8 km Nagar Road</span>
+          <span>3D Corridor Telemetry • Replay / Synthetic Kinematics (sourceMode: REPLAY)</span>
         </div>
         <div className="cesium-legend-items">
           <span className="legend-chip">

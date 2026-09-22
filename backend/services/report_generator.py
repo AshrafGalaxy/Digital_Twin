@@ -125,7 +125,7 @@ class MunicipalReportGenerator:
             f"| Signalized Intersections | `INT-VN-01` (Viman Nagar), `INT-SN-01` (Somnath Nagar) | {corridor['physicalAssets']['signalizedIntersections']} | `REPLAY`, `SIMULATION` |",
             f"| Road Segments | `SEG-NR-EB-01..03`, `SEG-NR-WB-01..03` + approach legs | {corridor['physicalAssets']['roadSegments']} | `REPLAY`, `PREDICTED` |",
             f"| Traffic & CAAQMS Sensors| Nagar Rd sensors (`SNS-TRF-01..04`), Air Quality (`SNS-ENV-01`) | {corridor['physicalAssets']['trafficSensors']} | `LIVE`, `SIMULATION` |",
-            f"| Commercial Building | Phoenix Marketcity (`BLD-PHOENIX-01`, 45m elevation) | {corridor['physicalAssets']['commercialBuildings']} | `REPLAY`, `PREDICTED` |",
+            f"| Commercial Building | Phoenix Marketcity (`BLD-PHOENIX-01`, 28m height, 6 levels) | {corridor['physicalAssets']['commercialBuildings']} | `REPLAY`, `PREDICTED` |",
             "",
             "### Telemetry Provenance & State Separation Invariant",
             "- **Observed Telemetry:** Replayed corridor sensor counts and speeds are strictly segregated from model predictions.",

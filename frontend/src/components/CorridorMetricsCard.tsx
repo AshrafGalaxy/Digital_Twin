@@ -28,12 +28,14 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
   return (
     <div className="corridor-metrics-card">
       <div className="card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Activity size={14} color="var(--color-primary, #2F81F7)" style={{ flexShrink: 0 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          <Activity size={13} color="var(--color-primary, #2F81F7)" style={{ flexShrink: 0 }} />
           {sourceMode === 'LIVE' && (
             <span className="live-dot-ping" title="Real-time live telemetry stream active" />
           )}
           <span className="card-title">Corridor Telemetry</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
           <span
             className="corridor-state-pill"
             style={{
@@ -44,8 +46,11 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
           >
             {corridorState.label}
           </span>
+          <ProvenanceBadge
+            mode={sourceMode}
+            className="corridor-card-provenance"
+          />
         </div>
-        <ProvenanceBadge mode={sourceMode} />
       </div>
 
       <div className="metrics-grid">

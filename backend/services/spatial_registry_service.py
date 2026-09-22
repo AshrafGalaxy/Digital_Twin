@@ -45,7 +45,7 @@ class SpatialRegistryService:
     def _load(self) -> None:
         if not self.registry_path.exists():
             logger.error("Spatial registry file not found at %s", self.registry_path)
-            return
+            raise FileNotFoundError(f"Spatial registry file not found at {self.registry_path}")
         try:
             with open(self.registry_path, "r", encoding="utf-8") as f:
                 self._raw_data = json.load(f)
@@ -64,8 +64,10 @@ class SpatialRegistryService:
 
     @property
     def catalog(self) -> SpatialRegistryCatalog:
-        if not self._catalog:
+        if self._catalog is None:
             self._load()
+        if self._catalog is None:
+            raise RuntimeError("Spatial registry catalog is unavailable")
         return self._catalog
 
     def get_catalog_dict(self) -> Dict[str, Any]:
@@ -120,8 +122,23 @@ class SpatialRegistryService:
                 )
 
         # Check Buildings
+        phoenix_aliases = {
+            "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01",
+            "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01",
+            "BLD-PHOENIX-01",
+            "PHOENIX-01",
+        }
         for bld in cat.buildingZoneMappings:
-            if norm_id in (bld.buildingId, "BLD-PHOENIX-01") or "PHOENIX" in norm_id.upper():
+            bld_short = bld.buildingId.split(":")[-1]
+            matches = False
+            if norm_id == bld.buildingId or norm_id == bld_short:
+                matches = True
+            elif "PHOENIX" in bld.buildingId.upper() or "PHOENIX" in bld.name.upper():
+                if norm_id in phoenix_aliases or "PHOENIX" in norm_id.upper():
+                    matches = True
+
+            if matches:
                 return SpatialEntityResolution(
                     entityId=bld.buildingId,
                     entityType="BuildingZone",
