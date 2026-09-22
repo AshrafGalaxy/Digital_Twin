@@ -140,36 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Global Status Bar per UI_UX_SPEC §6.2 */}
-      <div className="global-status-bar" aria-label="Global System and Model Status">
-        <div className="status-bar-item">
-          <span className="text-muted">Data Freshness:</span>
-          <span className="font-mono">
-            {lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : 'Real-time telemetry stream'}
-          </span>
-        </div>
-        <div className="status-bar-item">
-          <span className="text-muted">Source Mode:</span>
-          <span style={{ fontWeight: 600 }}>{currentMode} + BENCHMARK</span>
-        </div>
-        <div className="status-bar-item">
-          <span className="text-muted">Traffic Model:</span>
-          <code style={{ fontSize: '12px' }}>traffic-xgb-v1 (15m)</code>
-        </div>
-        <div className="status-bar-item">
-          <span className="text-muted">Energy Model:</span>
-          <code style={{ fontSize: '12px' }}>energy-xgb-v1 (60m)</code>
-        </div>
-        <div className="status-bar-item">
-          <span className="text-muted">Scenario Service:</span>
-          <span style={{ color: '#10B981', fontWeight: 500 }}>SUMO 1.18+ (Available)</span>
-        </div>
-        <div className="status-bar-item status-bar-governance" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
-          <span>Advisory Only • Human Approval Required</span>
-        </div>
-      </div>
-
-      {/* Primary Navigation Bar: 7 Standard Views per UI_UX_SPEC §5.1 */}
+      {/* Primary Navigation Bar: Standard Views */}
       <nav className="header-nav-tabs" aria-label="Primary Platform Views">
         {navTabs.map((tab) => (
           <button

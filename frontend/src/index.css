@@ -468,8 +468,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px var(--space-4);
-  min-height: 44px;
+  padding: 0 var(--space-4);
+  height: 48px;
+  min-height: 48px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -478,6 +479,8 @@ body {
   align-items: center;
   gap: 3px;
   padding: 0 var(--space-4);
+  height: 38px;
+  min-height: 38px;
   background-color: rgba(8, 12, 22, 0.75);
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
@@ -489,10 +492,11 @@ body {
 }
 
 .nav-tab-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  height: 38px;
+  padding: 0 12px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -501,9 +505,11 @@ body {
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
+  box-sizing: border-box;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
+
 
 .nav-tab-btn:hover {
   color: var(--color-primary);
@@ -558,20 +564,31 @@ body {
 .status-section {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .status-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
+  height: 32px;
+  padding: 0 10px;
   border-radius: var(--radius-sm);
   background-color: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
   font-size: 11.5px;
   font-weight: 500;
   color: var(--text-main);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.status-pill .provenance-badge {
+  min-height: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 20px;
 }
 
 .role-selector-pill {
@@ -579,9 +596,12 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  height: 32px;
+  padding: 0 10px;
   cursor: pointer;
-  padding: 3px 8px;
   border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  white-space: nowrap;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
@@ -613,13 +633,13 @@ body {
   border-radius: 4px;
 }
 
-
 /* Theme Toggle Button per DESIGN_SYSTEM.md §4 */
 .theme-toggle-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  height: 32px;
+  padding: 0 10px;
   background-color: var(--color-surface-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -627,9 +647,12 @@ body {
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
+  box-sizing: border-box;
+  white-space: nowrap;
   transition: all 0.15s ease-in-out;
   outline: none;
 }
+
 
 .theme-toggle-btn:hover {
   background-color: var(--color-surface-selected);
@@ -3176,35 +3199,6 @@ body {
    UI_UX_SPEC Extensions: Global Status Bar & Map Accessibility Fallback (§6.2, §18.2)
    ========================================================================== */
 
-.global-status-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 3px var(--space-4);
-  background: rgba(11, 16, 29, 0.95);
-  border-bottom: 1px solid var(--border-color);
-  font-size: 11.5px;
-  flex-wrap: wrap;
-  min-height: 24px;
-}
-
-.status-bar-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-muted);
-  font-size: 11.5px;
-}
-
-.status-bar-item code {
-  background: rgba(255, 255, 255, 0.06);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-primary);
-  border: 1px solid rgba(0, 242, 254, 0.2);
-}
 
 .map-view-toggle-btn {
   display: inline-flex;
