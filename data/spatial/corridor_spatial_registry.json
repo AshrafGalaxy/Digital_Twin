@@ -687,34 +687,58 @@
     {
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
       "sumoEdgeId": "SEG-VN-NB-01",
-      "name": "Viman Nagar Road NB Cross Approach",
+      "name": "Sopan Nagar Road NB Approach to Nagar Road",
       "direction": "NORTHBOUND",
       "fromJunction": "VN-NB-START",
       "toJunction": "VN-01",
-      "lengthMeters": 350.0,
+      "lengthMeters": 650.0,
       "laneCount": 2,
       "speedLimitKmh": 40.0,
       "osmHighway": "secondary",
       "coordinates": [
         [
-          73.91808,
-          18.5575
+          73.918349,
+          18.555288
         ],
         [
-          73.91812,
-          18.5583
+          73.918592,
+          18.557171
         ],
         [
-          73.91816,
-          18.5592
+          73.918732,
+          18.557861
         ],
         [
-          73.9182,
-          18.5601
+          73.918793,
+          18.55861
         ],
         [
-          73.91825,
-          18.5609
+          73.918863,
+          18.558927
+        ],
+        [
+          73.918888,
+          18.559149
+        ],
+        [
+          73.918901,
+          18.559248
+        ],
+        [
+          73.918901,
+          18.559352
+        ],
+        [
+          73.918774,
+          18.560466
+        ],
+        [
+          73.91872,
+          18.560779
+        ],
+        [
+          73.918691,
+          18.560898
         ]
       ],
       "lanes": [
@@ -737,34 +761,54 @@
     {
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01",
       "sumoEdgeId": "SEG-VN-SB-01",
-      "name": "Phoenix Mall Commercial Branch SB",
-      "direction": "SOUTHBOUND",
+      "name": "Viman Nagar Road NB Departure",
+      "direction": "NORTHBOUND",
       "fromJunction": "VN-01",
       "toJunction": "VN-SB-END",
-      "lengthMeters": 400.0,
+      "lengthMeters": 470.0,
       "laneCount": 2,
       "speedLimitKmh": 40.0,
       "osmHighway": "secondary",
       "coordinates": [
         [
-          73.91825,
-          18.5609
+          73.918195,
+          18.560992
         ],
         [
-          73.91822,
-          18.5618
+          73.918165,
+          18.561114
         ],
         [
-          73.91818,
-          18.5627
+          73.918134,
+          18.56124
         ],
         [
-          73.91812,
-          18.5636
+          73.918101,
+          18.561452
         ],
         [
-          73.9182,
-          18.5645
+          73.918096,
+          18.561525
+        ],
+        [
+          73.918091,
+          18.561598
+        ],
+        [
+          73.91809,
+          18.562031
+        ],
+        [
+          73.918058,
+          18.563423
+        ],
+        [
+          73.918155,
+          18.563631
+        ],
+        [
+          73.918293,
+          18.565132
         ]
       ],
       "lanes": [
@@ -787,11 +831,11 @@
     {
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
       "sumoEdgeId": "SEG-SN-NB-01",
-      "name": "Somnath Nagar Road NB Cross Approach",
+      "name": "Old Mundhwa Road NB Approach to Somnath Nagar Chowk",
       "direction": "NORTHBOUND",
       "fromJunction": "SN-NB-START",
       "toJunction": "SN-01",
-      "lengthMeters": 300.0,
+      "lengthMeters": 350.0,
       "laneCount": 2,
       "speedLimitKmh": 35.0,
       "osmHighway": "tertiary",
@@ -814,7 +858,7 @@
         ],
         [
           73.928099,
-          18.560344
+          18.560345
         ],
         [
           73.928101,
@@ -825,12 +869,28 @@
           18.560762
         ],
         [
-          73.928106,
-          18.560782
+          73.928085,
+          18.561235
         ],
         [
-          73.9279,
-          18.56283
+          73.928024,
+          18.56187
+        ],
+        [
+          73.927948,
+          18.561864
+        ],
+        [
+          73.927937,
+          18.561974
+        ],
+        [
+          73.927892,
+          18.562397
+        ],
+        [
+          73.927873,
+          18.562598
         ]
       ],
       "lanes": [
@@ -853,7 +913,7 @@
     {
       "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01",
       "sumoEdgeId": "SEG-SN-SB-01",
-      "name": "Somnath Nagar Road SB Departure",
+      "name": "Somnath Nagar Road Collector Departure",
       "direction": "SOUTHBOUND",
       "fromJunction": "SN-01",
       "toJunction": "SN-SB-END",
@@ -863,56 +923,20 @@
       "osmHighway": "tertiary",
       "coordinates": [
         [
-          73.9279,
-          18.56283
+          73.927873,
+          18.562598
+        ],
+        [
+          73.927864,
+          18.562717
         ],
         [
           73.927693,
           18.562936
         ],
         [
-          73.927677,
-          18.563092
-        ],
-        [
-          73.927663,
-          18.563157
-        ],
-        [
-          73.927648,
-          18.563228
-        ],
-        [
           73.92748,
           18.563448
-        ],
-        [
-          73.927804,
-          18.563453
-        ],
-        [
-          73.928164,
-          18.563459
-        ],
-        [
-          73.928205,
-          18.563467
-        ],
-        [
-          73.928221,
-          18.563495
-        ],
-        [
-          73.92823,
-          18.56362
-        ],
-        [
-          73.92822,
-          18.563657
-        ],
-        [
-          73.928189,
-          18.563689
         ],
         [
           73.927747,
@@ -3528,11 +3552,11 @@
           18.56345
         ],
         [
-          73.91800,
+          73.918,
           18.56345
         ],
         [
-          73.91800,
+          73.918,
           18.56295
         ],
         [
@@ -6525,6 +6549,183 @@
     }
   ],
   "secondaryStreetMappings": [
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-EAST-SOMNATH-LANE4-01",
+      "name": "Lane Number 4 (East Somnath Nagar)",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.929002,
+          18.562815
+        ],
+        [
+          73.929013,
+          18.562696
+        ],
+        [
+          73.929064,
+          18.562178
+        ],
+        [
+          73.929142,
+          18.561481
+        ],
+        [
+          73.929191,
+          18.560867
+        ],
+        [
+          73.929252,
+          18.560041
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-VIMAN-AVENUE-01",
+      "name": "Viman Nagar Avenue 1 (Symbiosis Link)",
+      "highwayType": "tertiary",
+      "coordinates": [
+        [
+          73.91157,
+          18.55933
+        ],
+        [
+          73.91169,
+          18.56061
+        ],
+        [
+          73.91178,
+          18.56118
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-PHOENIX-METRO-ACCESS-01",
+      "name": "Phoenix Marketcity & Metro Access Boulevard",
+      "highwayType": "commercial",
+      "coordinates": [
+        [
+          73.9196,
+          18.561137
+        ],
+        [
+          73.919552,
+          18.56089
+        ],
+        [
+          73.919492,
+          18.560361
+        ],
+        [
+          73.919455,
+          18.56005
+        ],
+        [
+          73.919412,
+          18.559663
+        ],
+        [
+          73.919394,
+          18.55955
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-ANANDPARK-SOUTH-01",
+      "name": "Astavinayak / Anand Park Connecting Road",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.92535,
+          18.561145
+        ],
+        [
+          73.92535,
+          18.560486
+        ],
+        [
+          73.92481,
+          18.55988
+        ],
+        [
+          73.92447,
+          18.55805
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-EASTCOURT-NORTH-01",
+      "name": "Phoenix East Court / North Link",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.925308,
+          18.562566
+        ],
+        [
+          73.925304,
+          18.563158
+        ],
+        [
+          73.92528,
+          18.56376
+        ],
+        [
+          73.92527,
+          18.56516
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-WADGAON-SHERI-LINK-01",
+      "name": "Somnath Nagar Road / Wadgaon Sheri Link",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.92258,
+          18.56121
+        ],
+        [
+          73.92262,
+          18.56067
+        ],
+        [
+          73.92263,
+          18.55998
+        ],
+        [
+          73.92262,
+          18.55924
+        ],
+        [
+          73.9226,
+          18.5582
+        ],
+        [
+          73.92258,
+          18.5574
+        ],
+        [
+          73.92255,
+          18.5552
+        ]
+      ]
+    },
+    {
+      "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-CLOVER-WEIKFIELD-01",
+      "name": "Clover Park / Weikfield Access Road",
+      "highwayType": "residential",
+      "coordinates": [
+        [
+          73.922553,
+          18.561972
+        ],
+        [
+          73.92258,
+          18.56121
+        ]
+      ]
+    },
     {
       "streetId": "urn:ngsi-ld:SecondaryStreet:PUNE:SEC-22841645",
       "name": "Viman Nagar Road",

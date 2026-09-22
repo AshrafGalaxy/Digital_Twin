@@ -160,7 +160,10 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           new Cesium.UrlTemplateImageryProvider({
             url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             maximumLevel: 18 // CLAMP to 18 to eliminate "map data not yet available"!
-          })
+          }),
+          {
+            rectangle: Cesium.Rectangle.fromDegrees(73.909, 18.555, 73.934, 18.5675)
+          }
         )
       });
 
@@ -170,9 +173,34 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       scene.globe.enableLighting = true; // Solar angle lighting based on clock time
       scene.highDynamicRange = true; // HDR tone-mapping for realistic light bounces
 
+      // Floating Holographic Diorama: Physical Globe Clipping strictly to the active corridor box
+      const corridorCenter = Cesium.Cartesian3.fromDegrees(73.9215, 18.56125, 0.0);
+      const halfWidthM = 1317.0; // East-West half distance in meters (~2.63 km wide)
+      const halfHeightM = 695.0; // North-South half distance in meters (~1.39 km tall)
+
+      scene.globe.clippingPlanes = new Cesium.ClippingPlaneCollection({
+        modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(corridorCenter),
+        planes: [
+          new Cesium.ClippingPlane(new Cesium.Cartesian3( 1.0,  0.0, 0.0), halfWidthM),
+          new Cesium.ClippingPlane(new Cesium.Cartesian3(-1.0,  0.0, 0.0), halfWidthM),
+          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0,  1.0, 0.0), halfHeightM),
+          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0, -1.0, 0.0), halfHeightM)
+        ],
+        edgeColor: Cesium.Color.fromCssColorString('#06B6D4'),
+        edgeWidth: 2.5,
+        unionClippingRegions: false,
+        enabled: true
+      });
+      scene.globe.backFaceCulling = false;
+
+      // Disable planetary sky/ground atmosphere to emphasize precision floating diorama
+      if (scene.skyAtmosphere) {
+        scene.skyAtmosphere.show = false;
+      }
+      scene.globe.showGroundAtmosphere = false;
+
       if (scene.fog) {
-        scene.fog.enabled = true;
-        scene.fog.density = 0.00015;
+        scene.fog.enabled = false;
       }
       if (viewer.shadowMap) {
         viewer.shadowMap.size = 2048;
@@ -187,11 +215,9 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       // Constrain Camera Zoom to Corridor Scale (Prevent zooming out into orbit / space)
       const controller = scene.screenSpaceCameraController;
       controller.minimumZoomDistance = 35; // Cannot zoom past ground
-      controller.maximumZoomDistance = 3800; // Constrained strictly to corridor scale
+      controller.maximumZoomDistance = 3200; // Constrained strictly to corridor scale
 
-      scene.backgroundColor = Cesium.Color.fromCssColorString(
-        currentTheme === 'light' ? '#E2E8F0' : '#0B1320'
-      );
+      scene.backgroundColor = Cesium.Color.fromCssColorString('#050811');
 
       // Add dynamic collections for vehicles & signals
       const vehicleDataSource = new Cesium.CustomDataSource('corridor-vehicles');
@@ -308,7 +334,10 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         credit: '© Esri, Maxar, Earthstar Geographics'
       });
     }
-    const layer = layers.addImageryProvider(provider);
+    const layer = new Cesium.ImageryLayer(provider, {
+      rectangle: Cesium.Rectangle.fromDegrees(73.909, 18.555, 73.934, 18.5675)
+    });
+    layers.add(layer);
     layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR;
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
     if (isDark) {
@@ -326,12 +355,12 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     // Clear static entities (keep dynamic vehicles & signals in dataSources)
     viewer.entities.removeAll();
 
-    // 0. Holographic Diorama Inverse Mask (Darkens extraneous terrain, spotlighting only the 1.8km active twin corridor)
+    // 0. Holographic Diorama Cutout (100% pitch-dark void masking, spotlighting exclusively the 1.8km active twin corridor)
     const outerDioramaRing = [
-      Cesium.Cartesian3.fromDegrees(73.70, 18.40),
-      Cesium.Cartesian3.fromDegrees(74.15, 18.40),
-      Cesium.Cartesian3.fromDegrees(74.15, 18.72),
-      Cesium.Cartesian3.fromDegrees(73.70, 18.72)
+      Cesium.Cartesian3.fromDegrees(-180.0, -90.0),
+      Cesium.Cartesian3.fromDegrees(180.0, -90.0),
+      Cesium.Cartesian3.fromDegrees(180.0, 90.0),
+      Cesium.Cartesian3.fromDegrees(-180.0, 90.0)
     ];
     const innerCorridorHole = [
       Cesium.Cartesian3.fromDegrees(73.909, 18.555),
@@ -346,7 +375,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         hierarchy: new Cesium.PolygonHierarchy(outerDioramaRing, [
           new Cesium.PolygonHierarchy(innerCorridorHole)
         ]),
-        material: Cesium.Color.fromCssColorString('#070A11').withAlpha(0.88),
+        material: Cesium.Color.fromCssColorString('#050811').withAlpha(1.0),
         height: 0,
         classificationType: Cesium.ClassificationType.BOTH
       }
@@ -365,10 +394,29 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         ]),
         width: 3.5,
         material: new Cesium.PolylineGlowMaterialProperty({
-          glowPower: 0.25,
+          glowPower: 0.35,
           color: Cesium.Color.fromCssColorString('#06B6D4')
         }),
         clampToGround: true
+      }
+    });
+
+    // 0.5 Precision Diorama Slab Pedestal Curtain (Elevated Architectural Plinth)
+    viewer.entities.add({
+      name: 'Corridor Diorama Pedestal Slab',
+      wall: {
+        positions: Cesium.Cartesian3.fromDegreesArray([
+          73.909, 18.555,
+          73.934, 18.555,
+          73.934, 18.5675,
+          73.909, 18.5675,
+          73.909, 18.555
+        ]),
+        maximumHeights: [0.5, 0.5, 0.5, 0.5, 0.5],
+        minimumHeights: [-20.0, -20.0, -20.0, -20.0, -20.0],
+        material: Cesium.Color.fromCssColorString('#080E1B').withAlpha(0.96),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#06B6D4').withAlpha(0.7)
       }
     });
 

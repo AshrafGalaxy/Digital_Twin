@@ -19,7 +19,10 @@
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [73.9168, 18.5602]
+        "coordinates": [
+          73.9168,
+          18.5602
+        ]
       }
     },
     {
@@ -33,7 +36,10 @@
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [73.9280, 18.5630]
+        "coordinates": [
+          73.928,
+          18.563
+        ]
       }
     },
     {
@@ -49,8 +55,14 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9125, 18.5592],
-          [73.9168, 18.5602]
+          [
+            73.9125,
+            18.5592
+          ],
+          [
+            73.9168,
+            18.5602
+          ]
         ]
       }
     },
@@ -67,9 +79,18 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9168, 18.5602],
-          [73.9220, 18.5615],
-          [73.9280, 18.5630]
+          [
+            73.9168,
+            18.5602
+          ],
+          [
+            73.922,
+            18.5615
+          ],
+          [
+            73.928,
+            18.563
+          ]
         ]
       }
     },
@@ -86,8 +107,14 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9280, 18.5630],
-          [73.9322, 18.5641]
+          [
+            73.928,
+            18.563
+          ],
+          [
+            73.9322,
+            18.5641
+          ]
         ]
       }
     },
@@ -104,8 +131,14 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9322, 18.5643],
-          [73.9280, 18.5632]
+          [
+            73.9322,
+            18.5643
+          ],
+          [
+            73.928,
+            18.5632
+          ]
         ]
       }
     },
@@ -122,9 +155,18 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9280, 18.5632],
-          [73.9220, 18.5617],
-          [73.9168, 18.5604]
+          [
+            73.928,
+            18.5632
+          ],
+          [
+            73.922,
+            18.5617
+          ],
+          [
+            73.9168,
+            18.5604
+          ]
         ]
       }
     },
@@ -141,8 +183,14 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9168, 18.5604],
-          [73.9125, 18.5594]
+          [
+            73.9168,
+            18.5604
+          ],
+          [
+            73.9125,
+            18.5594
+          ]
         ]
       }
     },
@@ -151,7 +199,7 @@
       "properties": {
         "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
         "entityType": "RoadSegment",
-        "name": "Viman Nagar Road NB Approach to Chowk",
+        "name": "Sopan Nagar Road NB Approach to Nagar Road",
         "direction": "NORTHBOUND",
         "lanes": 2,
         "speedLimitKmh": 40
@@ -159,8 +207,50 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9165, 18.5570],
-          [73.9168, 18.5602]
+          [
+            73.918349,
+            18.555288
+          ],
+          [
+            73.918592,
+            18.557171
+          ],
+          [
+            73.918732,
+            18.557861
+          ],
+          [
+            73.918793,
+            18.55861
+          ],
+          [
+            73.918863,
+            18.558927
+          ],
+          [
+            73.918888,
+            18.559149
+          ],
+          [
+            73.918901,
+            18.559248
+          ],
+          [
+            73.918901,
+            18.559352
+          ],
+          [
+            73.918774,
+            18.560466
+          ],
+          [
+            73.91872,
+            18.560779
+          ],
+          [
+            73.918691,
+            18.560898
+          ]
         ]
       }
     },
@@ -169,7 +259,7 @@
       "properties": {
         "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01",
         "entityType": "RoadSegment",
-        "name": "Viman Nagar Road SB Interior Branch",
+        "name": "Viman Nagar Road NB Departure",
         "direction": "SOUTHBOUND",
         "lanes": 2,
         "speedLimitKmh": 40
@@ -177,8 +267,46 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9168, 18.5604],
-          [73.9171, 18.5640]
+          [
+            73.918195,
+            18.560992
+          ],
+          [
+            73.918165,
+            18.561114
+          ],
+          [
+            73.918134,
+            18.56124
+          ],
+          [
+            73.918101,
+            18.561452
+          ],
+          [
+            73.918096,
+            18.561525
+          ],
+          [
+            73.918091,
+            18.561598
+          ],
+          [
+            73.91809,
+            18.562031
+          ],
+          [
+            73.918058,
+            18.563423
+          ],
+          [
+            73.918155,
+            18.563631
+          ],
+          [
+            73.918293,
+            18.565132
+          ]
         ]
       }
     },
@@ -187,7 +315,7 @@
       "properties": {
         "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
         "entityType": "RoadSegment",
-        "name": "Somnath Nagar Road NB Approach to Chowk",
+        "name": "Old Mundhwa Road NB Approach to Somnath Nagar Chowk",
         "direction": "NORTHBOUND",
         "lanes": 2,
         "speedLimitKmh": 35
@@ -195,8 +323,58 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9278, 18.5603],
-          [73.9280, 18.5630]
+          [
+            73.928086,
+            18.559492
+          ],
+          [
+            73.928082,
+            18.559589
+          ],
+          [
+            73.92808,
+            18.559945
+          ],
+          [
+            73.928089,
+            18.560128
+          ],
+          [
+            73.928099,
+            18.560345
+          ],
+          [
+            73.928101,
+            18.560448
+          ],
+          [
+            73.928107,
+            18.560762
+          ],
+          [
+            73.928085,
+            18.561235
+          ],
+          [
+            73.928024,
+            18.56187
+          ],
+          [
+            73.927948,
+            18.561864
+          ],
+          [
+            73.927937,
+            18.561974
+          ],
+          [
+            73.927892,
+            18.562397
+          ],
+          [
+            73.927873,
+            18.562598
+          ]
         ]
       }
     },
@@ -205,7 +383,7 @@
       "properties": {
         "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01",
         "entityType": "RoadSegment",
-        "name": "Somnath Nagar Road SB Exit to Wadgaon Sheri",
+        "name": "Somnath Nagar Road Collector Departure",
         "direction": "SOUTHBOUND",
         "lanes": 2,
         "speedLimitKmh": 35
@@ -213,8 +391,26 @@
       "geometry": {
         "type": "LineString",
         "coordinates": [
-          [73.9280, 18.5630],
-          [73.9282, 18.5658]
+          [
+            73.927873,
+            18.562598
+          ],
+          [
+            73.927864,
+            18.562717
+          ],
+          [
+            73.927693,
+            18.562936
+          ],
+          [
+            73.92748,
+            18.563448
+          ],
+          [
+            73.927747,
+            18.56391
+          ]
         ]
       }
     }

@@ -53,12 +53,12 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-vn-nb',
-      properties: { id: 'stopline-vn-nb', name: 'Viman Nagar NB Approach Stopline' },
+      properties: { id: 'stopline-vn-nb', name: 'Sopan Nagar Road NB Approach Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.91818, 18.56068],
-          [73.91828, 18.56068]
+          [73.91865, 18.56082],
+          [73.91874, 18.56082]
         ]
       }
     },
@@ -89,12 +89,12 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-sn-nb',
-      properties: { id: 'stopline-sn-nb', name: 'Somnath Nagar NB Approach Stopline' },
+      properties: { id: 'stopline-sn-nb', name: 'Old Mundhwa Road NB Approach Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.92785, 18.56275],
-          [73.92795, 18.56275]
+          [73.92784, 18.56255],
+          [73.92794, 18.56255]
         ]
       }
     }
@@ -167,18 +167,6 @@ const ZEBRA_CROSSINGS_GEOJSON = {
         coordinates: [
           [73.91838, 18.56068],
           [73.91838, 18.56112]
-        ]
-      }
-    },
-    {
-      type: 'Feature' as const,
-      id: 'zebra-vn-s',
-      properties: { id: 'zebra-vn-s', name: 'Viman Nagar South Pedestrian Crossing' },
-      geometry: {
-        type: 'LineString' as const,
-        coordinates: [
-          [73.91816, 18.56066],
-          [73.91834, 18.56066]
         ]
       }
     },
@@ -360,8 +348,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       maxZoom: 20,
       minZoom: 13.5,
       maxBounds: [
-        [73.890, 18.542], // Southwest coordinates (locks panning)
-        [73.948, 18.580]  // Northeast coordinates
+        [73.905, 18.550], // Southwest coordinates (locks camera to corridor)
+        [73.938, 18.572]  // Northeast coordinates
       ],
       pitch: 0,
       attributionControl: false
@@ -459,13 +447,13 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             geometry: {
               type: 'Polygon',
               coordinates: [
-                // Outer ring spanning greater Pune region
+                // Outer ring spanning the entire globe
                 [
-                  [73.70, 18.40],
-                  [74.15, 18.40],
-                  [74.15, 18.72],
-                  [73.70, 18.72],
-                  [73.70, 18.40]
+                  [-180.0, -90.0],
+                  [180.0, -90.0],
+                  [180.0, 90.0],
+                  [-180.0, 90.0],
+                  [-180.0, -90.0]
                 ],
                 // Inner cutout exposing strictly the active 1.8km Nagar Road corridor
                 [
@@ -492,8 +480,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           type: 'fill',
           source: 'corridor-inverse-mask',
           paint: {
-            'fill-color': '#070A11',
-            'fill-opacity': 0.86
+            'fill-color': '#050811',
+            'fill-opacity': 1.0 // 100% opaque: outside map completely vanishes!
           }
         });
 

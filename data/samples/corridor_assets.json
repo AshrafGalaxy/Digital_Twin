@@ -579,7 +579,7 @@
     {
       "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01",
       "type": "RoadSegment",
-      "name": "Viman Nagar Road NB Approach to Chowk",
+      "name": "Sopan Nagar Road NB Approach to Nagar Road",
       "direction": "NORTHBOUND",
       "fromIntersection": null,
       "toIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
@@ -591,31 +591,55 @@
       "osmHighway": "secondary",
       "coordinates": [
         [
-          73.91808,
-          18.5575
+          73.918349,
+          18.555288
         ],
         [
-          73.91812,
-          18.5583
+          73.918592,
+          18.557171
         ],
         [
-          73.91816,
-          18.5592
+          73.918732,
+          18.557861
         ],
         [
-          73.9182,
-          18.5601
+          73.918793,
+          18.55861
         ],
         [
-          73.91825,
-          18.5609
+          73.918863,
+          18.558927
+        ],
+        [
+          73.918888,
+          18.559149
+        ],
+        [
+          73.918901,
+          18.559248
+        ],
+        [
+          73.918901,
+          18.559352
+        ],
+        [
+          73.918774,
+          18.560466
+        ],
+        [
+          73.91872,
+          18.560779
+        ],
+        [
+          73.918691,
+          18.560898
         ]
       ]
     },
     {
       "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01",
       "type": "RoadSegment",
-      "name": "Viman Nagar Road SB Interior Branch",
+      "name": "Viman Nagar Road NB Departure",
       "direction": "SOUTHBOUND",
       "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:VN-01",
       "toIntersection": null,
@@ -627,31 +651,51 @@
       "osmHighway": "secondary",
       "coordinates": [
         [
-          73.91825,
-          18.5609
+          73.918195,
+          18.560992
         ],
         [
-          73.91822,
-          18.5618
+          73.918165,
+          18.561114
         ],
         [
-          73.91818,
-          18.5627
+          73.918134,
+          18.56124
         ],
         [
-          73.91812,
-          18.5636
+          73.918101,
+          18.561452
         ],
         [
-          73.9182,
-          18.5645
+          73.918096,
+          18.561525
+        ],
+        [
+          73.918091,
+          18.561598
+        ],
+        [
+          73.91809,
+          18.562031
+        ],
+        [
+          73.918058,
+          18.563423
+        ],
+        [
+          73.918155,
+          18.563631
+        ],
+        [
+          73.918293,
+          18.565132
         ]
       ]
     },
     {
       "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01",
       "type": "RoadSegment",
-      "name": "Somnath Nagar Road NB Approach to Chowk",
+      "name": "Old Mundhwa Road NB Approach to Somnath Nagar Chowk",
       "direction": "NORTHBOUND",
       "fromIntersection": null,
       "toIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
@@ -680,7 +724,7 @@
         ],
         [
           73.928099,
-          18.560344
+          18.560345
         ],
         [
           73.928101,
@@ -691,19 +735,35 @@
           18.560762
         ],
         [
-          73.928106,
-          18.560782
+          73.928085,
+          18.561235
         ],
         [
-          73.9279,
-          18.56283
+          73.928024,
+          18.56187
+        ],
+        [
+          73.927948,
+          18.561864
+        ],
+        [
+          73.927937,
+          18.561974
+        ],
+        [
+          73.927892,
+          18.562397
+        ],
+        [
+          73.927873,
+          18.562598
         ]
       ]
     },
     {
       "id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01",
       "type": "RoadSegment",
-      "name": "Somnath Nagar Road SB Exit to Wadgaon Sheri",
+      "name": "Somnath Nagar Road Collector Departure",
       "direction": "SOUTHBOUND",
       "fromIntersection": "urn:ngsi-ld:Intersection:PUNE:SN-01",
       "toIntersection": null,
@@ -715,56 +775,20 @@
       "osmHighway": "tertiary",
       "coordinates": [
         [
-          73.9279,
-          18.56283
+          73.927873,
+          18.562598
+        ],
+        [
+          73.927864,
+          18.562717
         ],
         [
           73.927693,
           18.562936
         ],
         [
-          73.927677,
-          18.563092
-        ],
-        [
-          73.927663,
-          18.563157
-        ],
-        [
-          73.927648,
-          18.563228
-        ],
-        [
           73.92748,
           18.563448
-        ],
-        [
-          73.927804,
-          18.563453
-        ],
-        [
-          73.928164,
-          18.563459
-        ],
-        [
-          73.928205,
-          18.563467
-        ],
-        [
-          73.928221,
-          18.563495
-        ],
-        [
-          73.92823,
-          18.56362
-        ],
-        [
-          73.92822,
-          18.563657
-        ],
-        [
-          73.928189,
-          18.563689
         ],
         [
           73.927747,
