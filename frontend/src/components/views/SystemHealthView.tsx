@@ -156,7 +156,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             <span className="metric-box-label">
               {subsystems.databaseBackend === 'postgresql' ? 'PostgreSQL / TimescaleDB' : 'SQLite Resilient Engine'}
             </span>
-            <Database size={16} color="#0F4C5C" />
+            <Database size={16} color="var(--color-primary, #2F81F7)" />
           </div>
           <span className="metric-box-val" style={{ color: subsystems.database ? '#10B981' : '#F59E0B', fontSize: '20px' }}>
             {subsystems.database
@@ -200,7 +200,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         <div className="metric-box">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="metric-box-label">SUMO Simulation Engine</span>
-            <Layers size={16} color="#0F4C5C" />
+            <Layers size={16} color="var(--color-primary, #2F81F7)" />
           </div>
           <span className="metric-box-val" style={{ color: subsystems.simulationEngine ? '#10B981' : '#EF4444', fontSize: '20px' }}>
             {subsystems.simulationEngine ? 'Ready & Calibrated' : 'Offline'}
@@ -217,11 +217,11 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         <div className="analytics-card">
           <div className="analytics-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Radio size={18} color="#0F4C5C" />
+              <Radio size={18} color="var(--color-primary, #2F81F7)" />
               <span className="card-title">Telemetry Ingestion & Quality Validation</span>
             </div>
             <button
-              className="btn-select-sm"
+              className="btn btn-secondary btn-sm"
               onClick={fetchHealth}
               disabled={refreshing}
             >
@@ -274,8 +274,8 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span>{quarantineData?.totalQuarantined ?? healthData?.subsystems?.quarantinedEventsCount ?? 0}</span>
                     <button
-                      className="btn-select-sm"
-                      style={{ padding: '2px 8px', fontSize: '12px' }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ height: '24px', padding: '0 8px', fontSize: '11px' }}
                       onClick={() => setQuarantineModalOpen(true)}
                     >
                       Inspect Queue
@@ -308,16 +308,16 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                       {streamerData?.isPaused ? ' (Paused)' : ''}
                     </span>
                     <button
-                      className="btn-select-sm"
-                      style={{ padding: '2px 8px', fontSize: '12px' }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ height: '24px', padding: '0 8px', fontSize: '11px' }}
                       onClick={() => handleStreamerAction('tick_once')}
                       disabled={tickingStreamer}
                     >
                       {tickingStreamer ? 'Ticking...' : 'Tick Now'}
                     </button>
                     <button
-                      className="btn-select-sm"
-                      style={{ padding: '2px 8px', fontSize: '12px' }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ height: '24px', padding: '0 8px', fontSize: '11px' }}
                       onClick={() => handleStreamerAction(streamerData?.isPaused ? 'resume' : 'pause')}
                     >
                       {streamerData?.isPaused ? 'Resume' : 'Pause'}
@@ -411,12 +411,12 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             </div>
           </div>
 
-          <div className="verdict-banner" style={{ marginTop: '16px', background: '#F8FAFC', borderColor: '#E2E8F0' }}>
+          <div className="verdict-banner" style={{ marginTop: '16px', background: 'rgba(22, 27, 34, 0.95)', border: '1px solid #30363D' }}>
             <div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
                 GOVERNANCE ARTIFACT REGISTRY
               </div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#0F4C5C' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)' }}>
                 OpenAPI 3.1 Contract at <code>/docs</code> | FIWARE NGSI-LD v1.3 Interop at <code>/api/v1/ngsi-ld/entities</code>
               </div>
             </div>
@@ -428,7 +428,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
       <div className="analytics-card" style={{ marginTop: '20px' }}>
         <div className="analytics-card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={18} color="#0F4C5C" />
+            <BookOpen size={18} color="var(--color-primary, #2F81F7)" />
             <span className="card-title">Dataset Governance & Manifest Catalog</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -472,7 +472,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
                 return (
                   <tr key={item.id}>
-                    <td className="font-mono" style={{ fontWeight: 600, color: '#0F4C5C' }}>
+                    <td className="font-mono" style={{ fontWeight: 600, color: 'var(--color-primary, #2F81F7)' }}>
                       {item.id}
                     </td>
                     <td>
@@ -505,7 +505,8 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     </td>
                     <td>
                       <button
-                        className="btn-select-sm"
+                        className="btn btn-secondary btn-sm"
+                        style={{ height: '28px', padding: '0 10px', fontSize: '12px' }}
                         onClick={() => handleInspectManifest(item.manifestId || item.id)}
                         disabled={loadingManifestId === (item.manifestId || item.id)}
                       >
@@ -542,29 +543,29 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         >
           <div
             style={{
-              backgroundColor: 'var(--color-surface, #ffffff)',
+              backgroundColor: '#161B22',
               borderRadius: '12px',
-              boxShadow: 'var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.2))',
+              boxShadow: 'var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.5))',
               maxWidth: '780px',
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              border: '1px solid var(--color-border, #E2E8F0)',
+              border: '1px solid #30363D',
               padding: '24px'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #30363D', paddingBottom: '16px', marginBottom: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="font-mono" style={{ background: '#0F4C5C', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>
+                  <span className="font-mono" style={{ background: 'var(--color-primary, #2F81F7)', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>
                     {selectedManifest.datasetId}
                   </span>
                   <span className="provenance-badge badge-live">v{selectedManifest.version}</span>
                   <span className="provenance-badge badge-simulation">{selectedManifest.localityClassification}</span>
                 </div>
-                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #0F172A)', marginTop: '8px', marginBottom: '4px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '8px', marginBottom: '4px' }}>
                   {selectedManifest.datasetName}
                 </h2>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-secondary, #64748B)' }}>
@@ -611,26 +612,26 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
             {/* Intended Use & Limitations Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-              <div style={{ padding: '12px', backgroundColor: 'var(--color-bg, #F8FAFC)', borderRadius: '8px', border: '1px solid var(--color-border, #E2E8F0)' }}>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#0F4C5C', marginBottom: '4px' }}>
+              <div style={{ padding: '12px', backgroundColor: 'rgba(22, 27, 34, 0.85)', borderRadius: '8px', border: '1px solid #30363D' }}>
+                <div style={{ fontWeight: 600, fontSize: '12px', color: 'var(--color-primary, #2F81F7)', marginBottom: '4px' }}>
                   INTENDED SCIENTIFIC USE
                 </div>
-                <div style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--color-text, #334155)' }}>
+                <div style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--color-text, #F0F6FC)' }}>
                   {selectedManifest.intendedUse}
                 </div>
               </div>
-              <div style={{ padding: '12px', backgroundColor: 'var(--color-bg, #F8FAFC)', borderRadius: '8px', border: '1px solid var(--color-border, #E2E8F0)' }}>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#B45309', marginBottom: '4px' }}>
+              <div style={{ padding: '12px', backgroundColor: 'rgba(22, 27, 34, 0.85)', borderRadius: '8px', border: '1px solid #30363D' }}>
+                <div style={{ fontWeight: 600, fontSize: '12px', color: '#D29922', marginBottom: '4px' }}>
                   KNOWN LIMITATIONS
                 </div>
-                <div style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--color-text, #334155)' }}>
+                <div style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--color-text, #F0F6FC)' }}>
                   {selectedManifest.knownLimitations}
                 </div>
               </div>
             </div>
 
             {/* Privacy & Attribution */}
-            <div style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--color-text-secondary, #64748B)', padding: '10px 14px', background: 'var(--color-surface-raised, #F1F5F9)', borderRadius: '6px' }}>
+            <div style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--color-text-secondary, #8B949E)', padding: '10px 14px', background: 'rgba(22, 27, 34, 0.6)', borderRadius: '6px', border: '1px solid #30363D' }}>
               <div><strong>Attribution:</strong> {selectedManifest.attributionRequirements || 'Standard project attribution.'}</div>
               <div style={{ marginTop: '4px' }}><strong>Privacy & Sensitivity:</strong> {selectedManifest.privacySensitivityAssessment || 'Standard public spatial telemetry.'}</div>
             </div>
@@ -652,7 +653,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                   <tbody>
                     {selectedManifest.fields.map((f, idx) => (
                       <tr key={idx}>
-                        <td className="font-mono" style={{ color: '#0F4C5C', fontWeight: 600 }}>{f.name}</td>
+                        <td className="font-mono" style={{ color: 'var(--color-primary, #2F81F7)', fontWeight: 600 }}>{f.name}</td>
                         <td className="font-mono">{f.unit}</td>
                         <td>{f.description}</td>
                       </tr>
@@ -663,7 +664,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             )}
 
             {/* Modal Footer */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #30363D', paddingTop: '16px' }}>
               {selectedManifest.sourceUrl && (
                 <a
                   href={selectedManifest.sourceUrl}
@@ -674,7 +675,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     alignItems: 'center',
                     gap: '6px',
                     fontSize: '12px',
-                    color: '#0F4C5C',
+                    color: 'var(--color-primary, #2F81F7)',
                     textDecoration: 'none',
                     fontWeight: 500
                   }}
@@ -684,7 +685,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 </a>
               )}
               <button
-                className="btn-select-sm"
+                className="btn btn-secondary btn-sm"
                 onClick={() => setManifestModalOpen(false)}
                 style={{ padding: '6px 16px', fontSize: '13px' }}
               >
@@ -716,20 +717,20 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         >
           <div
             style={{
-              backgroundColor: 'var(--color-surface, #ffffff)',
+              backgroundColor: '#161B22',
               borderRadius: '12px',
-              boxShadow: 'var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.2))',
+              boxShadow: 'var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.5))',
               maxWidth: '880px',
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              border: '1px solid var(--color-border, #E2E8F0)',
+              border: '1px solid #30363D',
               padding: '24px'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border, #E2E8F0)', paddingBottom: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #30363D', paddingBottom: '16px', marginBottom: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="font-mono" style={{ background: '#DC2626', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>
@@ -742,10 +743,10 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     quarantine_observations
                   </span>
                 </div>
-                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #0F172A)', marginTop: '8px', marginBottom: '4px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '8px', marginBottom: '4px' }}>
                   Telemetry Ingestion Quarantine & Dead-Letter Inspector
                 </h2>
-                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary, #64748B)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary, #8B949E)' }}>
                   Per <strong>AGENTS.md §7.5</strong>, invalid telemetry events (out-of-bounds metrics, schema failures, future timestamps) are strictly rejected and isolated from authoritative twin state.
                 </div>
               </div>
@@ -765,16 +766,17 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
             {/* Reasons Breakdown Badges */}
             <div style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary, #64748B)' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary, #8B949E)' }}>
                 Filter by Rejection Reason:
               </span>
               <button
-                className={`btn-select-sm ${selectedQuarantineReason === 'ALL' ? 'btn-active' : ''}`}
+                className="btn btn-secondary btn-sm"
                 style={{
                   padding: '3px 10px',
                   fontSize: '12px',
-                  background: selectedQuarantineReason === 'ALL' ? '#0F4C5C' : 'transparent',
-                  color: selectedQuarantineReason === 'ALL' ? '#fff' : 'inherit'
+                  height: '28px',
+                  background: selectedQuarantineReason === 'ALL' ? 'var(--color-primary, #2F81F7)' : '#21262D',
+                  color: selectedQuarantineReason === 'ALL' ? '#fff' : 'var(--color-text, #F0F6FC)'
                 }}
                 onClick={() => setSelectedQuarantineReason('ALL')}
               >
@@ -783,12 +785,13 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
               {Object.entries(quarantineData?.reasonsBreakdown || {}).map(([reason, count]) => (
                 <button
                   key={reason}
-                  className={`btn-select-sm ${selectedQuarantineReason === reason ? 'btn-active' : ''}`}
+                  className="btn btn-secondary btn-sm"
                   style={{
                     padding: '3px 10px',
                     fontSize: '12px',
-                    background: selectedQuarantineReason === reason ? '#0F4C5C' : 'transparent',
-                    color: selectedQuarantineReason === reason ? '#fff' : 'inherit'
+                    height: '28px',
+                    background: selectedQuarantineReason === reason ? 'var(--color-primary, #2F81F7)' : '#21262D',
+                    color: selectedQuarantineReason === reason ? '#fff' : 'var(--color-text, #F0F6FC)'
                   }}
                   onClick={() => setSelectedQuarantineReason(reason)}
                 >
@@ -799,7 +802,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
             {/* Quarantined Records Table */}
             {(!quarantineData || quarantineData.records.length === 0) ? (
-              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-secondary, #64748B)', background: 'var(--color-bg, #F8FAFC)', borderRadius: '8px', border: '1px dashed var(--color-border, #E2E8F0)' }}>
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-secondary, #8B949E)', background: 'rgba(22, 27, 34, 0.6)', borderRadius: '8px', border: '1px dashed #30363D' }}>
                 <FileCheck size={32} color="#10B981" style={{ margin: '0 auto 8px' }} />
                 <div style={{ fontWeight: 600, fontSize: '14px', color: '#10B981' }}>Quarantine Queue is Clean</div>
                 <div style={{ fontSize: '12px', marginTop: '4px' }}>All incoming telemetry events have satisfied NGSI-LD canonical schema and physical boundary checks.</div>
@@ -833,9 +836,9 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                             <span
                               className="status-pill"
                               style={{
-                                background: '#FEE2E2',
-                                color: '#B91C1C',
-                                border: '1px solid #FCA5A5',
+                                background: 'rgba(239, 68, 68, 0.15)',
+                                color: '#F85149',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
                                 fontSize: '12px'
                               }}
                             >
@@ -843,14 +846,15 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                             </span>
                           </td>
                           <td>
-                            <div style={{ fontSize: '12px', color: '#B91C1C', marginBottom: '4px' }}>
+                            <div style={{ fontSize: '12px', color: '#F85149', marginBottom: '4px' }}>
                               {r.validationDetails?.error || 'Validation constraint violated'}
                             </div>
                             <details style={{ cursor: 'pointer', fontSize: '12px' }}>
-                              <summary style={{ color: '#0F4C5C' }}>View Raw JSON</summary>
+                              <summary style={{ color: 'var(--color-primary, #2F81F7)' }}>View Raw JSON</summary>
                               <pre style={{
-                                background: '#1E293B',
-                                color: '#E2E8F0',
+                                background: '#0D1117',
+                                color: '#F0F6FC',
+                                border: '1px solid #30363D',
                                 padding: '8px',
                                 borderRadius: '4px',
                                 fontSize: '12px',
@@ -870,9 +874,9 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             )}
 
             {/* Modal Footer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border, #E2E8F0)', paddingTop: '16px', marginTop: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #30363D', paddingTop: '16px', marginTop: '16px' }}>
               <button
-                className="btn-select-sm"
+                className="btn btn-secondary btn-sm"
                 onClick={() => setQuarantineModalOpen(false)}
                 style={{ padding: '6px 16px', fontSize: '13px' }}
               >
