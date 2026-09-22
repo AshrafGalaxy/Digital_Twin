@@ -748,6 +748,21 @@ body {
   color: var(--text-muted);
 }
 
+.corridor-state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  line-height: 1;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

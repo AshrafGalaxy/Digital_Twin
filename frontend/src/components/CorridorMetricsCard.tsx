@@ -34,15 +34,11 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
           )}
           <span className="card-title">Corridor Telemetry</span>
           <span
-            className="status-pill"
+            className="corridor-state-pill"
             style={{
               color: corridorState.color,
               background: corridorState.bg,
-              border: `1px solid ${corridorState.color}40`,
-              fontWeight: 700,
-              fontSize: '10.5px',
-              padding: '1px 6px',
-              letterSpacing: '0.4px'
+              border: `1px solid ${corridorState.color}60`
             }}
           >
             {corridorState.label}
