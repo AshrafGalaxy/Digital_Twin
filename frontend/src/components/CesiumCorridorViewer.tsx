@@ -160,10 +160,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           new Cesium.UrlTemplateImageryProvider({
             url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             maximumLevel: 18 // CLAMP to 18 to eliminate "map data not yet available"!
-          }),
-          {
-            rectangle: Cesium.Rectangle.fromDegrees(73.909, 18.555, 73.934, 18.5675)
-          }
+          })
         )
       });
 
@@ -173,24 +170,10 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       scene.globe.enableLighting = true; // Solar angle lighting based on clock time
       scene.highDynamicRange = true; // HDR tone-mapping for realistic light bounces
 
-      // Floating Holographic Diorama: Physical Globe Clipping strictly to the active corridor box
-      const corridorCenter = Cesium.Cartesian3.fromDegrees(73.9215, 18.56125, 0.0);
-      const halfWidthM = 1319.1; // East-West half distance in meters (~2.638 km wide)
-      const halfHeightM = 691.8; // North-South half distance in meters (~1.384 km tall)
-
-      scene.globe.clippingPlanes = new Cesium.ClippingPlaneCollection({
-        modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(corridorCenter),
-        planes: [
-          new Cesium.ClippingPlane(new Cesium.Cartesian3(-1.0,  0.0, 0.0), halfWidthM),
-          new Cesium.ClippingPlane(new Cesium.Cartesian3( 1.0,  0.0, 0.0), halfWidthM),
-          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0, -1.0, 0.0), halfHeightM),
-          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0,  1.0, 0.0), halfHeightM)
-        ],
-        edgeColor: Cesium.Color.fromCssColorString('#06B6D4'),
-        edgeWidth: 2.5,
-        unionClippingRegions: true,
-        enabled: true
-      });
+      // Floating Holographic Diorama: Native Cartographic Bounding Limit
+      // Physically clips all terrain & imagery outside the corridor bounding box at the GPU shader level
+      const corridorRectangle = Cesium.Rectangle.fromDegrees(73.909, 18.555, 73.934, 18.5675);
+      scene.globe.cartographicLimitRectangle = corridorRectangle;
       scene.globe.backFaceCulling = true;
       scene.globe.baseColor = Cesium.Color.fromCssColorString('#050811');
 
@@ -326,28 +309,22 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     let provider: Cesium.ImageryProvider;
     let isDark = false;
     if (effectiveBasemap === 'streets') {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors'
+      provider = new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org'
       });
     } else if (effectiveBasemap === 'dark') {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors'
+      provider = new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org'
       });
       isDark = true;
     } else {
       provider = new Cesium.UrlTemplateImageryProvider({
         url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        maximumLevel: 19,
+        maximumLevel: 18,
         credit: '© Esri, Maxar, Earthstar Geographics'
       });
     }
-    const layer = new Cesium.ImageryLayer(provider, {
-      rectangle: Cesium.Rectangle.fromDegrees(73.909, 18.555, 73.934, 18.5675)
-    });
+    const layer = new Cesium.ImageryLayer(provider);
     layers.add(layer);
     layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR;
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
