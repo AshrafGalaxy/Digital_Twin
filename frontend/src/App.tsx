@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Header, TabId } from './components/Header';
 import { MapOperationsView } from './components/MapOperationsView';
 import { CorridorMetricsCard } from './components/CorridorMetricsCard';
@@ -64,20 +64,51 @@ export const App: React.FC = () => {
   const [scrubberSpeed, setScrubberSpeed] = useState<number>(1);
   const [historicalStates, setHistoricalStates] = useState<Record<string, EntityCurrentState>>({});
 
-  // Fetch historical snapshot when scrubber position changes
+  // Debounced historical snapshot fetching when scrubber position changes
   useEffect(() => {
     if (scrubberMinutesAgo > 0) {
-      fetchHistoricalSnapshot(scrubberMinutesAgo)
-        .then((snapshot) => {
-          if (snapshot && snapshot.length > 0) {
-            const map: Record<string, EntityCurrentState> = {};
-            snapshot.forEach(s => { map[s.entityId] = s; });
-            setHistoricalStates(map);
-          }
-        })
-        .catch(err => console.error('Historical snapshot fetch error:', err));
+      const timer = setTimeout(() => {
+        fetchHistoricalSnapshot(scrubberMinutesAgo)
+          .then((snapshot) => {
+            if (snapshot && snapshot.length > 0) {
+              const map: Record<string, EntityCurrentState> = {};
+              snapshot.forEach(s => { map[s.entityId] = s; });
+              setHistoricalStates(map);
+            }
+          })
+          .catch(err => console.error('Historical snapshot fetch error:', err));
+      }, 120);
+      return () => clearTimeout(timer);
     }
   }, [scrubberMinutesAgo]);
+
+  const handleScrubChange = useCallback((valueOrUpdater: number | ((prev: number) => number)) => {
+    setScrubberMinutesAgo(prev => {
+      const next = typeof valueOrUpdater === 'function' ? valueOrUpdater(prev) : valueOrUpdater;
+      const clamped = Math.max(0, Math.min(720, next));
+      controlReplaySession({ action: 'seek', minutes_ago: clamped });
+      return clamped;
+    });
+  }, []);
+
+  const handleTogglePlay = useCallback(() => {
+    setIsScrubberPlaying(prev => {
+      const next = !prev;
+      controlReplaySession({ action: next ? 'play' : 'pause', minutes_ago: scrubberMinutesAgo });
+      return next;
+    });
+  }, [scrubberMinutesAgo]);
+
+  const handleSpeedChange = useCallback((spd: number) => {
+    setScrubberSpeed(spd);
+    controlReplaySession({ action: 'speed', speed: spd });
+  }, []);
+
+  const handleJumpToLive = useCallback(() => {
+    setScrubberMinutesAgo(0);
+    setIsScrubberPlaying(false);
+    controlReplaySession({ action: 'jump_to_live' });
+  }, []);
 
   // Load Initial Assets
   useEffect(() => {
@@ -266,24 +297,10 @@ export const App: React.FC = () => {
               minutesAgo={scrubberMinutesAgo}
               isPlaying={isScrubberPlaying}
               playbackSpeed={scrubberSpeed}
-              onScrubChange={(mins) => {
-                setScrubberMinutesAgo(mins);
-                controlReplaySession({ action: 'seek', minutes_ago: mins });
-              }}
-              onTogglePlay={() => {
-                const nextPlaying = !isScrubberPlaying;
-                setIsScrubberPlaying(nextPlaying);
-                controlReplaySession({ action: nextPlaying ? 'play' : 'pause', minutes_ago: scrubberMinutesAgo });
-              }}
-              onSpeedChange={(spd) => {
-                setScrubberSpeed(spd);
-                controlReplaySession({ action: 'speed', speed: spd });
-              }}
-              onJumpToLive={() => {
-                setScrubberMinutesAgo(0);
-                setIsScrubberPlaying(false);
-                controlReplaySession({ action: 'jump_to_live' });
-              }}
+              onScrubChange={handleScrubChange}
+              onTogglePlay={handleTogglePlay}
+              onSpeedChange={handleSpeedChange}
+              onJumpToLive={handleJumpToLive}
             />
           </div>
         )}
