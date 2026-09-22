@@ -278,7 +278,10 @@ export const App: React.FC = () => {
               onSelectCompareEntity={(comp) => setCompareEntity(comp)}
             />
 
-            <MapLegend />
+            <MapLegend
+              isDrawerOpen={Boolean(selectedEntity)}
+              isComparisonMode={Boolean(compareEntity)}
+            />
 
             <EntityDetailDrawer
               entity={selectedEntity}
