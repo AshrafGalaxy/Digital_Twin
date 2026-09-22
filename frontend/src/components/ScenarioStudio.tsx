@@ -146,6 +146,10 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                 value={greenExtension}
                 onChange={(e) => setGreenExtension(Number(e.target.value))}
                 className="control-slider"
+                style={{
+                  background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+                }}
+                aria-label="Nagar Road EB Green Extension"
               />
               <div className="slider-hints">
                 <span>+5s (Moderate)</span>
@@ -168,6 +172,10 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                 value={demandMultiplier}
                 onChange={(e) => setDemandMultiplier(Number(e.target.value))}
                 className="control-slider"
+                style={{
+                  background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((demandMultiplier - 0.8) / 0.7) * 100}%, rgba(255, 255, 255, 0.12) ${((demandMultiplier - 0.8) / 0.7) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+                }}
+                aria-label="Peak Demand Multiplier"
               />
               <div className="slider-hints">
                 <span>0.80x (Off-Peak)</span>

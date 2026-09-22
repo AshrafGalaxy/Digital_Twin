@@ -171,6 +171,10 @@ export const ScenarioStudioView: React.FC = () => {
                 value={greenExtension}
                 onChange={(e) => setGreenExtension(Number(e.target.value))}
                 className="control-slider"
+                style={{
+                  background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+                }}
+                aria-label="Nagar Road EB Green Extension"
               />
               <div className="preset-pills-row">
                 <button
@@ -210,6 +214,10 @@ export const ScenarioStudioView: React.FC = () => {
                 value={coordinationOffset}
                 onChange={(e) => setCoordinationOffset(Number(e.target.value))}
                 className="control-slider"
+                style={{
+                  background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((coordinationOffset - 10) / 50) * 100}%, rgba(255, 255, 255, 0.12) ${((coordinationOffset - 10) / 50) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+                }}
+                aria-label="Arterial Progression Offset"
               />
               <div className="preset-pills-row">
                 <button
@@ -251,6 +259,10 @@ export const ScenarioStudioView: React.FC = () => {
               value={demandMultiplier}
               onChange={(e) => setDemandMultiplier(Number(e.target.value))}
               className="control-slider"
+              style={{
+                background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((demandMultiplier - 0.8) / 0.7) * 100}%, rgba(255, 255, 255, 0.12) ${((demandMultiplier - 0.8) / 0.7) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+              }}
+              aria-label="Peak Demand Multiplier"
             />
             <div className="preset-pills-row">
               <button
