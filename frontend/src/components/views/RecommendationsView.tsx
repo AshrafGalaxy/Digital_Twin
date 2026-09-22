@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
-  RotateCcw
+  RotateCcw,
+  Lightbulb
 } from 'lucide-react';
 import {
   AdvisoryRecommendation,
@@ -308,7 +309,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
               {/* Suggested Action Callout */}
               <div className="suggested-action-callout">
-                <div className="action-icon">💡</div>
+                <div className="action-icon"><Lightbulb size={16} color="var(--color-primary)" /></div>
                 <div className="action-content">
                   <span className="action-heading">Suggested Advisory Intervention:</span>
                   <p className="action-text">{rec.suggestedAction}</p>

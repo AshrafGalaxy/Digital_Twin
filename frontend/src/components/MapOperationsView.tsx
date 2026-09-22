@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
+import { Map, Globe, TableProperties } from 'lucide-react';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import buildings3dGeoJson from '../assets/corridor_buildings_3d.json';
 import { ProvenanceBadge } from './ProvenanceBadge';
@@ -343,7 +344,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       envEl.style.color = isLight ? '#047857' : '#34D399';
       envEl.style.cursor = 'pointer';
       envEl.title = 'Pune Airport / Lohegaon CAAQMS Air Quality Reference Station (NAAQS: Moderate)';
-      envEl.innerHTML = '🍃 CAAQMS Air Station';
+      envEl.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10B981;box-shadow:0 0 8px #10B981;"></span><span>CAAQMS Air Station</span>';
       const envMarker = new maplibregl.Marker({ element: envEl })
         .setLngLat([73.9215, 18.5665])
         .addTo(currentMap);
@@ -395,14 +396,15 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       )}
 
       {/* 3D Presentation & Accessibility Mode Overlay Controls */}
-      <div className="map-3d-controls-overlay">
+      <div className="map-3d-controls-overlay" role="toolbar" aria-label="Map Presentation Controls">
         <button
           type="button"
           className={`map-view-toggle-btn ${isTableView ? 'active' : ''}`}
           onClick={() => setIsTableView(!isTableView)}
           title={isTableView ? "Return to Visual Map Canvas" : "Switch to Synchronized Accessible Table View (WCAG Fallback per UI_UX_SPEC §18.2)"}
         >
-          <span>{isTableView ? '🗺️ Map View' : '📋 Accessible Table View'}</span>
+          {isTableView ? <Map size={13} aria-hidden="true" /> : <TableProperties size={13} aria-hidden="true" />}
+          <span>{isTableView ? 'Map View' : 'Table View'}</span>
         </button>
 
         <button
@@ -411,8 +413,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           onClick={toggle3DMode}
           title={is3DMode ? "Switch to 2D MapLibre View" : "Enable Cesium 3D Corridor Digital Twin"}
         >
-          <span className="btn-icon">{is3DMode ? '🗺️' : '🌐'}</span>
-          <span>{is3DMode ? '2D Map View' : '3D Corridor Twin'}</span>
+          {is3DMode ? <Map size={13} aria-hidden="true" /> : <Globe size={13} aria-hidden="true" />}
+          <span>{is3DMode ? '2D Map' : '3D Twin'}</span>
         </button>
         {is3DMode && (
           <span className="provenance-badge badge-simulation" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>

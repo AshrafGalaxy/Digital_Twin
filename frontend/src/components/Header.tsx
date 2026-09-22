@@ -47,18 +47,18 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme
 }) => {
   const navTabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'operations', label: 'Operations', icon: <Map size={15} /> },
-    { id: 'traffic', label: 'Traffic Analytics', icon: <Car size={15} /> },
-    { id: 'energy', label: 'Energy Analytics', icon: <Zap size={15} /> },
-    { id: 'environment', label: 'Environment Context', icon: <CloudSun size={15} /> },
-    { id: 'scenarios', label: 'Scenario Studio', icon: <Sliders size={15} /> },
+    { id: 'operations', label: 'Operations', icon: <Map size={14} /> },
+    { id: 'traffic', label: 'Traffic Analytics', icon: <Car size={14} /> },
+    { id: 'energy', label: 'Energy Analytics', icon: <Zap size={14} /> },
+    { id: 'environment', label: 'Environment Context', icon: <CloudSun size={14} /> },
+    { id: 'scenarios', label: 'Scenario Studio', icon: <Sliders size={14} /> },
     {
       id: 'recommendations',
       label: 'Recommendations',
-      icon: <ShieldAlert size={15} />,
+      icon: <ShieldAlert size={14} />,
       badge: activeAdvisoriesCount
     },
-    { id: 'health', label: 'System & Data Health', icon: <Server size={15} /> }
+    { id: 'health', label: 'System & Data Health', icon: <Server size={14} /> }
   ];
 
   return (
@@ -66,10 +66,10 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Strip: Brand + Global Telemetry / Governance Badges + Theme Switcher (UI_UX_SPEC §6.1) */}
       <div className="header-top-row">
         <div className="brand-section">
-          <Activity size={22} color="var(--color-primary)" />
+          <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 6px rgba(0, 242, 254, 0.6))' }} />
           <span className="brand-title">Digital Twin</span>
           <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>
-          <span className="provenance-badge badge-replay" style={{ fontSize: '12px', padding: '2px 8px', letterSpacing: '0.5px' }}>
+          <span className="provenance-badge badge-replay" style={{ fontSize: '10.5px', padding: '1px 6px', letterSpacing: '0.5px' }}>
             DEMO
           </span>
         </div>
@@ -77,13 +77,16 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="status-section">
           {/* Stream / WebSocket Health */}
           <div className="status-pill">
-            <span className={`dot ${wsConnected ? 'dot-live' : 'dot-stale'}`} />
+            <span
+              className={`dot ${wsConnected ? 'dot-live' : 'dot-stale'}`}
+              style={{ boxShadow: wsConnected ? '0 0 8px #10B981' : '0 0 8px #F59E0B' }}
+            />
             <span>{wsConnected ? 'Stream Active' : 'Connecting...'}</span>
           </div>
 
           {/* User Role Indicator (UI_UX_SPEC §6.1) */}
           <div className="status-pill" title="Current session authorization role">
-            <User size={13} color="var(--text-muted)" />
+            <User size={12} color="var(--text-muted)" />
             <span className="text-muted">Role:</span>
             <span style={{ fontWeight: 600 }}>Municipal Analyst</span>
           </div>
@@ -104,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Human Governance / Advisory Badge */}
           <div className="status-pill" title="Advisory platform: all decisions require human approval">
-            <ShieldCheck size={14} color="#10B981" />
+            <ShieldCheck size={13} color="#10B981" />
             <span style={{ color: '#10B981', fontWeight: 600 }}>Advisory Only</span>
           </div>
 
@@ -118,13 +121,13 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {theme === 'dark' ? (
               <>
-                <Sun size={14} className="theme-toggle-icon sun" />
-                <span>Light Mode</span>
+                <Sun size={13} className="theme-toggle-icon sun" />
+                <span>Light</span>
               </>
             ) : (
               <>
-                <Moon size={14} className="theme-toggle-icon moon" />
-                <span>Dark Mode</span>
+                <Moon size={13} className="theme-toggle-icon moon" />
+                <span>Dark</span>
               </>
             )}
           </button>

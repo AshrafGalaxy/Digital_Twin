@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Lightbulb } from 'lucide-react';
 import {
   AdvisoryRecommendation,
   AdvisorySummary,
@@ -300,7 +301,7 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
 
                 {/* Suggested Action Callout */}
                 <div className="suggested-action-callout">
-                  <div className="action-icon">💡</div>
+                  <div className="action-icon"><Lightbulb size={16} color="var(--color-primary)" /></div>
                   <div className="action-content">
                     <span className="action-heading">Suggested Advisory Action:</span>
                     <p className="action-text">{rec.suggestedAction}</p>

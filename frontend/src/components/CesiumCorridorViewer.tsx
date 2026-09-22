@@ -209,8 +209,8 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(centerLng, centerLat, height + 6.0),
             label: {
-              text: `🏢 ${props.name || 'Phoenix Marketcity'} (${height}m)`,
-              font: '600 13px Inter, sans-serif',
+              text: `${props.name || 'Phoenix Marketcity'} (${height}m)`,
+              font: "600 13px 'General Sans', -apple-system, sans-serif",
               fillColor: Cesium.Color.WHITE,
               outlineColor: Cesium.Color.fromCssColorString('#0F172A'),
               outlineWidth: 3,
@@ -232,7 +232,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
         const isEB = (props.direction || '').toUpperCase() === 'EASTBOUND';
         const roadColor = Cesium.Color.fromCssColorString(
-          isEB ? '#0EA5E9' : '#F59E0B'
+          isEB ? '#00F2FE' : '#F59E0B'
         ).withAlpha(0.85);
 
         // Road Surface Ribbon
@@ -266,14 +266,14 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           position: Cesium.Cartesian3.fromDegrees(lng, lat, 2.0),
           point: {
             pixelSize: 14,
-            color: Cesium.Color.fromCssColorString(isLight ? '#006B6F' : '#22D3EE'),
+            color: Cesium.Color.fromCssColorString(isLight ? '#006B6F' : '#00F2FE'),
             outlineColor: Cesium.Color.WHITE,
             outlineWidth: 2,
             disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           label: {
-            text: `🚦 ${props.name}`,
-            font: '500 12px Inter, sans-serif',
+            text: props.name || 'Intersection',
+            font: "600 12px 'General Sans', -apple-system, sans-serif",
             fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.BLACK,
             outlineWidth: 2,
