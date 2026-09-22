@@ -100,6 +100,126 @@ const STOPLINES_GEOJSON = {
   ]
 };
 
+// Intersection Yellow Box Junction Polygons (Do Not Block Chowk)
+const JUNCTION_BOXES_GEOJSON = {
+  type: 'FeatureCollection' as const,
+  features: [
+    {
+      type: 'Feature' as const,
+      id: 'box-vn',
+      properties: { id: 'box-vn', name: 'Viman Nagar Yellow Box Junction' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [73.91816, 18.56070],
+            [73.91834, 18.56070],
+            [73.91834, 18.56110],
+            [73.91816, 18.56110],
+            [73.91816, 18.56070]
+          ]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'box-sn',
+      properties: { id: 'box-sn', name: 'Somnath Nagar Yellow Box Junction' },
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [73.92778, 18.56260],
+            [73.92802, 18.56260],
+            [73.92802, 18.56300],
+            [73.92778, 18.56300],
+            [73.92778, 18.56260]
+          ]
+        ]
+      }
+    }
+  ]
+};
+
+// Pedestrian Zebra Crossing Markings across Intersection Approach Legs (IRC:35 High-Fidelity)
+const ZEBRA_CROSSINGS_GEOJSON = {
+  type: 'FeatureCollection' as const,
+  features: [
+    {
+      type: 'Feature' as const,
+      id: 'zebra-vn-w',
+      properties: { id: 'zebra-vn-w', name: 'Viman Nagar West Pedestrian Crossing' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.91812, 18.56068],
+          [73.91812, 18.56112]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'zebra-vn-e',
+      properties: { id: 'zebra-vn-e', name: 'Viman Nagar East Pedestrian Crossing' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.91838, 18.56068],
+          [73.91838, 18.56112]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'zebra-vn-s',
+      properties: { id: 'zebra-vn-s', name: 'Viman Nagar South Pedestrian Crossing' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.91816, 18.56066],
+          [73.91834, 18.56066]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'zebra-sn-w',
+      properties: { id: 'zebra-sn-w', name: 'Somnath Nagar West Pedestrian Crossing' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.92774, 18.56258],
+          [73.92774, 18.56302]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'zebra-sn-e',
+      properties: { id: 'zebra-sn-e', name: 'Somnath Nagar East Pedestrian Crossing' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.92806, 18.56258],
+          [73.92806, 18.56302]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'zebra-sn-s',
+      properties: { id: 'zebra-sn-s', name: 'Somnath Nagar South Pedestrian Crossing' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.92778, 18.56258],
+          [73.92802, 18.56258]
+        ]
+      }
+    }
+  ]
+};
+
 // Generates an offscreen directional chevron arrow for roadway traffic flow markers
 const createFlowArrowImage = (): ImageData | null => {
   if (typeof document === 'undefined') return null;
@@ -712,6 +832,59 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               15, 3.5,
               17, 5
             ],
+            'line-opacity': 0.95
+          }
+        });
+      }
+
+      // 3B. Add Yellow Box Junctions and Zebra Crossings (IRC:35 Navigation Grade)
+      if (!currentMap.getSource('junction-boxes')) {
+        currentMap.addSource('junction-boxes', {
+          type: 'geojson',
+          data: JUNCTION_BOXES_GEOJSON as any
+        });
+
+        currentMap.addLayer({
+          id: 'junction-boxes-fill',
+          type: 'fill',
+          source: 'junction-boxes',
+          paint: {
+            'fill-color': '#F59E0B',
+            'fill-opacity': 0.12
+          }
+        });
+
+        currentMap.addLayer({
+          id: 'junction-boxes-outline',
+          type: 'line',
+          source: 'junction-boxes',
+          paint: {
+            'line-color': '#F59E0B',
+            'line-width': 2.0,
+            'line-opacity': 0.85
+          }
+        });
+      }
+
+      if (!currentMap.getSource('zebra-crossings')) {
+        currentMap.addSource('zebra-crossings', {
+          type: 'geojson',
+          data: ZEBRA_CROSSINGS_GEOJSON as any
+        });
+
+        currentMap.addLayer({
+          id: 'zebra-crossings-stripes',
+          type: 'line',
+          source: 'zebra-crossings',
+          paint: {
+            'line-color': '#FFFFFF',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              13, 3.5,
+              15, 5.5,
+              17, 8.5
+            ],
+            'line-dasharray': [0.8, 0.8],
             'line-opacity': 0.95
           }
         });

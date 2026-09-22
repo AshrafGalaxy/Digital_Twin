@@ -30,6 +30,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const signalsCollectionRef = useRef<Cesium.CustomDataSource | null>(null);
   const [activeViewpointId, setActiveViewpointId] = useState<string>('corridor-overview');
   const [basemap3D, setBasemap3D] = useState<'satellite' | 'streets' | 'dark'>('satellite');
+  const [solarTime, setSolarTime] = useState<'midday' | 'golden' | 'night'>('golden');
   const [hoveredBuilding3D, setHoveredBuilding3D] = useState<{
     name: string;
     category: string;
@@ -82,7 +83,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         navigationHelpButton: false,
         navigationInstructionsInitiallyVisible: false,
         scene3DOnly: true,
-        shadows: false,
+        shadows: true, // Enable real-time astronomical building shadows
         baseLayer: new Cesium.ImageryLayer(
           new Cesium.UrlTemplateImageryProvider({
             url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -91,10 +92,26 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         )
       });
 
-      // Configure Scene Aesthetics & Atmosphere
+      // Configure Scene Aesthetics, Atmosphere & Shadow Mapping
       const scene = viewer.scene;
       scene.globe.depthTestAgainstTerrain = false;
-      scene.globe.enableLighting = currentTheme === 'dark';
+      scene.globe.enableLighting = true; // Solar angle lighting based on clock time
+      scene.highDynamicRange = true; // HDR tone-mapping for realistic light bounces
+
+      if (scene.fog) {
+        scene.fog.enabled = true;
+        scene.fog.density = 0.00015;
+      }
+      if (viewer.shadowMap) {
+        viewer.shadowMap.size = 2048;
+        viewer.shadowMap.softShadows = true;
+        viewer.shadowMap.darkness = 0.55; // Realistic ambient shadow level
+      }
+
+      // Initial Golden Hour Sun Position (4:00 PM IST / 10:30 UTC over Pune)
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T10:30:00Z');
+      viewer.clock.shouldAnimate = false;
+
       scene.backgroundColor = Cesium.Color.fromCssColorString(
         currentTheme === 'light' ? '#E2E8F0' : '#0B1320'
       );
@@ -535,7 +552,98 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         }
       });
     });
+
+    // G. Chowk Pedestrian Zebra Crossings & Box Junction Markings in 3D (IRC:35 Grade)
+    const CHOWK_ZEBRA_STRIPES = [
+      // Viman Nagar Chowk Zebra Crossings
+      { id: 'vn-zebra-w-eb', positions: [[73.91812, 18.56068], [73.91812, 18.56086]] },
+      { id: 'vn-zebra-w-wb', positions: [[73.91812, 18.56096], [73.91812, 18.56112]] },
+      { id: 'vn-zebra-e-eb', positions: [[73.91838, 18.56068], [73.91838, 18.56086]] },
+      { id: 'vn-zebra-e-wb', positions: [[73.91838, 18.56096], [73.91838, 18.56112]] },
+      { id: 'vn-zebra-s-nb', positions: [[73.91816, 18.56066], [73.91834, 18.56066]] },
+      // Somnath Nagar Chowk Zebra Crossings
+      { id: 'sn-zebra-w', positions: [[73.92774, 18.56260], [73.92774, 18.56302]] },
+      { id: 'sn-zebra-e', positions: [[73.92806, 18.56260], [73.92806, 18.56302]] },
+      { id: 'sn-zebra-s', positions: [[73.92778, 18.56258], [73.92802, 18.56258]] },
+    ];
+
+    CHOWK_ZEBRA_STRIPES.forEach(stripe => {
+      viewer.entities.add({
+        name: 'Pedestrian Zebra Crossing',
+        polyline: {
+          positions: stripe.positions.map(p => Cesium.Cartesian3.fromDegrees(p[0], p[1], 0.2)),
+          width: 8.0,
+          material: new Cesium.PolylineDashMaterialProperty({
+            color: Cesium.Color.WHITE.withAlpha(0.95),
+            gapColor: Cesium.Color.TRANSPARENT,
+            dashLength: 16.0,
+            dashPattern: 255
+          }),
+          clampToGround: true
+        }
+      });
+    });
+
+    // Yellow Box Junctions in 3D
+    const CHOWK_BOX_JUNCTIONS = [
+      {
+        name: 'Viman Nagar Box Junction',
+        positions: [
+          [73.91816, 18.56070],
+          [73.91834, 18.56070],
+          [73.91834, 18.56110],
+          [73.91816, 18.56110],
+          [73.91816, 18.56070]
+        ]
+      },
+      {
+        name: 'Somnath Nagar Box Junction',
+        positions: [
+          [73.92778, 18.56260],
+          [73.92802, 18.56260],
+          [73.92802, 18.56300],
+          [73.92778, 18.56300],
+          [73.92778, 18.56260]
+        ]
+      }
+    ];
+
+    CHOWK_BOX_JUNCTIONS.forEach(box => {
+      viewer.entities.add({
+        name: box.name,
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(
+            box.positions.map(p => Cesium.Cartesian3.fromDegrees(p[0], p[1], 0.1))
+          ),
+          material: Cesium.Color.fromCssColorString('#F59E0B').withAlpha(0.18),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString('#F59E0B').withAlpha(0.85),
+          outlineWidth: 2,
+          height: 0.1
+        }
+      });
+    });
   }, [corridorGeoJson, currentTheme]);
+
+  // 3B. Dynamic Solar Position & Shadow Control Effect
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    if (solarTime === 'midday') {
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T06:00:00Z'); // 11:30 AM IST
+      viewer.scene.globe.enableLighting = true;
+      viewer.shadows = true;
+    } else if (solarTime === 'golden') {
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T10:30:00Z'); // 4:00 PM IST (crisp dramatic architectural shadows)
+      viewer.scene.globe.enableLighting = true;
+      viewer.shadows = true;
+    } else if (solarTime === 'night') {
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T15:30:00Z'); // 9:00 PM IST
+      viewer.scene.globe.enableLighting = true;
+      viewer.shadows = false;
+    }
+  }, [solarTime]);
 
   // 4. Dynamic Live Vehicle Simulation Stream (Multi-Lane Kinematics & True Heading)
   useEffect(() => {
@@ -757,6 +865,78 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
           }}
         >
           <span>🌃 Dark</span>
+        </button>
+      </div>
+
+      {/* Dynamic Solar Time & Building Shadow Toolbar (Pune Local Time) */}
+      <div
+        className="cesium-solar-toolbar"
+        style={{
+          position: 'absolute',
+          top: '52px',
+          right: '12px',
+          zIndex: 20,
+          display: 'flex',
+          gap: '3px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)',
+          padding: '3px',
+          borderRadius: '8px',
+          border: '1px solid rgba(255, 255, 255, 0.12)'
+        }}
+        role="toolbar"
+        aria-label="3D Solar Lighting & Shadow Preset"
+      >
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${solarTime === 'golden' ? 'active' : ''}`}
+          onClick={() => setSolarTime('golden')}
+          title="Golden Hour (4:00 PM IST) - Architectural Shadows across Nagar Road"
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '5px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: solarTime === 'golden' ? '#D97706' : 'transparent',
+            color: '#FFFFFF'
+          }}
+        >
+          <span>🌅 Golden (4 PM)</span>
+        </button>
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${solarTime === 'midday' ? 'active' : ''}`}
+          onClick={() => setSolarTime('midday')}
+          title="Midday (11:30 AM IST) - Overhead Sun"
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '5px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: solarTime === 'midday' ? '#2563EB' : 'transparent',
+            color: '#FFFFFF'
+          }}
+        >
+          <span>☀️ Day (11 AM)</span>
+        </button>
+        <button
+          type="button"
+          className={`map-view-toggle-btn ${solarTime === 'night' ? 'active' : ''}`}
+          onClick={() => setSolarTime('night')}
+          title="Night Operations (9:00 PM IST)"
+          style={{
+            padding: '4px 8px',
+            fontSize: '11px',
+            borderRadius: '5px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: solarTime === 'night' ? '#7C3AED' : 'transparent',
+            color: '#FFFFFF'
+          }}
+        >
+          <span>🌙 Night</span>
         </button>
       </div>
 
