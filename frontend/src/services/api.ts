@@ -10,39 +10,68 @@ import {
 
 const API_BASE = '/api/v1';
 
+/**
+ * Resilient fetch wrapper with automatic backoff and retry.
+ * Handles transient network dropouts, 503 (backend warming up), and 502/504 gateway delays gracefully.
+ */
+export async function resilientFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  retries = 3,
+  delayMs = 400
+): Promise<Response> {
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      const res = await fetch(input, init);
+      if ((res.status === 503 || res.status === 502 || res.status === 504) && attempt < retries - 1) {
+        attempt++;
+        await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      attempt++;
+      if (attempt >= retries) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  return fetch(input, init);
+}
+
 export async function fetchStudyArea(): Promise<any> {
-  const res = await fetch(`${API_BASE}/study-area`);
+  const res = await resilientFetch(`${API_BASE}/study-area`);
   if (!res.ok) throw new Error('Failed to fetch study area');
   return res.json();
 }
 
 export async function fetchIntersections(): Promise<IntersectionAsset[]> {
-  const res = await fetch(`${API_BASE}/assets/intersections`);
+  const res = await resilientFetch(`${API_BASE}/assets/intersections`);
   if (!res.ok) throw new Error('Failed to fetch intersections');
   return res.json();
 }
 
 export async function fetchRoadSegments(): Promise<RoadSegmentAsset[]> {
-  const res = await fetch(`${API_BASE}/assets/segments`);
+  const res = await resilientFetch(`${API_BASE}/assets/segments`);
   if (!res.ok) throw new Error('Failed to fetch road segments');
   return res.json();
 }
 
 export async function fetchSensors(): Promise<TrafficSensorAsset[]> {
-  const res = await fetch(`${API_BASE}/assets/sensors`);
+  const res = await resilientFetch(`${API_BASE}/assets/sensors`);
   if (!res.ok) throw new Error('Failed to fetch sensors');
   return res.json();
 }
 
 export async function fetchEnergyEntities(): Promise<BuildingAsset[]> {
-  const res = await fetch(`${API_BASE}/assets/energy`);
+  const res = await resilientFetch(`${API_BASE}/assets/energy`);
   if (!res.ok) throw new Error('Failed to fetch energy entities');
   return res.json();
 }
 
 export async function fetchCurrentState(): Promise<EntityCurrentState[]> {
   try {
-    const res = await fetch(`${API_BASE}/state/current`);
+    const res = await resilientFetch(`${API_BASE}/state/current`);
     if (!res.ok) return [];
     return res.json();
   } catch {
@@ -52,7 +81,7 @@ export async function fetchCurrentState(): Promise<EntityCurrentState[]> {
 
 export async function fetchHistoricalSnapshot(minutesAgo: number): Promise<EntityCurrentState[]> {
   try {
-    const res = await fetch(`${API_BASE}/state/snapshot?minutes_ago=${minutesAgo}`);
+    const res = await resilientFetch(`${API_BASE}/state/snapshot?minutes_ago=${minutesAgo}`);
     if (!res.ok) return [];
     return res.json();
   } catch {
@@ -281,19 +310,19 @@ export async function fetchRecommendations(domain?: string, status?: string): Pr
   if (domain) params.append('domain', domain);
   if (status) params.append('status', status);
   const query = params.toString() ? `?${params.toString()}` : '';
-  const res = await fetch(`${API_BASE}/recommendations${query}`);
+  const res = await resilientFetch(`${API_BASE}/recommendations${query}`);
   if (!res.ok) throw new Error('Failed to fetch advisory recommendations');
   return res.json();
 }
 
 export async function fetchAdvisorySummary(): Promise<AdvisorySummary> {
-  const res = await fetch(`${API_BASE}/recommendations/summary`);
+  const res = await resilientFetch(`${API_BASE}/recommendations/summary`);
   if (!res.ok) throw new Error('Failed to fetch advisory summary');
   return res.json();
 }
 
 export async function fetchRecommendationDetail(recId: string): Promise<AdvisoryRecommendation> {
-  const res = await fetch(`${API_BASE}/recommendations/${recId}`);
+  const res = await resilientFetch(`${API_BASE}/recommendations/${recId}`);
   if (!res.ok) throw new Error(`Failed to fetch recommendation ${recId}`);
   return res.json();
 }

@@ -199,6 +199,17 @@ class MQTTConsumer:
         self._is_running = True
         logger.info("Starting MQTT consumer thread connecting to %s:%d...", settings.MQTT_BROKER_HOST, settings.MQTT_BROKER_PORT)
         try:
+            # Fast non-blocking pre-flight socket probe (0.2s) to avoid 4-second synchronous OS timeout stall
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.2)
+            target_host = "127.0.0.1" if settings.MQTT_BROKER_HOST in ("localhost", "") else settings.MQTT_BROKER_HOST
+            res = sock.connect_ex((target_host, settings.MQTT_BROKER_PORT))
+            sock.close()
+            if res != 0:
+                logger.info("MQTT broker not active at %s:%d on startup. Continuing in offline mode.", target_host, settings.MQTT_BROKER_PORT)
+                return
+
             self.client.connect(settings.MQTT_BROKER_HOST, settings.MQTT_BROKER_PORT, 60)
             self.client.loop_start()
         except Exception as exc:
@@ -206,6 +217,9 @@ class MQTTConsumer:
 
     def stop(self):
         self._is_running = False
-        self.client.loop_stop()
-        self.client.disconnect()
+        try:
+            self.client.loop_stop()
+            self.client.disconnect()
+        except Exception:
+            pass
         logger.info("MQTT consumer stopped.")

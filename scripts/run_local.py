@@ -78,8 +78,52 @@ def stream_output(pipe, prefix, color):
     finally:
         pipe.close()
 
+def wait_for_backend(host="127.0.0.1", port=8000, timeout=25.0):
+    """
+    Polls the backend health endpoint until it returns 200 OK or timeout expires.
+    Prevents Vite from proxying into an uninitialized socket on startup.
+    """
+    import urllib.request
+    url = f"http://{host}:{port}/health"
+    start_time = time.time()
+    print(f"{CYAN}[SYSTEM]{RESET} Waiting for FastAPI backend to prime database & initialize services...")
+    while time.time() - start_time < timeout:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "DigitalTwin-HealthCheck"})
+            with urllib.request.urlopen(req, timeout=0.5) as resp:
+                if resp.status == 200:
+                    return True
+        except Exception:
+            pass
+        time.sleep(0.3)
+    return False
+
 def main():
     print_banner()
+
+    backend_proc = None
+    frontend_proc = None
+
+    def cleanup(signum=None, frame=None):
+        print(f"\n{YELLOW}[SYSTEM] Shutting down Digital Twin services...{RESET}")
+        try:
+            if sys.platform == "win32":
+                if backend_proc and backend_proc.pid:
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(backend_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if frontend_proc and frontend_proc.pid:
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(frontend_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                if backend_proc:
+                    backend_proc.terminate()
+                if frontend_proc:
+                    frontend_proc.terminate()
+        except Exception:
+            pass
+        print(f"{GREEN}[SYSTEM] All services stopped cleanly. Goodbye!{RESET}")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
 
     # 1. Start Backend Process
     backend_cmd = [
@@ -102,11 +146,21 @@ def main():
         env=env
     )
 
-    # 2. Start Frontend Process
+    # Stream backend logs immediately so user sees startup progress
+    t_backend = threading.Thread(target=stream_output, args=(backend_proc.stdout, "BACKEND", CYAN), daemon=True)
+    t_backend.start()
+
+    # 2. Wait for Backend Health Readiness before launching Vite
+    backend_ready = wait_for_backend(host="127.0.0.1", port=8000, timeout=25.0)
+    if backend_ready:
+        print(f"{GREEN}[SYSTEM]{RESET} FastAPI backend ready & healthy at http://127.0.0.1:8000. Launching Vite frontend...")
+    else:
+        print(f"{YELLOW}[SYSTEM]{RESET} Backend health check timed out. Launching Vite frontend anyway...")
+
+    # 3. Start Frontend Process
     npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
     frontend_cmd = [npm_cmd, "run", "dev"]
 
-    print(f"{GREEN}[SYSTEM]{RESET} Launching Vite frontend on port 5173...")
     frontend_proc = subprocess.Popen(
         frontend_cmd,
         cwd=str(FRONTEND_DIR),
@@ -118,38 +172,17 @@ def main():
         bufsize=1
     )
 
-    # Spawn reader threads
-    t_backend = threading.Thread(target=stream_output, args=(backend_proc.stdout, "BACKEND", CYAN), daemon=True)
     t_frontend = threading.Thread(target=stream_output, args=(frontend_proc.stdout, "FRONTEND", GREEN), daemon=True)
-
-    t_backend.start()
     t_frontend.start()
-
-    def cleanup(signum=None, frame=None):
-        print(f"\n{YELLOW}[SYSTEM] Shutting down Digital Twin services...{RESET}")
-        try:
-            if sys.platform == "win32":
-                subprocess.run(["taskkill", "/F", "/T", "/PID", str(backend_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                subprocess.run(["taskkill", "/F", "/T", "/PID", str(frontend_proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            else:
-                backend_proc.terminate()
-                frontend_proc.terminate()
-        except Exception:
-            pass
-        print(f"{GREEN}[SYSTEM] All services stopped cleanly. Goodbye!{RESET}")
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, cleanup)
-    signal.signal(signal.SIGTERM, cleanup)
 
     try:
         while True:
             time.sleep(0.5)
             # If any process terminated unexpectedly, notify
-            if backend_proc.poll() is not None:
+            if backend_proc and backend_proc.poll() is not None:
                 print(f"{YELLOW}[SYSTEM] Backend process terminated (code {backend_proc.returncode}).{RESET}")
                 break
-            if frontend_proc.poll() is not None:
+            if frontend_proc and frontend_proc.poll() is not None:
                 print(f"{YELLOW}[SYSTEM] Frontend process terminated (code {frontend_proc.returncode}).{RESET}")
                 break
     except KeyboardInterrupt:

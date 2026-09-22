@@ -22,11 +22,11 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "digital_twin"
-    POSTGRES_HOST: str = "localhost"
+    POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
 
     # MQTT Broker
-    MQTT_BROKER_HOST: str = "localhost"
+    MQTT_BROKER_HOST: str = "127.0.0.1"
     MQTT_BROKER_PORT: int = 1883
     MQTT_CLIENT_ID: str = "digital_twin_backend"
     MQTT_USERNAME: str = "twin_service"
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     # API Server
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
 
     @property
     def cors_origins_list(self) -> List[str]:
