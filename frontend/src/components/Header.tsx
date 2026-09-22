@@ -11,7 +11,8 @@ import {
   Server,
   Sun,
   Moon,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 import { SourceMode } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
@@ -23,6 +24,7 @@ export type TabId =
   | 'environment'
   | 'scenarios'
   | 'recommendations'
+  | 'evaluation'
   | 'health';
 
 interface HeaderProps {
@@ -58,6 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
       icon: <ShieldAlert size={14} />,
       badge: activeAdvisoriesCount
     },
+    { id: 'evaluation', label: 'Evaluation & Reports', icon: <FileText size={14} /> },
     { id: 'health', label: 'System & Data Health', icon: <Server size={14} /> }
   ];
 

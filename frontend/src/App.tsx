@@ -12,6 +12,7 @@ import { EnvironmentContextView } from './components/views/EnvironmentContextVie
 import { ScenarioStudioView } from './components/views/ScenarioStudioView';
 import { RecommendationsView } from './components/views/RecommendationsView';
 import { SystemHealthView } from './components/views/SystemHealthView';
+import { PilotEvaluationView } from './components/views/PilotEvaluationView';
 import { TimeScrubber } from './components/TimeScrubber';
 import {
   EntityCurrentState,
@@ -344,6 +345,11 @@ export const App: React.FC = () => {
             sourceMode={currentMode}
             lastUpdated={lastUpdated}
           />
+        )}
+
+        {/* VIEW 8: Pilot Evaluation & Executive Decision-Support Reporting */}
+        {activeTab === 'evaluation' && (
+          <PilotEvaluationView />
         )}
 
         {/* Modals for Cross-View Quick Invocations */}

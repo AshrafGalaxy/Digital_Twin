@@ -497,4 +497,29 @@ export async function controlStreamer(params: {
   }
 }
 
+// Milestone 9: Evaluation, Executive Reporting & Corridor Export
+export async function fetchEvaluationBenchmarks(): Promise<any> {
+  const res = await fetch(`${API_BASE}/analytics/evaluation/benchmarks`);
+  if (!res.ok) throw new Error('Failed to fetch evaluation benchmarks');
+  return res.json();
+}
+
+export async function fetchExecutiveSummary(): Promise<any> {
+  const res = await fetch(`${API_BASE}/reports/executive-summary`);
+  if (!res.ok) throw new Error('Failed to fetch executive summary');
+  return res.json();
+}
+
+export async function fetchExecutiveSummaryMarkdown(): Promise<string> {
+  const res = await fetch(`${API_BASE}/reports/executive-summary/markdown`);
+  if (!res.ok) throw new Error('Failed to fetch executive markdown briefing');
+  return res.text();
+}
+
+export async function fetchCorridorBundle(): Promise<any> {
+  const res = await fetch(`${API_BASE}/export/corridor-bundle`);
+  if (!res.ok) throw new Error('Failed to export corridor bundle');
+  return res.json();
+}
+
 

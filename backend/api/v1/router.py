@@ -10,6 +10,7 @@ from .endpoints import (
     assets,
     canonical_resources,
     datasets,
+    evaluation,
     forecasts,
     health,
     interop,
@@ -36,5 +37,6 @@ api_v1_router.include_router(forecasts.router)
 api_v1_router.include_router(recommendations.router)
 api_v1_router.include_router(interop.router)
 api_v1_router.include_router(datasets.router)
+api_v1_router.include_router(evaluation.router)
 
 
