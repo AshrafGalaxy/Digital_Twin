@@ -183,6 +183,11 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T10:30:00Z');
       viewer.clock.shouldAnimate = false;
 
+      // Constrain Camera Zoom to Corridor Scale (Prevent zooming out into orbit / space)
+      const controller = scene.screenSpaceCameraController;
+      controller.minimumZoomDistance = 35; // Cannot zoom past ground
+      controller.maximumZoomDistance = 3800; // Constrained strictly to corridor scale
+
       scene.backgroundColor = Cesium.Color.fromCssColorString(
         currentTheme === 'light' ? '#E2E8F0' : '#0B1320'
       );
@@ -313,6 +318,67 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
     // Clear static entities (keep dynamic vehicles & signals in dataSources)
     viewer.entities.removeAll();
+
+    // 0. Holographic Diorama Inverse Mask (Darkens extraneous terrain, spotlighting only the 1.8km active twin corridor)
+    const outerDioramaRing = [
+      Cesium.Cartesian3.fromDegrees(73.70, 18.40),
+      Cesium.Cartesian3.fromDegrees(74.15, 18.40),
+      Cesium.Cartesian3.fromDegrees(74.15, 18.72),
+      Cesium.Cartesian3.fromDegrees(73.70, 18.72)
+    ];
+    const innerCorridorHole = [
+      Cesium.Cartesian3.fromDegrees(73.909, 18.555),
+      Cesium.Cartesian3.fromDegrees(73.934, 18.555),
+      Cesium.Cartesian3.fromDegrees(73.934, 18.5675),
+      Cesium.Cartesian3.fromDegrees(73.909, 18.5675)
+    ];
+
+    viewer.entities.add({
+      name: 'Corridor Holographic Diorama Mask',
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy(outerDioramaRing, [
+          new Cesium.PolygonHierarchy(innerCorridorHole)
+        ]),
+        material: Cesium.Color.fromCssColorString('#070A11').withAlpha(0.88),
+        height: 0,
+        classificationType: Cesium.ClassificationType.BOTH
+      }
+    });
+
+    // Glowing Neon Cyan Perimeter Ribbon Framing the Active Twin Corridor
+    viewer.entities.add({
+      name: 'Corridor Holographic Perimeter',
+      polyline: {
+        positions: Cesium.Cartesian3.fromDegreesArray([
+          73.909, 18.555,
+          73.934, 18.555,
+          73.934, 18.5675,
+          73.909, 18.5675,
+          73.909, 18.555
+        ]),
+        width: 3.5,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.25,
+          color: Cesium.Color.fromCssColorString('#06B6D4')
+        }),
+        clampToGround: true
+      }
+    });
+
+    // Corridor Identity Plaque floating along Northern Boundary
+    viewer.entities.add({
+      name: 'Corridor Identity Badge',
+      position: Cesium.Cartesian3.fromDegrees(73.9215, 18.5672, 28.0),
+      label: {
+        text: '📍 NAGAR ROAD DIGITAL TWIN • VIMAN NAGAR ↔ SOMNATH NAGAR (1.8 KM)',
+        font: "bold 11px 'General Sans', -apple-system, sans-serif",
+        fillColor: Cesium.Color.fromCssColorString('#38BDF8'),
+        outlineColor: Cesium.Color.fromCssColorString('#090D16'),
+        outlineWidth: 3,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
 
     corridorGeoJson.features.forEach((feature) => {
       const props = feature.properties || {};

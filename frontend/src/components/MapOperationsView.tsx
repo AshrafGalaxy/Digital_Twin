@@ -380,6 +380,11 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       center: [73.9220, 18.5615], // Corridor midpoint
       zoom: 14.8,
       maxZoom: 20,
+      minZoom: 13.5,
+      maxBounds: [
+        [73.890, 18.542], // Southwest coordinates (locks panning)
+        [73.948, 18.580]  // Northeast coordinates
+      ],
       pitch: 0,
       attributionControl: false
     });
@@ -471,6 +476,67 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         if (arrowImg) {
           currentMap.addImage('flow-arrow', arrowImg);
         }
+      }
+
+      // 0. Holographic Diorama Inverse Mask (Darkens extraneous geography, spotlighting strictly the 1.8km active Nagar Road twin corridor)
+      const CORRIDOR_INVERSE_MASK_GEOJSON = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { name: 'Corridor Mask' },
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                // Outer ring spanning greater Pune region
+                [
+                  [73.70, 18.40],
+                  [74.15, 18.40],
+                  [74.15, 18.72],
+                  [73.70, 18.72],
+                  [73.70, 18.40]
+                ],
+                // Inner cutout exposing strictly the active 1.8km Nagar Road corridor
+                [
+                  [73.909, 18.555],
+                  [73.934, 18.555],
+                  [73.934, 18.5675],
+                  [73.909, 18.5675],
+                  [73.909, 18.555]
+                ]
+              ]
+            }
+          }
+        ]
+      };
+
+      if (!currentMap.getSource('corridor-inverse-mask')) {
+        currentMap.addSource('corridor-inverse-mask', {
+          type: 'geojson',
+          data: CORRIDOR_INVERSE_MASK_GEOJSON as any
+        });
+
+        currentMap.addLayer({
+          id: 'corridor-inverse-mask-fill',
+          type: 'fill',
+          source: 'corridor-inverse-mask',
+          paint: {
+            'fill-color': '#070A11',
+            'fill-opacity': 0.86
+          }
+        });
+
+        currentMap.addLayer({
+          id: 'corridor-perimeter-glow',
+          type: 'line',
+          source: 'corridor-inverse-mask',
+          paint: {
+            'line-color': '#06B6D4',
+            'line-width': 2.5,
+            'line-blur': 1.5,
+            'line-opacity': 0.95
+          }
+        });
       }
 
       // 1. Add Study Area Boundary Source and Layers
