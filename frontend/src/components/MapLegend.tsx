@@ -4,17 +4,19 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 interface MapLegendProps {
   isDrawerOpen?: boolean;
   isComparisonMode?: boolean;
+  is3DMode?: boolean;
 }
 
 export const MapLegend: React.FC<MapLegendProps> = ({
   isDrawerOpen = false,
-  isComparisonMode = false
+  isComparisonMode = false,
+  is3DMode = false
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <aside
-      className={`map-legend ${isDrawerOpen ? (isComparisonMode ? 'drawer-comparison-open' : 'drawer-open') : ''} ${isCollapsed ? 'collapsed' : ''}`}
+      className={`map-legend ${isDrawerOpen ? (isComparisonMode ? 'drawer-comparison-open' : 'drawer-open') : ''} ${is3DMode ? 'in-3d-mode' : ''} ${isCollapsed ? 'collapsed' : ''}`}
       aria-label="Corridor Traffic Velocity Legend"
     >
       <div className="legend-header" onClick={() => setIsCollapsed(!isCollapsed)}>

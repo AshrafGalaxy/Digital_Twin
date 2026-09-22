@@ -1260,8 +1260,12 @@ body {
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  transition: right 0.22s cubic-bezier(0.16, 1, 0.3, 1), padding 0.15s ease;
+  transition: right 0.22s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s cubic-bezier(0.16, 1, 0.3, 1), padding 0.15s ease;
   user-select: none;
+}
+
+.map-legend.in-3d-mode {
+  top: 104px;
 }
 
 .map-legend.drawer-open {
@@ -3819,7 +3823,7 @@ body {
 
 .cesium-camera-toolbar {
   position: absolute;
-  bottom: 20px;
+  bottom: 84px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -3882,14 +3886,16 @@ body {
 
 .cesium-overlay-legend {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 168px;
+  left: var(--space-3, 12px);
+  width: 310px;
+  box-sizing: border-box;
   z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-md, 8px);
   padding: 10px 14px;

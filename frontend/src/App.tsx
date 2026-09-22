@@ -100,6 +100,7 @@ export const App: React.FC = () => {
   const [isScrubberPlaying, setIsScrubberPlaying] = useState<boolean>(false);
   const [scrubberSpeed, setScrubberSpeed] = useState<number>(1);
   const [isOperationsTableView, setIsOperationsTableView] = useState<boolean>(false);
+  const [is3DMode, setIs3DMode] = useState<boolean>(false);
   const [historicalStates, setHistoricalStates] = useState<Record<string, EntityCurrentState>>({});
 
   // Debounced historical snapshot fetching when scrubber position changes
@@ -387,6 +388,7 @@ export const App: React.FC = () => {
               currentTheme="dark"
               isTableView={isOperationsTableView}
               onToggleTableView={setIsOperationsTableView}
+              on3DModeChange={setIs3DMode}
               onSelectEntity={(entity) => {
                 setSelectedEntity(entity);
                 if (compareEntity && compareEntity.id === entity.id) {
@@ -400,6 +402,7 @@ export const App: React.FC = () => {
               <MapLegend
                 isDrawerOpen={Boolean(selectedEntity)}
                 isComparisonMode={Boolean(compareEntity)}
+                is3DMode={is3DMode}
               />
             )}
 

@@ -13,6 +13,7 @@ interface CesiumCorridorViewerProps {
   liveStates: Record<string, EntityCurrentState>;
   selectedEntity?: RoadSegmentAsset | IntersectionAsset | null;
   currentTheme?: 'light' | 'dark';
+  basemapMode?: 'satellite' | 'streets' | 'dark';
   onSelectEntity: (entity: RoadSegmentAsset | IntersectionAsset) => void;
 }
 
@@ -91,6 +92,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   liveStates,
   selectedEntity,
   currentTheme = 'dark',
+  basemapMode,
   onSelectEntity
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,7 +102,6 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const activeVehiclesRef = useRef<LiveKinematicVehicle[]>([]);
   const lastTimeRef = useRef<number>(performance.now());
   const [activeViewpointId, setActiveViewpointId] = useState<string>('corridor-overview');
-  const [basemap3D, setBasemap3D] = useState<'satellite' | 'streets' | 'dark'>('satellite');
   const [solarTime, setSolarTime] = useState<'midday' | 'golden' | 'night'>('golden');
   const [hoveredBuilding3D, setHoveredBuilding3D] = useState<{
     name: string;
@@ -278,6 +279,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   }, [currentTheme]);
 
   // 2.5 Dynamic 3D Basemap Swapping (Satellite, OpenStreetMap Streets, Dark Canvas Shaders)
+  const effectiveBasemap = basemapMode || 'satellite';
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
@@ -286,13 +288,13 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
     let provider: Cesium.ImageryProvider;
     let isDark = false;
-    if (basemap3D === 'streets') {
+    if (effectiveBasemap === 'streets') {
       provider = new Cesium.UrlTemplateImageryProvider({
         url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         maximumLevel: 19,
         credit: '© OpenStreetMap contributors'
       });
-    } else if (basemap3D === 'dark') {
+    } else if (effectiveBasemap === 'dark') {
       provider = new Cesium.UrlTemplateImageryProvider({
         url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         maximumLevel: 19,
@@ -314,7 +316,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       layer.contrast = 1.35;
       layer.saturation = 0.12;
     }
-  }, [basemap3D]);
+  }, [effectiveBasemap]);
 
   // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
   useEffect(() => {
@@ -997,93 +999,22 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         onFlyToViewpoint={handleFlyTo}
       />
 
-      {/* 3D Basemap Selector Bar */}
-      <div
-        className="cesium-basemap-toolbar"
-        style={{
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          zIndex: 20,
-          display: 'flex',
-          gap: '3px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(8px)',
-          padding: '3px',
-          borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.12)'
-        }}
-        role="toolbar"
-        aria-label="3D Basemap Selection"
-      >
-        <button
-          type="button"
-          className={`map-view-toggle-btn ${basemap3D === 'satellite' ? 'active' : ''}`}
-          onClick={() => setBasemap3D('satellite')}
-          title="High-Resolution Satellite Imagery"
-          style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            borderRadius: '5px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: basemap3D === 'satellite' ? '#2F81F7' : 'transparent',
-            color: '#FFFFFF'
-          }}
-        >
-          <span>🛰️ Satellite</span>
-        </button>
-        <button
-          type="button"
-          className={`map-view-toggle-btn ${basemap3D === 'streets' ? 'active' : ''}`}
-          onClick={() => setBasemap3D('streets')}
-          title="Google Maps-Style Clean Street Map"
-          style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            borderRadius: '5px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: basemap3D === 'streets' ? '#2F81F7' : 'transparent',
-            color: '#FFFFFF'
-          }}
-        >
-          <span>🗺️ Streets</span>
-        </button>
-        <button
-          type="button"
-          className={`map-view-toggle-btn ${basemap3D === 'dark' ? 'active' : ''}`}
-          onClick={() => setBasemap3D('dark')}
-          title="Dark Operations Canvas"
-          style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            borderRadius: '5px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: basemap3D === 'dark' ? '#2F81F7' : 'transparent',
-            color: '#FFFFFF'
-          }}
-        >
-          <span>🌃 Dark</span>
-        </button>
-      </div>
-
       {/* Dynamic Solar Time & Building Shadow Toolbar (Pune Local Time) */}
       <div
         className="cesium-solar-toolbar"
         style={{
           position: 'absolute',
-          top: '52px',
+          top: '54px',
           right: '12px',
-          zIndex: 20,
+          zIndex: 10,
           display: 'flex',
           gap: '3px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(15, 23, 42, 0.88)',
+          backdropFilter: 'blur(12px)',
           padding: '3px',
           borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.12)'
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
         }}
         role="toolbar"
         aria-label="3D Solar Lighting & Shadow Preset"

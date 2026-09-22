@@ -17,6 +17,7 @@ interface MapOperationsViewProps {
   currentTheme?: 'light' | 'dark';
   isTableView?: boolean;
   onToggleTableView?: (isTable: boolean) => void;
+  on3DModeChange?: (is3D: boolean) => void;
   onSelectEntity: (entity: RoadSegmentAsset | IntersectionAsset) => void;
   onSelectCompareEntity?: (entity: RoadSegmentAsset | null) => void;
 }
@@ -251,6 +252,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   currentTheme = 'dark',
   isTableView: isTableViewProp,
   onToggleTableView,
+  on3DModeChange,
   onSelectEntity,
   onSelectCompareEntity
 }) => {
@@ -1145,6 +1147,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const toggle3DMode = () => {
     setIs3DMode(prev => {
       const next = !prev;
+      on3DModeChange?.(next);
       if (!next && map.current) {
         setTimeout(() => {
           map.current?.resize();
@@ -1226,6 +1229,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           liveStates={liveStates}
           selectedEntity={selectedEntity}
           currentTheme={currentTheme}
+          basemapMode={basemapMode}
           onSelectEntity={onSelectEntity}
         />
       )}
@@ -1243,34 +1247,32 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             <span>Table View</span>
           </button>
 
-          {!is3DMode && (
-            <div style={{ display: 'flex', gap: '3px', background: 'rgba(15,23,42,0.85)', padding: '2px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
-              <button
-                type="button"
-                className={`map-view-toggle-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
-                onClick={() => setBasemapMode('satellite')}
-                title="Photorealistic Satellite Imagery"
-              >
-                <span>🛰️ Satellite</span>
-              </button>
-              <button
-                type="button"
-                className={`map-view-toggle-btn ${basemapMode === 'streets' ? 'active' : ''}`}
-                onClick={() => setBasemapMode('streets')}
-                title="Google Maps-Style Clean Street Map"
-              >
-                <span>🗺️ Streets</span>
-              </button>
-              <button
-                type="button"
-                className={`map-view-toggle-btn ${basemapMode === 'dark' ? 'active' : ''}`}
-                onClick={() => setBasemapMode('dark')}
-                title="Dark Operations Canvas"
-              >
-                <span>🌃 Dark</span>
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '3px', background: 'rgba(15,23,42,0.85)', padding: '2px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <button
+              type="button"
+              className={`map-view-toggle-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
+              onClick={() => setBasemapMode('satellite')}
+              title="Photorealistic Satellite Imagery"
+            >
+              <span>🛰️ Satellite</span>
+            </button>
+            <button
+              type="button"
+              className={`map-view-toggle-btn ${basemapMode === 'streets' ? 'active' : ''}`}
+              onClick={() => setBasemapMode('streets')}
+              title="Google Maps-Style Clean Street Map"
+            >
+              <span>🗺️ Streets</span>
+            </button>
+            <button
+              type="button"
+              className={`map-view-toggle-btn ${basemapMode === 'dark' ? 'active' : ''}`}
+              onClick={() => setBasemapMode('dark')}
+              title="Dark Operations Canvas"
+            >
+              <span>🌃 Dark</span>
+            </button>
+          </div>
 
           <button
             type="button"
