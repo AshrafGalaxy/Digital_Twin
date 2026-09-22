@@ -16,6 +16,75 @@ interface CesiumCorridorViewerProps {
   onSelectEntity: (entity: RoadSegmentAsset | IntersectionAsset) => void;
 }
 
+interface LiveKinematicVehicle {
+  id: string;
+  name: string;
+  segmentId: string;
+  coords: [number, number][];
+  lengthMeters: number;
+  laneIndex: number;
+  progress: number; // 0.0 to 1.0 along segment
+  speedKmh: number;
+  dimensions: Cesium.Cartesian3;
+  color: Cesium.Color;
+  currentPosition: Cesium.Cartesian3;
+  currentOrientation: Cesium.Quaternion;
+}
+
+function computePolylineLengthMeters(coords: [number, number][]): number {
+  let total = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const dx = (coords[i + 1][0] - coords[i][0]) * 105360.0;
+    const dy = (coords[i + 1][1] - coords[i][1]) * 111139.0;
+    total += Math.hypot(dx, dy);
+  }
+  return Math.max(50.0, total);
+}
+
+// Calculates WGS84 Position and Cesium Orientation for a vehicle at fractional progress [0, 1)
+function computeKinematicPose(
+  coords: [number, number][],
+  progress: number,
+  laneIndex: number
+): { position: Cesium.Cartesian3; orientation: Cesium.Quaternion } {
+  const normProgress = ((progress % 1.0) + 1.0) % 1.0;
+  const index = Math.min(coords.length - 2, Math.floor(normProgress * (coords.length - 1)));
+  const p1 = coords[index];
+  const p2 = coords[index + 1];
+
+  const subT = (normProgress * (coords.length - 1)) - index;
+  const baseLng = p1[0] + (p2[0] - p1[0]) * subT;
+  const baseLat = p1[1] + (p2[1] - p1[1]) * subT;
+
+  const dx = p2[0] - p1[0];
+  const dy = p2[1] - p1[1];
+  const segLen = Math.hypot(dx, dy) || 1e-6;
+  const tx = dx / segLen;
+  const ty = dy / segLen;
+
+  // Perpendicular normal vector pointing right of travel direction
+  const nx = ty;
+  const ny = -tx;
+
+  // True Heading in Cesium (measured clockwise from North)
+  const heading = Math.atan2(dx, dy);
+
+  // Multi-lane lateral distribution (Lane 0: -3.2m Curbside, Lane 1: 0m Through, Lane 2: +3.2m Median)
+  const laneOffsetMeters = (laneIndex - 1) * 3.2;
+
+  // Scale meters to degrees at 18.56° latitude (1 deg lat ≈ 111139m, 1 deg lng ≈ 105360m)
+  const lng = baseLng + (nx * laneOffsetMeters) / 105360.0;
+  const lat = baseLat + (ny * laneOffsetMeters) / 111139.0;
+
+  const position = Cesium.Cartesian3.fromDegrees(lng, lat, 1.2);
+  const orientation = Cesium.Transforms.headingPitchRollQuaternion(
+    position,
+    new Cesium.HeadingPitchRoll(heading, 0, 0)
+  );
+
+  return { position, orientation };
+}
+
 export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   roadSegments,
   intersections,
@@ -28,6 +97,8 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const viewerRef = useRef<Cesium.Viewer | null>(null);
   const vehiclesCollectionRef = useRef<Cesium.CustomDataSource | null>(null);
   const signalsCollectionRef = useRef<Cesium.CustomDataSource | null>(null);
+  const activeVehiclesRef = useRef<LiveKinematicVehicle[]>([]);
+  const lastTimeRef = useRef<number>(performance.now());
   const [activeViewpointId, setActiveViewpointId] = useState<string>('corridor-overview');
   const [basemap3D, setBasemap3D] = useState<'satellite' | 'streets' | 'dark'>('satellite');
   const [solarTime, setSolarTime] = useState<'midday' | 'golden' | 'night'>('golden');
@@ -645,15 +716,15 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     }
   }, [solarTime]);
 
-  // 4. Dynamic Live Vehicle Simulation Stream (Multi-Lane Kinematics & True Heading)
+  // 4. Dynamic Live Vehicle Kinematics Engine (Continuous 60 FPS Sub-Second Motion)
   useEffect(() => {
     const dataSource = vehiclesCollectionRef.current;
     if (!dataSource || roadSegments.length === 0) return;
 
-    // Clear prior vehicles
-    dataSource.entities.removeAll();
+    // Collect new vehicle list while preserving existing progress of moving vehicles
+    const existingVehiclesMap = new Map(activeVehiclesRef.current.map(v => [v.id, v]));
+    const nextVehicles: LiveKinematicVehicle[] = [];
 
-    // Populate dynamic vehicles across active corridor road segments based on live telemetry
     roadSegments.forEach((segment) => {
       const state = liveStates[segment.id];
       const speed = state?.metrics?.averageSpeedKmh ?? 38.0;
@@ -670,67 +741,85 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         vehicleColor = Cesium.Color.fromCssColorString('#F59E0B'); // Dense (Amber)
       }
 
-      // Distribute 2-5 vehicles per segment across multi-lane carriageway
       const vehicleCount = Math.max(2, Math.min(5, Math.round(flow / 400)));
       for (let i = 0; i < vehicleCount; i++) {
-        const t = (i + 0.5) / vehicleCount;
-        const index = Math.min(coords.length - 2, Math.floor(t * (coords.length - 1)));
-        const p1 = coords[index];
-        const p2 = coords[index + 1];
-
-        // Linear interpolation along road centerline
-        const subT = (t * (coords.length - 1)) - index;
-        const baseLng = p1[0] + (p2[0] - p1[0]) * subT;
-        const baseLat = p1[1] + (p2[1] - p1[1]) * subT;
-
-        // Tangent vector along travel direction
-        const dx = p2[0] - p1[0];
-        const dy = p2[1] - p1[1];
-        const segLen = Math.hypot(dx, dy) || 1e-6;
-        const tx = dx / segLen;
-        const ty = dy / segLen;
-
-        // Perpendicular normal vector pointing right of travel direction
-        const nx = ty;
-        const ny = -tx;
-
-        // True Heading in Cesium (measured clockwise from North)
-        const heading = Math.atan2(dx, dy);
-
-        // Multi-lane lateral distribution (Lane 0: -3.2m Curbside, Lane 1: 0m Through, Lane 2: +3.2m Median)
+        const vehId = `veh-${segment.id}-${i}`;
         const laneIndex = i % 3;
-        const laneOffsetMeters = (laneIndex - 1) * 3.2;
-
-        // Scale meters to degrees at 18.56° latitude (1 deg lat ≈ 111139m, 1 deg lng ≈ 105360m)
-        const lng = baseLng + (nx * laneOffsetMeters) / 105360.0;
-        const lat = baseLat + (ny * laneOffsetMeters) / 111139.0;
-
         const isBusOrVan = laneIndex === 0 && (i % 2 === 0);
         const dimensions = isBusOrVan
           ? new Cesium.Cartesian3(6.5, 2.3, 2.6) // Transit Bus / Mini-Van
           : new Cesium.Cartesian3(4.2, 1.85, 1.45); // Sedan / Compact Car
 
-        const position = Cesium.Cartesian3.fromDegrees(lng, lat, 1.2);
-        const orientation = Cesium.Transforms.headingPitchRollQuaternion(
-          position,
-          new Cesium.HeadingPitchRoll(heading, 0, 0)
-        );
+        const existing = existingVehiclesMap.get(vehId);
+        const progress = existing ? existing.progress : (i + 0.3) / vehicleCount;
+        const initialPose = computeKinematicPose(coords, progress, laneIndex);
 
-        dataSource.entities.add({
-          id: `veh-${segment.id}-${i}`,
+        const vehItem: LiveKinematicVehicle = {
+          id: vehId,
           name: `Vehicle ${segment.direction} [Lane ${laneIndex}] #${i + 1}`,
-          position: position,
-          orientation: orientation,
-          box: {
-            dimensions: dimensions,
-            material: isBusOrVan ? Cesium.Color.fromCssColorString('#38BDF8') : vehicleColor,
-            outline: true,
-            outlineColor: Cesium.Color.WHITE.withAlpha(0.7)
-          }
-        });
+          segmentId: segment.id,
+          coords: coords,
+          lengthMeters: computePolylineLengthMeters(coords),
+          laneIndex: laneIndex,
+          progress: progress,
+          speedKmh: speed,
+          dimensions: dimensions,
+          color: isBusOrVan ? Cesium.Color.fromCssColorString('#38BDF8') : vehicleColor,
+          currentPosition: initialPose.position,
+          currentOrientation: initialPose.orientation
+        };
+        nextVehicles.push(vehItem);
       }
     });
+
+    activeVehiclesRef.current = nextVehicles;
+
+    // Synchronize Cesium entities with dynamic CallbackProperty bindings
+    dataSource.entities.removeAll();
+    nextVehicles.forEach((veh) => {
+      dataSource.entities.add({
+        id: veh.id,
+        name: veh.name,
+        position: new Cesium.CallbackProperty(() => veh.currentPosition, false) as any,
+        orientation: new Cesium.CallbackProperty(() => veh.currentOrientation, false) as any,
+        box: {
+          dimensions: veh.dimensions,
+          material: new Cesium.ColorMaterialProperty(
+            new Cesium.CallbackProperty(() => veh.color, false) as any
+          ),
+          outline: true,
+          outlineColor: Cesium.Color.WHITE.withAlpha(0.7)
+        }
+      });
+    });
   }, [liveStates, roadSegments]);
+
+  // 4B. 60 FPS Continuous Frame Kinematic Clock Listener (scene.preRender)
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    lastTimeRef.current = performance.now();
+    const removePreRenderListener = viewer.scene.preRender.addEventListener(() => {
+      const now = performance.now();
+      const dt = Math.min((now - lastTimeRef.current) / 1000.0, 0.1); // Clamp frame delta to 100ms
+      lastTimeRef.current = now;
+
+      const vehicles = activeVehiclesRef.current;
+      for (let i = 0; i < vehicles.length; i++) {
+        const veh = vehicles[i];
+        const speedMps = Math.max(5.0, veh.speedKmh * (1000.0 / 3600.0));
+        veh.progress = (veh.progress + (speedMps * dt) / Math.max(80.0, veh.lengthMeters)) % 1.0;
+        const pose = computeKinematicPose(veh.coords, veh.progress, veh.laneIndex);
+        veh.currentPosition = pose.position;
+        veh.currentOrientation = pose.orientation;
+      }
+    });
+
+    return () => {
+      removePreRenderListener();
+    };
+  }, []);
 
   // 5. Selected Entity Focus Effect
   useEffect(() => {
