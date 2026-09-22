@@ -303,35 +303,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             maxzoom: 19,
             attribution: '&copy; Esri, Maxar, Earthstar Geographics'
           },
-          'esri-streets': {
+          'osm-streets': {
             type: 'raster',
             tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
             ],
             tileSize: 256,
-            maxzoom: 20,
-            attribution: '&copy; OpenStreetMap contributors, &copy; CARTO'
-          },
-          'esri-dark-base': {
-            type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-              'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'
-            ],
-            tileSize: 256,
-            maxzoom: 20,
-            attribution: '&copy; OpenStreetMap contributors, &copy; CARTO'
-          },
-          'esri-dark-ref': {
-            type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png'
-            ],
-            tileSize: 256,
-            maxzoom: 20
+            maxzoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
           }
         },
         layers: [
@@ -346,9 +325,9 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             }
           },
           {
-            id: 'esri-streets-layer',
+            id: 'osm-streets-layer',
             type: 'raster',
-            source: 'esri-streets',
+            source: 'osm-streets',
             minzoom: 0,
             maxzoom: 22,
             layout: {
@@ -356,23 +335,20 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             }
           },
           {
-            id: 'esri-dark-base-layer',
+            id: 'osm-dark-layer',
             type: 'raster',
-            source: 'esri-dark-base',
+            source: 'osm-streets',
             minzoom: 0,
             maxzoom: 22,
             layout: {
               visibility: 'none'
-            }
-          },
-          {
-            id: 'esri-dark-ref-layer',
-            type: 'raster',
-            source: 'esri-dark-ref',
-            minzoom: 0,
-            maxzoom: 22,
-            layout: {
-              visibility: 'none'
+            },
+            paint: {
+              'raster-brightness-max': 0.38,
+              'raster-brightness-min': 0.05,
+              'raster-contrast': 0.40,
+              'raster-saturation': -0.95,
+              'raster-opacity': 0.95
             }
           }
         ]
@@ -419,23 +395,16 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         basemapMode === 'satellite' ? 'visible' : 'none'
       );
     }
-    if (currentMap.getLayer('esri-streets-layer')) {
+    if (currentMap.getLayer('osm-streets-layer')) {
       currentMap.setLayoutProperty(
-        'esri-streets-layer',
+        'osm-streets-layer',
         'visibility',
         basemapMode === 'streets' ? 'visible' : 'none'
       );
     }
-    if (currentMap.getLayer('esri-dark-base-layer')) {
+    if (currentMap.getLayer('osm-dark-layer')) {
       currentMap.setLayoutProperty(
-        'esri-dark-base-layer',
-        'visibility',
-        basemapMode === 'dark' ? 'visible' : 'none'
-      );
-    }
-    if (currentMap.getLayer('esri-dark-ref-layer')) {
-      currentMap.setLayoutProperty(
-        'esri-dark-ref-layer',
+        'osm-dark-layer',
         'visibility',
         basemapMode === 'dark' ? 'visible' : 'none'
       );

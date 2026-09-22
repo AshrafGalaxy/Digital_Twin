@@ -277,7 +277,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     }
   }, [currentTheme]);
 
-  // 2.5 Dynamic 3D Basemap Swapping (Satellite, Google-Style Streets, Dark Canvas)
+  // 2.5 Dynamic 3D Basemap Swapping (Satellite, OpenStreetMap Streets, Dark Canvas Shaders)
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
@@ -285,20 +285,20 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     layers.removeAll();
 
     let provider: Cesium.ImageryProvider;
+    let isDark = false;
     if (basemap3D === 'streets') {
       provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-        subdomains: ['a', 'b', 'c', 'd'],
-        maximumLevel: 20,
-        credit: '© OpenStreetMap contributors, © CARTO'
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors'
       });
     } else if (basemap3D === 'dark') {
       provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-        subdomains: ['a', 'b', 'c', 'd'],
-        maximumLevel: 20,
-        credit: '© OpenStreetMap contributors, © CARTO'
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        maximumLevel: 19,
+        credit: '© OpenStreetMap contributors'
       });
+      isDark = true;
     } else {
       provider = new Cesium.UrlTemplateImageryProvider({
         url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -309,6 +309,11 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     const layer = layers.addImageryProvider(provider);
     layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR;
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
+    if (isDark) {
+      layer.brightness = 0.38;
+      layer.contrast = 1.35;
+      layer.saturation = 0.12;
+    }
   }, [basemap3D]);
 
   // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
