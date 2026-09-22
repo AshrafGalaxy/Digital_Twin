@@ -72,9 +72,6 @@ export const Header: React.FC<HeaderProps> = ({
           <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 6px rgba(0, 242, 254, 0.6))' }} />
           <span className="brand-title">Digital Twin</span>
           <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>
-          <span className="provenance-badge badge-replay" style={{ fontSize: '10.5px', padding: '1px 6px', letterSpacing: '0.5px' }}>
-            DEMO
-          </span>
         </div>
 
         <div className="status-section">
