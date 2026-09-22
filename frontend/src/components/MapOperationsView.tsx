@@ -18,6 +18,106 @@ interface MapOperationsViewProps {
   onSelectCompareEntity?: (entity: RoadSegmentAsset | null) => void;
 }
 
+// Stopline geometry for signalized intersection approaches (Navigation Grade)
+const STOPLINES_GEOJSON = {
+  type: 'FeatureCollection' as const,
+  features: [
+    {
+      type: 'Feature' as const,
+      id: 'stopline-vn-eb',
+      properties: { id: 'stopline-vn-eb', name: 'Viman Nagar EB Stopline' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.91645, 18.56008],
+          [73.91655, 18.56028]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'stopline-vn-wb',
+      properties: { id: 'stopline-vn-wb', name: 'Viman Nagar WB Stopline' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.91705, 18.56032],
+          [73.91715, 18.56052]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'stopline-vn-nb',
+      properties: { id: 'stopline-vn-nb', name: 'Viman Nagar NB Approach Stopline' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.91662, 18.55992],
+          [73.91692, 18.55992]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'stopline-sn-eb',
+      properties: { id: 'stopline-sn-eb', name: 'Somnath Nagar EB Stopline' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.92765, 18.56288],
+          [73.92775, 18.56308]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'stopline-sn-wb',
+      properties: { id: 'stopline-sn-wb', name: 'Somnath Nagar WB Stopline' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.92825, 18.56312],
+          [73.92835, 18.56332]
+        ]
+      }
+    },
+    {
+      type: 'Feature' as const,
+      id: 'stopline-sn-nb',
+      properties: { id: 'stopline-sn-nb', name: 'Somnath Nagar NB Approach Stopline' },
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: [
+          [73.92782, 18.56275],
+          [73.92812, 18.56275]
+        ]
+      }
+    }
+  ]
+};
+
+// Generates an offscreen directional chevron arrow for roadway traffic flow markers
+const createFlowArrowImage = (): ImageData | null => {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 24;
+  canvas.height = 24;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.clearRect(0, 0, 24, 24);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(8, 5);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(8, 19);
+  ctx.stroke();
+  return ctx.getImageData(0, 0, 24, 24);
+};
+
 export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   studyAreaGeoJson,
   roadSegments,
@@ -35,42 +135,40 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
   const [isTableView, setIsTableView] = useState<boolean>(false);
 
-  // Initialize MapLibre GL Map
+  // Initialize MapLibre GL Map with High-Resolution Carto Dark Matter Retina Tiles
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
-
-    const isLight = currentTheme === 'light';
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: {
         version: 8,
         sources: {
-          'osm-tiles': {
+          'carto-dark': {
             type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tiles: [
+              'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+              'https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+              'https://c.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+              'https://d.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png'
+            ],
             tileSize: 256,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
           }
         },
         layers: [
           {
-            id: 'osm-tiles-layer',
+            id: 'carto-dark-layer',
             type: 'raster',
-            source: 'osm-tiles',
+            source: 'carto-dark',
             minzoom: 0,
-            maxzoom: 19,
-            paint: {
-              'raster-saturation': isLight ? -0.15 : -0.7,
-              'raster-brightness-max': isLight ? 0.98 : 0.6,
-              'raster-contrast': isLight ? 0.05 : 0.2
-            }
+            maxzoom: 20
           }
         ]
       },
       center: [73.9220, 18.5615], // Corridor midpoint
-      zoom: 14.5,
-      pitch: 20,
+      zoom: 14.8,
+      pitch: 0,
       attributionControl: false
     });
 
@@ -85,24 +183,18 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     };
   }, []);
 
-  // Dynamically update map raster styling and vector layers on theme toggle
+  // Dynamically update map styling on theme toggle
   useEffect(() => {
     const currentMap = map.current;
     if (!currentMap) return;
 
-    const isLight = currentTheme === 'light';
     const applyTheme = () => {
-      if (currentMap.getLayer('osm-tiles-layer')) {
-        currentMap.setPaintProperty('osm-tiles-layer', 'raster-saturation', isLight ? -0.15 : -0.7);
-        currentMap.setPaintProperty('osm-tiles-layer', 'raster-brightness-max', isLight ? 0.98 : 0.6);
-        currentMap.setPaintProperty('osm-tiles-layer', 'raster-contrast', isLight ? 0.05 : 0.2);
-      }
       if (currentMap.getLayer('study-area-line')) {
-        currentMap.setPaintProperty('study-area-line', 'line-color', isLight ? '#006B6F' : '#22D3EE');
+        currentMap.setPaintProperty('study-area-line', 'line-color', '#388BFD');
       }
       if (currentMap.getLayer('study-area-fill')) {
-        currentMap.setPaintProperty('study-area-fill', 'fill-color', isLight ? '#006B6F' : '#0F4C5C');
-        currentMap.setPaintProperty('study-area-fill', 'fill-opacity', isLight ? 0.08 : 0.12);
+        currentMap.setPaintProperty('study-area-fill', 'fill-color', '#1F6FEB');
+        currentMap.setPaintProperty('study-area-fill', 'fill-opacity', 0.04);
       }
     };
 
@@ -119,6 +211,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     if (!currentMap) return;
 
     const onMapLoad = () => {
+      // 0. Register directional flow arrow image if not already present
+      if (!currentMap.hasImage('flow-arrow')) {
+        const arrowImg = createFlowArrowImage();
+        if (arrowImg) {
+          currentMap.addImage('flow-arrow', arrowImg);
+        }
+      }
+
       // 1. Add Study Area Boundary Source and Layers
       if (studyAreaGeoJson && !currentMap.getSource('study-area')) {
         currentMap.addSource('study-area', {
@@ -131,8 +231,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           type: 'fill',
           source: 'study-area',
           paint: {
-            'fill-color': '#0F4C5C',
-            'fill-opacity': 0.12
+            'fill-color': '#1F6FEB',
+            'fill-opacity': 0.04
           }
         });
 
@@ -141,33 +241,31 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           type: 'line',
           source: 'study-area',
           paint: {
-            'line-color': '#22D3EE',
+            'line-color': '#388BFD',
             'line-width': 1.5,
-            'line-dasharray': [3, 2]
+            'line-dasharray': [4, 3],
+            'line-opacity': 0.7
           }
         });
       }
 
-      // 2. Add Road Segments
+      // 2. Add Road Segments (Navigation-Grade Dual-Carriageway Ribbons)
       const segmentsGeoJson = {
         type: 'FeatureCollection',
         features: roadSegments.map(seg => {
           const state = liveStates[seg.id];
           const speed = state?.metrics.averageSpeedKmh ?? 45.0;
-          let color = '#10B981'; // Green
-          if (speed < 20) color = '#EF4444'; // Red
-          else if (speed < 35) color = '#F59E0B'; // Amber
+          let color = '#3FB950'; // Green: Normal (>35 km/h)
+          if (speed < 20) color = '#F85149'; // Red: Congested (<20 km/h)
+          else if (speed < 35) color = '#D29922'; // Amber: Moderate (20-35 km/h)
 
           const isSelected = selectedEntity?.id === seg.id;
           const isCompare = compareEntity?.id === seg.id;
           let casingColor = 'transparent';
-          let casingWidth = 0;
           if (isSelected) {
-            casingColor = '#22D3EE';
-            casingWidth = 11;
+            casingColor = '#2F81F7';
           } else if (isCompare) {
-            casingColor = '#F59E0B';
-            casingWidth = 10;
+            casingColor = '#D29922';
           }
 
           return {
@@ -179,8 +277,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               speed,
               isSelected,
               isCompare,
-              casingColor,
-              casingWidth
+              casingColor
             },
             geometry: {
               type: 'LineString',
@@ -196,7 +293,29 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           data: segmentsGeoJson as any
         });
 
-        // Background casing layer for selected & compared segments
+        // Layer 1: Dark asphalt roadway base (foundation)
+        currentMap.addLayer({
+          id: 'road-segments-asphalt',
+          type: 'line',
+          source: 'road-segments',
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round'
+          },
+          paint: {
+            'line-color': '#161B22',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 6,
+              14, 11,
+              16, 17,
+              18, 24
+            ],
+            'line-opacity': 0.95
+          }
+        });
+
+        // Layer 2: Selection & Compare highlight halo casing
         currentMap.addLayer({
           id: 'road-segments-casing',
           type: 'line',
@@ -207,13 +326,20 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           },
           paint: {
             'line-color': ['get', 'casingColor'],
-            'line-width': ['get', 'casingWidth'],
-            'line-opacity': 0.85
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              12, ['case', ['get', 'isSelected'], 9, ['get', 'isCompare'], 8, 0],
+              14, ['case', ['get', 'isSelected'], 15, ['get', 'isCompare'], 14, 0],
+              16, ['case', ['get', 'isSelected'], 22, ['get', 'isCompare'], 20, 0],
+              18, ['case', ['get', 'isSelected'], 30, ['get', 'isCompare'], 28, 0]
+            ],
+            'line-opacity': 0.95
           }
         });
 
+        // Layer 3: Navigation velocity traffic ribbon fill
         currentMap.addLayer({
-          id: 'road-segments-line',
+          id: 'road-segments-fill',
           type: 'line',
           source: 'road-segments',
           layout: {
@@ -222,12 +348,63 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           },
           paint: {
             'line-color': ['get', 'color'],
-            'line-width': 6,
-            'line-opacity': 0.9
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 3.5,
+              14, 7,
+              16, 11,
+              18, 16
+            ],
+            'line-opacity': 1.0
           }
         });
 
-        currentMap.on('click', 'road-segments-line', (e) => {
+        // Layer 4: Subtle dashed inner lane dividers
+        currentMap.addLayer({
+          id: 'road-segments-divider',
+          type: 'line',
+          source: 'road-segments',
+          layout: {
+            'line-cap': 'butt',
+            'line-join': 'round'
+          },
+          paint: {
+            'line-color': 'rgba(255, 255, 255, 0.4)',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 0.8,
+              14, 1.2,
+              16, 1.8,
+              18, 2.4
+            ],
+            'line-dasharray': [4, 4]
+          }
+        });
+
+        // Layer 5: Directional chevron flow indicators along traffic direction
+        currentMap.addLayer({
+          id: 'road-segments-flow-arrows',
+          type: 'symbol',
+          source: 'road-segments',
+          layout: {
+            'symbol-placement': 'line',
+            'symbol-spacing': 90,
+            'icon-image': 'flow-arrow',
+            'icon-size': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 0.4,
+              14, 0.6,
+              16, 0.8,
+              18, 1.0
+            ],
+            'icon-rotation-alignment': 'map',
+            'icon-keep-upright': false,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true
+          }
+        });
+
+        const handleRoadClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
           if (!e.features || !e.features[0]) return;
           const clickedId = e.features[0].id;
           const found = roadSegments.find(s => s.id === clickedId);
@@ -239,19 +416,64 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           } else {
             onSelectEntity(found);
           }
-        });
+        };
 
-        currentMap.on('mouseenter', 'road-segments-line', () => {
+        currentMap.on('click', 'road-segments-fill', handleRoadClick);
+        currentMap.on('click', 'road-segments-asphalt', handleRoadClick);
+
+        currentMap.on('mouseenter', 'road-segments-fill', () => {
           currentMap.getCanvas().style.cursor = 'pointer';
         });
-        currentMap.on('mouseleave', 'road-segments-line', () => {
+        currentMap.on('mouseleave', 'road-segments-fill', () => {
           currentMap.getCanvas().style.cursor = '';
         });
       } else {
         (currentMap.getSource('road-segments') as maplibregl.GeoJSONSource).setData(segmentsGeoJson as any);
       }
 
-      // 3. Add 3D Building Extrusions Layer (Phase 8, D-13)
+      // 3. Add Intersection Approach Stoplines (Navigation Grade)
+      if (!currentMap.getSource('intersection-stoplines')) {
+        currentMap.addSource('intersection-stoplines', {
+          type: 'geojson',
+          data: STOPLINES_GEOJSON as any
+        });
+
+        currentMap.addLayer({
+          id: 'intersection-stoplines-casing',
+          type: 'line',
+          source: 'intersection-stoplines',
+          paint: {
+            'line-color': '#0D1117',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              13, 3,
+              15, 5,
+              17, 7
+            ]
+          }
+        });
+
+        currentMap.addLayer({
+          id: 'intersection-stoplines-bar',
+          type: 'line',
+          source: 'intersection-stoplines',
+          layout: {
+            'line-cap': 'square'
+          },
+          paint: {
+            'line-color': '#FFFFFF',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              13, 2,
+              15, 3.5,
+              17, 5
+            ],
+            'line-opacity': 0.95
+          }
+        });
+      }
+
+      // 4. Add 3D Building Extrusions Layer
       if (!currentMap.getSource('corridor-buildings-3d')) {
         currentMap.addSource('corridor-buildings-3d', {
           type: 'geojson',
@@ -280,23 +502,43 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         );
       }
 
-      // 4. Add Intersections Markers
+      // 5. Add Signalized Intersection Markers (Navigation Chowk Badges & Pulsing Halos)
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
 
-      const isLight = currentTheme === 'light';
       intersections.forEach(ix => {
+        const isSelected = selectedEntity?.id === ix.id;
         const el = document.createElement('div');
-        el.className = 'intersection-marker';
-        el.style.width = '14px';
-        el.style.height = '14px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = isLight ? '#006B6F' : '#0F4C5C';
-        el.style.border = isLight ? '2px solid #00565A' : '2px solid #22D3EE';
-        el.style.boxShadow = isLight ? '0 1px 4px rgba(0, 107, 111, 0.4)' : '0 0 10px rgba(34, 211, 238, 0.6)';
-        el.style.cursor = 'pointer';
+        el.className = `junction-marker-container ${isSelected ? 'selected' : ''}`;
+        el.title = `${ix.name} (${ix.controlType}) - Click to inspect`;
 
-        el.addEventListener('click', () => {
+        const pulse = document.createElement('div');
+        pulse.className = 'junction-pulse-ring';
+        el.appendChild(pulse);
+
+        const beacon = document.createElement('div');
+        beacon.className = 'junction-beacon';
+        beacon.innerHTML = '🚦';
+        el.appendChild(beacon);
+
+        const label = document.createElement('div');
+        label.className = 'junction-label-pill';
+
+        const title = document.createElement('span');
+        title.className = 'junction-title';
+        const cleanName = ix.name.includes('(') ? ix.name.split('(')[0].trim() : ix.name;
+        title.textContent = cleanName;
+        label.appendChild(title);
+
+        const sub = document.createElement('span');
+        sub.className = 'junction-subtitle';
+        sub.textContent = `${ix.cycleTimeSec ? ix.cycleTimeSec + 's' : 'Signal'} • ${ix.controlType === 'SIGNALIZED' ? 'Adaptive' : ix.controlType}`;
+        label.appendChild(sub);
+
+        el.appendChild(label);
+
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
           onSelectEntity(ix);
         });
 
@@ -306,45 +548,45 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         markersRef.current.push(marker);
       });
 
-      // 5. Add Energy Entity Marker (Phoenix Marketcity) per UI_UX_SPEC §7.3
+      // 6. Add Energy Entity Marker (Phoenix Marketcity) per UI_UX_SPEC §7.3
       const energyEl = document.createElement('div');
       energyEl.className = 'energy-entity-marker';
       energyEl.style.display = 'flex';
       energyEl.style.alignItems = 'center';
-      energyEl.style.gap = '4px';
-      energyEl.style.padding = '3px 7px';
-      energyEl.style.borderRadius = '12px';
-      energyEl.style.backgroundColor = isLight ? '#FFF' : '#1E293B';
-      energyEl.style.border = '1.5px solid #F59E0B';
-      energyEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
-      energyEl.style.fontSize = '12px';
+      energyEl.style.gap = '5px';
+      energyEl.style.padding = '3px 8px';
+      energyEl.style.borderRadius = '6px';
+      energyEl.style.backgroundColor = '#161B22';
+      energyEl.style.border = '1px solid #D29922';
+      energyEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+      energyEl.style.fontSize = '11px';
       energyEl.style.fontWeight = '600';
-      energyEl.style.color = isLight ? '#B45309' : '#FBBF24';
+      energyEl.style.color = '#F0883E';
       energyEl.style.cursor = 'pointer';
       energyEl.title = 'Phoenix Marketcity Commercial Energy Zone (Sanctioned: 8,500 kVA)';
-      energyEl.innerHTML = '⚡ Phoenix (Energy)';
+      energyEl.innerHTML = '<span>⚡</span><span>Phoenix Marketcity (Energy)</span>';
       const energyMarker = new maplibregl.Marker({ element: energyEl })
         .setLngLat([73.9170, 18.5625])
         .addTo(currentMap);
       markersRef.current.push(energyMarker);
 
-      // 6. Add Environmental Context Station Marker (Lohegaon CAAQMS) per UI_UX_SPEC §7.3
+      // 7. Add Environmental Context Station Marker (Lohegaon CAAQMS) per UI_UX_SPEC §7.3
       const envEl = document.createElement('div');
       envEl.className = 'env-station-marker';
       envEl.style.display = 'flex';
       envEl.style.alignItems = 'center';
-      envEl.style.gap = '4px';
-      envEl.style.padding = '3px 7px';
-      envEl.style.borderRadius = '12px';
-      envEl.style.backgroundColor = isLight ? '#FFF' : '#1E293B';
-      envEl.style.border = '1.5px solid #10B981';
-      envEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
-      envEl.style.fontSize = '12px';
+      envEl.style.gap = '5px';
+      envEl.style.padding = '3px 8px';
+      envEl.style.borderRadius = '6px';
+      envEl.style.backgroundColor = '#161B22';
+      envEl.style.border = '1px solid #3FB950';
+      envEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+      envEl.style.fontSize = '11px';
       envEl.style.fontWeight = '600';
-      envEl.style.color = isLight ? '#047857' : '#34D399';
+      envEl.style.color = '#3FB950';
       envEl.style.cursor = 'pointer';
       envEl.title = 'Pune Airport / Lohegaon CAAQMS Air Quality Reference Station (NAAQS: Moderate)';
-      envEl.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10B981;box-shadow:0 0 8px #10B981;"></span><span>CAAQMS Air Station</span>';
+      envEl.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3FB950;box-shadow:0 0 6px #3FB950;"></span><span>Lohegaon CAAQMS</span>';
       const envMarker = new maplibregl.Marker({ element: envEl })
         .setLngLat([73.9215, 18.5665])
         .addTo(currentMap);
