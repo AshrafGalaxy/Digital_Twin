@@ -1,18 +1,23 @@
-"""
-scenario_service.py
-
-Manages microscopic simulation scenario templates, run execution,
-comparative KPI extraction, and result persistence.
-Ensures strict SIMULATION provenance and state separation invariants.
-"""
-
+import json
 import os
+import sqlite3
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from simulation.runner import SUMOCorridorRunner
 from simulation.kpi_calculator import ScenarioKPICalculator
+from backend.core.constants import SourceMode
+from backend.core.config import settings
+from backend.schemas.recommendations import (
+    AdvisoryRecommendation,
+    AuditLogEntry,
+    RecommendationDomain,
+    RecommendationEvidence,
+    RecommendationSeverity,
+    RecommendationStatus,
+)
+from backend.services.rule_engine import rule_engine
 
 # Pre-registered scenario templates approved per ADR-004
 APPROVED_TEMPLATES = [
@@ -87,6 +92,7 @@ class ScenarioService:
         self,
         intervention_template_id: str = "SCEN-INT-01",
         green_extension_sec: float = 15.0,
+        coordination_offset_sec: float = 35.0,
         demand_multiplier: float = 1.0,
         random_seed: int = 42
     ) -> Dict[str, Any]:
@@ -105,13 +111,15 @@ class ScenarioService:
         )
 
         # 2. Run Intervention
+        int_params = {
+            "green_extension_sec": green_extension_sec,
+            "coordination_offset_sec": coordination_offset_sec,
+            "demand_multiplier": demand_multiplier
+        }
         int_result = self.runner.run_scenario(
             template_id=intervention_template_id,
             seed=random_seed,
-            parameters={
-                "green_extension_sec": green_extension_sec,
-                "demand_multiplier": demand_multiplier
-            }
+            parameters=int_params
         )
 
         # 3. Calculate Comparative Deltas
@@ -121,10 +129,15 @@ class ScenarioService:
         )
 
         # 4. Construct Immutable Run Record
+        scenario_name = (
+            f"Signal Split Extension (+{green_extension_sec}s, Seed {random_seed})"
+            if intervention_template_id == "SCEN-INT-01"
+            else f"Arterial Coordination ({coordination_offset_sec}s offset, Seed {random_seed})"
+        )
         record = {
             "runId": run_id,
             "templateId": intervention_template_id,
-            "name": f"Signal Split Comparison (Seed {random_seed})",
+            "name": scenario_name,
             "status": "COMPLETED",
             "sourceMode": "SIMULATION",
             "governanceNotice": "SIMULATION OUTPUT: Results are model-generated under experimental assumptions. Does not actuate physical traffic signals or guarantee real-world outcomes.",
@@ -134,6 +147,7 @@ class ScenarioService:
             "executedAt": now_iso,
             "parameters": {
                 "greenExtensionSec": green_extension_sec,
+                "coordinationOffsetSec": coordination_offset_sec,
                 "demandMultiplier": demand_multiplier,
                 "randomSeed": random_seed
             },
@@ -150,6 +164,117 @@ class ScenarioService:
 
         _RUNS_CACHE[run_id] = record
         return record
+
+    def propose_advisory_from_run(
+        self,
+        run_id: str,
+        reviewer: str = "Municipal Analyst",
+        notes: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Transforms a simulation run into a formal AdvisoryRecommendation.
+        The advisory is added to the AdvisoryRuleEngine and logged in the audit_events table.
+        Advisories remain non-actuating and require human authorization outside the platform.
+        """
+        run = self.get_run(run_id)
+        if not run:
+            raise KeyError(f"Scenario run '{run_id}' not found")
+
+        now = datetime.now(timezone.utc)
+        template_id = run["templateId"]
+        deltas = run.get("deltas", {})
+        delay_saved = deltas.get("delay_saved_sec", 0.0)
+        delay_pct = deltas.get("delay_delta_pct", 0.0)
+        target_entity = (
+            "urn:ngsi-ld:Intersection:PUNE:INT-VN-01"
+            if template_id == "SCEN-INT-01"
+            else "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+        )
+
+        rec_id = f"REC-SCEN-{uuid.uuid4().hex[:8].upper()}"
+        severity = RecommendationSeverity.WARNING if delay_saved >= 10.0 else RecommendationSeverity.INFO
+        title = (
+            f"Simulated Dynamic Green Extension Proposed for Nagar Rd EB"
+            if template_id == "SCEN-INT-01"
+            else f"Simulated Arterial Progression Coordination Proposed (VN-01 ↔ SN-01)"
+        )
+        description = (
+            f"Scenario run {run_id} simulated a {delay_pct}% delay reduction ({delay_saved}s saved per vehicle) "
+            f"using template {template_id}. Seed: {run['randomSeed']}."
+        )
+        suggested_action = (
+            f"Review proposed timing parameters ({run['parameters']}) in Scenario Studio before municipal dispatch."
+        )
+
+        rec = AdvisoryRecommendation(
+            recommendationId=rec_id,
+            domain=RecommendationDomain.TRAFFIC,
+            severity=severity,
+            status=RecommendationStatus.ACTIVE,
+            targetEntityId=target_entity,
+            title=title,
+            description=description,
+            triggerRule=f"RULE-SIMULATION-{template_id}",
+            evidence=RecommendationEvidence(
+                sourceMode=SourceMode.SIMULATION,
+                metricName="averageDelaySec",
+                observedOrPredictedValue=float(run["intervention"]["kpis"]["average_delay_sec"]),
+                threshold=float(run["baseline"]["kpis"]["average_delay_sec"]),
+                unit="seconds",
+                scenarioId=template_id,
+                confidenceScore=0.95,
+                timestamp=now
+            ),
+            suggestedAction=suggested_action,
+            humanApprovalRequired=True,
+            governanceNotice="SIMULATION ADVISORY: Synthesized from microscopic traffic simulation. Physical traffic signals are NOT actuated; requires human authorization before field deployment.",
+            auditTrail=[
+                AuditLogEntry(
+                    timestamp=now,
+                    previousStatus=RecommendationStatus.ACTIVE,
+                    newStatus=RecommendationStatus.ACTIVE,
+                    reviewer=reviewer,
+                    notes=notes or f"Proposed advisory synthesized from scenario run {run_id}."
+                )
+            ],
+            createdAt=now,
+            updatedAt=now
+        )
+
+        # Register into rule engine
+        rule_engine.add_custom_recommendation(rec)
+
+        # Record audit event
+        self._record_audit_event(
+            event_type="ADVISORY_PROPOSED_FROM_SIMULATION",
+            source_service="ScenarioStudio",
+            details={
+                "runId": run_id,
+                "recommendationId": rec_id,
+                "templateId": template_id,
+                "reviewer": reviewer,
+                "notes": notes,
+                "deltas": deltas,
+                "timestamp": now.isoformat()
+            }
+        )
+
+        return rec.model_dump()
+
+    def _record_audit_event(self, event_type: str, source_service: str, details: Dict[str, Any]) -> None:
+        """Best-effort persistence of audit event to database without failing request."""
+        try:
+            db_path = settings.resolved_sqlite_path
+            if db_path.exists():
+                with sqlite3.connect(str(db_path)) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "INSERT INTO audit_events (emitted_at, event_type, source_service, details) VALUES (?, ?, ?, ?)",
+                        (datetime.now(timezone.utc).isoformat(), event_type, source_service, json.dumps(details))
+                    )
+                    conn.commit()
+        except Exception:
+            pass
 
     def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves a past scenario run by ID."""

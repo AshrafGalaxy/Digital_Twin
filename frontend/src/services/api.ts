@@ -156,7 +156,8 @@ export async function fetchScenarioTemplates(): Promise<any[]> {
 
 export async function runScenario(params: {
   templateId: string;
-  greenExtensionSec: number;
+  greenExtensionSec?: number;
+  coordinationOffsetSec?: number;
   demandMultiplier: number;
   randomSeed: number;
 }): Promise<any> {
@@ -166,6 +167,20 @@ export async function runScenario(params: {
     body: JSON.stringify(params)
   });
   if (!res.ok) throw new Error('Failed to execute simulation run');
+  return res.json();
+}
+
+export async function proposeAdvisoryFromScenarioRun(
+  runId: string,
+  reviewer: string = 'Municipal Analyst',
+  notes: string = ''
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/scenarios/runs/${encodeURIComponent(runId)}/propose-advisory`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reviewer, notes })
+  });
+  if (!res.ok) throw new Error('Failed to propose advisory recommendation');
   return res.json();
 }
 

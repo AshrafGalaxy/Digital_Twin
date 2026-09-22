@@ -9,15 +9,26 @@ import {
   Cpu,
   Info,
   History,
-  HelpCircle
+  HelpCircle,
+  Sparkles,
+  RefreshCw,
+  Check,
+  ShieldAlert,
+  ArrowRight
 } from 'lucide-react';
 import { ScenarioTemplate, ScenarioRunResult } from '../../types/twin';
-import { fetchScenarioTemplates, runScenario, fetchRecentScenarioRuns } from '../../services/api';
+import {
+  fetchScenarioTemplates,
+  runScenario,
+  fetchRecentScenarioRuns,
+  proposeAdvisoryFromScenarioRun
+} from '../../services/api';
 
 export const ScenarioStudioView: React.FC = () => {
   const [templates, setTemplates] = useState<ScenarioTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('SCEN-INT-01');
   const [greenExtension, setGreenExtension] = useState<number>(15);
+  const [coordinationOffset, setCoordinationOffset] = useState<number>(35);
   const [demandMultiplier, setDemandMultiplier] = useState<number>(1.0);
   const [randomSeed, setRandomSeed] = useState<number>(42);
 
@@ -25,6 +36,13 @@ export const ScenarioStudioView: React.FC = () => {
   const [runResult, setRunResult] = useState<ScenarioRunResult | null>(null);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Advisory Proposal State
+  const [showProposeModal, setShowProposeModal] = useState<boolean>(false);
+  const [reviewerName, setReviewerName] = useState<string>('Municipal Traffic Cell Officer');
+  const [proposalNotes, setProposalNotes] = useState<string>('');
+  const [isSubmittingAdvisory, setIsSubmittingAdvisory] = useState<boolean>(false);
+  const [advisorySuccess, setAdvisorySuccess] = useState<any | null>(null);
 
   useEffect(() => {
     fetchScenarioTemplates()
@@ -39,10 +57,12 @@ export const ScenarioStudioView: React.FC = () => {
   const handleRunSimulation = async () => {
     setIsRunning(true);
     setError(null);
+    setAdvisorySuccess(null);
     try {
       const result = await runScenario({
         templateId: selectedTemplateId,
         greenExtensionSec: greenExtension,
+        coordinationOffsetSec: coordinationOffset,
         demandMultiplier: demandMultiplier,
         randomSeed: randomSeed
       });
@@ -55,6 +75,24 @@ export const ScenarioStudioView: React.FC = () => {
     }
   };
 
+  const handleProposeAdvisory = async () => {
+    if (!runResult) return;
+    setIsSubmittingAdvisory(true);
+    try {
+      const res = await proposeAdvisoryFromScenarioRun(
+        runResult.runId,
+        reviewerName,
+        proposalNotes
+      );
+      setAdvisorySuccess(res);
+      setShowProposeModal(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit advisory recommendation');
+    } finally {
+      setIsSubmittingAdvisory(false);
+    }
+  };
+
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
 
   return (
@@ -62,22 +100,22 @@ export const ScenarioStudioView: React.FC = () => {
       {/* View Header */}
       <div className="view-header">
         <div>
-          <h1 className="view-title">Scenario Studio — Microscopic Traffic Simulation Sandbox</h1>
+          <h1 className="view-title">Scenario Studio — Microscopic Simulation Sandbox</h1>
           <p className="view-subtitle">
-            Controlled baseline vs. intervention simulation on Viman Nagar Chowk (VN-01) ↔ Somnath Nagar Chowk (SN-01) corridor using Eclipse SUMO.
+            Controlled baseline vs. intervention simulation on Viman Nagar Chowk (VN-01) ↔ Somnath Nagar Chowk (SN-01) corridor using calibrated SUMO kinematics.
           </p>
         </div>
         <div className="view-header-badges">
           <span className="provenance-badge badge-simulation">SIMULATION ONLY</span>
-          <span className="provenance-badge badge-live">SUMO 1.18+ / TRACI</span>
+          <span className="provenance-badge badge-live">SUMO / TRACI PHYSICS</span>
         </div>
       </div>
 
       {/* Mandatory Advisory Notice Banner */}
       <div className="integrity-caveat-banner">
-        <Info size={18} style={{ flexShrink: 0 }} />
+        <Info size={18} style={{ flexShrink: 0, color: '#00F2FE' }} />
         <div>
-          <strong>Advisory Decision Support Notice (UI_UX_SPEC §12):</strong> All simulation models are mathematical approximations executed under calibrated baseline conditions. Outputs are strictly non-binding evidence and do not actuate physical traffic controllers or signals.
+          <strong>Advisory Decision Support Notice (UI_UX_SPEC §12):</strong> All simulation models are mathematical approximations executed under calibrated arterial conditions. Outputs are strictly non-binding evidence and do not actuate physical traffic controllers or signals.
         </div>
       </div>
 
@@ -87,7 +125,7 @@ export const ScenarioStudioView: React.FC = () => {
         <div className="analytics-card">
           <div className="analytics-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sliders size={18} color="#0F4C5C" />
+              <Sliders size={18} color="#00F2FE" />
               <span className="card-title">Intervention Configuration Sandbox</span>
             </div>
             <span className="text-muted" style={{ fontSize: '12px' }}>Predefined Safe Parameters</span>
@@ -99,7 +137,11 @@ export const ScenarioStudioView: React.FC = () => {
             <select
               className="control-select"
               value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              onChange={(e) => {
+                setSelectedTemplateId(e.target.value);
+                setRunResult(null);
+                setAdvisorySuccess(null);
+              }}
             >
               {templates.map(t => (
                 <option key={t.id} value={t.id}>
@@ -108,33 +150,92 @@ export const ScenarioStudioView: React.FC = () => {
               ))}
             </select>
             {selectedTemplate && (
-              <div className="template-desc" style={{ marginTop: '8px' }}>
+              <div className="template-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
                 {selectedTemplate.description}
               </div>
             )}
           </div>
 
-          {/* Slider 1: Green Time Extension */}
-          <div className="control-group" style={{ marginBottom: '16px' }}>
-            <div className="slider-label-row">
-              <span className="control-label">Nagar Road EB Green Extension</span>
-              <span className="slider-value font-mono">+{greenExtension}s (50s Green Split)</span>
+          {/* Dynamic Control depending on template */}
+          {selectedTemplateId === 'SCEN-INT-01' ? (
+            <div className="control-group" style={{ marginBottom: '16px' }}>
+              <div className="slider-label-row">
+                <span className="control-label">Nagar Road EB Green Extension</span>
+                <span className="slider-value font-mono">+{greenExtension}s ({35 + greenExtension}s Green Split)</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="25"
+                step="1"
+                value={greenExtension}
+                onChange={(e) => setGreenExtension(Number(e.target.value))}
+                className="control-slider"
+              />
+              <div className="preset-pills-row">
+                <button
+                  type="button"
+                  className={`preset-pill-btn ${greenExtension === 5 ? 'active' : ''}`}
+                  onClick={() => setGreenExtension(5)}
+                >
+                  +5s Conservative
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill-btn ${greenExtension === 15 ? 'active' : ''}`}
+                  onClick={() => setGreenExtension(15)}
+                >
+                  +15s Calibrated
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill-btn ${greenExtension === 25 ? 'active' : ''}`}
+                  onClick={() => setGreenExtension(25)}
+                >
+                  +25s Aggressive
+                </button>
+              </div>
             </div>
-            <input
-              type="range"
-              min="5"
-              max="25"
-              step="1"
-              value={greenExtension}
-              onChange={(e) => setGreenExtension(Number(e.target.value))}
-              className="control-slider"
-            />
-            <div className="slider-hints">
-              <span>+5s (Conservative)</span>
-              <span>+15s (Calibrated ADR-004)</span>
-              <span>+25s (Aggressive)</span>
+          ) : (
+            <div className="control-group" style={{ marginBottom: '16px' }}>
+              <div className="slider-label-row">
+                <span className="control-label">Arterial Progression Offset (VN-01 ↔ SN-01)</span>
+                <span className="slider-value font-mono">{coordinationOffset}s Offset</span>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="60"
+                step="1"
+                value={coordinationOffset}
+                onChange={(e) => setCoordinationOffset(Number(e.target.value))}
+                className="control-slider"
+              />
+              <div className="preset-pills-row">
+                <button
+                  type="button"
+                  className={`preset-pill-btn ${coordinationOffset === 25 ? 'active' : ''}`}
+                  onClick={() => setCoordinationOffset(25)}
+                >
+                  25s Tight
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill-btn ${coordinationOffset === 35 ? 'active' : ''}`}
+                  onClick={() => setCoordinationOffset(35)}
+                >
+                  35s Optimal Wave
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill-btn ${coordinationOffset === 50 ? 'active' : ''}`}
+                  onClick={() => setCoordinationOffset(50)}
+                >
+                  50s Wide
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Slider 2: Demand Multiplier */}
           <div className="control-group" style={{ marginBottom: '16px' }}>
@@ -151,27 +252,58 @@ export const ScenarioStudioView: React.FC = () => {
               onChange={(e) => setDemandMultiplier(Number(e.target.value))}
               className="control-slider"
             />
-            <div className="slider-hints">
-              <span>0.80x (Off-Peak)</span>
-              <span>1.00x (Evening Rush)</span>
-              <span>1.50x (Severe Congestion)</span>
+            <div className="preset-pills-row">
+              <button
+                type="button"
+                className={`preset-pill-btn ${demandMultiplier === 0.8 ? 'active' : ''}`}
+                onClick={() => setDemandMultiplier(0.8)}
+              >
+                0.80x Off-Peak
+              </button>
+              <button
+                type="button"
+                className={`preset-pill-btn ${demandMultiplier === 1.0 ? 'active' : ''}`}
+                onClick={() => setDemandMultiplier(1.0)}
+              >
+                1.00x Evening Peak
+              </button>
+              <button
+                type="button"
+                className={`preset-pill-btn ${demandMultiplier === 1.3 ? 'active' : ''}`}
+                onClick={() => setDemandMultiplier(1.3)}
+              >
+                1.30x Severe Surge
+              </button>
             </div>
           </div>
 
-          {/* Number Input: Random Seed */}
+          {/* Random Seed */}
           <div className="control-group" style={{ marginBottom: '20px' }}>
             <div className="slider-label-row">
-              <span className="control-label">Random Seed (Reproducibility)</span>
+              <span className="control-label">Random Seed (Pairwise Reproducibility)</span>
               <span className="slider-value font-mono">Seed: {randomSeed}</span>
             </div>
-            <input
-              type="number"
-              value={randomSeed}
-              onChange={(e) => setRandomSeed(Number(e.target.value))}
-              className="control-input"
-            />
-            <span className="control-caption" style={{ display: 'block', marginTop: '4px' }}>
-              Identical seeds guarantee scientific pairwise comparability between baseline and intervention.
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="number"
+                value={randomSeed}
+                onChange={(e) => setRandomSeed(Number(e.target.value))}
+                className="control-input"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="preset-pill-btn"
+                style={{ padding: '0 12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={() => setRandomSeed(Math.floor(Math.random() * 900) + 100)}
+                title="Randomize Seed"
+              >
+                <RefreshCw size={13} />
+                <span>Random</span>
+              </button>
+            </div>
+            <span className="control-caption" style={{ display: 'block', marginTop: '6px' }}>
+              Identical seeds ensure pairwise mathematical comparability between baseline and intervention.
             </span>
           </div>
 
@@ -204,22 +336,22 @@ export const ScenarioStudioView: React.FC = () => {
 
           {/* Recent Runs History Subpanel */}
           {recentRuns.length > 0 && (
-            <div style={{ marginTop: '24px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+            <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                <History size={15} className="text-muted" />
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-                  Audit Trail of Recent Simulation Runs ({recentRuns.length})
+                <History size={14} className="text-muted" />
+                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+                  Audit Trail of Recent Runs ({recentRuns.length})
                 </span>
               </div>
               <div className="recent-runs-list" style={{ maxHeight: '140px', overflowY: 'auto' }}>
                 {recentRuns.map((r, idx) => (
-                  <div key={idx} className="recent-run-item">
-                    <span className="mono-cell" style={{ fontSize: '12px' }}>{r.runId || `RUN-${idx + 1}`}</span>
-                    <span className="provenance-badge badge-simulation" style={{ fontSize: '12px' }}>
+                  <div key={idx} className="recent-run-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '12px' }}>
+                    <span className="mono-cell" style={{ fontSize: '11px' }}>{r.runId ? r.runId.split(':').pop() : `RUN-${idx + 1}`}</span>
+                    <span className="provenance-badge badge-simulation" style={{ fontSize: '10px' }}>
                       {r.templateId || 'SCEN-INT-01'}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#10B981', fontWeight: 600 }}>
-                      {r.deltas?.travel_time_saved_sec ? `-${r.deltas.travel_time_saved_sec}s delay` : 'Completed'}
+                    <span style={{ fontSize: '11px', color: '#34D399', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                      {r.deltas?.delay_saved_sec ? `-${r.deltas.delay_saved_sec}s delay` : 'Completed'}
                     </span>
                   </div>
                 ))}
@@ -233,7 +365,7 @@ export const ScenarioStudioView: React.FC = () => {
           <div className="analytics-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <CheckCircle2 size={18} color="#10B981" />
-              <span className="card-title">Comparative KPI Evaluation (Baseline vs. Intervention)</span>
+              <span className="card-title">Comparative KPI Evaluation</span>
             </div>
             <span className="provenance-badge badge-simulation">SIMULATION RESULT</span>
           </div>
@@ -243,19 +375,19 @@ export const ScenarioStudioView: React.FC = () => {
               {/* Top Verdict Banner */}
               <div className="verdict-banner">
                 <div>
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
                     EVALUATION VERDICT
                   </div>
-                  <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold', color: '#0F4C5C' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#00F2FE', marginTop: '2px' }}>
                     {runResult.deltas.overall_verdict.replace(/_/g, ' ')}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                    RANDOM SEED
+                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+                    SEED / NETWORK
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600' }}>
-                    {runResult.randomSeed}
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>
+                    {runResult.randomSeed} • v1.0
                   </div>
                 </div>
               </div>
@@ -275,7 +407,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <tr>
                     <td>
                       <div className="metric-row-name">Arterial Travel Time</div>
-                      <div className="metric-row-sub">1.25 km Centerline Corridor</div>
+                      <div className="metric-row-sub">1.25 km Nagar Road EB Corridor</div>
                     </td>
                     <td className="mono-cell">
                       {runResult.baseline.kpis.average_travel_time_sec.toFixed(1)} s
@@ -295,7 +427,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <tr>
                     <td>
                       <div className="metric-row-name">Average Delay</div>
-                      <div className="metric-row-sub">Per vehicle delay at junctions</div>
+                      <div className="metric-row-sub">Per vehicle stopping delay at junctions</div>
                     </td>
                     <td className="mono-cell">
                       {runResult.baseline.kpis.average_delay_sec.toFixed(1)} s
@@ -335,7 +467,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <tr>
                     <td>
                       <div className="metric-row-name">Corridor Throughput</div>
-                      <div className="metric-row-sub">Completed vehicles / hour</div>
+                      <div className="metric-row-sub">Discharged vehicles / hour</div>
                     </td>
                     <td className="mono-cell">
                       {runResult.baseline.kpis.throughput_veh_per_hour.toFixed(0)} vph
@@ -353,6 +485,99 @@ export const ScenarioStudioView: React.FC = () => {
                 </tbody>
               </table>
 
+              {/* Advisory Proposal Flow */}
+              <div style={{ marginTop: '20px' }}>
+                {advisorySuccess ? (
+                  <div className="advisory-success-banner">
+                    <Check size={18} color="#34D399" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <strong>Intervention Advisory Registered: </strong>
+                      <span style={{ fontFamily: 'var(--font-mono)' }}>{advisorySuccess.recommendationId}</span>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Logged to audit trail. Queued in Advisory Center for municipal officer authorization. Zero external actuation performed.
+                      </p>
+                    </div>
+                  </div>
+                ) : !showProposeModal ? (
+                  <button
+                    type="button"
+                    className="propose-advisory-btn"
+                    style={{ width: '100%' }}
+                    onClick={() => setShowProposeModal(true)}
+                  >
+                    <Sparkles size={15} />
+                    <span>Propose Advisory Intervention from this Simulation</span>
+                    <ArrowRight size={14} />
+                  </button>
+                ) : (
+                  <div style={{
+                    background: 'rgba(139, 92, 246, 0.08)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <ShieldAlert size={18} color="#A78BFA" />
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#C4B5FD' }}>
+                        Propose Operational Intervention to Municipal Advisory Center
+                      </span>
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Authorized Reviewer Name / Identity
+                      </label>
+                      <input
+                        type="text"
+                        className="control-input"
+                        value={reviewerName}
+                        onChange={(e) => setReviewerName(e.target.value)}
+                        placeholder="e.g. Traffic Cell Officer"
+                        style={{ width: '100%', fontSize: '12px' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Operational Justification Notes
+                      </label>
+                      <textarea
+                        className="control-input"
+                        value={proposalNotes}
+                        onChange={(e) => setProposalNotes(e.target.value)}
+                        placeholder="e.g. Validated against 18:30 queue spillback telemetry. Delay reduction confirmed."
+                        rows={2}
+                        style={{ width: '100%', fontSize: '12px', resize: 'vertical' }}
+                      />
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.4 }}>
+                      <strong>Strict Non-Actuation Invariant:</strong> Platform recommendations are advisory decision-support only. Physical traffic controllers are not actuated.
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="run-scenario-btn"
+                        style={{ flex: 1, padding: '8px 14px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)', color: '#FFFFFF' }}
+                        onClick={handleProposeAdvisory}
+                        disabled={isSubmittingAdvisory}
+                      >
+                        {isSubmittingAdvisory ? 'Submitting Advisory...' : 'Submit to Advisory Center'}
+                      </button>
+                      <button
+                        type="button"
+                        className="preset-pill-btn"
+                        style={{ padding: '8px 14px', borderRadius: 'var(--radius-md)' }}
+                        onClick={() => setShowProposeModal(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Run Metadata Footer */}
               <div className="run-metadata-footer">
                 <div>
@@ -369,12 +594,12 @@ export const ScenarioStudioView: React.FC = () => {
             </div>
           ) : (
             <div className="empty-results-box" style={{ padding: '48px 24px' }}>
-              <Cpu size={42} color="var(--color-text-secondary)" />
+              <Cpu size={42} color="var(--text-muted)" />
               <p style={{ marginTop: 'var(--space-3)', fontWeight: 600, fontSize: '15px' }}>
                 Ready to Simulate Mobility Intervention
               </p>
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', maxWidth: '380px', marginTop: 'var(--space-1)', lineHeight: 1.5 }}>
-                Configure the green split extension and traffic volume multiplier on the left panel, then click <strong>Execute Comparative SUMO Simulation</strong>.
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', maxWidth: '380px', marginTop: 'var(--space-1)', lineHeight: 1.5 }}>
+                Configure parameters on the left panel, then click <strong>Execute Comparative SUMO Simulation</strong>.
               </p>
             </div>
           )}

@@ -196,8 +196,40 @@ class SUMOCorridorRunner:
             # Corridor throughput: limited by intersection capacity + spillback friction
             throughput = round(min(demand_flow_vph, capacity_vph * 1.1) + rng.uniform(-30.0, 40.0), 1)
 
+        elif template_id == "SCEN-INT-02":
+            # Intervention SCEN-INT-02: Arterial Two-Junction Progression (VN-01 <-> SN-01)
+            # Offset optimization creates continuous arterial green band over the 770m link
+            coordination_offset = params.get("coordination_offset_sec", 35.0)
+            # Optimal offset around 32-38s for 770m link at 48 km/h minimizes platoon stops
+            offset_error = abs(coordination_offset - 35.0)
+            offset_efficiency = max(0.55, 1.0 - (offset_error / 35.0) * 0.45)
+
+            green_time = 45.0
+            cycle_time = 120.0
+            g_c_ratio = green_time / cycle_time
+            capacity_vph = saturation_flow_vph * g_c_ratio * 1.04
+            degree_of_sat = min(1.10, demand_flow_vph / capacity_vph)
+
+            uniform_delay = (0.5 * cycle_time * (1.0 - g_c_ratio)**2) / (1.0 - min(0.95, degree_of_sat * g_c_ratio))
+            # Coordinated green band reduces uniform stopping delay
+            progression_delay = uniform_delay * (1.15 - 0.40 * offset_efficiency)
+            random_overflow = 900.0 * (duration_sec / 3600.0) * (
+                (degree_of_sat - 1.0) + math.sqrt((degree_of_sat - 1.0)**2 + (16.0 * degree_of_sat / (capacity_vph * (duration_sec / 3600.0))))
+            )
+            total_delay = progression_delay + min(55.0, max(5.0, random_overflow * 0.75))
+
+            jitter = rng.uniform(-1.8, 2.2)
+            avg_delay = round(max(8.0, total_delay + jitter), 2)
+            avg_travel_time = round(free_flow_tt + avg_delay, 2)
+
+            int_queue_vehicles = max(4.0, (demand_flow_vph - capacity_vph) * (cycle_time / 3600.0) + (degree_of_sat * 10.0))
+            queue_meters = max(95.0, min(260.0, int_queue_vehicles * 6.8 * (1.2 - 0.3 * offset_efficiency) + rng.uniform(-8.0, 10.0)))
+            p95_queue = round(queue_meters * 1.10, 2)
+
+            throughput = round(min(demand_flow_vph, capacity_vph * 1.10) + rng.uniform(-15.0, 30.0), 1)
+
         else:
-            # Intervention: Dynamic split re-allocation (+15s green, 50s total green, 120s cycle)
+            # Intervention SCEN-INT-01: Dynamic split re-allocation (+15s green, 50s total green, 120s cycle)
             green_extension = params.get("green_extension_sec", 15.0)
             green_time = 35.0 + green_extension
             cycle_time = 120.0

@@ -337,6 +337,12 @@ class AdvisoryRuleEngine:
 
         return rec
 
+    def add_custom_recommendation(self, rec: AdvisoryRecommendation) -> AdvisoryRecommendation:
+        """Inserts or updates a custom advisory recommendation thread-safely."""
+        with self._lock:
+            self._recommendations[rec.recommendationId] = rec
+            return rec
+
     def get_summary(self) -> AdvisorySummary:
         """Returns aggregated counters of recommendations across severity and domain."""
         with self._lock:

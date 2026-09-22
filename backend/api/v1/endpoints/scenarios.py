@@ -14,6 +14,7 @@ try:
         ScenarioTemplateResponse,
         RunScenarioRequest,
         ScenarioRunResponse,
+        ProposeAdvisoryRequest,
     )
 except ImportError:
     from backend.services.scenario_service import ScenarioService
@@ -21,6 +22,7 @@ except ImportError:
         ScenarioTemplateResponse,
         RunScenarioRequest,
         ScenarioRunResponse,
+        ProposeAdvisoryRequest,
     )
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios & Simulation"])
@@ -44,6 +46,7 @@ def run_scenario(request: RunScenarioRequest):
         run_record = service.execute_comparative_run(
             intervention_template_id=request.templateId,
             green_extension_sec=request.greenExtensionSec,
+            coordination_offset_sec=request.coordinationOffsetSec if request.coordinationOffsetSec is not None else 35.0,
             demand_multiplier=request.demandMultiplier,
             random_seed=request.randomSeed
         )
@@ -81,3 +84,22 @@ def compare_run_kpis(run_id: str):
         "intervention": record["intervention"],
         "deltas": record["deltas"]
     }
+
+
+@router.post("/runs/{run_id}/propose-advisory")
+def propose_advisory(run_id: str, request: ProposeAdvisoryRequest = ProposeAdvisoryRequest()):
+    """
+    Transforms a positive simulation run into a formal AdvisoryRecommendation.
+    Advisory requires human authorization outside the platform and produces audit logs.
+    """
+    try:
+        advisory = service.propose_advisory_from_run(
+            run_id=run_id,
+            reviewer=request.reviewer,
+            notes=request.notes or ""
+        )
+        return advisory
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Scenario run '{run_id}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to propose advisory: {str(e)}")
