@@ -1,6 +1,13 @@
 export type SourceMode = 'LIVE' | 'REPLAY' | 'SIMULATION' | 'PREDICTED' | 'STALE' | 'INVALID';
 
+export type MunicipalRole =
+  | 'Municipal Analyst'
+  | 'Traffic Systems Engineer'
+  | 'Energy Grid Manager'
+  | 'Executive Auditor';
+
 export type QualityStatus = 'VALID' | 'STALE' | 'DEGRADED' | 'INVALID';
+
 
 export interface EntityCurrentState {
   entityId: string;

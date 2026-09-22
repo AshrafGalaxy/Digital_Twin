@@ -12,7 +12,7 @@ import {
   User,
   FileText
 } from 'lucide-react';
-import { SourceMode } from '../types/twin';
+import { SourceMode, MunicipalRole } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 
 export type TabId =
@@ -32,6 +32,8 @@ interface HeaderProps {
   activeTab: TabId;
   onSelectTab: (tab: TabId) => void;
   activeAdvisoriesCount?: number;
+  userRole?: MunicipalRole;
+  onRoleChange?: (role: MunicipalRole) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,7 +42,9 @@ export const Header: React.FC<HeaderProps> = ({
   lastUpdated,
   activeTab,
   onSelectTab,
-  activeAdvisoriesCount
+  activeAdvisoriesCount,
+  userRole = 'Municipal Analyst',
+  onRoleChange
 }) => {
   const navTabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'operations', label: 'Operations', icon: <Map size={14} /> },
@@ -78,11 +82,40 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{wsConnected ? 'Stream Active' : 'Connecting...'}</span>
           </div>
 
-          {/* User Role Indicator (UI_UX_SPEC §6.1) */}
-          <div className="status-pill" title="Current session authorization role">
-            <User size={12} color="var(--text-muted)" />
-            <span className="text-muted">Role:</span>
-            <span style={{ fontWeight: 600 }}>Municipal Analyst</span>
+          {/* Interactive Municipal Role Selector (UI_UX_SPEC §6.1) */}
+          <div className="status-pill role-selector-pill" title="Active authorization role (click to switch)">
+            <span
+              className="role-badge-dot"
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                flexShrink: 0,
+                backgroundColor:
+                  userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
+                  userRole === 'Energy Grid Manager' ? '#10B981' :
+                  userRole === 'Executive Auditor' ? '#A371F7' : '#2F81F7',
+                boxShadow: `0 0 6px ${
+                  userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
+                  userRole === 'Energy Grid Manager' ? '#10B981' :
+                  userRole === 'Executive Auditor' ? '#A371F7' : '#2F81F7'
+                }`
+              }}
+            />
+            <User size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            <span className="text-muted" style={{ fontSize: '11px' }}>Role:</span>
+            <select
+              id="municipal-role-select"
+              aria-label="Active Municipal User Role"
+              className="role-select"
+              value={userRole}
+              onChange={(e) => onRoleChange?.(e.target.value as MunicipalRole)}
+            >
+              <option value="Municipal Analyst">Municipal Analyst</option>
+              <option value="Traffic Systems Engineer">Traffic Systems Engineer</option>
+              <option value="Energy Grid Manager">Energy Grid Manager</option>
+              <option value="Executive Auditor">Executive Auditor</option>
+            </select>
           </div>
 
           {/* Source Mode Provenance Badge */}

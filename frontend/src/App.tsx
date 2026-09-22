@@ -19,8 +19,10 @@ import {
   IntersectionAsset,
   RoadSegmentAsset,
   SourceMode,
+  MunicipalRole,
   AdvisorySummary
 } from './types/twin';
+
 import {
   fetchStudyArea,
   fetchIntersections,
@@ -51,6 +53,26 @@ export const App: React.FC = () => {
   const [liveEnergyKw, setLiveEnergyKw] = useState<number>(4862.0);
   const [liveSensorsCount, setLiveSensorsCount] = useState<number>(10);
   const lastWsMessageRef = useRef<number>(Date.now());
+
+  // Municipal Authorization Role State with localStorage persistence
+  const [userRole, setUserRole] = useState<MunicipalRole>(() => {
+    const saved = localStorage.getItem('municipal_role');
+    if (
+      saved === 'Municipal Analyst' ||
+      saved === 'Traffic Systems Engineer' ||
+      saved === 'Energy Grid Manager' ||
+      saved === 'Executive Auditor'
+    ) {
+      return saved;
+    }
+    return 'Municipal Analyst';
+  });
+
+  const handleRoleChange = useCallback((newRole: MunicipalRole) => {
+    setUserRole(newRole);
+    localStorage.setItem('municipal_role', newRole);
+  }, []);
+
 
   // Enforce Dark Theme (Operations Console) exclusively
   useEffect(() => {
@@ -326,6 +348,8 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         activeAdvisoriesCount={advisorySummary?.totalActive || 0}
+        userRole={userRole}
+        onRoleChange={handleRoleChange}
       />
 
       <main id="main-content" tabIndex={-1} className="workspace" aria-label="Main Operational Workspace">
@@ -422,6 +446,7 @@ export const App: React.FC = () => {
               setActiveTab('operations');
             }}
             onNavigateToScenarios={() => setActiveTab('scenarios')}
+            userRole={userRole}
           />
         )}
 

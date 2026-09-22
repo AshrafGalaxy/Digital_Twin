@@ -21,11 +21,13 @@ import {
 interface RecommendationsViewProps {
   onNavigateToEntity?: (entityId: string) => void;
   onNavigateToScenarios?: () => void;
+  userRole?: string;
 }
 
 export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   onNavigateToEntity,
-  onNavigateToScenarios
+  onNavigateToScenarios,
+  userRole
 }) => {
   const [recommendations, setRecommendations] = useState<AdvisoryRecommendation[]>([]);
   const [summary, setSummary] = useState<AdvisorySummary | null>(null);
@@ -34,7 +36,16 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [evaluating, setEvaluating] = useState<boolean>(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
-  const [reviewerName, setReviewerName] = useState<string>('Municipal Traffic Cell Officer');
+  const [reviewerName, setReviewerName] = useState<string>(() => {
+    return userRole || localStorage.getItem('municipal_role') || 'Municipal Analyst';
+  });
+
+  useEffect(() => {
+    if (userRole) {
+      setReviewerName(userRole);
+    }
+  }, [userRole]);
+
   const [newStatus, setNewStatus] = useState<RecommendationStatus>('UNDER_REVIEW');
   const [reviewNotes, setReviewNotes] = useState<string>('');
   const [submittingReview, setSubmittingReview] = useState<boolean>(false);
