@@ -834,7 +834,7 @@ export const PilotEvaluationView: React.FC = () => {
           <div className="analytics-card">
             <div className="analytics-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Database size={18} color="#A78BFA" />
+                <Database size={18} color="var(--color-primary, #2F81F7)" />
                 <span className="card-title">Physical Corridor Assets</span>
               </div>
               <span className="text-muted" style={{ fontSize: '12px' }}>1.8 km Nagar Rd</span>

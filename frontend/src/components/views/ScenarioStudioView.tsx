@@ -523,14 +523,14 @@ export const ScenarioStudioView: React.FC = () => {
                   </button>
                 ) : (
                   <div style={{
-                    background: 'rgba(139, 92, 246, 0.08)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    background: 'rgba(47, 129, 247, 0.08)',
+                    border: '1px solid rgba(47, 129, 247, 0.3)',
                     borderRadius: 'var(--radius-md)',
                     padding: '16px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <ShieldAlert size={18} color="#A78BFA" />
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#C4B5FD' }}>
+                      <ShieldAlert size={18} color="#2F81F7" />
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#58A6FF' }}>
                         Propose Operational Intervention to Municipal Advisory Center
                       </span>
                     </div>

@@ -172,7 +172,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         <div className="metric-box">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="metric-box-label">Traffic ML Inference</span>
-            <Cpu size={16} color="#2DD4BF" />
+            <Cpu size={16} color="#F59E0B" />
           </div>
           <span className="metric-box-val" style={{ color: subsystems.mlTrafficModel ? '#10B981' : '#EF4444', fontSize: '20px' }}>
             {subsystems.mlTrafficModel ? 'Model Active' : 'Offline'}
@@ -186,7 +186,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         <div className="metric-box">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="metric-box-label">Energy ML Inference</span>
-            <Cpu size={16} color="#F59E0B" />
+            <Cpu size={16} color="#10B981" />
           </div>
           <span className="metric-box-val" style={{ color: subsystems.mlEnergyModel ? '#10B981' : '#EF4444', fontSize: '20px' }}>
             {subsystems.mlEnergyModel ? 'Model Active' : 'Offline'}
@@ -200,7 +200,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         <div className="metric-box">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="metric-box-label">SUMO Simulation Engine</span>
-            <Layers size={16} color="var(--color-primary, #2F81F7)" />
+            <Layers size={16} color="#00D2D3" />
           </div>
           <span className="metric-box-val" style={{ color: subsystems.simulationEngine ? '#10B981' : '#EF4444', fontSize: '20px' }}>
             {subsystems.simulationEngine ? 'Ready & Calibrated' : 'Offline'}
@@ -802,7 +802,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
             {/* Quarantined Records Table */}
             {(!quarantineData || quarantineData.records.length === 0) ? (
-              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-secondary, #8B949E)', background: 'rgba(22, 27, 34, 0.6)', borderRadius: '8px', border: '1px dashed #30363D' }}>
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-secondary, #8B949E)', background: 'rgba(22, 27, 34, 0.6)', borderRadius: '8px', border: '1px solid #30363D' }}>
                 <FileCheck size={32} color="#10B981" style={{ margin: '0 auto 8px' }} />
                 <div style={{ fontWeight: 600, fontSize: '14px', color: '#10B981' }}>Quarantine Queue is Clean</div>
                 <div style={{ fontSize: '12px', marginTop: '4px' }}>All incoming telemetry events have satisfied NGSI-LD canonical schema and physical boundary checks.</div>
