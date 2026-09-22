@@ -37,7 +37,53 @@ import {
 } from './services/api';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabId>('operations');
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const rawHash = window.location.hash.replace('#', '');
+    const validTabs: TabId[] = [
+      'landing',
+      'operations',
+      'traffic',
+      'energy',
+      'environment',
+      'scenarios',
+      'recommendations',
+      'evaluation',
+      'health'
+    ];
+    if (validTabs.includes(rawHash as TabId)) {
+      return rawHash as TabId;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('tab') || params.get('view');
+    if (viewParam === 'landing') return 'landing';
+    return 'operations';
+  });
+
+  // Keep URL hash synchronized with activeTab
+  useEffect(() => {
+    if (window.location.hash.replace('#', '') !== activeTab) {
+      window.location.hash = activeTab;
+    }
+    const handleHashChange = () => {
+      const newHash = window.location.hash.replace('#', '');
+      const validTabs: TabId[] = [
+        'landing',
+        'operations',
+        'traffic',
+        'energy',
+        'environment',
+        'scenarios',
+        'recommendations',
+        'evaluation',
+        'health'
+      ];
+      if (validTabs.includes(newHash as TabId)) {
+        setActiveTab(newHash as TabId);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeTab]);
   const [studyAreaGeoJson, setStudyAreaGeoJson] = useState<any>(null);
   const [roadSegments, setRoadSegments] = useState<RoadSegmentAsset[]>([]);
   const [intersections, setIntersections] = useState<IntersectionAsset[]>([]);
