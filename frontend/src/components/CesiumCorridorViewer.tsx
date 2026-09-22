@@ -432,9 +432,112 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         });
       }
     });
+
+    // E. Pune Metro Aqua Line Elevated Viaduct & Support Piers (Nagar Road Median)
+    const METRO_VIADUCT_POINTS = [
+      [73.91161, 18.55866],
+      [73.91253, 18.55896],
+      [73.91364, 18.55938],
+      [73.91490, 18.55982],
+      [73.91619, 18.56027],
+      [73.91771, 18.56078],
+      [73.91825, 18.56089], // Viman Nagar Chowk
+      [73.91950, 18.56122], // Near Phoenix Marketcity
+      [73.92116, 18.56168],
+      [73.92300, 18.56205],
+      [73.92500, 18.56240],
+      [73.92790, 18.56283], // Somnath Nagar Chowk
+      [73.93090, 18.56308],
+      [73.93220, 18.56322]
+    ];
+
+    const viaductPositions = METRO_VIADUCT_POINTS.map(p =>
+      Cesium.Cartesian3.fromDegrees(p[0], p[1], 9.5)
+    );
+
+    // Elevated concrete box girder
+    viewer.entities.add({
+      name: 'Pune Metro Aqua Line Viaduct',
+      polyline: {
+        positions: viaductPositions,
+        width: 8.5,
+        material: Cesium.Color.fromCssColorString('#94A3B8').withAlpha(0.95),
+        clampToGround: false
+      }
+    });
+
+    // Concrete support columns (piers) along central median
+    METRO_VIADUCT_POINTS.forEach((pt, idx) => {
+      viewer.entities.add({
+        name: `Metro Pier P-${idx + 1}`,
+        position: Cesium.Cartesian3.fromDegrees(pt[0], pt[1], 4.75),
+        cylinder: {
+          length: 9.5,
+          topRadius: 0.85,
+          bottomRadius: 0.85,
+          material: Cesium.Color.fromCssColorString('#64748B'),
+          outline: false
+        }
+      });
+    });
+
+    // Elevated Viman Nagar Metro Station platform canopy
+    viewer.entities.add({
+      name: 'Pune Metro • Viman Nagar Station',
+      position: Cesium.Cartesian3.fromDegrees(73.91950, 18.56122, 11.5),
+      box: {
+        dimensions: new Cesium.Cartesian3(55.0, 11.0, 4.5),
+        material: Cesium.Color.fromCssColorString('#0284C7').withAlpha(0.85),
+        outline: true,
+        outlineColor: Cesium.Color.WHITE.withAlpha(0.8)
+      },
+      label: {
+        text: '🚇 Viman Nagar Metro Station',
+        font: "600 12px 'General Sans', -apple-system, sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(0, -22),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
+
+    // F. Chowk Pedestrian Zebra Crossings & Signal Gantries in 3D
+    const CHOWK_LOCATIONS = [
+      { id: 'VN-01', name: 'Viman Nagar Chowk', lng: 73.91825, lat: 18.56090 },
+      { id: 'SN-01', name: 'Somnath Nagar Chowk', lng: 73.92790, lat: 18.56283 }
+    ];
+
+    CHOWK_LOCATIONS.forEach(chowk => {
+      // 3D Traffic Signal Mast & Gantry
+      viewer.entities.add({
+        name: `${chowk.name} Signal Gantry`,
+        position: Cesium.Cartesian3.fromDegrees(chowk.lng, chowk.lat, 3.0),
+        cylinder: {
+          length: 6.0,
+          topRadius: 0.2,
+          bottomRadius: 0.25,
+          material: Cesium.Color.fromCssColorString('#334155'),
+          outline: false
+        }
+      });
+
+      // Signal Head Housing with Active Green/Red Emissive Indicator
+      viewer.entities.add({
+        name: `${chowk.name} Signal Head`,
+        position: Cesium.Cartesian3.fromDegrees(chowk.lng, chowk.lat, 6.2),
+        box: {
+          dimensions: new Cesium.Cartesian3(1.2, 0.6, 0.6),
+          material: Cesium.Color.fromCssColorString('#10B981').withAlpha(0.95), // Active green phase
+          outline: true,
+          outlineColor: Cesium.Color.WHITE
+        }
+      });
+    });
   }, [corridorGeoJson, currentTheme]);
 
-  // 4. Dynamic Live Vehicle Simulation Stream
+  // 4. Dynamic Live Vehicle Simulation Stream (Multi-Lane Kinematics & True Heading)
   useEffect(() => {
     const dataSource = vehiclesCollectionRef.current;
     if (!dataSource || roadSegments.length === 0) return;
@@ -459,7 +562,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         vehicleColor = Cesium.Color.fromCssColorString('#F59E0B'); // Dense (Amber)
       }
 
-      // Distribute 2-5 vehicles per segment along coordinates
+      // Distribute 2-5 vehicles per segment across multi-lane carriageway
       const vehicleCount = Math.max(2, Math.min(5, Math.round(flow / 400)));
       for (let i = 0; i < vehicleCount; i++) {
         const t = (i + 0.5) / vehicleCount;
@@ -467,17 +570,39 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         const p1 = coords[index];
         const p2 = coords[index + 1];
 
-        // Linear interpolation
+        // Linear interpolation along road centerline
         const subT = (t * (coords.length - 1)) - index;
-        const lng = p1[0] + (p2[0] - p1[0]) * subT;
-        const lat = p1[1] + (p2[1] - p1[1]) * subT;
+        const baseLng = p1[0] + (p2[0] - p1[0]) * subT;
+        const baseLat = p1[1] + (p2[1] - p1[1]) * subT;
 
-        // Heading angle in radians
+        // Tangent vector along travel direction
         const dx = p2[0] - p1[0];
         const dy = p2[1] - p1[1];
-        const heading = Math.atan2(dy, dx);
+        const segLen = Math.hypot(dx, dy) || 1e-6;
+        const tx = dx / segLen;
+        const ty = dy / segLen;
 
-        const position = Cesium.Cartesian3.fromDegrees(lng, lat, 1.8);
+        // Perpendicular normal vector pointing right of travel direction
+        const nx = ty;
+        const ny = -tx;
+
+        // True Heading in Cesium (measured clockwise from North)
+        const heading = Math.atan2(dx, dy);
+
+        // Multi-lane lateral distribution (Lane 0: -3.2m Curbside, Lane 1: 0m Through, Lane 2: +3.2m Median)
+        const laneIndex = i % 3;
+        const laneOffsetMeters = (laneIndex - 1) * 3.2;
+
+        // Scale meters to degrees at 18.56° latitude (1 deg lat ≈ 111139m, 1 deg lng ≈ 105360m)
+        const lng = baseLng + (nx * laneOffsetMeters) / 105360.0;
+        const lat = baseLat + (ny * laneOffsetMeters) / 111139.0;
+
+        const isBusOrVan = laneIndex === 0 && (i % 2 === 0);
+        const dimensions = isBusOrVan
+          ? new Cesium.Cartesian3(6.5, 2.3, 2.6) // Transit Bus / Mini-Van
+          : new Cesium.Cartesian3(4.2, 1.85, 1.45); // Sedan / Compact Car
+
+        const position = Cesium.Cartesian3.fromDegrees(lng, lat, 1.2);
         const orientation = Cesium.Transforms.headingPitchRollQuaternion(
           position,
           new Cesium.HeadingPitchRoll(heading, 0, 0)
@@ -485,14 +610,14 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
         dataSource.entities.add({
           id: `veh-${segment.id}-${i}`,
-          name: `Vehicle ${segment.direction} #${i + 1}`,
+          name: `Vehicle ${segment.direction} [Lane ${laneIndex}] #${i + 1}`,
           position: position,
           orientation: orientation,
           box: {
-            dimensions: new Cesium.Cartesian3(4.2, 1.9, 1.5), // Length, Width, Height
-            material: vehicleColor,
+            dimensions: dimensions,
+            material: isBusOrVan ? Cesium.Color.fromCssColorString('#38BDF8') : vehicleColor,
             outline: true,
-            outlineColor: Cesium.Color.WHITE.withAlpha(0.6)
+            outlineColor: Cesium.Color.WHITE.withAlpha(0.7)
           }
         });
       }

@@ -21,7 +21,7 @@ interface MapOperationsViewProps {
   onSelectCompareEntity?: (entity: RoadSegmentAsset | null) => void;
 }
 
-// Stopline geometry for signalized intersection approaches (Surveyed Ground Truth)
+// Stopline geometry for signalized intersection approaches (Surveyed Ground Truth, Indian LHD)
 const STOPLINES_GEOJSON = {
   type: 'FeatureCollection' as const,
   features: [
@@ -32,8 +32,8 @@ const STOPLINES_GEOJSON = {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.91814, 18.56088],
-          [73.91816, 18.56102]
+          [73.91814, 18.56070],
+          [73.91816, 18.56084]
         ]
       }
     },
@@ -44,8 +44,8 @@ const STOPLINES_GEOJSON = {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.91834, 18.56078],
-          [73.91836, 18.56092]
+          [73.91834, 18.56096],
+          [73.91836, 18.56110]
         ]
       }
     },
@@ -56,8 +56,8 @@ const STOPLINES_GEOJSON = {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.91820, 18.56080],
-          [73.91830, 18.56080]
+          [73.91818, 18.56068],
+          [73.91828, 18.56068]
         ]
       }
     },
@@ -68,8 +68,8 @@ const STOPLINES_GEOJSON = {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.92778, 18.56282],
-          [73.92782, 18.56298]
+          [73.92776, 18.56260],
+          [73.92780, 18.56274]
         ]
       }
     },
@@ -80,8 +80,8 @@ const STOPLINES_GEOJSON = {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [73.92798, 18.56268],
-          [73.92802, 18.56282]
+          [73.92800, 18.56286],
+          [73.92804, 18.56300]
         ]
       }
     },
@@ -501,7 +501,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           data: segmentsGeoJson as any
         });
 
-        // Layer 1: Dark asphalt roadway base (foundation)
+        // Layer 1: Dark asphalt roadway base (Calibrated to 10.5m physical scale, zero median bleed)
         currentMap.addLayer({
           id: 'road-segments-asphalt',
           type: 'line',
@@ -514,10 +514,10 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             'line-color': '#161B22',
             'line-width': [
               'interpolate', ['linear'], ['zoom'],
-              12, 6,
-              14, 11,
-              16, 17,
-              18, 24
+              12, 3.5,
+              14, 6.5,
+              16, 10.5,
+              18, 15.5
             ],
             'line-opacity': 0.95
           }
@@ -536,10 +536,10 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             'line-color': ['get', 'casingColor'],
             'line-width': [
               'interpolate', ['linear'], ['zoom'],
-              12, ['case', ['get', 'isSelected'], 9, ['get', 'isCompare'], 8, 0],
-              14, ['case', ['get', 'isSelected'], 15, ['get', 'isCompare'], 14, 0],
-              16, ['case', ['get', 'isSelected'], 22, ['get', 'isCompare'], 20, 0],
-              18, ['case', ['get', 'isSelected'], 30, ['get', 'isCompare'], 28, 0]
+              12, ['case', ['get', 'isSelected'], 5.5, ['get', 'isCompare'], 5.0, 0],
+              14, ['case', ['get', 'isSelected'], 9.5, ['get', 'isCompare'], 9.0, 0],
+              16, ['case', ['get', 'isSelected'], 14.5, ['get', 'isCompare'], 14.0, 0],
+              18, ['case', ['get', 'isSelected'], 20.0, ['get', 'isCompare'], 19.0, 0]
             ],
             'line-opacity': 0.95
           }
@@ -558,18 +558,18 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             'line-color': ['get', 'color'],
             'line-width': [
               'interpolate', ['linear'], ['zoom'],
-              12, 3.5,
-              14, 7,
-              16, 11,
-              18, 16
+              12, 2.5,
+              14, 4.8,
+              16, 8.0,
+              18, 12.0
             ],
             'line-opacity': 1.0
           }
         });
 
-        // Layer 4: Subtle dashed inner lane dividers
+        // Layer 4A: Left Dashed Lane Divider (Separating Lane 0 Curbside from Lane 1 Through)
         currentMap.addLayer({
-          id: 'road-segments-divider',
+          id: 'road-segments-divider-left',
           type: 'line',
           source: 'road-segments',
           layout: {
@@ -577,33 +577,69 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             'line-join': 'round'
           },
           paint: {
-            'line-color': 'rgba(255, 255, 255, 0.4)',
+            'line-color': 'rgba(255, 255, 255, 0.45)',
             'line-width': [
               'interpolate', ['linear'], ['zoom'],
-              12, 0.8,
-              14, 1.2,
-              16, 1.8,
-              18, 2.4
+              12, 0.5,
+              14, 0.8,
+              16, 1.2,
+              18, 1.6
+            ],
+            'line-offset': [
+              'interpolate', ['linear'], ['zoom'],
+              12, -0.8,
+              14, -1.5,
+              16, -2.4,
+              18, -3.6
             ],
             'line-dasharray': [4, 4]
           }
         });
 
-        // Layer 5: Directional chevron flow indicators along traffic direction
+        // Layer 4B: Right Dashed Lane Divider (Separating Lane 1 Through from Lane 2 Median)
+        currentMap.addLayer({
+          id: 'road-segments-divider-right',
+          type: 'line',
+          source: 'road-segments',
+          layout: {
+            'line-cap': 'butt',
+            'line-join': 'round'
+          },
+          paint: {
+            'line-color': 'rgba(255, 255, 255, 0.45)',
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 0.5,
+              14, 0.8,
+              16, 1.2,
+              18, 1.6
+            ],
+            'line-offset': [
+              'interpolate', ['linear'], ['zoom'],
+              12, 0.8,
+              14, 1.5,
+              16, 2.4,
+              18, 3.6
+            ],
+            'line-dasharray': [4, 4]
+          }
+        });
+
+        // Layer 5: Directional chevron flow indicators centered cleanly within the through-lane
         currentMap.addLayer({
           id: 'road-segments-flow-arrows',
           type: 'symbol',
           source: 'road-segments',
           layout: {
             'symbol-placement': 'line',
-            'symbol-spacing': 90,
+            'symbol-spacing': 110,
             'icon-image': 'flow-arrow',
             'icon-size': [
               'interpolate', ['linear'], ['zoom'],
-              12, 0.4,
-              14, 0.6,
-              16, 0.8,
-              18, 1.0
+              12, 0.35,
+              14, 0.5,
+              16, 0.7,
+              18, 0.85
             ],
             'icon-rotation-alignment': 'map',
             'icon-keep-upright': false,
