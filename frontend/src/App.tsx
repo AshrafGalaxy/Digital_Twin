@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { Header, TabId } from './components/Header';
+import { Header, TabId, ROLE_ALLOWED_TABS } from './components/Header';
+import { RoleAuthModal } from './components/RoleAuthModal';
 import { MapOperationsView } from './components/MapOperationsView';
 import { CorridorMetricsCard } from './components/CorridorMetricsCard';
 import { EntityDetailDrawer } from './components/EntityDetailDrawer';
@@ -67,10 +68,19 @@ export const App: React.FC = () => {
     }
     return 'Municipal Analyst';
   });
+  const [isRoleAuthOpen, setIsRoleAuthOpen] = useState<boolean>(false);
 
   const handleRoleChange = useCallback((newRole: MunicipalRole) => {
     setUserRole(newRole);
     localStorage.setItem('municipal_role', newRole);
+    // If current tab is not authorized under the newly selected role, transition to the role's primary workspace
+    const allowedTabs = ROLE_ALLOWED_TABS[newRole] || ROLE_ALLOWED_TABS['Municipal Analyst'];
+    setActiveTab((prevTab) => {
+      if (!allowedTabs.includes(prevTab)) {
+        return allowedTabs[0];
+      }
+      return prevTab;
+    });
   }, []);
 
 
@@ -349,7 +359,7 @@ export const App: React.FC = () => {
         onSelectTab={setActiveTab}
         activeAdvisoriesCount={advisorySummary?.totalActive || 0}
         userRole={userRole}
-        onRoleChange={handleRoleChange}
+        onOpenAuthModal={() => setIsRoleAuthOpen(true)}
       />
 
       <main id="main-content" tabIndex={-1} className="workspace" aria-label="Main Operational Workspace">
@@ -487,6 +497,14 @@ export const App: React.FC = () => {
             setIsAdvisoryCenterOpen(false);
             setActiveTab('scenarios');
           }}
+        />
+
+        {/* Municipal Role Authentication Gateway */}
+        <RoleAuthModal
+          isOpen={isRoleAuthOpen}
+          currentRole={userRole}
+          onClose={() => setIsRoleAuthOpen(false)}
+          onAuthenticate={handleRoleChange}
         />
       </main>
     </div>

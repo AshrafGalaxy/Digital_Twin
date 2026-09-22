@@ -25,6 +25,22 @@ export type TabId =
   | 'evaluation'
   | 'health';
 
+export const ROLE_ALLOWED_TABS: Record<MunicipalRole, TabId[]> = {
+  'Traffic Systems Engineer': ['operations', 'traffic', 'scenarios', 'recommendations'],
+  'Energy Grid Manager': ['operations', 'energy', 'environment', 'recommendations'],
+  'Executive Auditor': ['recommendations', 'evaluation', 'health'],
+  'Municipal Analyst': [
+    'operations',
+    'traffic',
+    'energy',
+    'environment',
+    'scenarios',
+    'recommendations',
+    'evaluation',
+    'health'
+  ]
+};
+
 interface HeaderProps {
   wsConnected: boolean;
   currentMode: SourceMode;
@@ -33,7 +49,7 @@ interface HeaderProps {
   onSelectTab: (tab: TabId) => void;
   activeAdvisoriesCount?: number;
   userRole?: MunicipalRole;
-  onRoleChange?: (role: MunicipalRole) => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
   activeAdvisoriesCount,
   userRole = 'Municipal Analyst',
-  onRoleChange
+  onOpenAuthModal
 }) => {
   const navTabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'operations', label: 'Operations', icon: <Map size={14} /> },
@@ -62,9 +78,13 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'health', label: 'System & Data Health', icon: <Server size={14} /> }
   ];
 
+  // Filter tabs dynamically based on authenticated municipal role
+  const allowed = ROLE_ALLOWED_TABS[userRole] || ROLE_ALLOWED_TABS['Municipal Analyst'];
+  const visibleTabs = navTabs.filter((tab) => allowed.includes(tab.id));
+
   return (
     <header className="app-header">
-      {/* Top Strip: Brand + Global Telemetry / Governance Badges + Theme Switcher (UI_UX_SPEC §6.1) */}
+      {/* Top Strip: Brand + Global Telemetry / Governance Badges */}
       <div className="header-top-row">
         <div className="brand-section">
           <Activity size={20} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' }} />
@@ -82,8 +102,20 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{wsConnected ? 'Stream Active' : 'Connecting...'}</span>
           </div>
 
-          {/* Interactive Municipal Role Selector (UI_UX_SPEC §6.1) */}
-          <div className="status-pill role-selector-pill" title="Active authorization role (click to switch)">
+          {/* Interactive Municipal Role Selector & Auth Gateway Trigger */}
+          <div
+            className="status-pill role-selector-pill"
+            title="Active authorization persona — click to open Authentication Gateway"
+            onClick={onOpenAuthModal}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpenAuthModal?.();
+              }
+            }}
+          >
             <span
               className="role-badge-dot"
               style={{
@@ -94,28 +126,31 @@ export const Header: React.FC<HeaderProps> = ({
                 backgroundColor:
                   userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
                   userRole === 'Energy Grid Manager' ? '#10B981' :
-                  userRole === 'Executive Auditor' ? '#A371F7' : '#2F81F7',
+                  userRole === 'Executive Auditor' ? '#38BDF8' : '#2F81F7',
                 boxShadow: `0 0 6px ${
                   userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
                   userRole === 'Energy Grid Manager' ? '#10B981' :
-                  userRole === 'Executive Auditor' ? '#A371F7' : '#2F81F7'
+                  userRole === 'Executive Auditor' ? '#38BDF8' : '#2F81F7'
                 }`
               }}
             />
             <User size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
             <span className="text-muted" style={{ fontSize: '11px' }}>Role:</span>
-            <select
-              id="municipal-role-select"
-              aria-label="Active Municipal User Role"
-              className="role-select"
-              value={userRole}
-              onChange={(e) => onRoleChange?.(e.target.value as MunicipalRole)}
+            <span style={{ fontWeight: 600, fontSize: '11.5px', color: '#F0F6FC' }}>{userRole}</span>
+            <span
+              style={{
+                fontSize: '10px',
+                color: 'var(--color-primary, #2F81F7)',
+                background: 'rgba(47, 129, 247, 0.15)',
+                border: '1px solid rgba(47, 129, 247, 0.3)',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                marginLeft: '4px',
+                fontWeight: 600
+              }}
             >
-              <option value="Municipal Analyst">Municipal Analyst</option>
-              <option value="Traffic Systems Engineer">Traffic Systems Engineer</option>
-              <option value="Energy Grid Manager">Energy Grid Manager</option>
-              <option value="Executive Auditor">Executive Auditor</option>
-            </select>
+              Auth / Switch
+            </span>
           </div>
 
           {/* Source Mode Provenance Badge */}
@@ -140,9 +175,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Primary Navigation Bar: Standard Views */}
+      {/* Primary Navigation Bar: Standard Views filtered by Role */}
       <nav className="header-nav-tabs" aria-label="Primary Platform Views">
-        {navTabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             className={`nav-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
