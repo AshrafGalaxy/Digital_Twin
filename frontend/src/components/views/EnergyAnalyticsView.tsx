@@ -78,7 +78,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
       <div className="quick-metrics-row-four">
         <div className="metric-box">
           <span className="metric-box-label">Current Active Demand</span>
-          <span className="metric-box-val" style={{ color: currentKw > 5800 ? '#EF4444' : currentKw > 4800 ? '#F59E0B' : '#10B981' }}>
+          <span className="metric-box-val font-mono" style={{ color: currentKw > 5800 ? '#F85149' : currentKw > 4800 ? '#D29922' : '#3FB950' }}>
             {currentKw.toFixed(0)} <small>kW</small>
           </span>
           <span className="metric-box-sub">
@@ -88,7 +88,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
 
         <div className="metric-box">
           <span className="metric-box-label">Contract Headroom</span>
-          <span className="metric-box-val" style={{ color: headroomKw < 1000 ? '#EF4444' : '#10B981' }}>
+          <span className="metric-box-val font-mono" style={{ color: headroomKw < 1000 ? '#F85149' : '#3FB950' }}>
             {headroomKw.toFixed(0)} <small>kW</small>
           </span>
           <span className="metric-box-sub">
@@ -98,7 +98,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
 
         <div className="metric-box">
           <span className="metric-box-label">Hourly Carbon Footprint</span>
-          <span className="metric-box-val" style={{ color: '#0F4C5C' }}>
+          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
             {(currentCarbonHourlyKg / 1000).toFixed(2)} <small>t CO₂e/h</small>
           </span>
           <span className="metric-box-sub">
@@ -108,7 +108,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
 
         <div className="metric-box">
           <span className="metric-box-label">Substation Feeder</span>
-          <span className="metric-box-val" style={{ fontSize: '18px', color: '#1E293B' }}>
+          <span className="metric-box-val font-mono" style={{ fontSize: '18px', color: '#F0F6FC' }}>
             22kV Viman Nagar
           </span>
           <span className="metric-box-sub">
@@ -149,7 +149,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
         <div className="analytics-card">
           <div className="analytics-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={18} color="#0F4C5C" />
+              <Clock size={18} color="var(--color-primary, #2F81F7)" />
               <span className="card-title">Diurnal Load Profiles & Threshold Rules</span>
             </div>
             <span className="text-muted" style={{ fontSize: '12px' }}>Standard Retail-Commercial Archetype</span>
@@ -165,7 +165,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
                 Minimal ventilation, essential refrigeration, server rooms, and perimeter emergency security lighting.
               </p>
               <div className="progress-bar-bg">
-                <div className="progress-bar-fill" style={{ width: '16%', backgroundColor: '#10B981' }} />
+                <div className="progress-bar-fill" style={{ width: '16%', backgroundColor: '#3FB950' }} />
               </div>
             </div>
 
@@ -178,7 +178,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
                 Central HVAC chillers, escalators, retail tenant display lighting, and food court commercial kitchens.
               </p>
               <div className="progress-bar-bg">
-                <div className="progress-bar-fill" style={{ width: '62%', backgroundColor: '#0F4C5C' }} />
+                <div className="progress-bar-fill" style={{ width: '62%', backgroundColor: '#2F81F7' }} />
               </div>
             </div>
 
@@ -191,12 +191,12 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
                 Full cinema complexes, peak footfall cooling loads, atrium illumination, and intensive kitchen utility usage.
               </p>
               <div className="progress-bar-bg">
-                <div className="progress-bar-fill" style={{ width: '87%', backgroundColor: '#F59E0B' }} />
+                <div className="progress-bar-fill" style={{ width: '87%', backgroundColor: '#D29922' }} />
               </div>
             </div>
           </div>
 
-          <h4 style={{ fontSize: '13px', fontWeight: 600, marginTop: '20px', marginBottom: '10px', color: '#1E293B' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 600, marginTop: '20px', marginBottom: '10px', color: 'var(--color-text, #F0F6FC)' }}>
             Peak Demand Governance Thresholds
           </h4>
           <table className="analytics-table">
@@ -211,20 +211,20 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({ source
             <tbody>
               <tr>
                 <td>Normal Buffer</td>
-                <td className="mono-cell">&lt; 4,800 kW</td>
-                <td><span className="status-pill status-active">Optimal</span></td>
+                <td className="mono-cell font-mono">&lt; 4,800 kW</td>
+                <td><span className="status-pill status-active" style={{ color: '#3FB950', borderColor: 'rgba(63, 185, 80, 0.3)' }}>Optimal</span></td>
                 <td>Standard grid supply; no intervention recommended</td>
               </tr>
               <tr>
                 <td>Elevated Peak</td>
-                <td className="mono-cell">4,800 – 5,800 kW</td>
-                <td><span className="status-pill status-review">Warning</span></td>
+                <td className="mono-cell font-mono">4,800 – 5,800 kW</td>
+                <td><span className="status-pill status-review" style={{ color: '#D29922', borderColor: 'rgba(210, 153, 34, 0.3)' }}>Warning</span></td>
                 <td>Advisory recommendation: Pre-cool zones, stagger chiller cycles</td>
               </tr>
               <tr>
                 <td>Contract Risk</td>
-                <td className="mono-cell">&gt; 5,800 kW</td>
-                <td><span className="status-pill status-dismissed" style={{ color: '#EF4444' }}>Critical</span></td>
+                <td className="mono-cell font-mono">&gt; 5,800 kW</td>
+                <td><span className="status-pill status-dismissed" style={{ color: '#F85149', borderColor: 'rgba(248, 81, 73, 0.3)' }}>Critical</span></td>
                 <td>Advisory recommendation: Dispatch on-site DG / solar BESS peak shaving</td>
               </tr>
             </tbody>
