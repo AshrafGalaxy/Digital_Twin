@@ -118,7 +118,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
         {/* Ambient Temperature */}
         <div className="metric-box">
           <span className="metric-box-label">Ambient Temperature</span>
-          <span className="metric-box-val" style={{ color: '#0F4C5C' }}>
+          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
             {temperatureC.toFixed(1)} <small>°C</small>
           </span>
           <span className="metric-box-sub">
@@ -129,7 +129,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
         {/* Relative Humidity */}
         <div className="metric-box">
           <span className="metric-box-label">Relative Humidity</span>
-          <span className="metric-box-val" style={{ color: '#0F4C5C' }}>
+          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
             {humidityPct} <small>%</small>
           </span>
           <span className="metric-box-sub">
@@ -140,7 +140,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
         {/* Wind Speed & Direction */}
         <div className="metric-box">
           <span className="metric-box-label">Corridor Wind Speed & Flow</span>
-          <span className="metric-box-val" style={{ color: '#0F4C5C' }}>
+          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
             {windSpeedKmh} <small>km/h</small>
           </span>
           <span className="metric-box-sub">
@@ -155,7 +155,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
         <div className="analytics-card">
           <div className="analytics-card-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Wind size={18} color="#0F4C5C" />
+              <Wind size={18} color="var(--color-primary, #2F81F7)" />
               <span className="card-title">Particulate & Gaseous Concentrations</span>
             </div>
             <span className="provenance-badge badge-simulation">OBSERVED / REPLAY</span>
@@ -214,7 +214,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
             </div>
           </div>
 
-          <h4 style={{ fontSize: '13px', fontWeight: 600, marginTop: '20px', marginBottom: '10px', color: '#1E293B' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 600, marginTop: '20px', marginBottom: '10px', color: 'var(--color-text, #F0F6FC)' }}>
             National Ambient Air Quality Index (NAAQS) Standards
           </h4>
           <table className="analytics-table">
@@ -266,12 +266,12 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
           </div>
 
           {/* Anomaly Evaluation Verdict */}
-          <div className="verdict-banner" style={{ background: '#F0FDF4', borderColor: '#BBF7D0' }}>
+          <div className="verdict-banner" style={{ background: 'rgba(22, 27, 34, 0.95)', border: '1px solid rgba(63, 185, 80, 0.35)' }}>
             <div>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
                 SURGE STATUS
               </div>
-              <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold', color: '#15803D' }}>
+              <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold', color: '#3FB950' }}>
                 NORMAL AMBIENT BASELINE
               </div>
             </div>
@@ -279,7 +279,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({ 
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
                 STATISTICAL Z-SCORE
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#F0F6FC' }}>
                 Z = {zScore} (Norm: ±2.0)
               </div>
             </div>
