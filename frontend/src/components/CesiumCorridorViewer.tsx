@@ -175,29 +175,40 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
       // Floating Holographic Diorama: Physical Globe Clipping strictly to the active corridor box
       const corridorCenter = Cesium.Cartesian3.fromDegrees(73.9215, 18.56125, 0.0);
-      const halfWidthM = 1317.0; // East-West half distance in meters (~2.63 km wide)
-      const halfHeightM = 695.0; // North-South half distance in meters (~1.39 km tall)
+      const halfWidthM = 1319.1; // East-West half distance in meters (~2.638 km wide)
+      const halfHeightM = 691.8; // North-South half distance in meters (~1.384 km tall)
 
       scene.globe.clippingPlanes = new Cesium.ClippingPlaneCollection({
         modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(corridorCenter),
         planes: [
-          new Cesium.ClippingPlane(new Cesium.Cartesian3( 1.0,  0.0, 0.0), halfWidthM),
           new Cesium.ClippingPlane(new Cesium.Cartesian3(-1.0,  0.0, 0.0), halfWidthM),
-          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0,  1.0, 0.0), halfHeightM),
-          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0, -1.0, 0.0), halfHeightM)
+          new Cesium.ClippingPlane(new Cesium.Cartesian3( 1.0,  0.0, 0.0), halfWidthM),
+          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0, -1.0, 0.0), halfHeightM),
+          new Cesium.ClippingPlane(new Cesium.Cartesian3( 0.0,  1.0, 0.0), halfHeightM)
         ],
         edgeColor: Cesium.Color.fromCssColorString('#06B6D4'),
         edgeWidth: 2.5,
-        unionClippingRegions: false,
+        unionClippingRegions: true,
         enabled: true
       });
-      scene.globe.backFaceCulling = false;
+      scene.globe.backFaceCulling = true;
+      scene.globe.baseColor = Cesium.Color.fromCssColorString('#050811');
 
-      // Disable planetary sky/ground atmosphere to emphasize precision floating diorama
+      // Disable planetary sky/ground atmosphere, celestial skybox stars & sun/moon billboard sprites
       if (scene.skyAtmosphere) {
         scene.skyAtmosphere.show = false;
       }
       scene.globe.showGroundAtmosphere = false;
+
+      if (scene.skyBox) {
+        scene.skyBox.show = false;
+      }
+      if (scene.sun) {
+        scene.sun.show = false;
+      }
+      if (scene.moon) {
+        scene.moon.show = false;
+      }
 
       if (scene.fog) {
         scene.fog.enabled = false;
@@ -355,42 +366,23 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     // Clear static entities (keep dynamic vehicles & signals in dataSources)
     viewer.entities.removeAll();
 
-    // 0. Holographic Diorama Cutout (100% pitch-dark void masking, spotlighting exclusively the 1.8km active twin corridor)
-    const outerDioramaRing = [
-      Cesium.Cartesian3.fromDegrees(-180.0, -90.0),
-      Cesium.Cartesian3.fromDegrees(180.0, -90.0),
-      Cesium.Cartesian3.fromDegrees(180.0, 90.0),
-      Cesium.Cartesian3.fromDegrees(-180.0, 90.0)
-    ];
-    const innerCorridorHole = [
-      Cesium.Cartesian3.fromDegrees(73.909, 18.555),
-      Cesium.Cartesian3.fromDegrees(73.934, 18.555),
-      Cesium.Cartesian3.fromDegrees(73.934, 18.5675),
-      Cesium.Cartesian3.fromDegrees(73.909, 18.5675)
-    ];
+    // 0. Architectural Diorama Foundation & Tabletop Base Setup
+    const sw = [73.909, 18.555];
+    const se = [73.934, 18.555];
+    const ne = [73.934, 18.5675];
+    const nw = [73.909, 18.5675];
+    const plinthDepth = -36.0; // Foundation slab drops 36m below ground level
 
+    // 0.1 Top Neon Laser Rim (Ground Surface Chamfer)
     viewer.entities.add({
-      name: 'Corridor Holographic Diorama Mask',
-      polygon: {
-        hierarchy: new Cesium.PolygonHierarchy(outerDioramaRing, [
-          new Cesium.PolygonHierarchy(innerCorridorHole)
-        ]),
-        material: Cesium.Color.fromCssColorString('#050811').withAlpha(1.0),
-        height: 0,
-        classificationType: Cesium.ClassificationType.BOTH
-      }
-    });
-
-    // Glowing Neon Cyan Perimeter Ribbon Framing the Active Twin Corridor
-    viewer.entities.add({
-      name: 'Corridor Holographic Perimeter',
+      name: 'Corridor Top Laser Edge',
       polyline: {
         positions: Cesium.Cartesian3.fromDegreesArray([
-          73.909, 18.555,
-          73.934, 18.555,
-          73.934, 18.5675,
-          73.909, 18.5675,
-          73.909, 18.555
+          sw[0], sw[1],
+          se[0], se[1],
+          ne[0], ne[1],
+          nw[0], nw[1],
+          sw[0], sw[1]
         ]),
         width: 3.5,
         material: new Cesium.PolylineGlowMaterialProperty({
@@ -401,34 +393,165 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       }
     });
 
-    // 0.5 Precision Diorama Slab Pedestal Curtain (Elevated Architectural Plinth)
+    // 0.2 Architectural Plinth Side Facets (Solid Vertical Foundation Walls)
     viewer.entities.add({
-      name: 'Corridor Diorama Pedestal Slab',
+      name: 'Corridor Diorama Plinth Facets',
       wall: {
         positions: Cesium.Cartesian3.fromDegreesArray([
-          73.909, 18.555,
-          73.934, 18.555,
-          73.934, 18.5675,
-          73.909, 18.5675,
-          73.909, 18.555
+          sw[0], sw[1],
+          se[0], se[1],
+          ne[0], ne[1],
+          nw[0], nw[1],
+          sw[0], sw[1]
         ]),
         maximumHeights: [0.5, 0.5, 0.5, 0.5, 0.5],
-        minimumHeights: [-20.0, -20.0, -20.0, -20.0, -20.0],
-        material: Cesium.Color.fromCssColorString('#080E1B').withAlpha(0.96),
+        minimumHeights: [plinthDepth, plinthDepth, plinthDepth, plinthDepth, plinthDepth],
+        material: Cesium.Color.fromCssColorString('#09101F').withAlpha(0.98),
         outline: true,
-        outlineColor: Cesium.Color.fromCssColorString('#06B6D4').withAlpha(0.7)
+        outlineColor: Cesium.Color.fromCssColorString('#0EA5E9').withAlpha(0.4)
       }
     });
 
-    // Corridor Identity Plaque floating along Northern Boundary
+    // 0.3 Solid Architectural Baseplate (Bottom Plinth Cap)
+    viewer.entities.add({
+      name: 'Corridor Diorama Baseplate Cap',
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy([
+          Cesium.Cartesian3.fromDegrees(sw[0], sw[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(se[0], se[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(ne[0], ne[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(nw[0], nw[1], plinthDepth)
+        ]),
+        height: plinthDepth,
+        material: Cesium.Color.fromCssColorString('#050A14'),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#0284C7').withAlpha(0.7)
+      }
+    });
+
+    // 0.4 Bottom Plinth Trim Ribbon
+    viewer.entities.add({
+      name: 'Corridor Diorama Base Trim',
+      polyline: {
+        positions: [
+          Cesium.Cartesian3.fromDegrees(sw[0], sw[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(se[0], se[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(ne[0], ne[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(nw[0], nw[1], plinthDepth),
+          Cesium.Cartesian3.fromDegrees(sw[0], sw[1], plinthDepth)
+        ],
+        width: 2.5,
+        material: Cesium.Color.fromCssColorString('#0284C7').withAlpha(0.85),
+        clampToGround: false
+      }
+    });
+
+    // 0.5 Corner Structural Pylons (4 Vertical Architectural Accents)
+    const corners = [
+      { id: 'sw', coord: sw },
+      { id: 'se', coord: se },
+      { id: 'ne', coord: ne },
+      { id: 'nw', coord: nw }
+    ];
+    corners.forEach(c => {
+      viewer.entities.add({
+        name: `Diorama Pylon ${c.id.toUpperCase()}`,
+        position: Cesium.Cartesian3.fromDegrees(c.coord[0], c.coord[1], plinthDepth / 2),
+        cylinder: {
+          length: Math.abs(plinthDepth) + 1.0,
+          topRadius: 0.75,
+          bottomRadius: 0.95,
+          material: Cesium.Color.fromCssColorString('#06B6D4').withAlpha(0.75),
+          outline: false
+        }
+      });
+      viewer.entities.add({
+        name: `Diorama Pylon Beacon ${c.id.toUpperCase()}`,
+        position: Cesium.Cartesian3.fromDegrees(c.coord[0], c.coord[1], 1.5),
+        point: {
+          pixelSize: 8,
+          color: Cesium.Color.fromCssColorString('#38BDF8'),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      });
+    });
+
+    // 0.6 Holographic Grounding Stage Platform (Projection Deck)
+    const stageElevation = -54.0;
+    const stageSw = [73.9065, 18.5535];
+    const stageSe = [73.9365, 18.5535];
+    const stageNe = [73.9365, 18.5690];
+    const stageNw = [73.9065, 18.5690];
+
+    viewer.entities.add({
+      name: 'Holographic Grounding Stage',
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy([
+          Cesium.Cartesian3.fromDegrees(stageSw[0], stageSw[1], stageElevation),
+          Cesium.Cartesian3.fromDegrees(stageSe[0], stageSe[1], stageElevation),
+          Cesium.Cartesian3.fromDegrees(stageNe[0], stageNe[1], stageElevation),
+          Cesium.Cartesian3.fromDegrees(stageNw[0], stageNw[1], stageElevation)
+        ]),
+        height: stageElevation,
+        material: Cesium.Color.fromCssColorString('#030712').withAlpha(0.92),
+        outline: true,
+        outlineColor: Cesium.Color.fromCssColorString('#1E293B').withAlpha(0.8)
+      }
+    });
+
+    viewer.entities.add({
+      name: 'Holographic Stage Trim',
+      polyline: {
+        positions: [
+          Cesium.Cartesian3.fromDegrees(stageSw[0], stageSw[1], stageElevation + 0.5),
+          Cesium.Cartesian3.fromDegrees(stageSe[0], stageSe[1], stageElevation + 0.5),
+          Cesium.Cartesian3.fromDegrees(stageNe[0], stageNe[1], stageElevation + 0.5),
+          Cesium.Cartesian3.fromDegrees(stageNw[0], stageNw[1], stageElevation + 0.5),
+          Cesium.Cartesian3.fromDegrees(stageSw[0], stageSw[1], stageElevation + 0.5)
+        ],
+        width: 1.5,
+        material: Cesium.Color.fromCssColorString('#0E7490').withAlpha(0.4),
+        clampToGround: false
+      }
+    });
+
+    // Corner Projector Beams linking stage to plinth
+    const projectorCorners = [
+      { from: stageSw, to: sw },
+      { from: stageSe, to: se },
+      { from: stageNe, to: ne },
+      { from: stageNw, to: nw }
+    ];
+    projectorCorners.forEach(pc => {
+      viewer.entities.add({
+        name: 'Corner Projector Beam',
+        polyline: {
+          positions: [
+            Cesium.Cartesian3.fromDegrees(pc.from[0], pc.from[1], stageElevation),
+            Cesium.Cartesian3.fromDegrees(pc.to[0], pc.to[1], plinthDepth)
+          ],
+          width: 1.5,
+          material: new Cesium.PolylineDashMaterialProperty({
+            color: Cesium.Color.fromCssColorString('#06B6D4').withAlpha(0.35),
+            gapColor: Cesium.Color.TRANSPARENT,
+            dashLength: 12.0
+          }),
+          clampToGround: false
+        }
+      });
+    });
+
+    // 0.7 Elevated Digital Twin Identity Plaque along Northern Rim
     viewer.entities.add({
       name: 'Corridor Identity Badge',
-      position: Cesium.Cartesian3.fromDegrees(73.9215, 18.5672, 28.0),
+      position: Cesium.Cartesian3.fromDegrees(73.9215, 18.5676, 22.0),
       label: {
         text: '📍 NAGAR ROAD DIGITAL TWIN • VIMAN NAGAR ↔ SOMNATH NAGAR (1.8 KM)',
         font: "bold 11px 'General Sans', -apple-system, sans-serif",
         fillColor: Cesium.Color.fromCssColorString('#38BDF8'),
-        outlineColor: Cesium.Color.fromCssColorString('#090D16'),
+        outlineColor: Cesium.Color.fromCssColorString('#050811'),
         outlineWidth: 3,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         disableDepthTestDistance: Number.POSITIVE_INFINITY
