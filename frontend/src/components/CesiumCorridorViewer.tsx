@@ -282,21 +282,28 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     let provider: Cesium.ImageryProvider;
     if (basemap3D === 'streets') {
       provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-        maximumLevel: 19
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+        subdomains: ['a', 'b', 'c', 'd'],
+        maximumLevel: 20,
+        credit: '© OpenStreetMap contributors, © CARTO'
       });
     } else if (basemap3D === 'dark') {
       provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-        maximumLevel: 16
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        subdomains: ['a', 'b', 'c', 'd'],
+        maximumLevel: 20,
+        credit: '© OpenStreetMap contributors, © CARTO'
       });
     } else {
       provider = new Cesium.UrlTemplateImageryProvider({
         url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        maximumLevel: 18
+        maximumLevel: 19,
+        credit: '© Esri, Maxar, Earthstar Geographics'
       });
     }
-    layers.addImageryProvider(provider);
+    const layer = layers.addImageryProvider(provider);
+    layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR_MIPMAP_LINEAR;
+    layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
   }, [basemap3D]);
 
   // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
@@ -311,8 +318,11 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       const props = feature.properties || {};
       const layer = props.layer;
 
-      // A. Building Extrusion (89 Surveyed Buildings with Functional Category Color Tints)
+      // A. Building Extrusion (Surveyed Buildings with Functional Category Color Tints)
       if (layer === 'buildings' && feature.geometry.type === 'Polygon') {
+        if (feature.id?.includes('BLD-METRO-') || props.category === 'TRANSIT_INFRASTRUCTURE') {
+          return;
+        }
         const coords = feature.geometry.coordinates[0];
         const flatHierarchy = coords.map((c: number[]) =>
           Cesium.Cartesian3.fromDegrees(c[0], c[1], 0)
@@ -521,72 +531,103 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       }
     });
 
-    // E. Pune Metro Aqua Line Elevated Viaduct & Support Piers (Nagar Road Median)
+    // E. Pune Metro Aqua Line Elevated Viaduct & Support Piers (Strict Central Road Median Alignment)
     const METRO_VIADUCT_POINTS = [
-      [73.91161, 18.55866],
-      [73.91253, 18.55896],
-      [73.91364, 18.55938],
-      [73.91490, 18.55982],
-      [73.91619, 18.56027],
-      [73.91771, 18.56078],
-      [73.91825, 18.56089], // Viman Nagar Chowk
-      [73.91950, 18.56122], // Near Phoenix Marketcity
-      [73.92116, 18.56168],
-      [73.92300, 18.56205],
-      [73.92500, 18.56240],
-      [73.92790, 18.56283], // Somnath Nagar Chowk
-      [73.93090, 18.56308],
-      [73.93220, 18.56322]
+      [73.911606, 18.558657],
+      [73.912220, 18.558862],
+      [73.912873, 18.559075],
+      [73.913518, 18.559292],
+      [73.914161, 18.559526],
+      [73.914803, 18.559768],
+      [73.915444, 18.560011],
+      [73.916100, 18.560235],
+      [73.916752, 18.560439],
+      [73.917407, 18.560643],
+      [73.918062, 18.560844], // Viman Nagar Chowk Median
+      [73.918727, 18.561026],
+      [73.919386, 18.561215], // Viman Nagar Metro Station (Median)
+      [73.920044, 18.561399],
+      [73.920701, 18.561594],
+      [73.921362, 18.561782],
+      [73.922028, 18.561950],
+      [73.922693, 18.562111],
+      [73.923357, 18.562285],
+      [73.924021, 18.562456],
+      [73.924697, 18.562598],
+      [73.925387, 18.562678],
+      [73.926074, 18.562732],
+      [73.926761, 18.562777],
+      [73.927445, 18.562812],
+      [73.928125, 18.562851], // Somnath Nagar Chowk Median
+      [73.928808, 18.562911],
+      [73.929491, 18.562971],
+      [73.930174, 18.563031],
+      [73.930858, 18.563091],
+      [73.931538, 18.563164],
+      [73.932220, 18.563230]
     ];
 
     const viaductPositions = METRO_VIADUCT_POINTS.map(p =>
       Cesium.Cartesian3.fromDegrees(p[0], p[1], 9.5)
     );
 
-    // Elevated concrete box girder
+    // Elevated concrete box girder along median
     viewer.entities.add({
       name: 'Pune Metro Aqua Line Viaduct',
       polyline: {
         positions: viaductPositions,
-        width: 8.5,
+        width: 6.5,
         material: Cesium.Color.fromCssColorString('#94A3B8').withAlpha(0.95),
         clampToGround: false
       }
     });
 
-    // Concrete support columns (piers) along central median
+    // Slender cylindrical support piers along central median (r=0.55m strictly inside 2.5m median)
     METRO_VIADUCT_POINTS.forEach((pt, idx) => {
       viewer.entities.add({
         name: `Metro Pier P-${idx + 1}`,
         position: Cesium.Cartesian3.fromDegrees(pt[0], pt[1], 4.75),
         cylinder: {
           length: 9.5,
-          topRadius: 0.85,
-          bottomRadius: 0.85,
+          topRadius: 0.55,
+          bottomRadius: 0.55,
           material: Cesium.Color.fromCssColorString('#64748B'),
           outline: false
         }
       });
     });
 
-    // Elevated Viman Nagar Metro Station platform canopy
+    // Elevated Circular Metro Station Badge (Zero Road Encroachment)
+    const STATION_MEDIAN_COORD = [73.919386, 18.561215];
+    viewer.entities.add({
+      name: 'Pune Metro • Viman Nagar Station Indicator',
+      position: Cesium.Cartesian3.fromDegrees(STATION_MEDIAN_COORD[0], STATION_MEDIAN_COORD[1], 12.25),
+      cylinder: {
+        length: 5.5,
+        topRadius: 0.15,
+        bottomRadius: 0.15,
+        material: Cesium.Color.fromCssColorString('#0284C7').withAlpha(0.7)
+      }
+    });
+
     viewer.entities.add({
       name: 'Pune Metro • Viman Nagar Station',
-      position: Cesium.Cartesian3.fromDegrees(73.91950, 18.56122, 11.5),
-      box: {
-        dimensions: new Cesium.Cartesian3(55.0, 11.0, 4.5),
-        material: Cesium.Color.fromCssColorString('#0284C7').withAlpha(0.85),
-        outline: true,
-        outlineColor: Cesium.Color.WHITE.withAlpha(0.8)
+      position: Cesium.Cartesian3.fromDegrees(STATION_MEDIAN_COORD[0], STATION_MEDIAN_COORD[1], 15.0),
+      point: {
+        pixelSize: 26,
+        color: Cesium.Color.fromCssColorString('#0284C7'),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 3,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
       label: {
         text: '🚇 Viman Nagar Metro Station',
-        font: "600 12px 'General Sans', -apple-system, sans-serif",
+        font: "bold 12px 'General Sans', -apple-system, sans-serif",
         fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.BLACK,
-        outlineWidth: 2,
+        outlineColor: Cesium.Color.fromCssColorString('#0F172A'),
+        outlineWidth: 3,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        pixelOffset: new Cesium.Cartesian2(0, -22),
+        pixelOffset: new Cesium.Cartesian2(0, -24),
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
     });

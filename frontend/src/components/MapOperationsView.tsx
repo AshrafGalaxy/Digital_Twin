@@ -300,34 +300,38 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
             ],
             tileSize: 256,
-            maxzoom: 18,
+            maxzoom: 19,
             attribution: '&copy; Esri, Maxar, Earthstar Geographics'
           },
           'esri-streets': {
             type: 'raster',
             tiles: [
-              'https://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'
             ],
             tileSize: 256,
-            maxzoom: 19,
-            attribution: '&copy; Esri, HERE, Garmin, USGS, NGA'
+            maxzoom: 20,
+            attribution: '&copy; OpenStreetMap contributors, &copy; CARTO'
           },
           'esri-dark-base': {
             type: 'raster',
             tiles: [
-              'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+              'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'
             ],
             tileSize: 256,
-            maxzoom: 16,
-            attribution: '&copy; Esri, HERE, Garmin'
+            maxzoom: 20,
+            attribution: '&copy; OpenStreetMap contributors, &copy; CARTO'
           },
           'esri-dark-ref': {
             type: 'raster',
             tiles: [
-              'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+              'https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png'
             ],
             tileSize: 256,
-            maxzoom: 16
+            maxzoom: 20
           }
         },
         layers: [
@@ -336,7 +340,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             type: 'raster',
             source: 'esri-satellite',
             minzoom: 0,
-            maxzoom: 20,
+            maxzoom: 22,
             layout: {
               visibility: 'visible'
             }
@@ -346,7 +350,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             type: 'raster',
             source: 'esri-streets',
             minzoom: 0,
-            maxzoom: 20,
+            maxzoom: 22,
             layout: {
               visibility: 'none'
             }
@@ -356,7 +360,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             type: 'raster',
             source: 'esri-dark-base',
             minzoom: 0,
-            maxzoom: 20,
+            maxzoom: 22,
             layout: {
               visibility: 'none'
             }
@@ -366,7 +370,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             type: 'raster',
             source: 'esri-dark-ref',
             minzoom: 0,
-            maxzoom: 20,
+            maxzoom: 22,
             layout: {
               visibility: 'none'
             }
@@ -375,7 +379,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       },
       center: [73.9220, 18.5615], // Corridor midpoint
       zoom: 14.8,
-      maxZoom: 19,
+      maxZoom: 20,
       pitch: 0,
       attributionControl: false
     });
