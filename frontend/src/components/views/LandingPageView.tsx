@@ -14,15 +14,26 @@ import {
   Compass,
   Database,
   Lock,
-  BarChart3
+  BarChart3,
+  User,
+  LogOut
 } from 'lucide-react';
 import { TabId } from '../Header';
+import { AuthUser } from '../../types/twin';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
+  onNavigateAuth?: () => void;
+  authUser?: AuthUser | null;
+  onSignOut?: () => void;
 }
 
-export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLaunchConsole }) => {
+export const LandingPageView: React.FC<LandingPageViewProps> = ({
+  onLaunchConsole,
+  onNavigateAuth,
+  authUser,
+  onSignOut
+}) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [activePreviewMode, setActivePreviewMode] = useState<'simulation' | 'replay'>('simulation');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -140,6 +151,33 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLaunchConsol
           </div>
 
           <div className="landing-nav-actions">
+            {authUser ? (
+              <div className="landing-auth-chip">
+                <User size={12} color="var(--color-primary-hover)" />
+                <span className="landing-user-name font-mono">{authUser.name.split(' ')[0]}</span>
+                <span className="landing-user-role font-mono">{authUser.role.split(' ')[0]}</span>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    className="landing-signout-btn"
+                    onClick={onSignOut}
+                    title="Sign Out"
+                  >
+                    <LogOut size={12} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="landing-btn-signin"
+                onClick={onNavigateAuth}
+                title="Sign in with municipal credentials"
+              >
+                <span>Sign In</span>
+              </button>
+            )}
+
             <button
               className="landing-btn-primary"
               onClick={() => onLaunchConsole('operations')}
@@ -166,6 +204,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLaunchConsol
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('faq')}>FAQ</button>
+            {!authUser && (
+              <button className="landing-mobile-item" onClick={onNavigateAuth}>Sign In / Register</button>
+            )}
+            {authUser && onSignOut && (
+              <button className="landing-mobile-item" onClick={onSignOut}>Sign Out ({authUser.name})</button>
+            )}
             <button className="landing-mobile-item highlight" onClick={() => onLaunchConsole('operations')}>
               Launch Twin Console <ArrowRight size={14} />
             </button>

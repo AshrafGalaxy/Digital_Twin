@@ -10,13 +10,15 @@ import {
   ShieldAlert,
   Server,
   User,
-  FileText
+  FileText,
+  LogOut
 } from 'lucide-react';
-import { SourceMode, MunicipalRole } from '../types/twin';
+import { SourceMode, MunicipalRole, AuthUser } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 
 export type TabId =
   | 'landing'
+  | 'auth'
   | 'operations'
   | 'traffic'
   | 'energy'
@@ -27,11 +29,12 @@ export type TabId =
   | 'health';
 
 export const ROLE_ALLOWED_TABS: Record<MunicipalRole, TabId[]> = {
-  'Traffic Systems Engineer': ['landing', 'operations', 'traffic', 'scenarios', 'recommendations'],
-  'Energy Grid Manager': ['landing', 'operations', 'energy', 'environment', 'recommendations'],
-  'Executive Auditor': ['landing', 'recommendations', 'evaluation', 'health'],
+  'Traffic Systems Engineer': ['landing', 'auth', 'operations', 'traffic', 'scenarios', 'recommendations'],
+  'Energy Grid Manager': ['landing', 'auth', 'operations', 'energy', 'environment', 'recommendations'],
+  'Executive Auditor': ['landing', 'auth', 'recommendations', 'evaluation', 'health'],
   'Municipal Analyst': [
     'landing',
+    'auth',
     'operations',
     'traffic',
     'energy',
@@ -51,6 +54,8 @@ interface HeaderProps {
   onSelectTab: (tab: TabId) => void;
   activeAdvisoriesCount?: number;
   userRole?: MunicipalRole;
+  authUser?: AuthUser | null;
+  onSignOut?: () => void;
   onOpenAuthModal?: () => void;
 }
 
@@ -62,7 +67,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
   activeAdvisoriesCount,
   userRole = 'Municipal Analyst',
-  onOpenAuthModal
+  authUser,
+  onSignOut
 }) => {
   const navTabs: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'operations', label: 'Operations', icon: <Map size={14} /> },
@@ -131,19 +137,10 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{wsConnected ? 'Stream Active' : 'Connecting...'}</span>
           </div>
 
-          {/* Interactive Municipal Role Selector & Auth Gateway Trigger */}
+          {/* Authenticated Municipal Officer Profile Badge with Sign Out */}
           <div
-            className="status-pill role-selector-pill"
-            title="Active authorization persona — click to open Authentication Gateway"
-            onClick={onOpenAuthModal}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onOpenAuthModal?.();
-              }
-            }}
+            className="status-pill user-profile-chip"
+            title={`Authenticated Officer: ${authUser?.name || 'Municipal Officer'} (${userRole})`}
           >
             <span
               className="role-badge-dot"
@@ -163,23 +160,21 @@ export const Header: React.FC<HeaderProps> = ({
                 }`
               }}
             />
-            <User size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-            <span className="text-muted" style={{ fontSize: '11px' }}>Role:</span>
-            <span style={{ fontWeight: 600, fontSize: '11.5px', color: '#F0F6FC' }}>{userRole}</span>
-            <span
-              style={{
-                fontSize: '10px',
-                color: 'var(--color-primary, #2F81F7)',
-                background: 'rgba(47, 129, 247, 0.15)',
-                border: '1px solid rgba(47, 129, 247, 0.3)',
-                padding: '1px 6px',
-                borderRadius: '4px',
-                marginLeft: '4px',
-                fontWeight: 600
-              }}
-            >
-              Auth / Switch
+            <User size={12} color="var(--color-primary-hover)" style={{ flexShrink: 0 }} />
+            <span className="user-profile-title" style={{ fontWeight: 600, fontSize: '11.5px', color: '#F0F6FC' }}>
+              {authUser?.name ? `${authUser.name} • ${userRole}` : userRole}
             </span>
+            {onSignOut && (
+              <button
+                type="button"
+                className="header-signout-btn"
+                onClick={onSignOut}
+                title="Sign out of municipal session"
+              >
+                <LogOut size={11} />
+                <span>Sign Out</span>
+              </button>
+            )}
           </div>
 
           {/* Source Mode Provenance Pill */}

@@ -8,6 +8,18 @@ export type MunicipalRole =
 
 export type QualityStatus = 'VALID' | 'STALE' | 'DEGRADED' | 'INVALID';
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: MunicipalRole;
+  department: string;
+  token?: string;
+  authenticatedAt: string;
+  clearance?: string;
+  workspaces?: string[];
+}
+
 
 export interface EntityCurrentState {
   entityId: string;

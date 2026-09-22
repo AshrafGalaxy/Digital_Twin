@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Header, TabId, ROLE_ALLOWED_TABS } from './components/Header';
-import { RoleAuthModal } from './components/RoleAuthModal';
+import { AuthPageView } from './components/views/AuthPageView';
 import { MapOperationsView } from './components/MapOperationsView';
 import { CorridorMetricsCard } from './components/CorridorMetricsCard';
 import { EntityDetailDrawer } from './components/EntityDetailDrawer';
@@ -22,7 +22,8 @@ import {
   RoadSegmentAsset,
   SourceMode,
   MunicipalRole,
-  AdvisorySummary
+  AdvisorySummary,
+  AuthUser
 } from './types/twin';
 
 import {
@@ -39,8 +40,12 @@ import {
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const rawHash = window.location.hash.replace('#', '');
+    if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup') {
+      return 'auth';
+    }
     const validTabs: TabId[] = [
       'landing',
+      'auth',
       'operations',
       'traffic',
       'energy',
@@ -56,6 +61,7 @@ export const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('tab') || params.get('view');
     if (viewParam === 'landing') return 'landing';
+    if (viewParam === 'auth' || viewParam === 'signin' || viewParam === 'signup') return 'auth';
     return 'operations';
   });
 
@@ -65,9 +71,14 @@ export const App: React.FC = () => {
       window.location.hash = activeTab;
     }
     const handleHashChange = () => {
-      const newHash = window.location.hash.replace('#', '');
+      const rawHash = window.location.hash.replace('#', '');
+      if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup') {
+        setActiveTab('auth');
+        return;
+      }
       const validTabs: TabId[] = [
         'landing',
+        'auth',
         'operations',
         'traffic',
         'energy',
@@ -77,8 +88,8 @@ export const App: React.FC = () => {
         'evaluation',
         'health'
       ];
-      if (validTabs.includes(newHash as TabId)) {
-        setActiveTab(newHash as TabId);
+      if (validTabs.includes(rawHash as TabId)) {
+        setActiveTab(rawHash as TabId);
       }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -102,32 +113,42 @@ export const App: React.FC = () => {
   const [liveSensorsCount, setLiveSensorsCount] = useState<number>(10);
   const lastWsMessageRef = useRef<number>(Date.now());
 
-  // Municipal Authorization Role State with localStorage persistence
-  const [userRole, setUserRole] = useState<MunicipalRole>(() => {
-    const saved = localStorage.getItem('municipal_role');
-    if (
-      saved === 'Municipal Analyst' ||
-      saved === 'Traffic Systems Engineer' ||
-      saved === 'Energy Grid Manager' ||
-      saved === 'Executive Auditor'
-    ) {
-      return saved;
-    }
-    return 'Municipal Analyst';
-  });
-  const [isRoleAuthOpen, setIsRoleAuthOpen] = useState<boolean>(false);
-
-  const handleRoleChange = useCallback((newRole: MunicipalRole) => {
-    setUserRole(newRole);
-    localStorage.setItem('municipal_role', newRole);
-    // If current tab is not authorized under the newly selected role, transition to the role's primary workspace
-    const allowedTabs = ROLE_ALLOWED_TABS[newRole] || ROLE_ALLOWED_TABS['Municipal Analyst'];
-    setActiveTab((prevTab) => {
-      if (!allowedTabs.includes(prevTab)) {
-        return allowedTabs[0];
+  // Municipal Authentication & Session State with localStorage persistence
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    const saved = localStorage.getItem('digital_twin_auth_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
       }
-      return prevTab;
-    });
+    }
+    // Default demo session for immediate exploration
+    return {
+      id: 'usr-traffic-01',
+      name: 'Vikram Desai',
+      email: 'traffic.engineer@pmc.gov.in',
+      role: 'Traffic Systems Engineer',
+      department: 'Transportation Operations Division',
+      authenticatedAt: new Date().toISOString()
+    };
+  });
+
+  const userRole: MunicipalRole = authUser?.role || 'Municipal Analyst';
+
+  const handleAuthSuccess = useCallback((user: AuthUser) => {
+    setAuthUser(user);
+    localStorage.setItem('digital_twin_auth_user', JSON.stringify(user));
+    localStorage.setItem('municipal_role', user.role);
+    const allowedTabs = ROLE_ALLOWED_TABS[user.role] || ['operations'];
+    const targetTab = allowedTabs.find(t => t !== 'landing' && t !== 'auth') || 'operations';
+    setActiveTab(targetTab);
+  }, []);
+
+  const handleSignOut = useCallback(() => {
+    setAuthUser(null);
+    localStorage.removeItem('digital_twin_auth_user');
+    setActiveTab('auth');
   }, []);
 
 
@@ -400,7 +421,7 @@ export const App: React.FC = () => {
         {liveAnnouncement}
       </div>
 
-      {activeTab !== 'landing' && (
+      {activeTab !== 'landing' && activeTab !== 'auth' && (
         <Header
           wsConnected={wsConnected}
           currentMode={effectiveMode}
@@ -409,15 +430,38 @@ export const App: React.FC = () => {
           onSelectTab={setActiveTab}
           activeAdvisoriesCount={advisorySummary?.totalActive || 0}
           userRole={userRole}
-          onOpenAuthModal={() => setIsRoleAuthOpen(true)}
+          authUser={authUser}
+          onSignOut={handleSignOut}
         />
       )}
 
-      <main id="main-content" tabIndex={-1} className={activeTab === 'landing' ? 'landing-workspace' : 'workspace'} aria-label="Main Operational Workspace">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={activeTab === 'landing' ? 'landing-workspace' : activeTab === 'auth' ? 'auth-workspace' : 'workspace'}
+        aria-label="Main Operational Workspace"
+      >
         {/* VIEW 0: Landing Page & Corridor Platform Architecture */}
         {activeTab === 'landing' && (
           <LandingPageView
-            onLaunchConsole={(targetTab) => setActiveTab(targetTab || 'operations')}
+            onLaunchConsole={(targetTab) => {
+              if (authUser) {
+                setActiveTab(targetTab || 'operations');
+              } else {
+                setActiveTab('auth');
+              }
+            }}
+            onNavigateAuth={() => setActiveTab('auth')}
+            authUser={authUser}
+            onSignOut={handleSignOut}
+          />
+        )}
+
+        {/* VIEW 0B: Dedicated Municipal Authentication & Role Gateway */}
+        {activeTab === 'auth' && (
+          <AuthPageView
+            onAuthSuccess={handleAuthSuccess}
+            onNavigateHome={() => setActiveTab('landing')}
           />
         )}
 
@@ -567,13 +611,6 @@ export const App: React.FC = () => {
           }}
         />
 
-        {/* Municipal Role Authentication Gateway */}
-        <RoleAuthModal
-          isOpen={isRoleAuthOpen}
-          currentRole={userRole}
-          onClose={() => setIsRoleAuthOpen(false)}
-          onAuthenticate={handleRoleChange}
-        />
       </main>
     </div>
   );

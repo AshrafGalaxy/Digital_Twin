@@ -5,7 +5,8 @@ import {
   TrafficSensorAsset,
   BuildingAsset,
   AdvisoryRecommendation,
-  AdvisorySummary
+  AdvisorySummary,
+  AuthUser
 } from '../types/twin';
 
 const API_BASE = '/api/v1';
@@ -550,5 +551,47 @@ export async function fetchCorridorBundle(): Promise<any> {
   if (!res.ok) throw new Error('Failed to export corridor bundle');
   return res.json();
 }
+
+export async function loginMunicipalUser(usernameOrEmail: string, password: string): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username_or_email: usernameOrEmail,
+      password
+    })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Authentication failed. Please verify credentials.');
+  }
+  return res.json();
+}
+
+export async function registerMunicipalUser(payload: {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  department?: string;
+}): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Registration failed.');
+  }
+  return res.json();
+}
+
+export async function fetchMunicipalRoles(): Promise<{ roles: string[]; metadata: Record<string, any> }> {
+  const res = await fetch(`${API_BASE}/auth/roles`);
+  if (!res.ok) throw new Error('Failed to fetch municipal roles');
+  return res.json();
+}
+
 
 
