@@ -29,6 +29,9 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
     <div className="corridor-metrics-card">
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {sourceMode !== 'REPLAY' && (
+            <span className="live-dot-ping" title="Real-time live telemetry stream active" />
+          )}
           <span className="card-title">Corridor Telemetry</span>
           <span
             className="status-pill"
@@ -55,7 +58,7 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Avg Arterial Speed
           </span>
           <div>
-            <span className="metric-value">{averageSpeed.toFixed(1)}</span>
+            <span className="metric-value font-mono">{averageSpeed.toFixed(1)}</span>
             <span className="metric-unit">km/h</span>
           </div>
         </div>
@@ -66,7 +69,7 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Congestion Index
           </span>
           <div>
-            <span className="metric-value" style={{
+            <span className="metric-value font-mono" style={{
               color: congestionIndex > 0.6 ? '#F43F5E' : congestionIndex > 0.3 ? '#F59E0B' : '#10B981'
             }}>
               {(congestionIndex * 100).toFixed(0)}%
@@ -80,7 +83,7 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Commercial Energy
           </span>
           <div>
-            <span className="metric-value">{energyDemandKw.toFixed(0)}</span>
+            <span className="metric-value font-mono">{energyDemandKw.toFixed(0)}</span>
             <span className="metric-unit">kW</span>
           </div>
         </div>
@@ -91,7 +94,7 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Active Sensors
           </span>
           <div>
-            <span className="metric-value">{activeSensors}</span>
+            <span className="metric-value font-mono">{activeSensors}</span>
             <span className="metric-unit">nodes</span>
           </div>
         </div>

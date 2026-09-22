@@ -375,6 +375,13 @@
   border: 0;
 }
 
+/* Monospace Tabular Figures Utility */
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+
 /* Global Keyboard Focus-Visible Indicator (WCAG 2.4.7 Focus Visible) */
 button:focus-visible,
 a:focus-visible,

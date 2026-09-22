@@ -308,20 +308,38 @@ class TelemetryStreamerWorker:
                 # 4. Dispatch WebSocket Broadcast Messages
                 if self.broadcast_callback:
                     n_segs = max(1, len(CORRIDOR_SEGMENTS))
+                    avg_speed = round(total_speed / n_segs, 1)
+                    cong_idx = round(max(0.05, min(0.95, 1.0 - (avg_speed / 50.0))), 3)
                     corridor_summary = {
                         "eventType": "CORRIDOR_METRICS_UPDATED",
                         "timestamp": now_iso,
                         "sourceMode": self.mode,
-                        "averageSpeedKmh": round(total_speed / n_segs, 1),
+                        "averageSpeedKmh": avg_speed,
+                        "congestionIndex": cong_idx,
                         "totalFlowPerHour": round(total_flow, 0),
                         "averageQueueLengthMeters": round(total_queue / n_segs, 1),
                         "energyActivePowerKw": round(energy_load_kw, 1),
+                        "activeSensors": len(SENSOR_STATIONS),
                         "aqi": aqi
                     }
                     if asyncio.iscoroutinefunction(self.broadcast_callback):
                         await self.broadcast_callback(corridor_summary)
                     else:
                         self.broadcast_callback(corridor_summary)
+
+                    # Also broadcast individual segment updates so segment colors on map stay live
+                    for seg_item in segment_metrics_list:
+                        msg = {
+                            "eventType": "TRAFFIC_STATE_UPDATED",
+                            "entityId": seg_item["entityId"],
+                            "observedAt": now_iso,
+                            "sourceMode": self.mode,
+                            "metrics": seg_item["metrics"]
+                        }
+                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                            await self.broadcast_callback(msg)
+                        else:
+                            self.broadcast_callback(msg)
 
                 return {
                     "status": "TICK_SUCCESS",
