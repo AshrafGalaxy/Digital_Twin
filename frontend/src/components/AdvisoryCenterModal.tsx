@@ -238,14 +238,14 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
               <div key={rec.recommendationId} className="advisory-card">
                 <div className="advisory-card-header">
                   <div className="advisory-badges-left">
-                    <span className="domain-pill">{rec.domain}</span>
+                    <span className={`domain-pill domain-${rec.domain.toLowerCase()}`}>{rec.domain}</span>
                     <span className={`severity-pill ${getSeverityBadgeClass(rec.severity)}`}>
                       {rec.severity}
                     </span>
-                    <span className={`status-pill ${getStatusBadgeClass(rec.status)}`}>
+                    <span className={`advisory-status-pill ${getStatusBadgeClass(rec.status)}`}>
                       {rec.status.replace('_', ' ')}
                     </span>
-                    <span className="rec-id-tag">{rec.recommendationId}</span>
+                    <span className="rec-id-tag font-mono">{rec.recommendationId}</span>
                   </div>
                   <span className="rec-timestamp">
                     {new Date(rec.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

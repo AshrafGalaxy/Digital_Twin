@@ -2234,46 +2234,85 @@ body {
 }
 
 .domain-pill {
-  background: rgba(15, 76, 92, 0.2);
-  color: #38BDF8;
-  border: 1px solid rgba(15, 76, 92, 0.4);
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-sm);
-  padding: 2px 6px;
-  font-size: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-sizing: border-box;
+}
+
+.domain-pill.domain-traffic,
+.domain-traffic {
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.domain-pill.domain-energy,
+.domain-energy {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.domain-pill.domain-environment,
+.domain-environment {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06B6D4;
+  border: 1px solid rgba(6, 182, 212, 0.4);
 }
 
 .severity-pill {
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-sm);
-  padding: 2px 6px;
-  font-size: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  box-sizing: border-box;
 }
 
 .badge-critical {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.15);
   color: #F87171;
-  border: 1px solid rgba(239, 68, 68, 0.5);
+  border: 1px solid rgba(239, 68, 68, 0.45);
 }
 
 .badge-warning {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.15);
   color: #FBBF24;
-  border: 1px solid rgba(245, 158, 11, 0.5);
+  border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
 .badge-info {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60A5FA;
-  border: 1px solid rgba(59, 130, 246, 0.5);
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border: 1px solid rgba(56, 189, 248, 0.45);
 }
 
-.status-pill {
+.advisory-card .status-pill,
+.advisory-status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: auto !important;
+  min-height: unset !important;
   border-radius: var(--radius-sm);
-  padding: 2px 6px;
-  font-size: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
 }
 
 .status-active {
@@ -2289,9 +2328,9 @@ body {
 }
 
 .status-acknowledged {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818CF8;
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
 }
 
 .status-dismissed {
