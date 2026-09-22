@@ -302,7 +302,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       });
     }
     const layer = layers.addImageryProvider(provider);
-    layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR_MIPMAP_LINEAR;
+    layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR;
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
   }, [basemap3D]);
 
