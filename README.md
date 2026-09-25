@@ -1,15 +1,10 @@
-# Digital Twin: Smart City Analytics Platform
-## Viman Nagar–Somnath Nagar Corridor, Pune
-
-> **Type:** Urban Digital Twin & Municipal Decision-Support Platform Prototype  
-> **Pilot Study Area:** Viman Nagar Chowk (Phoenix Marketcity) ↔ Somnath Nagar Chowk, Nagar Road, Pune (`[18.5575, 73.9120]` to `[18.5665, 73.9325]`)  
-> **Status:** Core Corridor Platform Implemented & Tested (114 of 114 automated tests passing) | Active Enhancement Roadmaps: Traffic Mobility & Energy Microgrid
+# Digital Twin
 
 ---
 
 ## 1. Executive Summary
 
-This **Digital Twin** is an integrated corridor-scale urban analytics and decision-support platform combining physical infrastructure assets, event-driven MQTT sensor telemetry, machine learning forecasting (XGBoost), and Eclipse SUMO micro-simulation. It assists urban governance bodies, traffic authorities, and infrastructure planners in observing corridor conditions, forecasting traffic/energy trends, and evaluating what-if mobility interventions in simulation before real-world implementation.
+This **Digital Twin** is an integrated urban analytics and decision-support platform combining physical infrastructure assets, event-driven MQTT sensor telemetry, machine learning forecasting (XGBoost), and Eclipse SUMO micro-simulation. It assists urban operators, planners, and analysts in observing network conditions, forecasting traffic and energy trends, and evaluating what-if mobility interventions in simulation before real-world implementation.
 
 The platform is strictly **read-only decision support**; recommendations are advisory and require human authorization outside the platform prior to any field execution.
 
@@ -17,12 +12,12 @@ The platform is strictly **read-only decision support**; recommendations are adv
 
 ## 2. Documentation Architecture
 
-Project documentation is structured into clear tiers for developers, contributors, and municipal operators:
+Project documentation is structured into clear tiers for developers, contributors, and operators:
 
 ### Root Essential Documents
 - [README.md](README.md) — System summary, navigation, quickstart commands, and directory overview.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Team collaboration guide, dev setup, branch model, commit conventions, and PR checklist.
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Contributor Covenant v2.1 code of conduct and community standards.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Team working agreement and collaboration standards.
 - [AGENTS.md](AGENTS.md) — Mandatory execution contract, core invariants, provenance rules, workspace hygiene, and Definition of Done.
 - [PRD.md](PRD.md) — Executive Product Requirements Document (FR-01 to FR-10, NFRs, acceptance criteria).
 
@@ -51,39 +46,39 @@ The platform is expanding through two prioritized enhancement tracks covering 21
 ### Track 1: Intelligent Traffic Mobility & Adaptive Control (11 Tasks)
 Detailed directory: [docs/tasks/traffic-mobility/](docs/tasks/traffic-mobility/)
 
-| Task ID | Issue | Task Title | Spec Ref | Milestone | Assignee |
+| Task ID | Issue | Task Title | Spec Ref | Milestone | Component / Scope |
 |---|---|---|---|---|---|
-| `TASK-01` | [#2](https://github.com/AshrafGalaxy/Digital_Twin/issues/2) | Canonical Level of Service (LOS) & Hydrodynamic State Engine | §7.1 | Milestone 1 | Engineer 1 (Backend) |
-| `TASK-08` | [#3](https://github.com/AshrafGalaxy/Digital_Twin/issues/3) | Real-Time Signal Phase and Timing (SPaT) Controller Feed Adapter | §7.3 | Milestone 1 | Engineer 1 (Backend) |
-| `TASK-07` | [#4](https://github.com/AshrafGalaxy/Digital_Twin/issues/4) | Critical Infrastructure Structural Health Monitoring (SHM) Pipeline | §10.1 | Milestone 1 | Engineer 1 (Backend) |
-| `TASK-11` | [#5](https://github.com/AshrafGalaxy/Digital_Twin/issues/5) | Location-Agnostic Study Area Onboarding & Network Topology Importer | §5 | Milestone 1 | Architect / Backend |
-| `TASK-02` | [#6](https://github.com/AshrafGalaxy/Digital_Twin/issues/6) | Webster Delay-Minimizing Adaptive Signal Timing Optimizer | §9.1 | Milestone 2 | Engineer 2 (Simulation) |
-| `TASK-03` | [#7](https://github.com/AshrafGalaxy/Digital_Twin/issues/7) | Arterial Two-Way Green Wave Progression & Offset Optimizer | §9.2 | Milestone 2 | Engineer 2 (Simulation) |
-| `TASK-04` | [#8](https://github.com/AshrafGalaxy/Digital_Twin/issues/8) | SUMO TraCI Multimodal Transit Bus Routes & Priority Simulation | §7.2 | Milestone 2 | Engineer 3 (Simulation) |
-| `TASK-05` | [#9](https://github.com/AshrafGalaxy/Digital_Twin/issues/9) | Multi-Horizon Quantile Queue Length Forecaster (XGBoost + TreeSHAP) | §8.1 | Milestone 3 | Engineer 4 (ML) |
-| `TASK-06` | [#10](https://github.com/AshrafGalaxy/Digital_Twin/issues/10) | Multimodal Transit Stop Crowd Flow & Dynamic Dwell Time Forecaster | §8.2 | Milestone 3 | Engineer 4 (ML) |
-| `TASK-09` | [#11](https://github.com/AshrafGalaxy/Digital_Twin/issues/11) | Deck.gl 3D Animated Signal Head & Approach Lane Queue Visualizer | §7.3, §11 | Milestone 4 | Engineer 5 (Frontend) |
-| `TASK-10` | [#12](https://github.com/AshrafGalaxy/Digital_Twin/issues/12) | Human-in-the-Loop Operator Advisory Dossier & Audit Trail UI | §9.1, §9.2 | Milestone 4 | Engineer 5 (Frontend) |
+| `TASK-01` | [#2](https://github.com/AshrafGalaxy/Digital_Twin/issues/2) | Canonical Level of Service (LOS) & Hydrodynamic State Engine | Section 7.1 | Milestone 1 | Backend & Telemetry |
+| `TASK-08` | [#3](https://github.com/AshrafGalaxy/Digital_Twin/issues/3) | Real-Time Signal Phase and Timing (SPaT) Controller Feed Adapter | Section 7.3 | Milestone 1 | Backend & Telemetry |
+| `TASK-07` | [#4](https://github.com/AshrafGalaxy/Digital_Twin/issues/4) | Critical Infrastructure Structural Health Monitoring (SHM) Pipeline | Section 10.1 | Milestone 1 | Backend & Telemetry |
+| `TASK-11` | [#5](https://github.com/AshrafGalaxy/Digital_Twin/issues/5) | Location-Agnostic Study Area Onboarding & Network Topology Importer | Section 5 | Milestone 1 | Architecture & Backend |
+| `TASK-02` | [#6](https://github.com/AshrafGalaxy/Digital_Twin/issues/6) | Webster Delay-Minimizing Adaptive Signal Timing Optimizer | Section 9.1 | Milestone 2 | Simulation & Control |
+| `TASK-03` | [#7](https://github.com/AshrafGalaxy/Digital_Twin/issues/7) | Arterial Two-Way Green Wave Progression & Offset Optimizer | Section 9.2 | Milestone 2 | Simulation & Control |
+| `TASK-04` | [#8](https://github.com/AshrafGalaxy/Digital_Twin/issues/8) | SUMO TraCI Multimodal Transit Bus Routes & Priority Simulation | Section 7.2 | Milestone 2 | Simulation & Modeling |
+| `TASK-05` | [#9](https://github.com/AshrafGalaxy/Digital_Twin/issues/9) | Multi-Horizon Quantile Queue Length Forecaster (XGBoost + TreeSHAP) | Section 8.1 | Milestone 3 | Machine Learning |
+| `TASK-06` | [#10](https://github.com/AshrafGalaxy/Digital_Twin/issues/10) | Multimodal Transit Stop Crowd Flow & Dynamic Dwell Time Forecaster | Section 8.2 | Milestone 3 | Machine Learning |
+| `TASK-09` | [#11](https://github.com/AshrafGalaxy/Digital_Twin/issues/11) | Deck.gl 3D Animated Signal Head & Approach Lane Queue Visualizer | Section 7.3, 11 | Milestone 4 | Frontend & UI |
+| `TASK-10` | [#12](https://github.com/AshrafGalaxy/Digital_Twin/issues/12) | Human-in-the-Loop Operator Advisory Dossier & Audit Trail UI | Section 9.1, 9.2 | Milestone 4 | Frontend & UI |
 
 ### Track 2: Energy Management & Microgrid Optimization (10 Tasks)
 Detailed directory: [docs/tasks/energy-microgrid/](docs/tasks/energy-microgrid/)
 
-| Task ID | Issue | Task Title | Spec Ref | Milestone | Assignee |
+| Task ID | Issue | Task Title | Spec Ref | Milestone | Component / Scope |
 |---|---|---|---|---|---|
-| `ENERGY-01` | [#13](https://github.com/AshrafGalaxy/Digital_Twin/issues/13) | Canonical Electrical Network Topology & Multi-Asset Telemetry Engine | §4, §5, §6 | Milestone 5 | Engineer 1 (Backend) |
-| `ENERGY-02` | [#14](https://github.com/AshrafGalaxy/Digital_Twin/issues/14) | Electrical Bus Power Balance & Feeder Thermal Loading Engine | §7.1 | Milestone 5 | Engineer 1 (Backend) |
-| `ENERGY-03` | [#15](https://github.com/AshrafGalaxy/Digital_Twin/issues/15) | 2R-2C ETP Building Thermal Network & Dynamic Occupancy Setback Engine | §7.2, §7.3 | Milestone 6 | Engineer 2 (Simulation) |
-| `ENERGY-05` | [#16](https://github.com/AshrafGalaxy/Digital_Twin/issues/16) | Solar PV Generation & Irradiance Physical Forecasting Engine | §8.2 | Milestone 6 | Engineer 4 (ML) |
-| `ENERGY-04` | [#17](https://github.com/AshrafGalaxy/Digital_Twin/issues/17) | Multi-Horizon Quantile Facility Load Forecaster (15m to 24h) | §8.1 | Milestone 7 | Engineer 4 (ML) |
-| `ENERGY-06` | [#18](https://github.com/AshrafGalaxy/Digital_Twin/issues/18) | BESS Battery Arbitrage & Time-of-Use Peak Shaving Optimizer | §9.1 | Milestone 7 | Engineer 2 (Optimization) |
-| `ENERGY-07` | [#19](https://github.com/AshrafGalaxy/Digital_Twin/issues/19) | Grid Safety Interlocks & OpenADR / Modbus Failsafe Dispatch Gateway | §9.2, §9.3 | Milestone 8 | Engineer 1 (Backend) |
-| `ENERGY-08` | [#20](https://github.com/AshrafGalaxy/Digital_Twin/issues/20) | Interactive Microgrid Single-Line Diagram (SLD) & Power Flow Canvas | §4, §11 | Milestone 8 | Engineer 5 (Frontend) |
-| `ENERGY-09` | [#21](https://github.com/AshrafGalaxy/Digital_Twin/issues/21) | Building Floorplate 3D/2D Thermal Comfort & Occupancy Visualizer | §7.2, §11 | Milestone 8 | Engineer 5 (Frontend) |
-| `ENERGY-10` | [#22](https://github.com/AshrafGalaxy/Digital_Twin/issues/22) | Human-in-the-Loop Demand-Response Advisory Dossier & Audit UI | §9.2, §10 | Milestone 8 | Engineer 5 (Frontend) |
+| `ENERGY-01` | [#13](https://github.com/AshrafGalaxy/Digital_Twin/issues/13) | Canonical Electrical Network Topology & Multi-Asset Telemetry Engine | Section 4, 5, 6 | Milestone 5 | Backend & Telemetry |
+| `ENERGY-02` | [#14](https://github.com/AshrafGalaxy/Digital_Twin/issues/14) | Electrical Bus Power Balance & Feeder Thermal Loading Engine | Section 7.1 | Milestone 5 | Backend & Telemetry |
+| `ENERGY-03` | [#15](https://github.com/AshrafGalaxy/Digital_Twin/issues/15) | 2R-2C ETP Building Thermal Network & Dynamic Occupancy Setback Engine | Section 7.2, 7.3 | Milestone 6 | Simulation & Control |
+| `ENERGY-05` | [#16](https://github.com/AshrafGalaxy/Digital_Twin/issues/16) | Solar PV Generation & Irradiance Physical Forecasting Engine | Section 8.2 | Milestone 6 | Machine Learning |
+| `ENERGY-04` | [#17](https://github.com/AshrafGalaxy/Digital_Twin/issues/17) | Multi-Horizon Quantile Facility Load Forecaster (15m to 24h) | Section 8.1 | Milestone 7 | Machine Learning |
+| `ENERGY-06` | [#18](https://github.com/AshrafGalaxy/Digital_Twin/issues/18) | BESS Battery Arbitrage & Time-of-Use Peak Shaving Optimizer | Section 9.1 | Milestone 7 | Optimization & Control |
+| `ENERGY-07` | [#19](https://github.com/AshrafGalaxy/Digital_Twin/issues/19) | Grid Safety Interlocks & OpenADR / Modbus Failsafe Dispatch Gateway | Section 9.2, 9.3 | Milestone 8 | Backend & Telemetry |
+| `ENERGY-08` | [#20](https://github.com/AshrafGalaxy/Digital_Twin/issues/20) | Interactive Microgrid Single-Line Diagram (SLD) & Power Flow Canvas | Section 4, 11 | Milestone 8 | Frontend & UI |
+| `ENERGY-09` | [#21](https://github.com/AshrafGalaxy/Digital_Twin/issues/21) | Building Floorplate 3D/2D Thermal Comfort & Occupancy Visualizer | Section 7.2, 11 | Milestone 8 | Frontend & UI |
+| `ENERGY-10` | [#22](https://github.com/AshrafGalaxy/Digital_Twin/issues/22) | Human-in-the-Loop Demand-Response Advisory Dossier & Audit UI | Section 9.2, 10 | Milestone 8 | Frontend & UI |
 
 ---
 
-## 4. Approved Technical Stack
+## 4. Technical Stack
 
 | Layer | Technology | Role |
 |---|---|---|

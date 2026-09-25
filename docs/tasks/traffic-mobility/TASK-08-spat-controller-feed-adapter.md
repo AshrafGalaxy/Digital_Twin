@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-08`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
 - **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 7.3
-- **Primary Assignee:** Engineer 1 (Backend & Telemetry)
+- **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Protocols & Field Controller Ingestion
 

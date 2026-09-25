@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-04`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
 - **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 7.2 & 8.2
-- **Primary Assignee:** Engineer 3 (SUMO & Simulation)
+- **Component / Scope:** Simulation & Modeling
 - **Priority:** High
 - **Type:** Simulation & Modeling Enhancement
 

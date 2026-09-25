@@ -1,12 +1,12 @@
-# Contributing to Digital Twin: Smart City Analytics Platform
+# Contributing to Digital Twin
 
-Welcome! We are excited that you are contributing to the **Digital Twin: Smart City Analytics Platform**. This document establishes guidelines, architectural invariants, and collaborative workflows for team members and contributors.
+Welcome! We are a 5-member college project team collaborating on this **Digital Twin** platform. This document establishes guidelines, architectural invariants, and collaborative workflows for our team.
 
 ---
 
-## 1. Code of Conduct
+## 1. Team Code of Conduct
 
-All contributors and team members are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it thoroughly to ensure an inclusive, respectful, and productive collaboration environment.
+As classmates collaborating on this joint project, all team members follow our [Team Code of Conduct & Working Agreement](CODE_OF_CONDUCT.md). We prioritize open communication, mutual respect, peer support, and academic/engineering integrity across all contributions.
 
 ---
 

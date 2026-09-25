@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-02`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 7.1
-- **Primary Assignee:** Engineer 1 (Backend & Telemetry)
+- **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Core Feature Implementation & Physical Validation
 

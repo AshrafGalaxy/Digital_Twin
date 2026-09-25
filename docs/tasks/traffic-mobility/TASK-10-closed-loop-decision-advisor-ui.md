@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-10`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
 - **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 9.1 & 9.2
-- **Primary Assignee:** Engineer 5 (Frontend & GIS Visualization)
+- **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Governance Audit Workflow
 
@@ -16,7 +16,7 @@ Per Non-Negotiable Architectural Invariant #3 (`AGENTS.md`):
 
 When the digital twin's analytics or simulation engines recommend a timing adjustment (e.g. green split extension, offset retiming for coordination, or transit priority), the platform must present a **rigorous decision-support dossier** to the municipal traffic dispatcher. 
 
-This task implements the **Human-in-the-Loop Advisory & Audit Trail UI**. It displays the recommendation rationale, conformal uncertainty intervals, safety constraints checklist, and provides an audited authorization workflow that generates an official dispatch work order for field engineers.
+This task implements the **Human-in-the-Loop Advisory & Audit Trail UI**. It displays the recommendation rationale, conformal uncertainty intervals, safety constraints checklist, and provides an audited authorization workflow that generates an official dispatch work order for field technicians.
 
 ---
 

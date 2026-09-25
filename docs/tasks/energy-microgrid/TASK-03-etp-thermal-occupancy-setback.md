@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-03`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 7.2 & 7.3
-- **Primary Assignee:** Engineer 2 (Simulation & Thermal Physics)
+- **Component / Scope:** Simulation & Control
 - **Priority:** High
 - **Type:** Microscopic Thermal Modeling & Demand Flexibility
 
@@ -41,7 +41,7 @@ Where:
 The optimizer maintains indoor temperature within the statutory comfort envelope during occupied operating hours:
 $$T_{\text{setpoint}} - 1.0^\circ\text{C} \le T_{\text{in}}(t) \le T_{\text{setpoint}} + 1.0^\circ\text{C} \quad (23.0^\circ\text{C} \le T_{\text{in}} \le 25.0^\circ\text{C})$$
 
-### 2.3 Dynamic Occupancy Setback Policy (§7.3)
+### 2.3 Dynamic Occupancy Setback Policy (Section 7.3)
 When zone occupancy density $\rho_{\text{occ}} < 0.10$ ($\text{occupants/m}^2$ derived from PIR/CO2 sensors):
 1. Expand allowable temperature drift band: $T_{\text{setpoint, setback}} = T_{\text{setpoint}} + 2.5^\circ\text{C}$ (up to $27.0^\circ\text{C}$).
 2. Throttle Variable Air Volume (VAV) terminal dampers to minimum ventilation ($30\%$).

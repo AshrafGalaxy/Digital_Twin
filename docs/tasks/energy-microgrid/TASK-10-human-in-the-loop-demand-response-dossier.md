@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-10`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 9.2, 10, 11
-- **Primary Assignee:** Engineer 5 (Frontend & Governance UI)
+- **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Governance Audit Workflow
 
@@ -14,7 +14,7 @@
 Per Non-Negotiable Architectural Invariant #3 (`AGENTS.md`):
 > **Strict Non-Actuation:** The platform is read-only decision support. Recommendations are advisory and require human authorization outside the platform before any field action.
 
-When the digital twin's optimization engine suggests a battery discharge schedule, pre-cooling cycle, or peak curtailment action, the system must present a **transparent, evidence-backed decision dossier** to the chief facility engineer or microgrid operator.
+When the digital twin's optimization engine suggests a battery discharge schedule, pre-cooling cycle, or peak curtailment action, the system must present a **transparent, evidence-backed decision dossier** to the chief facility manager or microgrid operator.
 
 This task implements the **Human-in-the-Loop Demand-Response Advisory Dossier & Audit UI** (`DemandResponseDossierModal.tsx`). It details the economic cost savings, battery cycle wear, grid safety interlock checks, and generates an audited, cryptographically hashed OpenADR / Modbus dispatch ticket upon dual-key operator authorization.
 

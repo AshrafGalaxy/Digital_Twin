@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-04`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 8.1
-- **Primary Assignee:** Engineer 4 (ML & Forecasting)
+- **Component / Scope:** Machine Learning
 - **Priority:** High
 - **Type:** Machine Learning & Feature Engineering
 

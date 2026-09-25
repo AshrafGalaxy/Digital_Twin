@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-07`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 9.2, 9.3, 10
-- **Primary Assignee:** Engineer 1 (Backend & Electrical Protocols)
+- **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Interlocks & Failsafe Communication
 
@@ -21,7 +21,7 @@ This task implements the **Grid Safety Interlocks & OpenADR / Modbus Failsafe Di
 
 ## 2. Hard Safety Interlocks & Failsafe Invariants
 
-### 2.1 Under/Over-Voltage Lockout Invariant (§9.3)
+### 2.1 Under/Over-Voltage Lockout Invariant (Section 9.3)
 Remote battery discharge and HVAC load shifting are immediately suppressed if local feeder voltage drifts outside statutory bounds:
 $$V_{\text{nominal}} \times 0.94 \le V_{\text{line}}(t) \le V_{\text{nominal}} \times 1.06 \quad (390.1\text{V} \le V \le 439.9\text{V} \text{ for 415V})$$
 *Action upon violation:* Lock out remote control, revert to grid-following standby, and emit immediate grid quality alert.

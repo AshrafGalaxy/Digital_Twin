@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-09`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
 - **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 7.3 & 11.2
-- **Primary Assignee:** Engineer 5 (Frontend & GIS Visualization)
+- **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Geospatial Deck.gl Layer
 
@@ -11,7 +11,7 @@
 
 ## 1. Context & Objective
 
-Traffic engineers and municipal dispatchers need an intuitive, high-fidelity visual representation of corridor junctions. Static 2D pins fail to convey real-time phase transitions, remaining green countdowns, or lane-level queue accumulations.
+Traffic operators and municipal dispatchers need an intuitive, high-fidelity visual representation of corridor junctions. Static 2D pins fail to convey real-time phase transitions, remaining green countdowns, or lane-level queue accumulations.
 
 This task develops a **Deck.gl custom overlay layer** for the Digital Twin Map (`frontend/src/components/Map.tsx`). It renders 3D physical signal poles with animated signal heads (Red/Yellow/Green with circular countdown timers), extruded lane queue volumes, and bus stop crowd density indicators, updating smoothly via WebSocket streams.
 

@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-08`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 4 & 11
-- **Primary Assignee:** Engineer 5 (Frontend & Control Room UI)
+- **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Geospatial Schematic Layer
 

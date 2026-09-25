@@ -3,7 +3,7 @@
 - **Task Identifier:** `TASK-06`
 - **Domain:** Energy Management & Microgrid Optimization
 - **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 9.1
-- **Primary Assignee:** Engineer 2 (Optimization & Control)
+- **Component / Scope:** Optimization & Control
 - **Priority:** High
 - **Type:** Mathematical Optimization & Economic Dispatch
 
