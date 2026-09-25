@@ -2,131 +2,140 @@ import React from 'react';
 
 export const CorridorDioramaAsset: React.FC = () => {
   return (
-    <div className="bento-asset-container corridor-diorama-wrap">
+    <div className="bento-visual-frame">
       <svg
-        viewBox="0 0 460 170"
-        className="bento-svg-graphic"
+        viewBox="0 0 760 180"
+        className="bento-svg-stage"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
       >
         <defs>
-          <radialGradient id="dioramaRadial" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="#2F81F7" stopOpacity="0.25" />
-            <stop offset="60%" stopColor="#1F6FEB" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
-          </radialGradient>
-
-          {/* Isometric Building Face Gradients */}
-          <linearGradient id="bldgTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#388BFD" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#1F6FEB" stopOpacity="0.6" />
+          <linearGradient id="corridorRoadbed" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#1E293B" />
+            <stop offset="50%" stopColor="#0F172A" />
+            <stop offset="100%" stopColor="#1E293B" />
           </linearGradient>
 
-          <linearGradient id="bldgSideGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#161B22" />
-            <stop offset="100%" stopColor="#0D1117" />
-          </linearGradient>
-
-          {/* Dual Carriageway Arterial Gradient */}
-          <linearGradient id="arterialSpineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="corridorGlowLine" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#38BDF8" />
-            <stop offset="50%" stopColor="#2F81F7" />
-            <stop offset="100%" stopColor="#58A6FF" />
+            <stop offset="50%" stopColor="#818CF8" />
+            <stop offset="100%" stopColor="#38BDF8" />
           </linearGradient>
+
+          <linearGradient id="phoenixFacadeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(245, 158, 11, 0.35)" />
+            <stop offset="50%" stopColor="rgba(217, 119, 6, 0.2)" />
+            <stop offset="100%" stopColor="rgba(15, 23, 42, 0.9)" />
+          </linearGradient>
+
+          <filter id="dioramaBloom" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        <rect width="460" height="170" fill="url(#dioramaRadial)" />
+        {/* Ambient Backlight Glow for Key Nodes */}
+        <radialGradient id="nodeWestGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="160" cy="100" r="100" fill="url(#nodeWestGlow)" pointerEvents="none" />
 
-        {/* Isometric Grid Lines */}
-        <g stroke="rgba(255, 255, 255, 0.04)" strokeWidth="0.8">
-          <line x1="20" y1="130" x2="160" y2="40" />
-          <line x1="120" y1="150" x2="260" y2="60" />
-          <line x1="220" y1="160" x2="360" y2="70" />
-          <line x1="320" y1="160" x2="440" y2="85" />
+        <radialGradient id="bldGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="380" cy="65" r="110" fill="url(#bldGlow)" pointerEvents="none" />
+
+        <radialGradient id="nodeEastGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#10B981" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="600" cy="100" r="100" fill="url(#nodeEastGlow)" pointerEvents="none" />
+
+        {/* 1.8 km Distance Ruler Axis Base */}
+        <line x1="60" y1="155" x2="700" y2="155" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" />
+        {/* Major Distance Ticks */}
+        <line x1="60" y1="150" x2="60" y2="160" stroke="#38BDF8" strokeWidth="1.5" />
+        <line x1="160" y1="150" x2="160" y2="160" stroke="#38BDF8" strokeWidth="1.5" />
+        <line x1="380" y1="150" x2="380" y2="160" stroke="#F59E0B" strokeWidth="1.5" />
+        <line x1="600" y1="150" x2="600" y2="160" stroke="#10B981" strokeWidth="1.5" />
+        <line x1="700" y1="150" x2="700" y2="160" stroke="#10B981" strokeWidth="1.5" />
+
+        {/* Main Arterial Highway Ribbon (Nagar Road) */}
+        <rect x="50" y="88" width="660" height="24" rx="4" fill="url(#corridorRoadbed)" stroke="#334155" strokeWidth="1" />
+        {/* Median Divider Glowing Strip */}
+        <line x1="50" y1="100" x2="710" y2="100" stroke="url(#corridorGlowLine)" strokeWidth="1.5" strokeDasharray="8 6" opacity="0.8" />
+
+        {/* Cross Approach Legs (Viman Nagar North/South) */}
+        <rect x="146" y="50" width="28" height="100" rx="3" fill="#1E293B" stroke="#334155" strokeWidth="1" opacity="0.85" />
+        <line x1="160" y1="50" x2="160" y2="150" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
+
+        {/* Cross Approach Legs (Somnath Nagar North/South) */}
+        <rect x="586" y="50" width="28" height="100" rx="3" fill="#1E293B" stroke="#334155" strokeWidth="1" opacity="0.85" />
+        <line x1="600" y1="50" x2="600" y2="150" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
+
+        {/* WEST NODE: INT-VN-01 (Viman Nagar Chowk) */}
+        <g transform="translate(160, 100)">
+          {/* Radar Scanner Ring */}
+          <circle r="30" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.2" strokeDasharray="4 4">
+            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="18s" repeatCount="indefinite" />
+          </circle>
+          <circle r="18" fill="none" stroke="#38BDF8" strokeWidth="1.2" opacity="0.6" />
+          {/* Vertical Elevation Pillar */}
+          <line x1="0" y1="-28" x2="0" y2="0" stroke="#38BDF8" strokeWidth="2" />
+          <circle cx="0" cy="-28" r="5" fill="#38BDF8" filter="url(#dioramaBloom)" />
+          <circle cx="0" cy="0" r="3" fill="#38BDF8" />
         </g>
 
-        {/* Monitored 1.8 km Arterial Centerline Highway */}
-        <path
-          d="M 30 115 L 140 100 L 250 85 L 360 70 L 430 60"
-          stroke="rgba(48, 54, 61, 0.9)"
-          strokeWidth="18"
-          strokeLinecap="round"
-        />
+        {/* CENTRAL COMMERCIAL FACILITY: BLD-PHOENIX-01 (Phoenix Marketcity) */}
+        <g transform="translate(340, 24)">
+          {/* Multi-Tiered Isometric Architectural Silhouette */}
+          {/* Base Podium Block */}
+          <polygon points="40,25 90,0 90,45 40,70" fill="url(#phoenixFacadeGrad)" stroke="#F59E0B" strokeWidth="1" />
+          <polygon points="0,45 40,25 40,70 0,90" fill="rgba(15, 23, 42, 0.9)" stroke="#F59E0B" strokeWidth="1" opacity="0.75" />
+          <polygon points="40,25 0,45 50,20 90,0" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" strokeWidth="1" />
 
-        {/* Eastbound Corridor Active Flow Line */}
-        <path
-          d="M 30 111 L 140 96 L 250 81 L 360 66 L 430 56"
-          fill="none"
-          stroke="url(#arterialSpineGrad)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
+          {/* Upper Atrium Tower */}
+          <polygon points="50,15 80,0 80,30 50,45" fill="rgba(245, 158, 11, 0.3)" stroke="#F59E0B" strokeWidth="1" />
+          <polygon points="25,28 50,15 50,45 25,58" fill="rgba(15, 23, 42, 0.95)" stroke="#F59E0B" strokeWidth="0.8" />
+          <polygon points="50,15 25,28 55,13 80,0" fill="rgba(245, 158, 11, 0.35)" stroke="#F59E0B" strokeWidth="1" />
 
-        {/* Westbound Corridor Active Flow Line */}
-        <path
-          d="M 30 119 L 140 104 L 250 89 L 360 74 L 430 64"
-          fill="none"
-          stroke="#F59E0B"
-          strokeWidth="2"
-          strokeDasharray="6 4"
-          strokeLinecap="round"
-        />
+          {/* Glowing Rooftop Energy Beacon */}
+          <circle cx="52" cy="14" r="12" fill="none" stroke="#F59E0B" strokeWidth="1" opacity="0.3">
+            <animate attributeName="r" values="10;16;10" dur="3s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.4;0.1;0.4" dur="3s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="52" cy="14" r="4.5" fill="#F59E0B" filter="url(#dioramaBloom)" />
 
-        {/* Intersection INT-VN-01 (Viman Nagar Chowk) */}
-        <g transform="translate(60, 95)">
-          <rect x="-16" y="-16" width="32" height="32" rx="4" fill="rgba(22, 27, 34, 0.9)" stroke="#38BDF8" strokeWidth="1.5" />
-          <circle cx="0" cy="0" r="4" fill="#38BDF8" />
-          <text x="0" y="26" fill="#F0F6FC" fontSize="8.5" fontFamily="monospace" textAnchor="middle" fontWeight="600">
-            INT-VN-01
-          </text>
-          <text x="0" y="35" fill="#8B949E" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
-            VIMAN NAGAR
-          </text>
+          {/* Energy Feed Connecting Link to Arterial */}
+          <path d="M 40 70 L 40 64" stroke="#F59E0B" strokeWidth="1.5" strokeDasharray="2 2" />
         </g>
 
-        {/* Phoenix Marketcity Commercial Entity (BLD-PHOENIX-01) Extruded 3D Footprint */}
-        <g transform="translate(230, 20)">
-          {/* Building Isometric Base */}
-          <polygon points="0,40 50,25 90,45 40,60" fill="url(#bldgTopGrad)" stroke="#388BFD" strokeWidth="1" />
-          <polygon points="0,40 40,60 40,75 0,55" fill="url(#bldgSideGrad)" stroke="#30363D" strokeWidth="1" />
-          <polygon points="40,60 90,45 90,60 40,75" fill="url(#bldgSideGrad)" stroke="#30363D" strokeWidth="1" />
-          
-          {/* HVAC Telemetry Sensor Node on Roof */}
-          <circle cx="45" cy="42" r="3.5" fill="#F59E0B" />
-          <circle cx="45" cy="42" r="7" fill="none" stroke="#F59E0B" strokeWidth="1" opacity="0.8" className="animate-ping-slow" />
-          
-          <text x="45" y="16" fill="#F0F6FC" fontSize="9" fontFamily="monospace" textAnchor="middle" fontWeight="700">
-            BLD-PHOENIX-01
-          </text>
-          <text x="45" y="88" fill="#F59E0B" fontSize="8" fontFamily="monospace" textAnchor="middle">
-            COMMERCIAL METER (4,862 kW)
-          </text>
+        {/* EAST NODE: INT-SN-01 (Somnath Nagar Chowk) */}
+        <g transform="translate(600, 100)">
+          {/* Radar Scanner Ring */}
+          <circle r="30" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.2" strokeDasharray="4 4">
+            <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="18s" repeatCount="indefinite" />
+          </circle>
+          <circle r="18" fill="none" stroke="#10B981" strokeWidth="1.2" opacity="0.6" />
+          {/* Vertical Elevation Pillar */}
+          <line x1="0" y1="-28" x2="0" y2="0" stroke="#10B981" strokeWidth="2" />
+          <circle cx="0" cy="-28" r="5" fill="#10B981" filter="url(#dioramaBloom)" />
+          <circle cx="0" cy="0" r="3" fill="#10B981" />
         </g>
 
-        {/* Intersection INT-SN-01 (Somnath Nagar Chowk) */}
-        <g transform="translate(390, 50)">
-          <rect x="-16" y="-16" width="32" height="32" rx="4" fill="rgba(22, 27, 34, 0.9)" stroke="#58A6FF" strokeWidth="1.5" />
-          <circle cx="0" cy="0" r="4" fill="#58A6FF" />
-          <text x="0" y="26" fill="#F0F6FC" fontSize="8.5" fontFamily="monospace" textAnchor="middle" fontWeight="600">
-            INT-SN-01
-          </text>
-          <text x="0" y="35" fill="#8B949E" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
-            SOMNATH NAGAR
-          </text>
-        </g>
+        {/* Dynamic Traffic Packets Flowing Along Nagar Road */}
+        <circle cx="110" cy="94" r="3" fill="#38BDF8" filter="url(#dioramaBloom)" />
+        <circle cx="230" cy="94" r="3" fill="#38BDF8" filter="url(#dioramaBloom)" />
+        <circle cx="270" cy="106" r="3" fill="#10B981" filter="url(#dioramaBloom)" />
+        <circle cx="480" cy="94" r="3" fill="#F59E0B" filter="url(#dioramaBloom)" />
+        <circle cx="530" cy="106" r="3" fill="#38BDF8" filter="url(#dioramaBloom)" />
+        <circle cx="650" cy="94" r="3" fill="#10B981" filter="url(#dioramaBloom)" />
       </svg>
-
-      <div className="bento-asset-hud">
-        <div className="hud-badge font-mono">
-          <span className="hud-dot live" />
-          <span>CORRIDOR PHYSICAL TOPOLOGY</span>
-        </div>
-        <div className="hud-metric font-mono">
-          <span className="metric-val text-blue">1.8 km</span>
-          <span className="metric-unit">arterial span</span>
-          <span className="metric-tag physical">POSTGIS REGISTERED</span>
-        </div>
-      </div>
     </div>
   );
 };

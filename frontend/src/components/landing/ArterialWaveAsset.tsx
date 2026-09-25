@@ -1,117 +1,150 @@
 import React from 'react';
 
-export const ArterialWaveAsset: React.FC<{ speed?: number }> = ({ speed = 34.2 }) => {
+export const ArterialWaveAsset: React.FC = () => {
   return (
-    <div className="bento-asset-container arterial-wave-wrap">
+    <div className="bento-visual-frame">
       <svg
-        viewBox="0 0 460 170"
-        className="bento-svg-graphic"
+        viewBox="0 0 760 180"
+        className="bento-svg-stage"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
       >
         <defs>
-          {/* Deep Ambient Glow Gradient */}
-          <radialGradient id="arterialRadialGlow" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="#2F81F7" stopOpacity="0.35" />
-            <stop offset="60%" stopColor="#1F6FEB" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
-          </radialGradient>
-
-          {/* Area Under Wave Gradient */}
-          <linearGradient id="arterialAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.32" />
-            <stop offset="50%" stopColor="#2F81F7" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
+          {/* Wave Area Gradients */}
+          <linearGradient id="artWaveAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.25" />
+            <stop offset="50%" stopColor="#2F81F7" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#0B0F17" stopOpacity="0.0" />
           </linearGradient>
 
-          {/* Precision Neon Flow Stroke Gradient */}
-          <linearGradient id="arterialNeonStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="artWaveSecAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10B981" stopOpacity="0.16" />
+            <stop offset="60%" stopColor="#059669" stopOpacity="0.04" />
+            <stop offset="100%" stopColor="#0B0F17" stopOpacity="0.0" />
+          </linearGradient>
+
+          {/* Stroke Glow Gradients */}
+          <linearGradient id="artNeonLine" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#38BDF8" />
+            <stop offset="35%" stopColor="#2F81F7" />
+            <stop offset="70%" stopColor="#818CF8" />
+            <stop offset="100%" stopColor="#38BDF8" />
+          </linearGradient>
+
+          <linearGradient id="artSyncLine" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#10B981" />
-            <stop offset="35%" stopColor="#38BDF8" />
-            <stop offset="70%" stopColor="#2F81F7" />
-            <stop offset="100%" stopColor="#58A6FF" />
+            <stop offset="50%" stopColor="#34D399" />
+            <stop offset="100%" stopColor="#10B981" />
           </linearGradient>
 
-          {/* Grid Pattern */}
-          <pattern id="arterialGrid" width="30" height="25" patternUnits="userSpaceOnUse">
-            <path d="M 30 0 L 0 0 0 25" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="0.8" />
+          {/* Subtle Ambient Grid */}
+          <pattern id="artGrid" width="40" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.025)" strokeWidth="0.8" />
           </pattern>
+
+          {/* High-Performance Neon Glow */}
+          <filter id="artGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        {/* Ambient Glow */}
-        <rect width="460" height="170" fill="url(#arterialRadialGlow)" />
+        {/* Ambient Grid Canvas */}
+        <rect width="760" height="180" fill="url(#artGrid)" />
 
-        {/* Precision Coordinate Grid */}
-        <rect width="460" height="170" fill="url(#arterialGrid)" />
+        {/* Soft Radial Backlight */}
+        <radialGradient id="artCenterBloom" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="380" cy="90" r="220" fill="url(#artCenterBloom)" pointerEvents="none" />
 
-        {/* Target Baseline Speed Guide (40 km/h) */}
-        <line x1="20" y1="55" x2="440" y2="55" stroke="rgba(88, 166, 255, 0.25)" strokeWidth="1" strokeDasharray="4 4" />
-        <text x="440" y="51" fill="#8B949E" fontSize="9" fontFamily="monospace" textAnchor="end">
-          FREE-FLOW 45 km/h
-        </text>
+        {/* Horizontal Baseline Reference Guide */}
+        <line x1="40" y1="140" x2="720" y2="140" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" strokeDasharray="6 4" />
+        <line x1="40" y1="60" x2="720" y2="60" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="1" strokeDasharray="4 6" />
 
-        {/* Wave Area Fill */}
+        {/* Secondary Harmonized Green Progression Wave (Area + Line) */}
         <path
-          d="M 20 150
-             L 20 110
-             C 60 115, 90 70, 130 75
-             C 170 80, 190 120, 230 110
-             C 270 100, 290 60, 330 65
-             C 370 70, 400 95, 440 85
-             L 440 150 Z"
-          fill="url(#arterialAreaGrad)"
+          d="M 40 180
+             L 40 115
+             C 120 110, 180 75, 250 82
+             C 320 89, 380 135, 470 125
+             C 560 115, 620 70, 720 80
+             L 720 180 Z"
+          fill="url(#artWaveSecAreaGrad)"
         />
-
-        {/* Continuous Telemetry Stroke */}
         <path
-          d="M 20 110
-             C 60 115, 90 70, 130 75
-             C 170 80, 190 120, 230 110
-             C 270 100, 290 60, 330 65
-             C 370 70, 400 95, 440 85"
+          d="M 40 115
+             C 120 110, 180 75, 250 82
+             C 320 89, 380 135, 470 125
+             C 560 115, 620 70, 720 80"
           fill="none"
-          stroke="url(#arterialNeonStroke)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
+          stroke="url(#artSyncLine)"
+          strokeWidth="1.8"
+          strokeDasharray="5 3"
+          opacity="0.85"
         />
 
-        {/* Monitored Corridor Nodes */}
-        {/* INT-VN-01 */}
-        <circle cx="130" cy="75" r="4.5" fill="#38BDF8" />
-        <circle cx="130" cy="75" r="9" fill="none" stroke="#38BDF8" strokeWidth="1.2" opacity="0.6" className="animate-ping-slow" />
-        <text x="130" y="94" fill="#E6EDF3" fontSize="9.5" fontFamily="monospace" textAnchor="middle" fontWeight="600">
-          INT-VN-01
-        </text>
+        {/* Primary Velocity Wave (Area Fill) */}
+        <path
+          d="M 40 180
+             L 40 100
+             C 110 108, 170 42, 250 48
+             C 330 54, 390 120, 480 110
+             C 560 100, 630 46, 720 56
+             L 720 180 Z"
+          fill="url(#artWaveAreaGrad)"
+        />
 
-        {/* SEG-NR-EB Midpoint */}
-        <circle cx="230" cy="110" r="3.5" fill="#F59E0B" />
-        <text x="230" y="130" fill="#8B949E" fontSize="8.5" fontFamily="monospace" textAnchor="middle">
-          SEG-NR-EB-02 (28.4 km/h)
-        </text>
+        {/* Primary Velocity Wave Glowing Neon Stroke */}
+        <path
+          d="M 40 100
+             C 110 108, 170 42, 250 48
+             C 330 54, 390 120, 480 110
+             C 560 100, 630 46, 720 56"
+          fill="none"
+          stroke="url(#artNeonLine)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          filter="url(#artGlow)"
+        />
 
-        {/* INT-SN-01 Terminus */}
-        <circle cx="330" cy="65" r="4.5" fill="#58A6FF" />
-        <circle cx="330" cy="65" r="9" fill="none" stroke="#58A6FF" strokeWidth="1.2" opacity="0.6" className="animate-ping-slow" />
-        <text x="330" y="52" fill="#E6EDF3" fontSize="9.5" fontFamily="monospace" textAnchor="middle" fontWeight="600">
-          INT-SN-01
-        </text>
+        {/* Coordinated Signal Beacon 1 (Viman Nagar Chowk) */}
+        <g transform="translate(250, 48)">
+          <circle r="22" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.25" strokeDasharray="3 3">
+            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite" />
+          </circle>
+          <circle r="12" fill="none" stroke="#38BDF8" strokeWidth="1.2" opacity="0.6" />
+          <circle r="5" fill="#38BDF8" filter="url(#artGlow)" />
+          <line x1="0" y1="5" x2="0" y2="92" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1" strokeDasharray="2 3" />
+        </g>
 
-        {/* Live Sweeping Pulse Indicator */}
-        <line x1="440" y1="30" x2="440" y2="150" stroke="#58A6FF" strokeWidth="1.5" opacity="0.8" />
+        {/* Central Midpoint Flow Node */}
+        <g transform="translate(480, 110)">
+          <circle r="16" fill="none" stroke="#818CF8" strokeWidth="1" opacity="0.3" />
+          <circle r="4.5" fill="#818CF8" filter="url(#artGlow)" />
+          <line x1="0" y1="5" x2="0" y2="30" stroke="rgba(129, 140, 248, 0.25)" strokeWidth="1" strokeDasharray="2 3" />
+        </g>
+
+        {/* Coordinated Signal Beacon 2 (Somnath Nagar Chowk) */}
+        <g transform="translate(720, 56)">
+          <circle r="22" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.25" strokeDasharray="3 3">
+            <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="20s" repeatCount="indefinite" />
+          </circle>
+          <circle r="12" fill="none" stroke="#38BDF8" strokeWidth="1.2" opacity="0.6" />
+          <circle r="5" fill="#38BDF8" filter="url(#artGlow)" />
+          <line x1="0" y1="5" x2="0" y2="84" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1" strokeDasharray="2 3" />
+        </g>
+
+        {/* Moving Flow Particles along Wave Path */}
+        <circle cx="150" cy="65" r="3" fill="#FFFFFF" filter="url(#artGlow)" opacity="0.9" />
+        <circle cx="360" cy="85" r="2.5" fill="#38BDF8" filter="url(#artGlow)" opacity="0.8" />
+        <circle cx="610" cy="68" r="3" fill="#FFFFFF" filter="url(#artGlow)" opacity="0.9" />
+        <circle cx="670" cy="52" r="2" fill="#34D399" opacity="0.75" />
       </svg>
-
-      {/* Floating HUD Telemetry Readout */}
-      <div className="bento-asset-hud">
-        <div className="hud-badge font-mono">
-          <span className="hud-dot live" />
-          <span>ARTERIAL FLOW • 10 SEGMENTS</span>
-        </div>
-        <div className="hud-metric font-mono">
-          <span className="metric-val">{speed.toFixed(1)}</span>
-          <span className="metric-unit">km/h</span>
-          <span className="metric-tag">LoS C (STABLE)</span>
-        </div>
-      </div>
     </div>
   );
 };

@@ -2,104 +2,122 @@ import React from 'react';
 
 export const MicroscopicPhysicsAsset: React.FC = () => {
   return (
-    <div className="bento-asset-container physics-model-wrap">
+    <div className="bento-visual-frame">
       <svg
-        viewBox="0 0 260 170"
-        className="bento-svg-graphic"
+        viewBox="0 0 360 160"
+        className="bento-svg-stage"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
       >
         <defs>
-          <radialGradient id="physicsRadial" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="#10B981" stopOpacity="0.25" />
-            <stop offset="70%" stopColor="#059669" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
-          </radialGradient>
-
-          {/* Roadbed Gradient */}
-          <linearGradient id="roadBedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#161B22" />
-            <stop offset="100%" stopColor="#0D1117" />
+          <linearGradient id="roadwayAsphalt" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#1E293B" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="#0F172A" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#0B0F17" stopOpacity="0.95" />
           </linearGradient>
 
-          {/* Laser Scan Loop Sensor Beam */}
-          <linearGradient id="loopSensorBeam" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.8" />
+          <linearGradient id="leadVehicleTrail" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.0" />
+            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.8" />
+          </linearGradient>
+
+          <linearGradient id="followVehicleTrail" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#10B981" stopOpacity="0.0" />
             <stop offset="100%" stopColor="#10B981" stopOpacity="0.8" />
           </linearGradient>
+
+          <linearGradient id="sensorLaserBeam" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.1" />
+            <stop offset="50%" stopColor="#38BDF8" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.1" />
+          </linearGradient>
+
+          <filter id="physicsGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        <rect width="260" height="170" fill="url(#physicsRadial)" />
+        {/* Ambient Radar Grid Background */}
+        <radialGradient id="radarBackGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#10B981" stopOpacity="0.09" />
+          <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="180" cy="80" r="140" fill="url(#radarBackGlow)" pointerEvents="none" />
 
-        {/* 3-Lane Road Arterial Bed */}
-        <rect x="10" y="30" width="240" height="100" rx="4" fill="url(#roadBedGrad)" stroke="#30363D" strokeWidth="1" />
+        {/* Multi-Lane Highway Surface Bed */}
+        <rect x="15" y="24" width="330" height="112" rx="8" fill="url(#roadwayAsphalt)" stroke="#334155" strokeWidth="1" />
 
-        {/* Lane Dividers */}
-        <line x1="10" y1="63" x2="250" y2="63" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1" strokeDasharray="8 6" />
-        <line x1="10" y1="97" x2="250" y2="97" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1" strokeDasharray="8 6" />
+        {/* Dashed Lane Dividers */}
+        <line x1="15" y1="61" x2="345" y2="61" stroke="rgba(255, 255, 255, 0.16)" strokeWidth="1.2" strokeDasharray="10 8" />
+        <line x1="15" y1="98" x2="345" y2="98" stroke="rgba(255, 255, 255, 0.16)" strokeWidth="1.2" strokeDasharray="10 8" />
 
-        {/* Inductive Loop Sensor Array (Virtual Detection Zone) */}
-        <rect x="145" y="30" width="16" height="100" fill="rgba(56, 189, 248, 0.12)" stroke="url(#loopSensorBeam)" strokeWidth="1.2" strokeDasharray="2 2" />
-        <text x="153" y="24" fill="#38BDF8" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
-          LOOP ARRAY IL-03
-        </text>
+        {/* Virtual Inductive Loop Sensor Beam */}
+        <line x1="210" y1="24" x2="210" y2="136" stroke="url(#sensorLaserBeam)" strokeWidth="2" strokeDasharray="3 3" filter="url(#physicsGlow)" />
+        <circle cx="210" cy="24" r="3" fill="#38BDF8" filter="url(#physicsGlow)" />
+        <circle cx="210" cy="136" r="3" fill="#38BDF8" filter="url(#physicsGlow)" />
 
-        {/* Lane 1 Vehicles & Speed Vectors */}
-        <g transform="translate(40, 41)">
-          <rect width="24" height="12" rx="2" fill="#2F81F7" />
-          <line x1="24" y1="6" x2="38" y2="6" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-        <g transform="translate(110, 41)">
-          <rect width="22" height="12" rx="2" fill="#10B981" />
-          <line x1="22" y1="6" x2="34" y2="6" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-        <g transform="translate(190, 41)">
-          <rect width="28" height="12" rx="2" fill="#58A6FF" />
-          <line x1="28" y1="6" x2="42" y2="6" stroke="#58A6FF" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-
-        {/* Lane 2 Vehicles (Queue behind bottleneck) */}
-        <g transform="translate(25, 75)">
-          <rect width="22" height="12" rx="2" fill="#F59E0B" />
-          <line x1="22" y1="6" x2="30" y2="6" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-        <g transform="translate(85, 75)">
-          <rect width="26" height="12" rx="2" fill="#EF4444" />
-          <line x1="26" y1="6" x2="31" y2="6" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-        <g transform="translate(170, 75)">
-          <rect width="24" height="12" rx="2" fill="#F59E0B" />
-          <line x1="24" y1="6" x2="32" y2="6" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+        {/* LANE 1: High-Speed Free Flow (Top Lane) */}
+        {/* Lead Vehicle */}
+        <g transform="translate(250, 36)">
+          {/* Kinetic Speed Trail */}
+          <line x1="-35" y1="8" x2="0" y2="8" stroke="url(#leadVehicleTrail)" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Vehicle Pod */}
+          <rect width="28" height="16" rx="4" fill="#1E293B" stroke="#38BDF8" strokeWidth="1.5" />
+          <line x1="18" y1="4" x2="24" y2="4" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="18" y1="12" x2="24" y2="12" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Forward Radar Cone */}
+          <path d="M 28 8 L 65 -2 M 28 8 L 65 18" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1" strokeDasharray="2 3" />
         </g>
 
-        {/* Lane 3 Bus/Transit Vehicle (BRTS Lane) */}
-        <g transform="translate(60, 108)">
-          <rect width="42" height="14" rx="2" fill="#38BDF8" />
-          <line x1="42" y1="7" x2="58" y2="7" stroke="#38BDF8" strokeWidth="1.8" strokeLinecap="round" />
-          <text x="21" y="10" fill="#0D1117" fontSize="7" fontFamily="monospace" textAnchor="middle" fontWeight="bold">PMPML</text>
-        </g>
-        <g transform="translate(180, 108)">
-          <rect width="22" height="12" rx="2" fill="#10B981" />
-          <line x1="22" y1="6" x2="36" y2="6" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Following Vehicle with Calibrated Krauss Gap */}
+        <g transform="translate(130, 36)">
+          <line x1="-30" y1="8" x2="0" y2="8" stroke="url(#leadVehicleTrail)" strokeWidth="2" strokeLinecap="round" />
+          <rect width="26" height="16" rx="4" fill="#0F172A" stroke="#38BDF8" strokeWidth="1.5" />
+          {/* Krauss Safe Braking Distance Arc */}
+          <path d="M 32 3 Q 55 8 32 13" fill="none" stroke="#38BDF8" strokeWidth="1.2" opacity="0.75" />
+          <path d="M 40 1 Q 68 8 40 15" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.4" />
         </g>
 
-        {/* Kinematic Model Label */}
-        <text x="15" y="152" fill="#8B949E" fontSize="8" fontFamily="monospace">
-          KRAUSS CAR-FOLLOWING MODEL (d_safe = 2.0s)
-        </text>
+        {/* Third Vehicle in Lane 1 */}
+        <g transform="translate(35, 36)">
+          <rect width="24" height="16" rx="4" fill="#0F172A" stroke="rgba(56, 189, 248, 0.6)" strokeWidth="1.2" />
+        </g>
+
+        {/* LANE 2: Coordinated Transit / Platoon Flow (Middle Lane) */}
+        {/* BRTS Transit Unit */}
+        <g transform="translate(180, 72)">
+          <line x1="-40" y1="9" x2="0" y2="9" stroke="url(#followVehicleTrail)" strokeWidth="2.5" strokeLinecap="round" />
+          <rect width="44" height="18" rx="4" fill="#064E3B" stroke="#10B981" strokeWidth="1.6" />
+          {/* Windows / Tech Highlights */}
+          <rect x="6" y="4" width="8" height="10" rx="1.5" fill="#34D399" opacity="0.6" />
+          <rect x="18" y="4" width="8" height="10" rx="1.5" fill="#34D399" opacity="0.6" />
+          <rect x="30" y="4" width="8" height="10" rx="1.5" fill="#34D399" opacity="0.6" />
+          {/* Priority Beacon */}
+          <circle cx="22" cy="0" r="3" fill="#10B981" filter="url(#physicsGlow)" />
+        </g>
+
+        {/* Following Vehicle in Lane 2 */}
+        <g transform="translate(65, 73)">
+          <rect width="26" height="16" rx="4" fill="#0F172A" stroke="#10B981" strokeWidth="1.4" />
+          <path d="M 32 3 Q 60 8 32 13" fill="none" stroke="#10B981" strokeWidth="1.2" opacity="0.7" />
+        </g>
+
+        {/* LANE 3: Merging Vehicle Dynamics (Bottom Lane) */}
+        <g transform="translate(240, 110)">
+          <rect width="26" height="16" rx="4" fill="#1E293B" stroke="#F59E0B" strokeWidth="1.4" />
+          <circle cx="32" cy="8" r="2.5" fill="#F59E0B" filter="url(#physicsGlow)" />
+        </g>
+
+        <g transform="translate(110, 110)">
+          <rect width="28" height="16" rx="4" fill="#0F172A" stroke="rgba(245, 158, 11, 0.7)" strokeWidth="1.2" />
+          {/* Merging Trajectory Vector Arc */}
+          <path d="M 35 4 C 60 0, 80 -18, 95 -18" fill="none" stroke="#F59E0B" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.75" />
+        </g>
       </svg>
-
-      <div className="bento-asset-hud">
-        <div className="hud-badge font-mono">
-          <span className="hud-dot success" />
-          <span>SUMO MICROSCOPIC KINEMATICS</span>
-        </div>
-        <div className="hud-metric font-mono">
-          <span className="metric-val text-emerald">100%</span>
-          <span className="metric-unit">physics-valid</span>
-          <span className="metric-tag synthetic">SYNTHETIC FEED</span>
-        </div>
-      </div>
     </div>
   );
 };

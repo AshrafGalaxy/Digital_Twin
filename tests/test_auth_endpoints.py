@@ -39,7 +39,7 @@ def test_demo_login_success():
     response = client.post("/api/v1/auth/login", json=payload)
     assert response.status_code == 200
     user = response.json()
-    assert user["name"] == "Vikram Desai"
+    assert user["name"] == "Traffic Systems Engineer"
     assert user["role"] == "Traffic Systems Engineer"
     assert user["department"] == "Transportation Operations Division"
     assert "token" in user
@@ -96,3 +96,28 @@ def test_registration_invalid_role():
     }
     response = client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 400
+
+
+def test_session_verification_success():
+    """Verify valid JWT token is decoded and returns officer claims."""
+    # 1. Login to obtain token
+    login_res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "grid.manager@pmc.gov.in",
+        "password": "energy123"
+    })
+    assert login_res.status_code == 200
+    token = login_res.json()["token"]
+
+    # 2. Verify token via /verify endpoint
+    verify_res = client.get("/api/v1/auth/verify", headers={"Authorization": f"Bearer {token}"})
+    assert verify_res.status_code == 200
+    data = verify_res.json()
+    assert data["valid"] is True
+    assert data["claims"]["role"] == "Energy Grid Manager"
+    assert data["claims"]["sub"] == "usr-grid-01"
+
+
+def test_session_verification_invalid():
+    """Verify invalid or tampered token is rejected with 401."""
+    response = client.get("/api/v1/auth/verify", headers={"Authorization": "Bearer fake.tampered.token"})
+    assert response.status_code == 401

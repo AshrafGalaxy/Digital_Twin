@@ -2,109 +2,132 @@ import React from 'react';
 
 export const EnergyCurveAsset: React.FC = () => {
   return (
-    <div className="bento-asset-container energy-curve-wrap">
+    <div className="bento-visual-frame">
       <svg
-        viewBox="0 0 260 170"
-        className="bento-svg-graphic"
+        viewBox="0 0 360 160"
+        className="bento-svg-stage"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
       >
         <defs>
-          {/* Amber/Gold Luminous Glow Gradient */}
-          <radialGradient id="energyRadial" cx="60%" cy="40%" r="65%">
-            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.25" />
-            <stop offset="60%" stopColor="#D97706" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
-          </radialGradient>
-
-          {/* Area Fill Gradient */}
-          <linearGradient id="energyArea" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" />
-            <stop offset="70%" stopColor="#D97706" stopOpacity="0.05" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
+          <linearGradient id="energyCurveFill" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.32" />
+            <stop offset="50%" stopColor="#D97706" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#0B0F17" stopOpacity="0.0" />
           </linearGradient>
 
-          {/* Stroke Gradient */}
-          <linearGradient id="energyStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#10B981" />
-            <stop offset="45%" stopColor="#F59E0B" />
-            <stop offset="85%" stopColor="#EF4444" />
+          <linearGradient id="energySplineGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#F59E0B" />
+            <stop offset="45%" stopColor="#EF4444" />
+            <stop offset="70%" stopColor="#10B981" />
+            <stop offset="100%" stopColor="#38BDF8" />
           </linearGradient>
 
-          {/* Subdued Shaved Demand Area */}
-          <linearGradient id="shavedArea" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
+          <linearGradient id="towerFacetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(47, 129, 247, 0.25)" />
+            <stop offset="100%" stopColor="rgba(30, 41, 59, 0.4)" />
           </linearGradient>
+
+          <filter id="energyBloom" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        {/* Ambient Glow */}
-        <rect width="260" height="170" fill="url(#energyRadial)" />
+        {/* Ambient Radial Backlight for Energy Pulse */}
+        <radialGradient id="energyBackBloom" cx="60%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="220" cy="80" r="120" fill="url(#energyBackBloom)" pointerEvents="none" />
 
-        {/* Contract Feeder Baseline (5,200 kW max capacity) */}
-        <line x1="15" y1="35" x2="245" y2="35" stroke="rgba(239, 68, 68, 0.4)" strokeWidth="1" strokeDasharray="3 3" />
-        <text x="245" y="30" fill="#EF4444" fontSize="8" fontFamily="monospace" textAnchor="end">
-          FEEDER LIMIT 5,200 kW
-        </text>
+        {/* 15-Minute Load Frequency Bar Spectrum along Base */}
+        <g opacity="0.35">
+          <rect x="25" y="132" width="6" height="14" rx="2" fill="#F59E0B" />
+          <rect x="37" y="126" width="6" height="20" rx="2" fill="#F59E0B" />
+          <rect x="49" y="118" width="6" height="28" rx="2" fill="#F59E0B" />
+          <rect x="61" y="105" width="6" height="41" rx="2" fill="#F59E0B" />
+          <rect x="73" y="90" width="6" height="56" rx="2" fill="#EF4444" />
+          <rect x="85" y="82" width="6" height="64" rx="2" fill="#EF4444" />
+          <rect x="97" y="88" width="6" height="58" rx="2" fill="#10B981" />
+          <rect x="109" y="96" width="6" height="50" rx="2" fill="#10B981" />
+          <rect x="121" y="104" width="6" height="42" rx="2" fill="#10B981" />
+          <rect x="133" y="112" width="6" height="34" rx="2" fill="#38BDF8" />
+          <rect x="145" y="120" width="6" height="26" rx="2" fill="#38BDF8" />
+          <rect x="157" y="128" width="6" height="18" rx="2" fill="#38BDF8" />
+        </g>
 
-        {/* Unmitigated Observed Demand Curve (Area) */}
+        {/* Shaving Window Highlight Zone */}
+        <rect x="80" y="35" width="70" height="110" rx="6" fill="rgba(16, 185, 129, 0.06)" stroke="rgba(16, 185, 129, 0.25)" strokeDasharray="3 3" />
+
+        {/* Threshold Feeder Ceiling Guide */}
+        <line x1="20" y1="52" x2="200" y2="52" stroke="rgba(239, 68, 68, 0.4)" strokeWidth="1" strokeDasharray="4 4" />
+
+        {/* Diurnal Thermal Load Area Fill */}
         <path
-          d="M 15 150
-             L 15 115
-             C 45 110, 75 95, 105 85
-             C 135 75, 155 45, 185 45
-             C 215 45, 235 65, 245 70
-             L 245 150 Z"
-          fill="url(#energyArea)"
+          d="M 20 146
+             L 20 135
+             C 50 130, 70 85, 100 68
+             C 120 56, 140 86, 170 78
+             C 200 70, 230 115, 270 120
+             L 270 146 Z"
+          fill="url(#energyCurveFill)"
         />
 
-        {/* Unmitigated Observed Demand Line */}
+        {/* Glowing Dynamic Load Stroke */}
         <path
-          d="M 15 115
-             C 45 110, 75 95, 105 85
-             C 135 75, 155 45, 185 45
-             C 215 45, 235 65, 245 70"
+          d="M 20 135
+             C 50 130, 70 85, 100 68
+             C 120 56, 140 86, 170 78
+             C 200 70, 230 115, 270 120"
           fill="none"
-          stroke="url(#energyStroke)"
-          strokeWidth="2.2"
+          stroke="url(#energySplineGlow)"
+          strokeWidth="2.5"
           strokeLinecap="round"
+          filter="url(#energyBloom)"
         />
 
-        {/* Calibrated Advisory Trajectory (Peak Shaving) */}
-        <path
-          d="M 135 75
-             C 155 68, 185 68, 245 88"
-          fill="none"
-          stroke="#10B981"
-          strokeWidth="2"
-          strokeDasharray="4 3"
-          strokeLinecap="round"
-        />
+        {/* Isometric Commercial Facility Silhouette (Phoenix Marketcity) */}
+        <g transform="translate(230, 32)">
+          {/* Main Tower Primary Facet */}
+          <polygon points="40,25 90,0 90,85 40,110" fill="url(#towerFacetGrad)" stroke="#38BDF8" strokeWidth="1" opacity="0.8" />
+          {/* Left Wing Facet */}
+          <polygon points="0,45 40,25 40,110 0,130" fill="rgba(15, 23, 42, 0.85)" stroke="#30363D" strokeWidth="1" />
+          {/* Top Roof Slab */}
+          <polygon points="40,25 0,45 50,20 90,0" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" strokeWidth="1" />
 
-        {/* Peak Demand Highlight Node */}
-        <circle cx="185" cy="45" r="4.5" fill="#EF4444" />
-        <circle cx="185" cy="45" r="8" fill="none" stroke="#EF4444" strokeWidth="1" opacity="0.6" className="animate-ping-slow" />
-        <text x="185" y="38" fill="#F0F6FC" fontSize="8.5" fontFamily="monospace" textAnchor="middle" fontWeight="700">
-          4,862 kW
-        </text>
+          {/* Glowing Floor Slabs */}
+          <line x1="40" y1="45" x2="90" y2="20" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="1" />
+          <line x1="40" y1="65" x2="90" y2="40" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="1" />
+          <line x1="40" y1="85" x2="90" y2="60" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="1" />
+          <line x1="0" y1="65" x2="40" y2="45" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="0.8" />
+          <line x1="0" y1="85" x2="40" y2="65" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="0.8" />
+          <line x1="0" y1="105" x2="40" y2="85" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="0.8" />
 
-        {/* Time Axis Labels */}
-        <text x="20" y="162" fill="#8B949E" fontSize="8" fontFamily="monospace">08:00</text>
-        <text x="130" y="162" fill="#8B949E" fontSize="8" fontFamily="monospace">14:00 (PEAK)</text>
-        <text x="235" y="162" fill="#8B949E" fontSize="8" fontFamily="monospace">20:00</text>
+          {/* Rooftop Central Chiller Plant Node */}
+          <circle cx="45" cy="22" r="14" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.3">
+            <animate attributeName="r" values="12;18;12" dur="3s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.4;0.1;0.4" dur="3s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="45" cy="22" r="4.5" fill="#10B981" filter="url(#energyBloom)" />
+          <line x1="45" y1="22" x2="45" y2="0" stroke="#10B981" strokeWidth="1.2" />
+          <circle cx="45" cy="0" r="2.5" fill="#34D399" />
+        </g>
+
+        {/* Peak Shaving Active Vertex Point */}
+        <g transform="translate(100, 68)">
+          <circle r="8" fill="none" stroke="#F59E0B" strokeWidth="1" opacity="0.5" />
+          <circle r="3.5" fill="#F59E0B" filter="url(#energyBloom)" />
+        </g>
+
+        <g transform="translate(170, 78)">
+          <circle r="8" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.5" />
+          <circle r="3.5" fill="#10B981" filter="url(#energyBloom)" />
+        </g>
       </svg>
-
-      <div className="bento-asset-hud">
-        <div className="hud-badge font-mono">
-          <span className="hud-dot warning" />
-          <span>BLD-PHOENIX-01 • CHILLER LOAD</span>
-        </div>
-        <div className="hud-metric font-mono">
-          <span className="metric-val text-amber">4,862</span>
-          <span className="metric-unit">kW</span>
-          <span className="metric-tag advisory">-380 kW ADVISORY</span>
-        </div>
-      </div>
     </div>
   );
 };

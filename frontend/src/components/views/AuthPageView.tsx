@@ -1,95 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Activity,
   ArrowRight,
   ShieldCheck,
-  Lock,
   Mail,
   User,
-  Car,
-  Zap,
-  FileCheck2,
-  AlertCircle,
-  CheckCircle2,
-  Compass,
   KeyRound,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { MunicipalRole, AuthUser } from '../../types/twin';
 import { loginMunicipalUser, registerMunicipalUser } from '../../services/api';
 import { DigitalTwinLogo } from '../common/DigitalTwinLogo';
 
 interface AuthPageViewProps {
+  initialMode?: 'signin' | 'signup';
   onAuthSuccess: (user: AuthUser) => void;
   onNavigateHome: () => void;
 }
 
-export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNavigateHome }) => {
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+export const AuthPageView: React.FC<AuthPageViewProps> = ({
+  initialMode = 'signin',
+  onAuthSuccess,
+  onNavigateHome
+}) => {
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>(initialMode);
+
+  useEffect(() => {
+    if (initialMode) {
+      setAuthMode(initialMode);
+    }
+  }, [initialMode]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // Sign In State
-  const [signInEmail, setSignInEmail] = useState<string>('traffic.engineer@pmc.gov.in');
-  const [signInPassword, setSignInPassword] = useState<string>('traffic123');
+  const [signInEmail, setSignInEmail] = useState<string>('');
+  const [signInPassword, setSignInPassword] = useState<string>('');
 
   // Sign Up State
   const [signUpName, setSignUpName] = useState<string>('');
   const [signUpEmail, setSignUpEmail] = useState<string>('');
   const [signUpPassword, setSignUpPassword] = useState<string>('');
-  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<MunicipalRole>('Traffic Systems Engineer');
-  const [signUpDepartment, setSignUpDepartment] = useState<string>('');
 
   const demoAccounts = [
     {
       role: 'Traffic Systems Engineer' as MunicipalRole,
-      name: 'Vikram Desai',
+      label: 'Traffic',
+      fullName: 'Traffic Systems Engineer',
       email: 'traffic.engineer@pmc.gov.in',
       password: 'traffic123',
-      dept: 'Transportation Operations Division',
-      icon: <Car size={16} color="var(--color-primary)" />,
-      badge: 'TRAFFIC COMMAND',
       color: '#F59E0B'
     },
     {
       role: 'Energy Grid Manager' as MunicipalRole,
-      name: 'Pooja Kulkarni',
+      label: 'Grid',
+      fullName: 'Energy Grid Manager',
       email: 'grid.manager@pmc.gov.in',
       password: 'energy123',
-      dept: 'Municipal Utilities & Commercial Grid',
-      icon: <Zap size={16} color="var(--color-warning)" />,
-      badge: 'GRID UTILITY',
       color: '#10B981'
     },
     {
       role: 'Executive Auditor' as MunicipalRole,
-      name: 'Dr. Aris Thorne',
+      label: 'Auditor',
+      fullName: 'Executive Auditor',
       email: 'auditor@pmc.gov.in',
       password: 'audit123',
-      dept: 'Civic Governance & Oversight Council',
-      icon: <FileCheck2 size={16} color="var(--color-accent-violet)" />,
-      badge: 'ALGORITHMIC GOVERNANCE',
       color: '#38BDF8'
     },
     {
       role: 'Municipal Analyst' as MunicipalRole,
-      name: 'Aditi Sharma',
+      label: 'Analyst',
+      fullName: 'Municipal Analyst',
       email: 'analyst@pmc.gov.in',
       password: 'analyst123',
-      dept: 'Urban Development & Smart City Mission',
-      icon: <Activity size={16} color="var(--color-primary)" />,
-      badge: 'CROSS-DOMAIN COMMAND',
       color: '#2F81F7'
     }
   ];
 
-  const handleSelectDemoPersona = (demo: typeof demoAccounts[0]) => {
+  const handleQuickSignIn = async (demo: typeof demoAccounts[0]) => {
     setSignInEmail(demo.email);
     setSignInPassword(demo.password);
     setErrorMessage(null);
+    setIsLoading(true);
+    try {
+      const user = await loginMunicipalUser(demo.email, demo.password);
+      onAuthSuccess(user);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Authentication failed.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignInSubmit = async (e: React.FormEvent) => {
@@ -97,7 +101,7 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
     setErrorMessage(null);
 
     if (!signInEmail.trim() || !signInPassword.trim()) {
-      setErrorMessage('Please enter both municipal email and password.');
+      setErrorMessage('Please enter email and password.');
       return;
     }
 
@@ -120,19 +124,12 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
       setErrorMessage('Please enter your full name.');
       return;
     }
-
     if (!signUpEmail.trim() || !signUpEmail.includes('@')) {
-      setErrorMessage('Please enter a valid municipal email address.');
+      setErrorMessage('Please enter a valid municipal email.');
       return;
     }
-
     if (signUpPassword.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (signUpPassword !== signUpConfirmPassword) {
-      setErrorMessage('Passwords do not match.');
+      setErrorMessage('Password must be at least 6 characters.');
       return;
     }
 
@@ -142,12 +139,11 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
         name: signUpName.trim(),
         email: signUpEmail.trim(),
         password: signUpPassword,
-        role: selectedRole,
-        department: signUpDepartment.trim() || undefined
+        role: selectedRole
       });
       onAuthSuccess(user);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed. Please try again.');
+      setErrorMessage(err.message || 'Registration failed.');
     } finally {
       setIsLoading(false);
     }
@@ -155,182 +151,176 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
 
   return (
     <div className="auth-root">
-      {/* Top Floating Mini Header */}
-      <header className="auth-top-bar">
-        <div className="auth-brand" onClick={onNavigateHome} style={{ cursor: 'pointer' }}>
-          <DigitalTwinLogo size={22} glow />
-          <span className="brand-title">Digital Twin</span>
-          <span className="brand-corridor">Pune Nagar Road</span>
-        </div>
-        <button className="auth-back-link" onClick={onNavigateHome}>
-          <Compass size={14} />
-          <span>Platform Overview</span>
+      {/* Sleek Top Navigation */}
+      <nav className="auth-top-bar" aria-label="Auth Navigation">
+        <button type="button" className="auth-back-link" onClick={onNavigateHome}>
+          <ArrowLeft size={14} />
+          <span>Back to Overview</span>
         </button>
-      </header>
+      </nav>
 
-      {/* Main Authentication Container */}
+      {/* Centered Minimalist Card Container */}
       <main className="auth-container">
         <div className="auth-card">
-          {/* Card Header & Municipal Security Badge */}
-          <div className="auth-card-header">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <div className="auth-security-badge">
-                <ShieldCheck size={13} color="var(--color-primary)" />
-                <span>Restricted Municipal Access • Nagar Road Corridor</span>
-              </div>
+          {/* Centered Brand Header */}
+          <div className="auth-header-minimal">
+            <div className="auth-logo-badge" onClick={onNavigateHome} title="Go to Platform Overview">
               <DigitalTwinLogo size={32} glow />
             </div>
             <h1 className="auth-title">
-              {authMode === 'signin' ? 'Municipal Gateway Sign In' : 'Register Municipal Officer'}
+              {authMode === 'signin' ? 'Sign in to Twin Console' : 'Create Officer Account'}
             </h1>
             <p className="auth-subtitle">
               {authMode === 'signin'
-                ? 'Sign in to access real-time arterial kinematics, commercial energy analytics, and calibrated advisories.'
-                : 'Register an authorized municipal callsign with designated corridor clearance and operational scope.'}
+                ? 'Arterial corridor decision support system'
+                : 'Register designated clearance for dual arterial corridor console'}
             </p>
-
-            {/* Mode Switcher Tabs */}
-            <div className="auth-mode-tabs">
-              <button
-                type="button"
-                className={`auth-mode-tab ${authMode === 'signin' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('signin'); setErrorMessage(null); }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                className={`auth-mode-tab ${authMode === 'signup' ? 'active' : ''}`}
-                onClick={() => { setAuthMode('signup'); setErrorMessage(null); }}
-              >
-                Create Account
-              </button>
-            </div>
           </div>
+
+          {/* Clean Segmented Mode Switcher */}
+          <div className="auth-mode-switch">
+            <button
+              type="button"
+              className={`auth-mode-pill ${authMode === 'signin' ? 'active' : ''}`}
+              onClick={() => { setAuthMode('signin'); setErrorMessage(null); }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`auth-mode-pill ${authMode === 'signup' ? 'active' : ''}`}
+              onClick={() => { setAuthMode('signup'); setErrorMessage(null); }}
+            >
+              Create Account
+            </button>
+          </div>
+
+          {/* Quick Demo Persona Access */}
+          {authMode === 'signin' && (
+            <div className="auth-quick-access">
+              <span className="quick-access-label">Quick Demo Access</span>
+              <div className="quick-access-grid">
+                {demoAccounts.map((demo) => (
+                  <button
+                    key={demo.role}
+                    type="button"
+                    className="quick-role-btn"
+                    onClick={() => handleQuickSignIn(demo)}
+                    title={`1-Click Sign In as ${demo.fullName}`}
+                    disabled={isLoading}
+                  >
+                    <span className="quick-role-dot" style={{ backgroundColor: demo.color }} />
+                    <span className="quick-role-label">{demo.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {authMode === 'signin' && (
+            <div className="auth-divider">
+              <span>or sign in with credentials</span>
+            </div>
+          )}
 
           {/* Error Banner */}
           {errorMessage && (
             <div className="auth-error-banner" role="alert">
-              <AlertCircle size={15} color="var(--color-danger)" />
+              <AlertCircle size={14} color="#F85149" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          {/* TAB 1: SIGN IN */}
-          {authMode === 'signin' && (
-            <form onSubmit={handleSignInSubmit} className="auth-form">
-              {/* Quick Persona Fill */}
-              <div className="auth-persona-shortcuts">
-                <span className="persona-label">One-Click Evaluator Personas:</span>
-                <div className="persona-chips-strip">
-                  {demoAccounts.map((demo) => (
-                    <button
-                      key={demo.role}
-                      type="button"
-                      className={`persona-chip ${signInEmail === demo.email ? 'active' : ''}`}
-                      onClick={() => handleSelectDemoPersona(demo)}
-                      title={`Fill ${demo.name} (${demo.role})`}
-                    >
-                      {demo.icon}
-                      <span className="persona-chip-name">{demo.role.split(' ')[0]}</span>
-                    </button>
-                  ))}
+          {/* Form */}
+          {authMode === 'signin' ? (
+            <form onSubmit={handleSignInSubmit} className="auth-form-minimal">
+              <div className="input-group">
+                <label className="input-label" htmlFor="signin-email">
+                  Email or callsign
+                </label>
+                <div className="input-wrapper">
+                  <Mail size={14} className="input-icon" />
+                  <input
+                    id="signin-email"
+                    type="text"
+                    className="auth-input font-mono"
+                    placeholder="officer@pmc.gov.in"
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
+                    autoComplete="username"
+                    required
+                  />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="signin-email">
-                  <Mail size={13} />
-                  <span>Municipal Email or Callsign</span>
+              <div className="input-group">
+                <label className="input-label" htmlFor="signin-password">
+                  Password
                 </label>
-                <input
-                  id="signin-email"
-                  type="text"
-                  className="form-input font-mono"
-                  placeholder="e.g. traffic.engineer@pmc.gov.in"
-                  value={signInEmail}
-                  onChange={(e) => setSignInEmail(e.target.value)}
-                  autoComplete="username"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <div className="form-label-row">
-                  <label className="form-label" htmlFor="signin-password">
-                    <KeyRound size={13} />
-                    <span>Password</span>
-                  </label>
+                <div className="input-wrapper">
+                  <KeyRound size={14} className="input-icon" />
+                  <input
+                    id="signin-password"
+                    type={showPassword ? 'text' : 'password'}
+                    className="auth-input font-mono"
+                    placeholder="••••••••"
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
                   <button
                     type="button"
-                    className="password-toggle-btn"
+                    className="input-action-btn"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                    <span>{showPassword ? 'Hide' : 'Show'}</span>
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
-                <input
-                  id="signin-password"
-                  type={showPassword ? 'text' : 'password'}
-                  className="form-input font-mono"
-                  placeholder="••••••••"
-                  value={signInPassword}
-                  onChange={(e) => setSignInPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-
-              <div className="auth-remember-row">
-                <div className="remember-me-badge">
-                  <CheckCircle2 size={13} color="var(--color-success)" />
-                  <span>256-bit AES Token Persistence</span>
-                </div>
-                <span className="demo-hint font-mono">Demo Password: same as role name + 123</span>
               </div>
 
               <button
                 type="submit"
-                className="auth-submit-btn"
+                className="auth-btn-primary"
                 disabled={isLoading}
               >
-                <span>{isLoading ? 'Authenticating Officer...' : 'Authenticate & Enter Console'}</span>
-                <ArrowRight size={15} />
+                <span>{isLoading ? 'Signing in...' : 'Sign In'}</span>
+                <ArrowRight size={14} />
               </button>
             </form>
-          )}
-
-          {/* TAB 2: SIGN UP */}
-          {authMode === 'signup' && (
-            <form onSubmit={handleSignUpSubmit} className="auth-form">
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="signup-name">
-                    <User size={13} />
-                    <span>Full Name & Title</span>
-                  </label>
+          ) : (
+            <form onSubmit={handleSignUpSubmit} className="auth-form-minimal">
+              <div className="input-group">
+                <label className="input-label" htmlFor="signup-name">
+                  Full Name
+                </label>
+                <div className="input-wrapper">
+                  <User size={14} className="input-icon" />
                   <input
                     id="signup-name"
                     type="text"
-                    className="form-input"
-                    placeholder="e.g. Anand Shinde"
+                    className="auth-input"
+                    placeholder="Officer Name"
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
                     required
                   />
                 </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="signup-email">
-                    <Mail size={13} />
-                    <span>Municipal Email</span>
-                  </label>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label" htmlFor="signup-email">
+                  Municipal Email
+                </label>
+                <div className="input-wrapper">
+                  <Mail size={14} className="input-icon" />
                   <input
                     id="signup-email"
                     type="email"
-                    className="form-input font-mono"
-                    placeholder="e.g. anand.shinde@pmc.gov.in"
+                    className="auth-input font-mono"
+                    placeholder="officer@pmc.gov.in"
                     value={signUpEmail}
                     onChange={(e) => setSignUpEmail(e.target.value)}
                     required
@@ -338,61 +328,36 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
                 </div>
               </div>
 
-              {/* Municipal Role Selection Cards */}
-              <div className="form-group">
-                <label className="form-label">
-                  <ShieldCheck size={13} />
-                  <span>Designate Municipal Authorization Role</span>
+              <div className="input-group">
+                <label className="input-label" htmlFor="signup-role">
+                  Clearance Role
                 </label>
-                <div className="role-selection-grid">
-                  {demoAccounts.map((opt) => (
-                    <div
-                      key={opt.role}
-                      className={`role-select-card ${selectedRole === opt.role ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSelectedRole(opt.role);
-                        setSignUpDepartment(opt.dept);
-                      }}
-                    >
-                      <div className="role-card-top">
-                        <div className="role-card-icon">{opt.icon}</div>
-                        <span className="role-card-badge font-mono">{opt.badge}</span>
-                      </div>
-                      <span className="role-card-title">{opt.role}</span>
-                      <span className="role-card-dept">{opt.dept}</span>
-                    </div>
-                  ))}
-                </div>
+                <select
+                  id="signup-role"
+                  className="auth-select"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value as MunicipalRole)}
+                >
+                  <option value="Traffic Systems Engineer">Traffic Systems Engineer (Level 2)</option>
+                  <option value="Energy Grid Manager">Energy Grid Manager (Level 2)</option>
+                  <option value="Executive Auditor">Executive Auditor (Level 3)</option>
+                  <option value="Municipal Analyst">Municipal Analyst (Level 1 Master)</option>
+                </select>
               </div>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="signup-password">
-                    <KeyRound size={13} />
-                    <span>Password (min. 6 chars)</span>
-                  </label>
+              <div className="input-group">
+                <label className="input-label" htmlFor="signup-password">
+                  Password (min 6 characters)
+                </label>
+                <div className="input-wrapper">
+                  <KeyRound size={14} className="input-icon" />
                   <input
                     id="signup-password"
                     type="password"
-                    className="form-input font-mono"
+                    className="auth-input font-mono"
                     placeholder="••••••••"
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="signup-confirm-password">
-                    <KeyRound size={13} />
-                    <span>Confirm Password</span>
-                  </label>
-                  <input
-                    id="signup-confirm-password"
-                    type="password"
-                    className="form-input font-mono"
-                    placeholder="••••••••"
-                    value={signUpConfirmPassword}
-                    onChange={(e) => setSignUpConfirmPassword(e.target.value)}
                     required
                   />
                 </div>
@@ -400,19 +365,45 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({ onAuthSuccess, onNav
 
               <button
                 type="submit"
-                className="auth-submit-btn"
+                className="auth-btn-primary"
                 disabled={isLoading}
               >
-                <span>{isLoading ? 'Creating Municipal Account...' : 'Register Officer & Launch Session'}</span>
-                <ArrowRight size={15} />
+                <span>{isLoading ? 'Creating account...' : 'Create Account'}</span>
+                <ArrowRight size={14} />
               </button>
             </form>
           )}
 
-          {/* Card Footer Integrity Guarantee */}
-          <div className="auth-card-footer">
-            <Lock size={12} color="var(--color-text-muted)" />
-            <span>Strict read-only decision support • Zero autonomous field actuation authority</span>
+          {/* Clean Footer Switcher */}
+          <div className="auth-footer-toggle">
+            {authMode === 'signin' ? (
+              <span>
+                New officer?{' '}
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() => { setAuthMode('signup'); setErrorMessage(null); }}
+                >
+                  Create an account
+                </button>
+              </span>
+            ) : (
+              <span>
+                Already have credentials?{' '}
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() => { setAuthMode('signin'); setErrorMessage(null); }}
+                >
+                  Sign in
+                </button>
+              </span>
+            )}
+          </div>
+
+          <div className="auth-minimal-disclaimer">
+            <ShieldCheck size={12} color="#8B949E" />
+            <span>Advisory decision support • Dual arterial corridor console</span>
           </div>
         </div>
       </main>

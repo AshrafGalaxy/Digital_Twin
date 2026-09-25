@@ -2,112 +2,135 @@ import React from 'react';
 
 export const ConformalBandsAsset: React.FC = () => {
   return (
-    <div className="bento-asset-container conformal-bands-wrap">
+    <div className="bento-visual-frame">
       <svg
-        viewBox="0 0 260 170"
-        className="bento-svg-graphic"
+        viewBox="0 0 360 160"
+        className="bento-svg-stage"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
       >
         <defs>
-          {/* Violet Glow */}
-          <radialGradient id="conformalRadial" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.25" />
-            <stop offset="60%" stopColor="#6366F1" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#0D1117" stopOpacity="0" />
-          </radialGradient>
-
-          {/* 90% Outer Conformal Ribbon Gradient */}
+          {/* Conformal Ribbon Gradients */}
           <linearGradient id="band90Grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#6366F1" stopOpacity="0.08" />
+            <stop offset="0%" stopColor="#818CF8" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#6366F1" stopOpacity="0.06" />
           </linearGradient>
 
-          {/* 80% Inner Conformal Ribbon Gradient */}
           <linearGradient id="band80Grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.15" />
+            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.38" />
+            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.12" />
           </linearGradient>
 
-          {/* Core Prediction Trajectory Neon */}
-          <linearGradient id="predCoreNeon" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#C4B5FD" />
+          <linearGradient id="medianSplineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#38BDF8" />
             <stop offset="50%" stopColor="#A78BFA" />
-            <stop offset="100%" stopColor="#818CF8" />
+            <stop offset="100%" stopColor="#F472B6" />
           </linearGradient>
+
+          <filter id="conformalGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        {/* Ambient Glow */}
-        <rect width="260" height="170" fill="url(#conformalRadial)" />
+        {/* Ambient Radial Violet Bloom */}
+        <radialGradient id="violetBloom" cx="65%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
+        </radialGradient>
+        <circle cx="230" cy="80" r="130" fill="url(#violetBloom)" pointerEvents="none" />
 
-        {/* Horizon Cutoff Line (T+0 Now) */}
-        <line x1="80" y1="20" x2="80" y2="150" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1" strokeDasharray="2 2" />
-        <text x="80" y="16" fill="#8B949E" fontSize="8" fontFamily="monospace" textAnchor="middle">NOW (T=0)</text>
+        {/* Horizon Guides (t+15m, t+30m projection lines) */}
+        <line x1="120" y1="20" x2="120" y2="140" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" strokeDasharray="4 4" />
+        <line x1="240" y1="20" x2="240" y2="140" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" strokeDasharray="4 4" />
 
-        {/* Historical Observed Telemetry Segment */}
+        {/* 90% Outer Conformal Envelope Band */}
         <path
-          d="M 15 95 L 40 85 L 60 90 L 80 82"
-          fill="none"
-          stroke="#F0F6FC"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-
-        {/* 90% Outer Conformal Prediction Envelope Ribbon */}
-        <path
-          d="M 80 82
-             C 120 70, 160 55, 245 42
-             L 245 132
-             C 160 115, 120 95, 80 82 Z"
+          d="M 20 80
+             C 80 72, 140 45, 220 32
+             C 270 24, 310 18, 340 15
+             L 340 145
+             C 310 142, 270 136, 220 128
+             C 140 115, 80 88, 20 80 Z"
           fill="url(#band90Grad)"
-          stroke="rgba(139, 92, 246, 0.4)"
-          strokeWidth="0.8"
         />
-
-        {/* 80% Inner Conformal Prediction Envelope Ribbon */}
+        {/* 90% Boundary Contour Lines */}
         <path
-          d="M 80 82
-             C 120 74, 160 62, 245 55
-             L 245 118
-             C 160 102, 120 88, 80 82 Z"
-          fill="url(#band80Grad)"
-          stroke="rgba(167, 139, 250, 0.5)"
-          strokeWidth="0.8"
-        />
-
-        {/* Center Machine Learning Point Forecast Line */}
-        <path
-          d="M 80 82
-             C 120 78, 160 68, 245 86"
+          d="M 20 80 C 80 72, 140 45, 220 32 C 270 24, 310 18, 340 15"
           fill="none"
-          stroke="url(#predCoreNeon)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
+          stroke="#818CF8"
+          strokeWidth="1.2"
+          strokeDasharray="4 3"
+          opacity="0.6"
+        />
+        <path
+          d="M 20 80 C 80 88, 140 115, 220 128 C 270 136, 310 142, 340 145"
+          fill="none"
+          stroke="#818CF8"
+          strokeWidth="1.2"
+          strokeDasharray="4 3"
+          opacity="0.6"
         />
 
-        {/* Persistence Baseline Comparator */}
-        <line x1="80" y1="82" x2="245" y2="82" stroke="rgba(139, 148, 158, 0.5)" strokeWidth="1.2" strokeDasharray="3 3" />
-        <text x="245" y="80" fill="#8B949E" fontSize="7.5" fontFamily="monospace" textAnchor="end">
-          PERSISTENCE
-        </text>
+        {/* 80% Inner Conformal Ribbon Band */}
+        <path
+          d="M 20 80
+             C 80 74, 140 56, 220 48
+             C 270 42, 310 38, 340 35
+             L 340 125
+             C 310 122, 270 118, 220 112
+             C 140 104, 80 86, 20 80 Z"
+          fill="url(#band80Grad)"
+        />
+        <path
+          d="M 20 80 C 80 74, 140 56, 220 48 C 270 42, 310 38, 340 35"
+          fill="none"
+          stroke="#A78BFA"
+          strokeWidth="1.2"
+          opacity="0.75"
+        />
+        <path
+          d="M 20 80 C 80 86, 140 104, 220 112 C 270 118, 310 122, 340 125"
+          fill="none"
+          stroke="#A78BFA"
+          strokeWidth="1.2"
+          opacity="0.75"
+        />
 
-        {/* Forecast Horizon Labels */}
-        <text x="140" y="162" fill="#8B949E" fontSize="8" fontFamily="monospace">T+15m</text>
-        <text x="195" y="162" fill="#8B949E" fontSize="8" fontFamily="monospace">T+30m</text>
-        <text x="245" y="162" fill="#8B949E" fontSize="8" fontFamily="monospace" textAnchor="end">T+60m</text>
+        {/* Central Luminous Point Forecast Spline */}
+        <path
+          d="M 20 80
+             C 80 80, 140 70, 220 80
+             C 270 86, 310 80, 340 80"
+          fill="none"
+          stroke="url(#medianSplineGrad)"
+          strokeWidth="2.8"
+          strokeLinecap="round"
+          filter="url(#conformalGlow)"
+        />
+
+        {/* Calibration Scatter Ground-Truth Points */}
+        <circle cx="65" cy="78" r="3" fill="#38BDF8" filter="url(#conformalGlow)" />
+        <circle cx="105" cy="73" r="2.5" fill="#38BDF8" opacity="0.9" />
+        <circle cx="150" cy="72" r="3" fill="#A78BFA" filter="url(#conformalGlow)" />
+        <circle cx="190" cy="76" r="2.5" fill="#A78BFA" opacity="0.9" />
+        <circle cx="260" cy="84" r="3" fill="#F472B6" filter="url(#conformalGlow)" />
+        <circle cx="300" cy="81" r="2.5" fill="#F472B6" opacity="0.9" />
+
+        {/* Key Forecast Vertices */}
+        <g transform="translate(120, 71)">
+          <circle r="10" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.4" />
+          <circle r="4" fill="#38BDF8" filter="url(#conformalGlow)" />
+        </g>
+
+        <g transform="translate(240, 81)">
+          <circle r="10" fill="none" stroke="#A78BFA" strokeWidth="1" opacity="0.4" />
+          <circle r="4" fill="#A78BFA" filter="url(#conformalGlow)" />
+        </g>
       </svg>
-
-      <div className="bento-asset-hud">
-        <div className="hud-badge font-mono">
-          <span className="hud-dot violet" />
-          <span>CONFORMAL ENVELOPE (80% / 90%)</span>
-        </div>
-        <div className="hud-metric font-mono">
-          <span className="metric-val text-violet">±3.8</span>
-          <span className="metric-unit">km/h bound</span>
-          <span className="metric-tag tree">TreeSHAP VERIFIED</span>
-        </div>
-      </div>
     </div>
   );
 };

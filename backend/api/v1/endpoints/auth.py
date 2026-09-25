@@ -6,13 +6,22 @@ Enforces role boundaries across transportation engineering, energy grid,
 executive auditing, and municipal intelligence operations.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
+import base64
+import json
+import hmac
+import hashlib
+import secrets
+import os
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Header, status
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+
+# Authoritative cryptographic session secret
+JWT_SECRET_KEY = os.getenv("MUNICIPAL_JWT_SECRET", "pune-dt-corridor-key-2026-viman-nagar")
 
 VALID_MUNICIPAL_ROLES = [
     "Municipal Analyst",
@@ -52,7 +61,7 @@ ROLE_METADATA: Dict[str, Dict[str, Any]] = {
 DEMO_USERS: Dict[str, Dict[str, Any]] = {
     "traffic.engineer@pmc.gov.in": {
         "id": "usr-traffic-01",
-        "name": "Vikram Desai",
+        "name": "Traffic Systems Engineer",
         "password": "traffic123",
         "role": "Traffic Systems Engineer",
         "department": "Transportation Operations Division",
@@ -60,7 +69,7 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
     },
     "grid.manager@pmc.gov.in": {
         "id": "usr-grid-01",
-        "name": "Pooja Kulkarni",
+        "name": "Energy Grid Manager",
         "password": "energy123",
         "role": "Energy Grid Manager",
         "department": "Municipal Utilities & Commercial Grid",
@@ -68,7 +77,7 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
     },
     "auditor@pmc.gov.in": {
         "id": "usr-audit-01",
-        "name": "Dr. Aris Thorne",
+        "name": "Executive Auditor",
         "password": "audit123",
         "role": "Executive Auditor",
         "department": "Civic Governance & Oversight Council",
@@ -76,7 +85,7 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
     },
     "analyst@pmc.gov.in": {
         "id": "usr-analyst-01",
-        "name": "Aditi Sharma",
+        "name": "Municipal Analyst",
         "password": "analyst123",
         "role": "Municipal Analyst",
         "department": "Urban Development & Smart City Mission",
@@ -86,6 +95,70 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
 
 # In-memory registered user repository for dynamic signups during runtime
 REGISTERED_USERS: Dict[str, Dict[str, Any]] = {}
+
+
+def _hash_password(raw_password: str) -> str:
+    """Derives a PBKDF2-HMAC-SHA256 salted hash for credentials."""
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac("sha256", raw_password.encode("utf-8"), salt.encode("utf-8"), 20000)
+    return f"pbkdf2_sha256$20000${salt}${key.hex()}"
+
+
+def _verify_password(raw_password: str, stored_password: str) -> bool:
+    """Verifies candidate password with constant-time equality check."""
+    if stored_password.startswith("pbkdf2_sha256$"):
+        parts = stored_password.split("$")
+        if len(parts) == 4:
+            iterations = int(parts[1])
+            salt = parts[2].encode("utf-8")
+            expected_key = parts[3]
+            candidate_key = hashlib.pbkdf2_hmac("sha256", raw_password.encode("utf-8"), salt, iterations)
+            return hmac.compare_digest(candidate_key.hex(), expected_key)
+    # Fallback constant-time check for pre-seeded demo accounts
+    return hmac.compare_digest(raw_password, stored_password)
+
+
+def _b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
+
+
+def _b64url_decode(data_str: str) -> bytes:
+    padding = 4 - (len(data_str) % 4)
+    if padding < 4:
+        data_str += '=' * padding
+    return base64.urlsafe_b64decode(data_str.encode('ascii'))
+
+
+def _create_jwt_token(payload: Dict[str, Any]) -> str:
+    """Issues an authentic signed HMAC-SHA256 JWT session token."""
+    header = {"alg": "HS256", "typ": "JWT"}
+    header_str = _b64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
+    payload_str = _b64url_encode(json.dumps(payload, separators=(',', ':')).encode('utf-8'))
+    msg = f"{header_str}.{payload_str}".encode('utf-8')
+    sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), msg, hashlib.sha256).digest()
+    sig_str = _b64url_encode(sig)
+    return f"{header_str}.{payload_str}.{sig_str}"
+
+
+def _verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
+    """Decodes and cryptographically verifies an HMAC-SHA256 JWT token."""
+    try:
+        parts = token.split('.')
+        if len(parts) != 3:
+            return None
+        header_str, payload_str, sig_str = parts
+        msg = f"{header_str}.{payload_str}".encode('utf-8')
+        expected_sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), msg, hashlib.sha256).digest()
+        actual_sig = _b64url_decode(sig_str)
+        if not hmac.compare_digest(expected_sig, actual_sig):
+            return None
+        payload = json.loads(_b64url_decode(payload_str).decode('utf-8'))
+        exp = payload.get("exp")
+        if exp and datetime.now(timezone.utc).timestamp() > exp:
+            return None
+        return payload
+    except Exception:
+        return None
 
 
 class LoginRequest(BaseModel):
@@ -116,7 +189,7 @@ class AuthUserResponse(BaseModel):
 @router.post("/login", response_model=AuthUserResponse)
 def login(payload: LoginRequest):
     """
-    Authenticates municipal credentials and issues a secure session token.
+    Authenticates municipal credentials and issues a cryptographic JWT session token.
     Supports standard municipal emails, usernames, and registered accounts.
     """
     query = payload.username_or_email.strip().lower()
@@ -132,7 +205,7 @@ def login(payload: LoginRequest):
     if not matched_user and query in REGISTERED_USERS:
         matched_user = REGISTERED_USERS[query]
 
-    if not matched_user or matched_user["password"] != payload.password:
+    if not matched_user or not _verify_password(payload.password, matched_user["password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid municipal credentials. Please check your email and password."
@@ -140,8 +213,21 @@ def login(payload: LoginRequest):
 
     role = matched_user["role"]
     meta = ROLE_METADATA.get(role, ROLE_METADATA["Municipal Analyst"])
-    token = f"pune-dt-token-{uuid.uuid4().hex[:16]}"
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+
+    jwt_payload = {
+        "sub": matched_user["id"],
+        "email": matched_user.get("email", query),
+        "name": matched_user["name"],
+        "role": role,
+        "department": matched_user.get("department", meta["department"]),
+        "clearance": meta["clearance"],
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(hours=8)).timestamp()),
+        "iss": "pune-digital-twin-auth"
+    }
+    token = _create_jwt_token(jwt_payload)
 
     return AuthUserResponse(
         id=matched_user["id"],
@@ -159,7 +245,7 @@ def login(payload: LoginRequest):
 @router.post("/register", response_model=AuthUserResponse)
 def register(payload: RegisterRequest):
     """
-    Registers a new municipal official with a validated role assignment.
+    Registers a new municipal official with PBKDF2-hashed credentials and role verification.
     """
     email_clean = payload.email.strip().lower()
     
@@ -179,19 +265,34 @@ def register(payload: RegisterRequest):
     meta = ROLE_METADATA[payload.role]
     dept = payload.department or meta["department"]
 
+    hashed_pw = _hash_password(payload.password)
+
     new_user = {
         "id": user_id,
         "name": payload.name.strip(),
         "email": email_clean,
-        "password": payload.password,
+        "password": hashed_pw,
         "role": payload.role,
         "department": dept,
         "username": email_clean.split("@")[0]
     }
 
     REGISTERED_USERS[email_clean] = new_user
-    token = f"pune-dt-token-{uuid.uuid4().hex[:16]}"
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+
+    jwt_payload = {
+        "sub": user_id,
+        "email": email_clean,
+        "name": new_user["name"],
+        "role": payload.role,
+        "department": dept,
+        "clearance": meta["clearance"],
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(hours=8)).timestamp()),
+        "iss": "pune-digital-twin-auth"
+    }
+    token = _create_jwt_token(jwt_payload)
 
     return AuthUserResponse(
         id=user_id,
@@ -204,6 +305,29 @@ def register(payload: RegisterRequest):
         clearance=meta["clearance"],
         workspaces=meta["workspaces"]
     )
+
+
+@router.get("/verify")
+def verify_session(authorization: Optional[str] = Header(None)):
+    """
+    Validates an incoming Bearer JWT session token and returns officer claims.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or malformed Authorization header."
+        )
+    raw_token = authorization.split("Bearer ", 1)[1].strip()
+    payload = _verify_jwt_token(raw_token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session token expired or signature invalid."
+        )
+    return {
+        "valid": True,
+        "claims": payload
+    }
 
 
 @router.get("/roles")

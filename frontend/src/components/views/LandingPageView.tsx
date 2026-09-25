@@ -9,9 +9,7 @@ import {
   Eye,
   Layers,
   ChevronDown,
-  ChevronUp,
   FileText,
-  Compass,
   Database,
   Lock,
   BarChart3,
@@ -32,7 +30,7 @@ import { CorridorAssetsShowcase } from '../landing/CorridorAssetsShowcase';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
-  onNavigateAuth?: () => void;
+  onNavigateAuth?: (mode?: 'signin' | 'signup') => void;
   authUser?: AuthUser | null;
   onSignOut?: () => void;
 }
@@ -44,13 +42,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onSignOut
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
-  const [activePreviewMode, setActivePreviewMode] = useState<'simulation' | 'replay'>('simulation');
-  const [previewSpeed, setPreviewSpeed] = useState<number>(34.2);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    setPreviewSpeed(activePreviewMode === 'simulation' ? 34.2 : 28.6);
-  }, [activePreviewMode]);
 
   // Scroll Reveal Observer for Sections
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
@@ -92,8 +84,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       const windowHeight = window.innerHeight;
       
       // Calculate scroll progress through the tagline section (0 to 1)
-      const startTrigger = windowHeight * 0.85;
-      const endTrigger = windowHeight * 0.25;
+      const startTrigger = windowHeight * 0.90;
+      const endTrigger = windowHeight * 0.35;
       
       if (rect.top > startTrigger) {
         setIlluminatedCount(0);
@@ -130,7 +122,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     },
     {
       q: 'What physical corridor boundary is monitored?',
-      a: 'The 1.8 kilometer arterial segment on Nagar Road, Pune, Maharashtra between Viman Nagar Chowk (INT-VN-01) and Somnath Nagar Chowk (INT-SN-01), encompassing 10 road segments and the Phoenix Marketcity commercial building zone (BLD-PHOENIX-01).'
+      a: 'The arterial corridor digital twin encompassing 10 monitored road segments between intersection INT-VN-01 and intersection INT-SN-01, along with the primary commercial facility (BLD-PHOENIX-01).'
     },
     {
       q: 'How are model uncertainties and forecasting errors communicated?',
@@ -153,10 +145,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="landing-nav-inner">
           <div className="landing-nav-brand" onClick={() => scrollToAnchor('hero')}>
             <DigitalTwinLogo size={24} glow />
-            <div className="brand-text-lockup">
-              <span className="brand-name">Digital Twin</span>
-              <span className="brand-corridor font-mono">PUNE NAGAR ROAD</span>
-            </div>
+            <span className="brand-name">Digital Twin</span>
           </div>
 
           <div className="landing-nav-links">
@@ -169,40 +158,46 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
           <div className="landing-nav-actions">
             {authUser ? (
-              <div className="landing-auth-chip">
-                <User size={12} color="var(--color-primary-hover)" />
-                <span className="landing-user-name font-mono">{authUser.name.split(' ')[0]}</span>
-                <span className="landing-user-role font-mono">{authUser.role.split(' ')[0]}</span>
-                {onSignOut && (
-                  <button
-                    type="button"
-                    className="landing-signout-btn"
-                    onClick={onSignOut}
-                    title="Sign Out"
-                  >
-                    <LogOut size={12} />
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                className="landing-btn-signin"
+                onClick={onSignOut}
+                title="Sign out of municipal session"
+              >
+                <LogOut size={13} />
+                <span>Sign Out</span>
+              </button>
             ) : (
               <button
                 type="button"
                 className="landing-btn-signin"
-                onClick={onNavigateAuth}
+                onClick={() => onNavigateAuth ? onNavigateAuth('signin') : onLaunchConsole('auth')}
                 title="Sign in with authorized credentials"
               >
+                <User size={13} />
                 <span>Sign In</span>
               </button>
             )}
 
-            <button
-              className="landing-btn-primary"
-              onClick={() => onLaunchConsole('operations')}
-              title="Open real-time digital twin operations console"
-            >
-              <span>Launch Twin Console</span>
-              <ArrowRight size={14} />
-            </button>
+            {authUser ? (
+              <button
+                className="landing-btn-primary"
+                onClick={() => onLaunchConsole('operations')}
+                title="Open real-time digital twin operations dashboard"
+              >
+                <span>Dashboard</span>
+                <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                className="landing-btn-primary"
+                onClick={() => onNavigateAuth ? onNavigateAuth('signup') : onLaunchConsole('auth')}
+                title="Get started with corridor digital twin"
+              >
+                <span>Get Started</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
             <button
               className={`landing-mobile-toggle ${isMobileMenuOpen ? 'open' : ''}`}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -222,15 +217,24 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('faq')}>FAQ</button>
-            {!authUser && (
-              <button className="landing-mobile-item" onClick={onNavigateAuth}>Sign In / Register</button>
+            {!authUser ? (
+              <button className="landing-mobile-item" onClick={() => onNavigateAuth ? onNavigateAuth('signin') : onLaunchConsole('auth')}>
+                Sign In
+              </button>
+            ) : (
+              <button className="landing-mobile-item" onClick={onSignOut}>
+                Sign Out
+              </button>
             )}
-            {authUser && onSignOut && (
-              <button className="landing-mobile-item" onClick={onSignOut}>Sign Out ({authUser.name})</button>
+            {authUser ? (
+              <button className="landing-mobile-item highlight" onClick={() => onLaunchConsole('operations')}>
+                Dashboard <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button className="landing-mobile-item highlight" onClick={() => onNavigateAuth ? onNavigateAuth('signup') : onLaunchConsole('auth')}>
+                Get Started <ArrowRight size={14} />
+              </button>
             )}
-            <button className="landing-mobile-item highlight" onClick={() => onLaunchConsole('operations')}>
-              Launch Twin Console <ArrowRight size={14} />
-            </button>
           </div>
         )}
       </nav>
@@ -238,10 +242,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 2. Above The Fold Hero Section */}
       <header id="hero" className="landing-hero-section">
         <div className="landing-hero-content">
-          {/* Proof Pill */}
-          <div className="landing-status-badge">
-            <span className="landing-pulse-dot"></span>
-            <span className="badge-text">1.8 km Nagar Road Arterial • Viman Nagar ↔ Somnath Nagar</span>
+          {/* Luminous Shimmer Tag */}
+          <div className="landing-shimmer-tag">
+            <span className="shimmer-pulse-gem"></span>
+            <span className="shimmer-tag-title">PRECISION URBAN MOBILITY & ENERGY TWIN</span>
+            <span className="shimmer-tag-sep">/</span>
+            <span className="shimmer-tag-metric">REAL-TIME DECISION SUPPORT</span>
           </div>
 
           {/* Headline per B5 (No hyphens, meaningful breaks, left-to-right gradient) */}
@@ -251,16 +257,24 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
           {/* Subheadline */}
           <p className="landing-hero-subheadline">
-            Synchronize traffic velocity, building energy consumption, and environmental metrics along the Nagar Road corridor with verifiable mathematical provenance.
+            Synchronize traffic velocity, building energy consumption, and environmental metrics along the dual arterial corridor with verifiable mathematical provenance.
           </p>
 
           {/* CTA Group */}
           <div className="landing-cta-group">
             <button
               className="landing-btn-large-primary"
-              onClick={() => onLaunchConsole('operations')}
+              onClick={() => {
+                if (authUser) {
+                  onLaunchConsole('operations');
+                } else if (onNavigateAuth) {
+                  onNavigateAuth('signup');
+                } else {
+                  onLaunchConsole('auth');
+                }
+              }}
             >
-              <span>Launch Twin Console</span>
+              <span>{authUser ? 'Dashboard' : 'Get Started'}</span>
               <ArrowRight size={16} />
             </button>
             <button
@@ -289,97 +303,36 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
         </div>
 
-        {/* Hero Visual: Interactive Corridor Twin Preview Card */}
-        <div className="landing-hero-visual-card">
-          <div className="preview-card-header">
-            <div className="preview-window-controls">
-              <span className="window-dot red"></span>
-              <span className="window-dot yellow"></span>
-              <span className="window-dot green"></span>
-            </div>
-            <div className="preview-title-bar">
-              <Compass size={13} color="var(--color-primary)" />
-              <span>corridor-telemetry-twin • Nagar Road Eastbound / Westbound</span>
-            </div>
-            <div className="preview-mode-switch">
-              <button
-                className={`preview-mode-btn ${activePreviewMode === 'simulation' ? 'active' : ''}`}
-                onClick={() => setActivePreviewMode('simulation')}
-              >
-                SIMULATION
-              </button>
-              <button
-                className={`preview-mode-btn ${activePreviewMode === 'replay' ? 'active' : ''}`}
-                onClick={() => setActivePreviewMode('replay')}
-              >
-                REPLAY
-              </button>
-            </div>
+        {/* Hero Visual: Animated Data Orbit Canvas */}
+        <div className="landing-hero-orbit-canvas">
+          <div className="orbit-ring orbit-ring-1">
+            <div className="orbit-particle particle-cyan"></div>
+          </div>
+          <div className="orbit-ring orbit-ring-2">
+            <div className="orbit-particle particle-violet"></div>
+          </div>
+          <div className="orbit-ring orbit-ring-3">
+            <div className="orbit-particle particle-amber"></div>
+          </div>
+          <div className="orbit-core">
+            <DigitalTwinLogo size={48} glow />
           </div>
 
-          <div className="preview-card-body">
-            {/* Interactive Corridor Visual Representation */}
-            <div className="preview-map-schematic">
-              <div className="schematic-road-strip">
-                <div className="schematic-intersection west">
-                  <div className="node-marker">INT-VN-01</div>
-                  <div className="node-label">Viman Nagar Chowk</div>
-                  <span className="node-status-pill green">Coordinated (110s)</span>
-                </div>
-
-                <div className="schematic-corridor-links">
-                  <div className="schematic-segment top">
-                    <span className="seg-name">SEG-NR-EB-01 (Nagar Rd EB)</span>
-                    <span className="seg-speed">{activePreviewMode === 'simulation' ? '34.2 km/h' : '28.6 km/h'}</span>
-                    <div className="seg-flow-bar" style={{ width: activePreviewMode === 'simulation' ? '68%' : '78%' }}></div>
-                  </div>
-                  <div className="schematic-building-anchor">
-                    <div className="building-box">
-                      <div className="building-icon"><Zap size={13} /></div>
-                      <div className="building-meta">
-                        <span className="building-name">BLD-PHOENIX-01</span>
-                        <span className="building-power">{activePreviewMode === 'simulation' ? '4,862.0 kW' : '4,910.4 kW'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="schematic-segment bottom">
-                    <span className="seg-name">SEG-NR-WB-01 (Nagar Rd WB)</span>
-                    <span className="seg-speed">{activePreviewMode === 'simulation' ? '31.8 km/h' : '26.4 km/h'}</span>
-                    <div className="seg-flow-bar" style={{ width: activePreviewMode === 'simulation' ? '72%' : '84%' }}></div>
-                  </div>
-                </div>
-
-                <div className="schematic-intersection east">
-                  <div className="node-marker">INT-SN-01</div>
-                  <div className="node-label">Somnath Nagar Chowk</div>
-                  <span className="node-status-pill green">Coordinated (110s)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Real-Time Corridor Telemetry Matrix */}
-            <div className="preview-telemetry-grid">
-              <div className="preview-metric">
-                <span className="metric-label">Corridor Speed</span>
-                <span className="metric-value font-mono">{activePreviewMode === 'simulation' ? '33.0 km/h' : '27.5 km/h'}</span>
-                <span className="metric-provenance simulation">Mode: {activePreviewMode.toUpperCase()}</span>
-              </div>
-              <div className="preview-metric">
-                <span className="metric-label">Commercial Peak Load</span>
-                <span className="metric-value font-mono">4,862 kW</span>
-                <span className="metric-provenance live">HVAC Cooling: 62%</span>
-              </div>
-              <div className="preview-metric">
-                <span className="metric-label">Conformal Uncertainty</span>
-                <span className="metric-value font-mono">± 3.4 km/h</span>
-                <span className="metric-provenance predicted">90% Coverage Band</span>
-              </div>
-              <div className="preview-metric">
-                <span className="metric-label">Actuation Authority</span>
-                <span className="metric-value font-mono text-success">Read-Only</span>
-                <span className="metric-provenance replay">Advisory Mode</span>
-              </div>
-            </div>
+          {/* Floating Metric Cards */}
+          <div className="orbit-metric-card orbit-mc-1">
+            <span className="orbit-mc-label font-mono">CORRIDOR SPEED</span>
+            <span className="orbit-mc-value font-mono">33.0 km/h</span>
+            <span className="orbit-mc-tag live">LIVE</span>
+          </div>
+          <div className="orbit-metric-card orbit-mc-2">
+            <span className="orbit-mc-label font-mono">PEAK LOAD</span>
+            <span className="orbit-mc-value font-mono">4,862 kW</span>
+            <span className="orbit-mc-tag simulation">SIMULATION</span>
+          </div>
+          <div className="orbit-metric-card orbit-mc-3">
+            <span className="orbit-mc-label font-mono">UNCERTAINTY</span>
+            <span className="orbit-mc-value font-mono">&plusmn; 3.4 km/h</span>
+            <span className="orbit-mc-tag predicted">PREDICTED</span>
           </div>
         </div>
       </header>
@@ -387,6 +340,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 3. Mandatory B11 Tagline Reveal Section */}
       <section className="landing-tagline-section" ref={taglineSectionRef}>
         <div className="landing-tagline-container">
+          <div className="tagline-eyebrow">
+            <span className="eyebrow-pulse"></span>
+            <span>Core Philosophy & Operational Integrity</span>
+          </div>
           <p className="landing-tagline-copy">
             {taglineWords.map((word, idx) => (
               <span
@@ -405,7 +362,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="section-header">
           <div className="landing-badge font-mono">
             <Activity size={13} color="var(--color-primary)" />
-            <span>REAL-TIME CORRIDOR TELEMETRY • VIMAN NAGAR ↔ SOMNATH NAGAR</span>
+            <span>REAL-TIME ARTERIAL CORRIDOR TELEMETRY</span>
           </div>
           <h2 className="section-title">High-Fidelity Corridor Intelligence Architecture</h2>
           <p className="section-subtitle">
@@ -421,17 +378,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <div className="bento-icon-box"><Car size={18} color="var(--color-primary)" /></div>
                 <div>
                   <h3 className="bento-title">Arterial Kinematics & Velocity Synchronization</h3>
-                  <span className="bento-sub font-mono">10 Monitored Segments • Nagar Road Corridor</span>
+                  <span className="bento-sub font-mono">10 Monitored Segments • Dual Arterial Corridor</span>
                 </div>
               </div>
-              <button className="bento-link-btn" onClick={() => onLaunchConsole('traffic')}>
-                <span>Console</span> <ArrowRight size={13} />
-              </button>
             </div>
             <p className="bento-text">
               Real-time velocity tracking across 10 corridor segments calibrated against physical loop detector arrays and microscopic SUMO traffic simulations.
             </p>
-            <ArterialWaveAsset speed={previewSpeed} />
+            <ArterialWaveAsset />
           </div>
 
           {/* Bento Cell 2: Span 1 col - Commercial Building Energy Load */}
@@ -444,9 +398,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="bento-sub font-mono">BLD-PHOENIX-01 • 15m Telemetry</span>
                 </div>
               </div>
-              <button className="bento-link-btn" onClick={() => onLaunchConsole('energy')}>
-                <span>Load</span> <ArrowRight size={13} />
-              </button>
             </div>
             <p className="bento-text">
               15-minute interval power profiling with automated pre-cooling advisories to shave 380 kW during peak tariff hours.
@@ -464,9 +415,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="bento-sub font-mono">LightGBM • TreeSHAP Explainability</span>
                 </div>
               </div>
-              <button className="bento-link-btn" onClick={() => onLaunchConsole('scenarios')}>
-                <span>Models</span> <ArrowRight size={13} />
-              </button>
             </div>
             <p className="bento-text">
               Zero speculative forecasts. Every velocity prediction is bounded by rigorous conformal uncertainty bands and TreeSHAP feature attributions.
@@ -484,9 +432,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="bento-sub font-mono">Krauss Car-Following Model</span>
                 </div>
               </div>
-              <button className="bento-link-btn" onClick={() => onLaunchConsole('scenarios')}>
-                <span>Simulate</span> <ArrowRight size={13} />
-              </button>
             </div>
             <p className="bento-text">
               Multi-lane microscopic vehicle physics with calibrated gap-acceptance, queue dissipation, and BRTS transit priority lanes.
@@ -501,15 +446,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <div className="bento-icon-box"><MapPin size={18} color="var(--color-primary-hover)" /></div>
                 <div>
                   <h3 className="bento-title">Monitored Corridor Physical Topology</h3>
-                  <span className="bento-sub font-mono">1.8 km Nagar Road • Viman Nagar Chowk ↔ Somnath Nagar Chowk</span>
+                  <span className="bento-sub font-mono">Dual Arterial Corridor • Nodes INT-VN-01 ↔ INT-SN-01</span>
                 </div>
               </div>
-              <button className="bento-link-btn" onClick={() => onLaunchConsole('operations')}>
-                <span>3D Diorama</span> <ArrowRight size={13} />
-              </button>
             </div>
             <p className="bento-text">
-              Architectural diorama registering Viman Nagar Chowk (INT-VN-01), Somnath Nagar Chowk (INT-SN-01), and the Phoenix Marketcity complex.
+              Architectural diorama registering West Node (INT-VN-01), East Node (INT-SN-01), and the commercial facility complex (BLD-PHOENIX-01).
             </p>
             <CorridorDioramaAsset />
           </div>
@@ -659,9 +601,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <section className="landing-stats-strip">
         <div className="stats-strip-container">
           <div className="stat-column">
-            <span className="stat-value font-mono">1.8 km</span>
+            <span className="stat-value font-mono">10 Seg</span>
             <span className="stat-label">Arterial Corridor</span>
-            <span className="stat-sub">Nagar Road, Pune</span>
+            <span className="stat-sub">Dual Direction Topology</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-column">
@@ -693,7 +635,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 8. Frequently Asked Questions */}
       <section id="faq" className="landing-section dark-alt" ref={(el) => (revealRefs.current[3] = el)}>
         <div className="section-header">
-          <span className="section-eyebrow">Municipal Inquiries</span>
+          <span className="section-eyebrow">Common Questions</span>
           <h2 className="section-title">Frequently asked questions</h2>
           <p className="section-subtitle">
             Direct, plain-language answers addressing municipal safety, predictive modeling, and system privacy.
@@ -709,9 +651,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             >
               <div className="faq-question-row">
                 <h3 className="faq-question-text">{item.q}</h3>
-                <button className="faq-toggle-btn" aria-label="Toggle answer">
-                  {activeFaq === index ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
+                <div className={`faq-indicator-icon ${activeFaq === index ? 'rotated' : ''}`}>
+                  <ChevronDown size={15} />
+                </div>
               </div>
               {activeFaq === index && (
                 <div className="faq-answer-row">
@@ -731,7 +673,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <span>Ready for Municipal Demonstration</span>
           </div>
           <h2 className="final-cta-title">
-            Inspect the Nagar Road corridor digital twin live
+            Inspect the arterial corridor digital twin live
           </h2>
           <p className="final-cta-subtitle">
             Explore 2D and 3D geospatial views, time scrubber historical replay, microscopic scenario simulations, and commercial energy advisories in real time.
@@ -739,9 +681,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="final-cta-actions">
             <button
               className="landing-btn-large-primary"
-              onClick={() => onLaunchConsole('operations')}
+              onClick={() => {
+                if (authUser) {
+                  onLaunchConsole('operations');
+                } else if (onNavigateAuth) {
+                  onNavigateAuth('signup');
+                } else {
+                  onLaunchConsole('auth');
+                }
+              }}
             >
-              <span>Launch Twin Console</span>
+              <span>{authUser ? 'Dashboard' : 'Get Started'}</span>
               <ArrowRight size={16} />
             </button>
             <button
@@ -767,7 +717,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Evidence backed urban decision-support platform for arterial transportation and commercial energy corridor analytics.
             </p>
             <div className="footer-corridor-badge">
-              <span>Boundary: Viman Nagar Chowk ↔ Somnath Nagar Chowk (1.8 km)</span>
+              <span>Boundary: Arterial Node INT-VN-01 ↔ Node INT-SN-01</span>
             </div>
           </div>
 
@@ -786,14 +736,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <button className="footer-link" onClick={() => onLaunchConsole('evaluation')}>Pilot Evaluation</button>
               <button className="footer-link" onClick={() => onLaunchConsole('health')}>System Health</button>
               <button className="footer-link" onClick={() => scrollToAnchor('provenance')}>Provenance Contract</button>
-            </div>
-
-            <div className="footer-link-group">
-              <span className="group-title">Architecture</span>
-              <span className="footer-info">FastAPI & Python 3.12</span>
-              <span className="footer-info">TimescaleDB & PostgreSQL</span>
-              <span className="footer-info">CesiumJS & MapLibre GL</span>
-              <span className="footer-info">SUMO Physics Simulation</span>
             </div>
           </div>
         </div>
