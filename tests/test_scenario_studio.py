@@ -125,3 +125,39 @@ def test_propose_advisory_nonexistent_run():
         json={"reviewer": "Nobody"}
     )
     assert res.status_code == 404
+
+
+def test_canonical_scenario_run_coordination_and_persistence():
+    """Verify POST /api/v1/scenario-runs passes coordination offset and persists to DB."""
+    payload = {
+        "scenarioTemplateId": "SCEN-INT-02",
+        "coordinationOffsetSec": 45.0,
+        "demandMultiplier": 1.15,
+        "randomSeed": 888
+    }
+    response = client.post("/api/v1/scenario-runs", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sourceMode"] == "SIMULATION"
+    assert data["scenarioTemplateId"] == "SCEN-INT-02"
+    assert data["parameters"]["coordinationOffsetSec"] == 45.0
+    run_id = data["runId"]
+
+    # Verify retrieval from canonical GET endpoint
+    get_res = client.get(f"/api/v1/scenario-runs/{run_id}")
+    assert get_res.status_code == 200
+    retrieved = get_res.json()
+    assert retrieved["runId"] == run_id
+    assert retrieved["scenarioTemplateId"] == "SCEN-INT-02"
+
+    # Verify DB persistence by clearing in-memory cache and fetching directly
+    scenario_service._RUNS_CACHE.clear()
+    db_run = scenario_service.get_run(run_id)
+    assert db_run is not None
+    assert db_run["runId"] == run_id
+    assert db_run["templateId"] == "SCEN-INT-02"
+    assert db_run["parameters"]["coordinationOffsetSec"] == 45.0
+    assert "baseline" in db_run
+    assert "intervention" in db_run
+    assert "deltas" in db_run
+

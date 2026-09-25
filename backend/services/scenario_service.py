@@ -73,6 +73,7 @@ _RUNS_CACHE: Dict[str, Dict[str, Any]] = {}
 
 class ScenarioService:
     """Service layer for scenario execution, comparison, and provenance isolation."""
+    _RUNS_CACHE = _RUNS_CACHE
 
     def __init__(self):
         self.runner = SUMOCorridorRunner()
@@ -141,6 +142,7 @@ class ScenarioService:
         record = {
             "runId": run_id,
             "templateId": intervention_template_id,
+            "scenarioTemplateId": intervention_template_id,
             "name": scenario_name,
             "status": "COMPLETED",
             "sourceMode": "SIMULATION",
@@ -375,6 +377,7 @@ class ScenarioService:
                         rec = {
                             "runId": row["id"],
                             "templateId": row["template_id"],
+                            "scenarioTemplateId": row["template_id"],
                             "name": row["name"],
                             "status": row["status"],
                             "sourceMode": row["source_mode"],

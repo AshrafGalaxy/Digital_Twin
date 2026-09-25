@@ -19,6 +19,8 @@ Project documentation is structured concisely:
 
 ### Root Essential Documents
 - [README.md](README.md) — System summary, quickstart commands, and directory navigation.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Team contribution guidelines, dev setup, branching, testing, and PR workflow.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Contributor Covenant v2.1 code of conduct and community standards.
 - [AGENTS.md](AGENTS.md) — Mandatory execution contract, core invariants, provenance rules, workspace hygiene, and Definition of Done.
 - [PRD.md](PRD.md) — Executive Product Requirements Document (FR-01 to FR-10, NFRs, acceptance criteria).
 
