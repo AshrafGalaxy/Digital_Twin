@@ -133,16 +133,18 @@ class ContinuousAggregatorService:
         """
         Queries materialized 15-minute rolling aggregates with optional segment filtering.
         """
-        start_time = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).isoformat()
+        start_dt = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+        start_time_iso = start_dt.isoformat()
+        start_time_std = start_dt.strftime('%Y-%m-%d %H:%M:%S')
         
         query_str = """
             SELECT bucket_15m, segment_id, sample_count, avg_speed_kmh,
                    p85_speed_kmh, total_flow_veh, avg_occupancy_percent,
                    avg_queue_length_meters, max_queue_length_meters, avg_congestion_index
             FROM traffic_15m_aggregates
-            WHERE bucket_15m >= :start_time
+            WHERE (bucket_15m >= :start_time_iso OR bucket_15m >= :start_time_std)
         """
-        params: Dict[str, Any] = {"start_time": start_time, "limit": limit}
+        params: Dict[str, Any] = {"start_time_iso": start_time_iso, "start_time_std": start_time_std, "limit": limit}
 
         if segment_id:
             query_str += " AND segment_id = :segment_id"
@@ -175,10 +177,16 @@ class ContinuousAggregatorService:
     @staticmethod
     async def seed_synthetic_historical_rollups(session: AsyncSession) -> int:
         """
-        Seeds synthetic 6-hour historical 15m aggregates if the table is empty,
+        Seeds synthetic 6-hour historical 15m aggregates if the table has no recent data,
         ensuring immediate visualization data in Traffic Analytics charts.
         """
-        check = await session.execute(text("SELECT COUNT(*) FROM traffic_15m_aggregates"))
+        start_24h_dt = datetime.now(timezone.utc) - timedelta(hours=24)
+        start_24h_iso = start_24h_dt.isoformat()
+        start_24h_std = start_24h_dt.strftime('%Y-%m-%d %H:%M:%S')
+        check = await session.execute(
+            text("SELECT COUNT(*) FROM traffic_15m_aggregates WHERE bucket_15m >= :start_24h_iso OR bucket_15m >= :start_24h_std"),
+            {"start_24h_iso": start_24h_iso, "start_24h_std": start_24h_std}
+        )
         if (check.scalar() or 0) > 0:
             return 0
 
