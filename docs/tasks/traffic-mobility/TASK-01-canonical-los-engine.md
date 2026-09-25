@@ -13,7 +13,9 @@
 
 Currently, the Level of Service (LOS A–F) indicator is calculated superficially on the frontend client (`TrafficAnalyticsView.tsx`) using only a raw speed threshold check. 
 
-In a production digital twin, Level of Service and hydrodynamic state must be **canonically calculated on the server** during state projection and aggregate rollups. The calculation must adhere to the **Indian Highway Capacity Manual (IRC:106 guidelines)** combining both space-mean speed ($v$) and volume-to-capacity ratio ($V/C = q / C_{\text{veh}}$). This ensures consistency across APIs, simulation calibrators, ML feature stores, and frontend dashboards.
+In a production digital twin, Level of Service and hydrodynamic state must be **canonically calculated on the server** during state projection and aggregate rollups. To ensure the platform remains **100% location-agnostic across any city, campus, or highway network worldwide**, the engine must implement a **Pluggable Capacity & LOS Policy Profile**:
+- The core hydrodynamic engine calculates universal physical properties: Space-Mean Speed ($v$), Flow Rate ($q$), Density ($k$), Volume-to-Capacity ratio ($V/C = q / C_{\text{link}}$), and Normalized Congestion Index ($CI$).
+- The Level of Service classification (LOS A through F) is evaluated against the **configured standard profile of the Study Area** (e.g. US HCM 6th Edition, UK DMRB, Indo-HCM / IRC:106 for the Pune pilot corridor, or custom campus thresholds).
 
 ---
 
@@ -30,18 +32,27 @@ Where:
 
 ### 2.2 Normalized Congestion Index (CI)
 $$CI = \min\left(1.0, \; \max\left(0.0, \; 1.0 - \frac{v_{\text{observed}}}{v_{\text{free}}}\right)\right)$$
-Where $v_{\text{free}}$ is the link design speed (default: $50.0\text{ km/h}$ for 6-lane urban divided arterial).
+Where $v_{\text{free}}$ is the configurable link free-flow design speed (e.g., $50.0\text{ km/h}$ for urban arterial, $30.0\text{ km/h}$ for campus links).
 
-### 2.3 IRC:106 Level of Service Criteria for Urban Arterials
+### 2.3 Pluggable Level of Service (LOS) Policy Profiles
 
-| Level of Service (LOS) | Volume-to-Capacity Ratio ($V/C$) | Space-Mean Speed ($v$) | Operational Condition |
+The platform supports multiple international capacity frameworks loaded per `StudyArea`:
+
+#### A. Indo-HCM / IRC:106 Profile (Default for Pune Pilot Corridor)
+| Level of Service (LOS) | Volume-to-Capacity Ratio ($V/C$) | Space-Mean Speed ($v / v_{\text{free}}$) | Operational Condition |
 |---|---|---|---|
-| **LOS A** | $V/C \le 0.35$ | $v \ge 50.0\text{ km/h}$ | Free flow; low density; individual speeds unhindered. |
-| **LOS B** | $0.35 < V/C \le 0.50$ | $v \ge 40.0\text{ km/h}$ | Reasonably free flow; minor restriction on maneuvering. |
-| **LOS C** | $0.50 < V/C \le 0.70$ | $v \ge 30.0\text{ km/h}$ | Stable flow; maneuvers noticeably restricted by traffic. |
-| **LOS D** | $0.70 < V/C \le 0.85$ | $v \ge 22.0\text{ km/h}$ | Approaching unstable flow; high density; queues form at signals. |
-| **LOS E** | $0.85 < V/C \le 1.00$ | $v \ge 15.0\text{ km/h}$ | Unstable flow; operation at or near corridor design capacity. |
-| **LOS F** | $V/C > 1.00$ | $v < 15.0\text{ km/h}$ | Forced/breakdown flow; severe queue spillback; stop-and-go. |
+| **LOS A** | $V/C \le 0.35$ | $v \ge 0.90 \cdot v_{\text{free}}$ | Free flow; low density; individual speeds unhindered. |
+| **LOS B** | $0.35 < V/C \le 0.50$ | $v \ge 0.80 \cdot v_{\text{free}}$ | Reasonably free flow; minor restriction on maneuvering. |
+| **LOS C** | $0.50 < V/C \le 0.70$ | $v \ge 0.60 \cdot v_{\text{free}}$ | Stable flow; maneuvers noticeably restricted by traffic. |
+| **LOS D** | $0.70 < V/C \le 0.85$ | $v \ge 0.45 \cdot v_{\text{free}}$ | Approaching unstable flow; high density; queues form at signals. |
+| **LOS E** | $0.85 < V/C \le 1.00$ | $v \ge 0.30 \cdot v_{\text{free}}$ | Unstable flow; operation at or near corridor design capacity. |
+| **LOS F** | $V/C > 1.00$ | $v < 0.30 \cdot v_{\text{free}}$ | Forced/breakdown flow; severe queue spillback; stop-and-go. |
+
+#### B. US Highway Capacity Manual (HCM 6th Edition) Profile
+Configurable by changing `los_policy_standard: "US_HCM_6TH"`: uses control delay per vehicle ($\text{seconds/veh}$) for signalized intersections and travel speed percentage for urban arterials.
+
+#### C. Custom Campus / District Profile
+Allows private campuses, ports, or industrial parks to define custom $V/C$ breakpoints and speed thresholds without code changes.
 
 *Boundary Condition:* If $V/C$ and speed suggest differing LOS grades, the worse grade is selected to represent actual driver delay truthfully.
 
