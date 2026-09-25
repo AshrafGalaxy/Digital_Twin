@@ -52,7 +52,63 @@ export const ScenarioStudioView: React.FC = () => {
     fetchRecentScenarioRuns()
       .then(setRecentRuns)
       .catch(err => console.error('Failed loading recent runs', err));
+
+    // Prefill reviewer name if authenticated municipal officer session exists
+    try {
+      const saved = localStorage.getItem('digital_twin_auth_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.name) {
+          setReviewerName(`${parsed.name} (${parsed.role || 'Traffic Analyst'})`);
+        }
+      }
+    } catch {
+      // fallback to default
+    }
   }, []);
+
+  const handleSelectTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setRunResult(null);
+    setAdvisorySuccess(null);
+    setError(null);
+    const tmpl = templates.find(t => t.id === templateId);
+    if (tmpl?.defaultParameters) {
+      if (tmpl.defaultParameters.greenExtensionSec !== undefined) {
+        setGreenExtension(Number(tmpl.defaultParameters.greenExtensionSec));
+      }
+      if (tmpl.defaultParameters.coordinationOffsetSec !== undefined) {
+        setCoordinationOffset(Number(tmpl.defaultParameters.coordinationOffsetSec));
+      }
+      if (tmpl.defaultParameters.demandMultiplier !== undefined) {
+        setDemandMultiplier(Number(tmpl.defaultParameters.demandMultiplier));
+      }
+      if (tmpl.defaultParameters.randomSeed !== undefined) {
+        setRandomSeed(Number(tmpl.defaultParameters.randomSeed));
+      }
+    }
+  };
+
+  const handleSelectRecentRun = (run: any) => {
+    setRunResult(run);
+    setSelectedTemplateId(run.templateId || 'SCEN-INT-01');
+    if (run.parameters) {
+      if (run.parameters.greenExtensionSec !== undefined) {
+        setGreenExtension(Number(run.parameters.greenExtensionSec));
+      }
+      if (run.parameters.coordinationOffsetSec !== undefined) {
+        setCoordinationOffset(Number(run.parameters.coordinationOffsetSec));
+      }
+      if (run.parameters.demandMultiplier !== undefined) {
+        setDemandMultiplier(Number(run.parameters.demandMultiplier));
+      }
+      if (run.parameters.randomSeed !== undefined) {
+        setRandomSeed(Number(run.parameters.randomSeed));
+      }
+    }
+    setAdvisorySuccess(null);
+    setError(null);
+  };
 
   const handleRunSimulation = async () => {
     setIsRunning(true);
@@ -64,7 +120,7 @@ export const ScenarioStudioView: React.FC = () => {
         greenExtensionSec: greenExtension,
         coordinationOffsetSec: coordinationOffset,
         demandMultiplier: demandMultiplier,
-        randomSeed: randomSeed
+        randomSeed: Math.max(1, Math.min(999999, randomSeed || 42))
       });
       setRunResult(result);
       fetchRecentScenarioRuns().then(setRecentRuns).catch(() => null);
@@ -91,6 +147,101 @@ export const ScenarioStudioView: React.FC = () => {
     } finally {
       setIsSubmittingAdvisory(false);
     }
+  };
+
+  // Dynamic Delta Badge Renderers
+  const renderTravelTimeDelta = (deltas: any) => {
+    const saved = deltas?.travel_time_saved_sec ?? 0;
+    const pct = deltas?.travel_time_delta_pct ?? 0;
+    if (saved > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingDown size={14} />
+          {pct}% ({saved}s saved)
+        </span>
+      );
+    } else if (saved < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingUp size={14} />
+          +{Math.abs(pct)}% ({Math.abs(saved)}s added)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const renderDelayDelta = (deltas: any) => {
+    const saved = deltas?.delay_saved_sec ?? 0;
+    const pct = deltas?.delay_delta_pct ?? 0;
+    if (saved > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingDown size={14} />
+          {pct}% ({saved}s delay saved)
+        </span>
+      );
+    } else if (saved < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingUp size={14} />
+          +{Math.abs(pct)}% ({Math.abs(saved)}s delay added)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const renderQueueDelta = (deltas: any) => {
+    const reduced = deltas?.queue_reduced_meters ?? 0;
+    const pct = deltas?.queue_length_delta_pct ?? 0;
+    if (reduced > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingDown size={14} />
+          {pct}% ({reduced}m clear)
+        </span>
+      );
+    } else if (reduced < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingUp size={14} />
+          +{Math.abs(pct)}% ({Math.abs(reduced)}m spillback)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const renderThroughputDelta = (deltas: any) => {
+    const added = deltas?.additional_throughput_vph ?? 0;
+    const pct = deltas?.throughput_delta_pct ?? 0;
+    if (added > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingUp size={14} />
+          +{pct}% (+{added} vph)
+        </span>
+      );
+    } else if (added < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingDown size={14} />
+          {pct}% ({added} vph)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const getVerdictColor = (verdict: string) => {
+    if (verdict?.includes('POSITIVE') || verdict?.includes('RECOMMENDED')) {
+      return '#34D399';
+    }
+    if (verdict?.includes('DEGRAD') || verdict?.includes('NEGATIVE')) {
+      return '#F87171';
+    }
+    return 'var(--color-primary, #388BFD)';
   };
 
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
@@ -137,11 +288,7 @@ export const ScenarioStudioView: React.FC = () => {
             <select
               className="control-select"
               value={selectedTemplateId}
-              onChange={(e) => {
-                setSelectedTemplateId(e.target.value);
-                setRunResult(null);
-                setAdvisorySuccess(null);
-              }}
+              onChange={(e) => handleSelectTemplate(e.target.value)}
             >
               {templates.map(t => (
                 <option key={t.id} value={t.id}>
@@ -200,7 +347,7 @@ export const ScenarioStudioView: React.FC = () => {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : selectedTemplateId === 'SCEN-INT-02' ? (
             <div className="control-group" style={{ marginBottom: '16px' }}>
               <div className="slider-label-row">
                 <span className="control-label">Arterial Progression Offset (VN-01 ↔ SN-01)</span>
@@ -241,6 +388,15 @@ export const ScenarioStudioView: React.FC = () => {
                 >
                   50s Wide
                 </button>
+              </div>
+            </div>
+          ) : (
+            <div className="control-group" style={{ marginBottom: '16px', padding: '12px 14px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
+                Reference Baseline Control Plan
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                Calibrated 4-phase fixed-time control (120s cycle, 35s Nagar Road EB split). Evaluating nominal performance without dynamic signal intervention.
               </div>
             </div>
           )}
@@ -298,8 +454,13 @@ export const ScenarioStudioView: React.FC = () => {
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="number"
+                min="1"
+                max="999999"
                 value={randomSeed}
-                onChange={(e) => setRandomSeed(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setRandomSeed(isNaN(val) ? 42 : Math.max(1, Math.min(999999, val)));
+                }}
                 className="control-input"
                 style={{ flex: 1 }}
               />
@@ -355,18 +516,52 @@ export const ScenarioStudioView: React.FC = () => {
                   Audit Trail of Recent Runs ({recentRuns.length})
                 </span>
               </div>
-              <div className="recent-runs-list" style={{ maxHeight: '140px', overflowY: 'auto' }}>
-                {recentRuns.map((r, idx) => (
-                  <div key={idx} className="recent-run-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '12px' }}>
-                    <span className="mono-cell" style={{ fontSize: '11px' }}>{r.runId ? r.runId.split(':').pop() : `RUN-${idx + 1}`}</span>
-                    <span className="provenance-badge badge-simulation" style={{ fontSize: '10px' }}>
-                      {r.templateId || 'SCEN-INT-01'}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#34D399', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                      {r.deltas?.delay_saved_sec ? `-${r.deltas.delay_saved_sec}s delay` : 'Completed'}
-                    </span>
-                  </div>
-                ))}
+              <div className="recent-runs-list" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                {recentRuns.map((r, idx) => {
+                  const isSelected = runResult?.runId === r.runId;
+                  const delaySaved = r.deltas?.delay_saved_sec;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="recent-run-item"
+                      onClick={() => handleSelectRecentRun(r)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '7px 10px',
+                        background: isSelected ? 'rgba(47, 129, 247, 0.16)' : 'transparent',
+                        border: 'none',
+                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        borderLeft: isSelected ? '3px solid #2F81F7' : '3px solid transparent',
+                        borderRadius: 'var(--radius-sm, 4px)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Click to view comparative simulation KPIs"
+                    >
+                      <span className="mono-cell" style={{ fontSize: '11px', color: isSelected ? '#58A6FF' : 'var(--text-main)' }}>
+                        {r.runId ? r.runId.split(':').pop() : `RUN-${idx + 1}`}
+                      </span>
+                      <span className="provenance-badge badge-simulation" style={{ fontSize: '10px' }}>
+                        {r.templateId || 'SCEN-INT-01'}
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        color: delaySaved !== undefined ? (delaySaved > 0 ? '#34D399' : delaySaved < 0 ? '#F87171' : 'var(--text-muted)') : '#34D399',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 600
+                      }}>
+                        {delaySaved !== undefined
+                          ? (delaySaved > 0 ? `-${delaySaved}s delay` : delaySaved < 0 ? `+${Math.abs(delaySaved)}s delay` : 'Baseline')
+                          : 'Completed'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -390,7 +585,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
                     EVALUATION VERDICT
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-primary)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: getVerdictColor(runResult.deltas.overall_verdict), marginTop: '2px' }}>
                     {runResult.deltas.overall_verdict.replace(/_/g, ' ')}
                   </div>
                 </div>
@@ -428,10 +623,7 @@ export const ScenarioStudioView: React.FC = () => {
                       {runResult.intervention.kpis.average_travel_time_sec.toFixed(1)} s
                     </td>
                     <td>
-                      <span className="delta-badge delta-positive">
-                        <TrendingDown size={14} />
-                        {runResult.deltas.travel_time_delta_pct}% ({runResult.deltas.travel_time_saved_sec}s saved)
-                      </span>
+                      {renderTravelTimeDelta(runResult.deltas)}
                     </td>
                   </tr>
 
@@ -448,10 +640,7 @@ export const ScenarioStudioView: React.FC = () => {
                       {runResult.intervention.kpis.average_delay_sec.toFixed(1)} s
                     </td>
                     <td>
-                      <span className="delta-badge delta-positive">
-                        <TrendingDown size={14} />
-                        {runResult.deltas.delay_delta_pct}% ({runResult.deltas.delay_saved_sec}s saved)
-                      </span>
+                      {renderDelayDelta(runResult.deltas)}
                     </td>
                   </tr>
 
@@ -468,10 +657,7 @@ export const ScenarioStudioView: React.FC = () => {
                       {runResult.intervention.kpis.p95_queue_length_meters.toFixed(1)} m
                     </td>
                     <td>
-                      <span className="delta-badge delta-positive">
-                        <TrendingDown size={14} />
-                        {runResult.deltas.queue_length_delta_pct}% ({runResult.deltas.queue_reduced_meters}m clear)
-                      </span>
+                      {renderQueueDelta(runResult.deltas)}
                     </td>
                   </tr>
 
@@ -488,10 +674,7 @@ export const ScenarioStudioView: React.FC = () => {
                       {runResult.intervention.kpis.throughput_veh_per_hour.toFixed(0)} vph
                     </td>
                     <td>
-                      <span className="delta-badge delta-positive">
-                        <TrendingUp size={14} />
-                        +{runResult.deltas.throughput_delta_pct}% (+{runResult.deltas.additional_throughput_vph} vph)
-                      </span>
+                      {renderThroughputDelta(runResult.deltas)}
                     </td>
                   </tr>
                 </tbody>

@@ -24,6 +24,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
   const [templates, setTemplates] = useState<ScenarioTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('SCEN-INT-01');
   const [greenExtension, setGreenExtension] = useState<number>(15);
+  const [coordinationOffset, setCoordinationOffset] = useState<number>(35);
   const [demandMultiplier, setDemandMultiplier] = useState<number>(1.0);
   const [randomSeed, setRandomSeed] = useState<number>(42);
 
@@ -44,6 +45,27 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
 
   if (!isOpen) return null;
 
+  const handleSelectTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setRunResult(null);
+    setError(null);
+    const tmpl = templates.find(t => t.id === templateId);
+    if (tmpl?.defaultParameters) {
+      if (tmpl.defaultParameters.greenExtensionSec !== undefined) {
+        setGreenExtension(Number(tmpl.defaultParameters.greenExtensionSec));
+      }
+      if (tmpl.defaultParameters.coordinationOffsetSec !== undefined) {
+        setCoordinationOffset(Number(tmpl.defaultParameters.coordinationOffsetSec));
+      }
+      if (tmpl.defaultParameters.demandMultiplier !== undefined) {
+        setDemandMultiplier(Number(tmpl.defaultParameters.demandMultiplier));
+      }
+      if (tmpl.defaultParameters.randomSeed !== undefined) {
+        setRandomSeed(Number(tmpl.defaultParameters.randomSeed));
+      }
+    }
+  };
+
   const handleRunSimulation = async () => {
     setIsRunning(true);
     setError(null);
@@ -51,8 +73,9 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
       const result = await runScenario({
         templateId: selectedTemplateId,
         greenExtensionSec: greenExtension,
+        coordinationOffsetSec: coordinationOffset,
         demandMultiplier: demandMultiplier,
-        randomSeed: randomSeed
+        randomSeed: Math.max(1, Math.min(999999, randomSeed || 42))
       });
       setRunResult(result);
     } catch (err: any) {
@@ -60,6 +83,101 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
     } finally {
       setIsRunning(false);
     }
+  };
+
+  // Dynamic Delta Badge Renderers
+  const renderTravelTimeDelta = (deltas: any) => {
+    const saved = deltas?.travel_time_saved_sec ?? 0;
+    const pct = deltas?.travel_time_delta_pct ?? 0;
+    if (saved > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingDown size={14} />
+          {pct}% ({saved}s saved)
+        </span>
+      );
+    } else if (saved < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingUp size={14} />
+          +{Math.abs(pct)}% ({Math.abs(saved)}s added)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const renderDelayDelta = (deltas: any) => {
+    const saved = deltas?.delay_saved_sec ?? 0;
+    const pct = deltas?.delay_delta_pct ?? 0;
+    if (saved > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingDown size={14} />
+          {pct}% ({saved}s delay saved)
+        </span>
+      );
+    } else if (saved < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingUp size={14} />
+          +{Math.abs(pct)}% ({Math.abs(saved)}s delay added)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const renderQueueDelta = (deltas: any) => {
+    const reduced = deltas?.queue_reduced_meters ?? 0;
+    const pct = deltas?.queue_length_delta_pct ?? 0;
+    if (reduced > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingDown size={14} />
+          {pct}% ({reduced}m clear)
+        </span>
+      );
+    } else if (reduced < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingUp size={14} />
+          +{Math.abs(pct)}% ({Math.abs(reduced)}m spillback)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const renderThroughputDelta = (deltas: any) => {
+    const added = deltas?.additional_throughput_vph ?? 0;
+    const pct = deltas?.throughput_delta_pct ?? 0;
+    if (added > 0) {
+      return (
+        <span className="delta-badge delta-positive">
+          <TrendingUp size={14} />
+          +{pct}% (+{added} vph)
+        </span>
+      );
+    } else if (added < 0) {
+      return (
+        <span className="delta-badge delta-negative">
+          <TrendingDown size={14} />
+          {pct}% ({added} vph)
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral">0.0% (baseline)</span>;
+  };
+
+  const getVerdictColor = (verdict: string) => {
+    if (verdict?.includes('POSITIVE') || verdict?.includes('RECOMMENDED')) {
+      return '#34D399';
+    }
+    if (verdict?.includes('DEGRAD') || verdict?.includes('NEGATIVE')) {
+      return '#F87171';
+    }
+    return 'var(--color-primary, #388BFD)';
   };
 
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
@@ -117,7 +235,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
               <select
                 className="control-select"
                 value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                onChange={(e) => handleSelectTemplate(e.target.value)}
               >
                 {templates.map(t => (
                   <option key={t.id} value={t.id}>
@@ -132,31 +250,67 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
               )}
             </div>
 
-            {/* Slider 1: Green Time Extension */}
-            <div className="control-group">
-              <div className="slider-label-row">
-                <span className="control-label">Nagar Road EB Green Extension</span>
-                <span className="slider-value">+{greenExtension}s (50s Green)</span>
+            {/* Dynamic Control depending on template */}
+            {selectedTemplateId === 'SCEN-INT-01' ? (
+              <div className="control-group">
+                <div className="slider-label-row">
+                  <span className="control-label">Nagar Road EB Green Extension</span>
+                  <span className="slider-value">+{greenExtension}s ({35 + greenExtension}s Green Split)</span>
+                </div>
+                <input
+                  type="range"
+                  min="5"
+                  max="25"
+                  step="1"
+                  value={greenExtension}
+                  onChange={(e) => setGreenExtension(Number(e.target.value))}
+                  className="control-slider"
+                  style={{
+                    background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+                  }}
+                  aria-label="Nagar Road EB Green Extension"
+                />
+                <div className="slider-hints">
+                  <span>+5s (Moderate)</span>
+                  <span>+15s (ADR-004 Target)</span>
+                  <span>+25s (High)</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min="5"
-                max="25"
-                step="1"
-                value={greenExtension}
-                onChange={(e) => setGreenExtension(Number(e.target.value))}
-                className="control-slider"
-                style={{
-                  background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
-                }}
-                aria-label="Nagar Road EB Green Extension"
-              />
-              <div className="slider-hints">
-                <span>+5s (Moderate)</span>
-                <span>+15s (ADR-004 Target)</span>
-                <span>+25s (High)</span>
+            ) : selectedTemplateId === 'SCEN-INT-02' ? (
+              <div className="control-group">
+                <div className="slider-label-row">
+                  <span className="control-label">Arterial Progression Offset (VN-01 ↔ SN-01)</span>
+                  <span className="slider-value">{coordinationOffset}s Offset</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="60"
+                  step="1"
+                  value={coordinationOffset}
+                  onChange={(e) => setCoordinationOffset(Number(e.target.value))}
+                  className="control-slider"
+                  style={{
+                    background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((coordinationOffset - 10) / 50) * 100}%, rgba(255, 255, 255, 0.12) ${((coordinationOffset - 10) / 50) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
+                  }}
+                  aria-label="Arterial Progression Offset"
+                />
+                <div className="slider-hints">
+                  <span>25s (Tight)</span>
+                  <span>35s (Optimal Wave)</span>
+                  <span>50s (Wide)</span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="control-group" style={{ padding: '10px 12px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 'var(--radius-sm, 6px)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
+                  Reference Baseline Control Plan
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                  Fixed-time control (120s cycle, 35s Nagar Road EB split). Evaluating nominal performance without dynamic signal intervention.
+                </div>
+              </div>
+            )}
 
             {/* Slider 2: Demand Multiplier */}
             <div className="control-group">
@@ -192,8 +346,13 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
               </div>
               <input
                 type="number"
+                min="1"
+                max="999999"
                 value={randomSeed}
-                onChange={(e) => setRandomSeed(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setRandomSeed(isNaN(val) ? 42 : Math.max(1, Math.min(999999, val)));
+                }}
                 className="control-input"
               />
               <span className="control-caption">
@@ -243,7 +402,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                     <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
                       EVALUATION VERDICT
                     </div>
-                    <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold', color: '#0F4C5C' }}>
+                    <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold', color: getVerdictColor(runResult.deltas.overall_verdict) }}>
                       {runResult.deltas.overall_verdict.replace(/_/g, ' ')}
                     </div>
                   </div>
@@ -281,10 +440,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                         {runResult.intervention.kpis.average_travel_time_sec.toFixed(1)} s
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">
-                          <TrendingDown size={14} />
-                          {runResult.deltas.travel_time_delta_pct}% ({runResult.deltas.travel_time_saved_sec}s saved)
-                        </span>
+                        {renderTravelTimeDelta(runResult.deltas)}
                       </td>
                     </tr>
 
@@ -301,10 +457,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                         {runResult.intervention.kpis.average_delay_sec.toFixed(1)} s
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">
-                          <TrendingDown size={14} />
-                          {runResult.deltas.delay_delta_pct}% ({runResult.deltas.delay_saved_sec}s saved)
-                        </span>
+                        {renderDelayDelta(runResult.deltas)}
                       </td>
                     </tr>
 
@@ -321,10 +474,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                         {runResult.intervention.kpis.p95_queue_length_meters.toFixed(1)} m
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">
-                          <TrendingDown size={14} />
-                          {runResult.deltas.queue_length_delta_pct}% ({runResult.deltas.queue_reduced_meters}m clear)
-                        </span>
+                        {renderQueueDelta(runResult.deltas)}
                       </td>
                     </tr>
 
@@ -341,10 +491,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                         {runResult.intervention.kpis.throughput_veh_per_hour.toFixed(0)} vph
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">
-                          <TrendingUp size={14} />
-                          +{runResult.deltas.throughput_delta_pct}% (+{runResult.deltas.additional_throughput_vph} vph)
-                        </span>
+                        {renderThroughputDelta(runResult.deltas)}
                       </td>
                     </tr>
                   </tbody>

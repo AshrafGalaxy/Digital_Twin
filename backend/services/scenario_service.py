@@ -129,11 +129,15 @@ class ScenarioService:
         )
 
         # 4. Construct Immutable Run Record
-        scenario_name = (
-            f"Signal Split Extension (+{green_extension_sec}s, Seed {random_seed})"
-            if intervention_template_id == "SCEN-INT-01"
-            else f"Arterial Coordination ({coordination_offset_sec}s offset, Seed {random_seed})"
-        )
+        if intervention_template_id == "SCEN-INT-01":
+            scenario_name = f"Signal Split Extension (+{green_extension_sec}s, Seed {random_seed})"
+        elif intervention_template_id == "SCEN-INT-02":
+            scenario_name = f"Arterial Coordination ({coordination_offset_sec}s offset, Seed {random_seed})"
+        elif intervention_template_id == "SCEN-BASE-01":
+            scenario_name = f"Evening Peak Fixed-Time Baseline (Seed {random_seed})"
+        else:
+            scenario_name = f"Corridor Simulation ({intervention_template_id}, Seed {random_seed})"
+
         record = {
             "runId": run_id,
             "templateId": intervention_template_id,
@@ -163,6 +167,7 @@ class ScenarioService:
         }
 
         _RUNS_CACHE[run_id] = record
+        self._persist_run_to_db(record)
         return record
 
     def propose_advisory_from_run(
@@ -276,12 +281,139 @@ class ScenarioService:
         except Exception:
             pass
 
+    def _persist_run_to_db(self, record: Dict[str, Any]) -> None:
+        """Best-effort persistence of scenario run and KPIs to SQLite database."""
+        try:
+            db_path = settings.resolved_sqlite_path
+            if db_path.exists():
+                with sqlite3.connect(str(db_path)) as conn:
+                    cursor = conn.cursor()
+                    # 1. Insert into scenario_runs
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO scenario_runs (
+                            id, template_id, name, status, source_mode,
+                            network_version, demand_version, random_seed, parameters,
+                            started_at, completed_at, artifact_paths
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            record["runId"],
+                            record["templateId"],
+                            record["name"],
+                            record["status"],
+                            record["sourceMode"],
+                            record["networkVersion"],
+                            record["demandVersion"],
+                            record["randomSeed"],
+                            json.dumps(record["parameters"]),
+                            record["executedAt"],
+                            record["executedAt"],
+                            json.dumps({
+                                "baseline": record["baseline"],
+                                "intervention": record["intervention"],
+                                "deltas": record["deltas"],
+                                "governanceNotice": record["governanceNotice"]
+                            })
+                        )
+                    )
+                    # 2. Insert into scenario_kpis (baseline & intervention)
+                    base_kpis = record["baseline"]["kpis"]
+                    cursor.execute(
+                        """
+                        INSERT INTO scenario_kpis (
+                            scenario_run_id, is_baseline, average_travel_time_sec,
+                            average_delay_sec, p95_queue_length_meters, throughput_veh_per_hour,
+                            delta_vs_baseline
+                        ) VALUES (?, 1, ?, ?, ?, ?, '{}')
+                        """,
+                        (
+                            record["runId"],
+                            base_kpis.get("average_travel_time_sec"),
+                            base_kpis.get("average_delay_sec"),
+                            base_kpis.get("p95_queue_length_meters"),
+                            base_kpis.get("throughput_veh_per_hour")
+                        )
+                    )
+                    int_kpis = record["intervention"]["kpis"]
+                    cursor.execute(
+                        """
+                        INSERT INTO scenario_kpis (
+                            scenario_run_id, is_baseline, average_travel_time_sec,
+                            average_delay_sec, p95_queue_length_meters, throughput_veh_per_hour,
+                            delta_vs_baseline
+                        ) VALUES (?, 0, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            record["runId"],
+                            int_kpis.get("average_travel_time_sec"),
+                            int_kpis.get("average_delay_sec"),
+                            int_kpis.get("p95_queue_length_meters"),
+                            int_kpis.get("throughput_veh_per_hour"),
+                            json.dumps(record["deltas"])
+                        )
+                    )
+                    conn.commit()
+        except Exception:
+            pass
+
     def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves a past scenario run by ID."""
-        return _RUNS_CACHE.get(run_id)
+        """Retrieves a past scenario run by ID from cache or persistent storage."""
+        if run_id in _RUNS_CACHE:
+            return _RUNS_CACHE[run_id]
+
+        try:
+            db_path = settings.resolved_sqlite_path
+            if db_path.exists():
+                with sqlite3.connect(str(db_path)) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM scenario_runs WHERE id = ?", (run_id,))
+                    row = cursor.fetchone()
+                    if row:
+                        artifacts = json.loads(row["artifact_paths"] or "{}")
+                        rec = {
+                            "runId": row["id"],
+                            "templateId": row["template_id"],
+                            "name": row["name"],
+                            "status": row["status"],
+                            "sourceMode": row["source_mode"],
+                            "governanceNotice": artifacts.get("governanceNotice", "SIMULATION OUTPUT: Results are model-generated under experimental assumptions."),
+                            "randomSeed": row["random_seed"],
+                            "networkVersion": row["network_version"],
+                            "demandVersion": row["demand_version"],
+                            "executedAt": row["completed_at"] or row["created_at"],
+                            "parameters": json.loads(row["parameters"] or "{}"),
+                            "baseline": artifacts.get("baseline", {}),
+                            "intervention": artifacts.get("intervention", {}),
+                            "deltas": artifacts.get("deltas", {})
+                        }
+                        _RUNS_CACHE[run_id] = rec
+                        return rec
+        except Exception:
+            pass
+        return None
 
     def list_recent_runs(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Returns recent scenario runs."""
+        """Returns recent scenario runs from cache and persistent storage."""
+        try:
+            db_path = settings.resolved_sqlite_path
+            if db_path.exists():
+                with sqlite3.connect(str(db_path)) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "SELECT id FROM scenario_runs ORDER BY created_at DESC LIMIT ?",
+                        (limit,)
+                    )
+                    rows = cursor.fetchall()
+                    for r in rows:
+                        run_id = r["id"]
+                        if run_id not in _RUNS_CACHE:
+                            self.get_run(run_id)
+        except Exception:
+            pass
+
         runs = list(_RUNS_CACHE.values())
         return sorted(runs, key=lambda x: x["executedAt"], reverse=True)[:limit]
 
