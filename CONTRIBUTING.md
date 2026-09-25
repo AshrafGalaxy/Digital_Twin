@@ -1,16 +1,10 @@
 # Contributing to Digital Twin
 
-Welcome! We are a 5-member college project team collaborating on this **Digital Twin** platform. This document establishes guidelines, architectural invariants, and collaborative workflows for our team.
+Welcome! This document establishes contribution guidelines, architectural invariants, and development workflows for the **Digital Twin** platform.
 
 ---
 
-## 1. Team Code of Conduct
-
-As classmates collaborating on this joint project, all team members follow our [Team Code of Conduct & Working Agreement](CODE_OF_CONDUCT.md). We prioritize open communication, mutual respect, peer support, and academic/engineering integrity across all contributions.
-
----
-
-## 2. Core Architectural Invariants
+## 1. Core Architectural Invariants
 
 Every contribution must honor the non-negotiable architectural principles established in [AGENTS.md](AGENTS.md):
 
@@ -26,7 +20,7 @@ Every contribution must honor the non-negotiable architectural principles establ
 
 ---
 
-## 3. Development Environment Setup
+## 2. Development Environment Setup
 
 ### Prerequisites
 
@@ -92,7 +86,7 @@ Every contribution must honor the non-negotiable architectural principles establ
 
 ---
 
-## 4. Branching & Git Workflow
+## 3. Branching & Git Workflow
 
 We follow a structured trunk-based feature branching model:
 
@@ -106,7 +100,7 @@ git pull origin main
 git checkout -b <type>/<short-description>
 ```
 
-Approved branch prefix types:
+Branch prefix types:
 - `feat/`: New feature or capability (e.g., `feat/webster-signal-optimizer`)
 - `fix/`: Bug fix or defect correction (e.g., `fix/quarantine-filter-bounds`)
 - `docs/`: Documentation additions or revisions (e.g., `docs/contributing-guidelines`)
@@ -126,13 +120,13 @@ Commit messages must be concise, imperative, and follow standard conventional co
 ```text
 feat(scenarios): add coordination offset support to studio
 fix(schemas): harmonize scenarioTemplateId in run request
-docs: add contributing guidelines and code of conduct
+docs: add contributing and setup guidelines
 test(eval): add multi-horizon benchmark verification
 ```
 
 ---
 
-## 5. Coding & Quality Standards
+## 4. Coding & Quality Standards
 
 ### Python & Backend Standards
 - Target **Python 3.11**.
@@ -151,7 +145,7 @@ test(eval): add multi-horizon benchmark verification
 
 ---
 
-## 6. Testing & CI Requirements
+## 5. Testing & CI Requirements
 
 Before submitting code for review or pushing to GitHub, you must verify that all automated checks pass locally.
 
@@ -176,7 +170,7 @@ npm --prefix frontend run build
 
 ---
 
-## 7. Pull Request Process
+## 6. Pull Request Process
 
 1. **Open a Pull Request:** Push your feature branch and open a PR against `main`.
 2. **PR Description:** Fill out the pull request template describing:
@@ -186,13 +180,13 @@ npm --prefix frontend run build
 3. **Automated CI Validation:** GitHub Actions CI must pass:
    - Backend & Simulation Tests (`pytest tests/ -v`)
    - Frontend TypeScript & Vite Build (`npm run build`)
-   - GIS Corridor Assets & Data Manifest Integrity
+   - GIS Assets & Data Manifest Integrity
 4. **Peer Review:** At least one review approval is required prior to merging.
 5. **Merge Strategy:** Use **Squash and Merge** or **Rebase and Merge** to maintain a clean git history.
 
 ---
 
-## 8. Questions and Contact
+## 7. Questions and Support
 
 For questions, architectural guidance, or feature suggestions:
 - Check existing documentation in [docs/architecture.md](docs/architecture.md) and [PRD.md](PRD.md).

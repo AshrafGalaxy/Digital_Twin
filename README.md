@@ -16,8 +16,7 @@ Project documentation is structured into clear tiers for developers, contributor
 
 ### Root Essential Documents
 - [README.md](README.md) — System summary, navigation, quickstart commands, and directory overview.
-- [CONTRIBUTING.md](CONTRIBUTING.md) — Team collaboration guide, dev setup, branch model, commit conventions, and PR checklist.
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Team working agreement and collaboration standards.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines, dev setup, branch model, commit conventions, and PR checklist.
 - [AGENTS.md](AGENTS.md) — Mandatory execution contract, core invariants, provenance rules, workspace hygiene, and Definition of Done.
 - [PRD.md](PRD.md) — Executive Product Requirements Document (FR-01 to FR-10, NFRs, acceptance criteria).
 
@@ -159,7 +158,6 @@ docker compose --profile full up -d
 ├── scripts/                        # Development utilities and synthetic stream runners
 ├── tests/                          # 15 modular pytest suites (114 hermetic tests)
 ├── CONTRIBUTING.md                 # Developer onboarding and contribution guidelines
-├── CODE_OF_CONDUCT.md             # Contributor Covenant v2.1 code of conduct
 ├── AGENTS.md                       # Mandatory operating rules and architectural invariants
 ├── PRD.md                          # Executive Product Requirements Document
 ├── compose.yaml                    # Multi-container Docker Compose configuration
