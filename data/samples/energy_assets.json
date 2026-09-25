@@ -5,7 +5,7 @@
     {
       "id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
       "type": "Building",
-      "name": "Phoenix Marketcity Commercial Complex & Zone",
+      "name": "Commercial Retail Complex & Zone",
       "category": "COMMERCIAL_RETAIL",
       "location": {
         "type": "Point",
@@ -14,7 +14,7 @@
       "grossFloorAreaSqMeters": 115000,
       "occupancyType": "RETAIL_ENTERTAINMENT_COMMERCIAL",
       "electricalConnection": {
-        "substation": "Viman Nagar 22kV Substation",
+        "substation": "22kV Primary Substation Feeder",
         "sanctionedLoadKVA": 8500,
         "contractDemandKW": 6800
       },
@@ -27,6 +27,84 @@
       "dataClassification": "BENCHMARK_SYNTHETIC",
       "sourceMode": "SIMULATION",
       "provenanceNotice": "Building energy observations and profiles are calibrated synthetic/benchmark values modeled after typical Indian retail-commercial facilities, and do not represent private proprietary utility meter data."
+    },
+    {
+      "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
+      "type": "Building",
+      "name": "Commercial Business & Tech Hub",
+      "category": "COMMERCIAL_IT",
+      "location": {
+        "type": "Point",
+        "coordinates": [73.9145, 18.5625]
+      },
+      "grossFloorAreaSqMeters": 112690,
+      "occupancyType": "OFFICE_IT_ENTERPRISE",
+      "electricalConnection": {
+        "substation": "22kV Primary Substation Feeder",
+        "sanctionedLoadKVA": 7500,
+        "contractDemandKW": 6010
+      },
+      "baselineMetrics": {
+        "averageDaytimeDemandKW": 4800,
+        "peakEveningDemandKW": 3200,
+        "nightBaseDemandKW": 950,
+        "powerFactor": 0.97
+      },
+      "dataClassification": "BENCHMARK_SYNTHETIC",
+      "sourceMode": "SIMULATION",
+      "provenanceNotice": "Building energy observations and profiles are calibrated synthetic/benchmark values modeled after commercial IT facilities, and do not represent private proprietary utility meter data."
+    },
+    {
+      "id": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
+      "type": "Building",
+      "name": "Hospitality & Convention Complex",
+      "category": "HOSPITALITY_HOTEL",
+      "location": {
+        "type": "Point",
+        "coordinates": [73.9121, 18.5597]
+      },
+      "grossFloorAreaSqMeters": 93580,
+      "occupancyType": "HOSPITALITY_HOTEL_CONVENTION",
+      "electricalConnection": {
+        "substation": "22kV Commercial Feeder B",
+        "sanctionedLoadKVA": 6250,
+        "contractDemandKW": 4990
+      },
+      "baselineMetrics": {
+        "averageDaytimeDemandKW": 3100,
+        "peakEveningDemandKW": 4400,
+        "nightBaseDemandKW": 1800,
+        "powerFactor": 0.96
+      },
+      "dataClassification": "BENCHMARK_SYNTHETIC",
+      "sourceMode": "SIMULATION",
+      "provenanceNotice": "Building energy observations and profiles are calibrated synthetic/benchmark values modeled after hospitality hotel facilities, and do not represent private proprietary utility meter data."
+    },
+    {
+      "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-03",
+      "type": "Building",
+      "name": "Enterprise Office Center - Tower 3",
+      "category": "COMMERCIAL_IT",
+      "location": {
+        "type": "Point",
+        "coordinates": [73.9142, 18.5611]
+      },
+      "grossFloorAreaSqMeters": 42000,
+      "occupancyType": "CORPORATE_OFFICE_IT",
+      "electricalConnection": {
+        "substation": "22kV Distribution Feeder C",
+        "sanctionedLoadKVA": 3000,
+        "contractDemandKW": 2400
+      },
+      "baselineMetrics": {
+        "averageDaytimeDemandKW": 1950,
+        "peakEveningDemandKW": 1400,
+        "nightBaseDemandKW": 450,
+        "powerFactor": 0.98
+      },
+      "dataClassification": "BENCHMARK_SYNTHETIC",
+      "sourceMode": "SIMULATION",
+      "provenanceNotice": "Building energy observations and profiles are calibrated synthetic/benchmark values modeled after corporate office facilities, and do not represent private proprietary utility meter data."
     }
   ]
 }

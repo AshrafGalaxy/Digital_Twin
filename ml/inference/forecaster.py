@@ -27,6 +27,22 @@ from ml.explainer import LocalModelExplainer
 
 MODELS_DIR = ROOT_DIR / "artifacts" / "models"
 
+FACILITY_CONTRACT_KW: Dict[str, float] = {
+    "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01": 6800.0,
+    "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01": 6800.0,
+    "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01": 6800.0,
+    "BLD-PHOENIX-01": 6800.0,
+    "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01": 6010.0,
+    "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01": 6010.0,
+    "BLD-SOLITAIRE-01": 6010.0,
+    "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01": 4990.0,
+    "urn:ngsi-ld:BuildingZone:PUNE:BLD-HYATT-01": 4990.0,
+    "BLD-HYATT-01": 4990.0,
+    "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-03": 2400.0,
+    "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-03": 2400.0,
+    "BLD-SOLITAIRE-03": 2400.0,
+}
+
 
 class CorridorForecaster:
     """Unified inference service for corridor traffic and building energy forecasts."""
@@ -155,13 +171,16 @@ class CorridorForecaster:
         building_id: str,
         current_kw: float,
         kw_history: Optional[List[float]] = None,
-        ambient_temp_c: float = 30.5
+        ambient_temp_c: float = 30.5,
+        contract_kw: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Generates a 60-minute ahead active power demand forecast for a commercial building.
         """
         now_utc = datetime.now(timezone.utc)
         target_utc = now_utc + timedelta(minutes=60)
+        contract_demand = contract_kw if contract_kw is not None else FACILITY_CONTRACT_KW.get(building_id, 6800.0)
+        peak_threshold = round(contract_demand * 0.85, 1)
 
         if not self.energy_artifact:
             pred = max(1200.0, current_kw * 1.02)
@@ -177,7 +196,10 @@ class CorridorForecaster:
                 "confidenceUpper": round(pred * 1.08, 1),
                 "unit": "kW",
                 "modelVersion": "energy-heuristic-fallback",
-                "inputQualityStatus": "DEGRADED"
+                "inputQualityStatus": "DEGRADED",
+                "contractDemandKw": contract_demand,
+                "isPeakDemandAlert": pred >= peak_threshold,
+                "peakThresholdKw": peak_threshold
             }
 
         hist = kw_history or [current_kw] * 96
@@ -211,8 +233,8 @@ class CorridorForecaster:
         p10 = float(np.clip(p10, 950.0, pred - 20.0))
         p90 = float(np.clip(p90, pred + 20.0, 6800.0))
 
-        # Peak load alert if forecast exceeds 4,800 kW
-        is_peak_alert = pred >= 4800.0
+        # Dynamic Peak load alert if forecast exceeds 85% of building contract capacity
+        is_peak_alert = pred >= peak_threshold
 
         # Conformal prediction intervals & local feature attributions
         conformal = ConformalPredictionCalibrator.get_energy_intervals(pred)
@@ -238,8 +260,9 @@ class CorridorForecaster:
             "unit": "kW",
             "modelVersion": self.energy_artifact.get("model_id", "energy-xgb-v1"),
             "inputQualityStatus": "VALID",
+            "contractDemandKw": contract_demand,
             "isPeakDemandAlert": is_peak_alert,
-            "peakThresholdKw": 4800.0,
+            "peakThresholdKw": peak_threshold,
             "baselineComparison": {
                 "persistenceValue": round(current_kw, 1),
                 "modelTestMae": self.energy_artifact["metrics"]["test_mae"],

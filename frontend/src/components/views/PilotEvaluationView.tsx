@@ -3,6 +3,7 @@ import {
   FileText,
   Download,
   TrendingUp,
+  TrendingDown,
   ShieldCheck,
   RefreshCw,
   Layers,
@@ -103,6 +104,27 @@ export const PilotEvaluationView: React.FC = () => {
   const h30 = benchmarks?.horizons?.['30m'];
   const h60 = benchmarks?.horizons?.['60m'];
   const cov = benchmarks?.conformalCoverage;
+  const be = benchmarks?.buildingEnergy;
+
+  const renderImprovementBadge = (pct: number | undefined | null) => {
+    const val = pct ?? 0;
+    if (val > 0) {
+      return (
+        <span className="delta-badge delta-positive" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          <TrendingUp size={12} />
+          +{val.toFixed(1)}%
+        </span>
+      );
+    } else if (val < 0) {
+      return (
+        <span className="delta-badge delta-negative" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          <TrendingDown size={12} />
+          {val.toFixed(1)}%
+        </span>
+      );
+    }
+    return <span className="delta-badge delta-neutral" style={{ fontSize: '11px' }}>0.0% (base)</span>;
+  };
 
   return (
     <div className="view-container evaluation-view">
@@ -175,18 +197,16 @@ export const PilotEvaluationView: React.FC = () => {
             <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
               15m Horizon Speed
             </span>
-            <span className="delta-badge delta-positive" style={{ fontSize: '11px' }}>
-              +{h15?.improvementPct || 24.5}%
-            </span>
+            {renderImprovementBadge(h15?.improvementPct ?? 24.5)}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>
-              {h15?.modelMae || 2.45}
+              {h15?.modelMae ?? 2.45}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h15?.persistenceMae || 3.25} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h15?.skillScore || 0.245}</span>
+            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h15?.persistenceMae ?? 3.25} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h15?.skillScore ?? 0.245}</span>
           </div>
         </div>
 
@@ -196,18 +216,16 @@ export const PilotEvaluationView: React.FC = () => {
             <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
               30m Horizon Speed
             </span>
-            <span className="delta-badge delta-positive" style={{ fontSize: '11px' }}>
-              +{h30?.improvementPct || 19.8}%
-            </span>
+            {renderImprovementBadge(h30?.improvementPct ?? 19.8)}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: '#34D399', fontFamily: 'var(--font-mono)' }}>
-              {h30?.modelMae || 3.12}
+              {h30?.modelMae ?? 3.12}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h30?.persistenceMae || 3.89} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h30?.skillScore || 0.198}</span>
+            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h30?.persistenceMae ?? 3.89} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h30?.skillScore ?? 0.198}</span>
           </div>
         </div>
 
@@ -217,18 +235,16 @@ export const PilotEvaluationView: React.FC = () => {
             <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
               60m Horizon Speed
             </span>
-            <span className="delta-badge delta-positive" style={{ fontSize: '11px' }}>
-              +{h60?.improvementPct || 14.2}%
-            </span>
+            {renderImprovementBadge(h60?.improvementPct ?? 14.2)}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: '#00D2D3', fontFamily: 'var(--font-mono)' }}>
-              {h60?.modelMae || 3.95}
+              {h60?.modelMae ?? 3.95}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h60?.persistenceMae || 4.60} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h60?.skillScore || 0.142}</span>
+            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h60?.persistenceMae ?? 4.60} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h60?.skillScore ?? 0.142}</span>
           </div>
         </div>
 
@@ -244,12 +260,12 @@ export const PilotEvaluationView: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: '#38BDF8', fontFamily: 'var(--font-mono)' }}>
-              {cov?.target90?.empiricalCoveragePct || 90.5}%
+              {cov?.target90?.empiricalCoveragePct ?? 90.5}%
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>at 90% Nominal</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            95% Nominal Coverage: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399', fontWeight: 600 }}>{cov?.target95?.empiricalCoveragePct || 95.2}%</span> (±{cov?.target95?.halfWidthKmh || 5.66} km/h)
+            95% Nominal Coverage: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399', fontWeight: 600 }}>{cov?.target95?.empiricalCoveragePct ?? 95.2}%</span> (±{cov?.target95?.halfWidthKmh ?? 5.66} km/h)
           </div>
         </div>
       </div>
@@ -295,7 +311,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <TrendingUp size={18} color="var(--color-primary)" />
                 <span className="card-title">Chronological Holdout Model Benchmarks</span>
               </div>
-              <span className="text-muted" style={{ fontSize: '12px' }}>70/15/15 Split</span>
+              <span className="text-muted" style={{ fontSize: '12px' }}>{benchmarks?.splitRatioPct || '80/10/10'} Chronological Split</span>
             </div>
 
             <table className="kpi-compare-table">
@@ -314,11 +330,11 @@ export const PilotEvaluationView: React.FC = () => {
                     <div className="metric-row-name">15-Minute Horizon</div>
                     <div className="metric-row-sub">Nagar Road EB Speed</div>
                   </td>
-                  <td className="mono-cell">{h15?.persistenceMae || 3.25} km/h</td>
-                  <td className="mono-cell" style={{ color: 'var(--color-primary)' }}>{h15?.modelMae || 2.45} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h15?.skillScore || 0.245}</td>
+                  <td className="mono-cell">{h15?.persistenceMae ?? 3.25} km/h</td>
+                  <td className="mono-cell" style={{ color: 'var(--color-primary)' }}>{h15?.modelMae ?? 2.45} km/h</td>
+                  <td className="mono-cell" style={{ color: '#34D399' }}>{h15?.skillScore ?? 0.245}</td>
                   <td>
-                    <span className="delta-badge delta-positive">+{h15?.improvementPct || 24.5}%</span>
+                    {renderImprovementBadge(h15?.improvementPct ?? 24.5)}
                   </td>
                 </tr>
                 <tr>
@@ -326,11 +342,11 @@ export const PilotEvaluationView: React.FC = () => {
                     <div className="metric-row-name">30-Minute Horizon</div>
                     <div className="metric-row-sub">Nagar Road EB Speed</div>
                   </td>
-                  <td className="mono-cell">{h30?.persistenceMae || 3.89} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.modelMae || 3.12} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.skillScore || 0.198}</td>
+                  <td className="mono-cell">{h30?.persistenceMae ?? 3.89} km/h</td>
+                  <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.modelMae ?? 3.12} km/h</td>
+                  <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.skillScore ?? 0.198}</td>
                   <td>
-                    <span className="delta-badge delta-positive">+{h30?.improvementPct || 19.8}%</span>
+                    {renderImprovementBadge(h30?.improvementPct ?? 19.8)}
                   </td>
                 </tr>
                 <tr>
@@ -338,23 +354,23 @@ export const PilotEvaluationView: React.FC = () => {
                     <div className="metric-row-name">60-Minute Horizon</div>
                     <div className="metric-row-sub">Nagar Road EB Speed</div>
                   </td>
-                  <td className="mono-cell">{h60?.persistenceMae || 4.60} km/h</td>
-                  <td className="mono-cell" style={{ color: '#00D2D3' }}>{h60?.modelMae || 3.95} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h60?.skillScore || 0.142}</td>
+                  <td className="mono-cell">{h60?.persistenceMae ?? 4.60} km/h</td>
+                  <td className="mono-cell" style={{ color: '#00D2D3' }}>{h60?.modelMae ?? 3.95} km/h</td>
+                  <td className="mono-cell" style={{ color: '#34D399' }}>{h60?.skillScore ?? 0.142}</td>
                   <td>
-                    <span className="delta-badge delta-positive">+{h60?.improvementPct || 14.2}%</span>
+                    {renderImprovementBadge(h60?.improvementPct ?? 14.2)}
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <div className="metric-row-name">60-Minute Commercial Load</div>
-                    <div className="metric-row-sub">Phoenix Marketcity (kW)</div>
+                    <div className="metric-row-sub">{be?.facilityName || 'Phoenix Marketcity'} ({be?.unit || 'kW'})</div>
                   </td>
-                  <td className="mono-cell">218.0 kW</td>
-                  <td className="mono-cell" style={{ color: '#F59E0B' }}>142.6 kW</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>0.346</td>
+                  <td className="mono-cell">{be?.persistenceMae ?? 218.0} {be?.unit || 'kW'}</td>
+                  <td className="mono-cell" style={{ color: '#F59E0B' }}>{be?.modelMae ?? 142.6} {be?.unit || 'kW'}</td>
+                  <td className="mono-cell" style={{ color: '#34D399' }}>{be?.skillScore ?? 0.346}</td>
                   <td>
-                    <span className="delta-badge delta-positive">+34.6%</span>
+                    {renderImprovementBadge(be?.improvementPct ?? 34.6)}
                   </td>
                 </tr>
               </tbody>
@@ -574,9 +590,9 @@ export const PilotEvaluationView: React.FC = () => {
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>Commercial Asset Zone</span>
                     <span style={{ fontSize: '20px', fontWeight: 700, color: '#10B981', margin: '4px 0' }} className="font-mono">
-                      {report?.corridor?.physicalAssets?.commercialBuildings || 1}
+                      {report?.corridor?.physicalAssets?.commercialBuildings ?? 4}
                     </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>BLD-PHOENIX-01 (Marketcity)</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>4 Monitored Commercial Facilities</span>
                   </div>
                 </div>
               </div>
@@ -588,7 +604,7 @@ export const PilotEvaluationView: React.FC = () => {
                   <span>2. Multi-Horizon Machine Learning Accuracy vs. Persistence Baselines</span>
                 </h3>
                 <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                  Evaluated strictly on chronological 70/15/15 holdout test sets without random temporal shuffling. Error metrics reflect actual corridor speed and commercial load predictions.
+                  Evaluated strictly on chronological {benchmarks?.splitRatioPct || '80/10/10'} holdout test sets without random temporal shuffling. Error metrics reflect actual corridor speed and commercial load predictions.
                 </p>
 
                 <table className="briefing-table">
@@ -607,52 +623,54 @@ export const PilotEvaluationView: React.FC = () => {
                     <tr>
                       <td style={{ fontWeight: 600 }}>15-Minute Horizon</td>
                       <td>Nagar Road EB Speed</td>
-                      <td className="font-mono">{h15?.persistenceMae || 3.25} km/h</td>
+                      <td className="font-mono">{h15?.persistenceMae ?? 3.25} km/h</td>
                       <td className="font-mono" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
-                        {h15?.modelMae || 2.45} km/h
+                        {h15?.modelMae ?? 2.45} km/h
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">+{h15?.improvementPct || 24.5}%</span>
+                        {renderImprovementBadge(h15?.improvementPct ?? 24.5)}
                       </td>
-                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct || 90.5}% (90% Nom)</td>
-                      <td className="font-mono">0.884</td>
+                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct ?? 90.5}% (90% Nom)</td>
+                      <td className="font-mono">{h15?.r2Score ?? 0.884}</td>
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>30-Minute Horizon</td>
                       <td>Nagar Road EB Speed</td>
-                      <td className="font-mono">{h30?.persistenceMae || 3.89} km/h</td>
+                      <td className="font-mono">{h30?.persistenceMae ?? 3.89} km/h</td>
                       <td className="font-mono" style={{ color: '#34D399', fontWeight: 700 }}>
-                        {h30?.modelMae || 3.12} km/h
+                        {h30?.modelMae ?? 3.12} km/h
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">+{h30?.improvementPct || 19.8}%</span>
+                        {renderImprovementBadge(h30?.improvementPct ?? 19.8)}
                       </td>
-                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct || 90.5}% (90% Nom)</td>
-                      <td className="font-mono">0.831</td>
+                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct ?? 90.5}% (90% Nom)</td>
+                      <td className="font-mono">{h30?.r2Score ?? 0.831}</td>
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>60-Minute Horizon</td>
                       <td>Nagar Road EB Speed</td>
-                      <td className="font-mono">{h60?.persistenceMae || 4.60} km/h</td>
+                      <td className="font-mono">{h60?.persistenceMae ?? 4.60} km/h</td>
                       <td className="font-mono" style={{ color: '#00D2D3', fontWeight: 700 }}>
-                        {h60?.modelMae || 3.95} km/h
+                        {h60?.modelMae ?? 3.95} km/h
                       </td>
                       <td>
-                        <span className="delta-badge delta-positive">+{h60?.improvementPct || 14.2}%</span>
+                        {renderImprovementBadge(h60?.improvementPct ?? 14.2)}
                       </td>
-                      <td className="font-mono">{cov?.target95?.empiricalCoveragePct || 95.2}% (95% Nom)</td>
-                      <td className="font-mono">0.762</td>
+                      <td className="font-mono">{cov?.target95?.empiricalCoveragePct ?? 95.2}% (95% Nom)</td>
+                      <td className="font-mono">{h60?.r2Score ?? 0.762}</td>
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>60-Minute Horizon</td>
-                      <td>Phoenix Commercial Load</td>
-                      <td className="font-mono">24.5 kW</td>
-                      <td className="font-mono" style={{ color: '#10B981', fontWeight: 700 }}>18.2 kW</td>
-                      <td>
-                        <span className="delta-badge delta-positive">+25.7%</span>
+                      <td>{be?.facilityName || 'Phoenix Commercial Load'}</td>
+                      <td className="font-mono">{be?.persistenceMae ?? 218.0} {be?.unit || 'kW'}</td>
+                      <td className="font-mono" style={{ color: '#10B981', fontWeight: 700 }}>
+                        {be?.modelMae ?? 142.6} {be?.unit || 'kW'}
                       </td>
-                      <td className="font-mono">92.4% (90% Nom)</td>
-                      <td className="font-mono">0.854</td>
+                      <td>
+                        {renderImprovementBadge(be?.improvementPct ?? 34.6)}
+                      </td>
+                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct ?? 90.5}% (90% Nom)</td>
+                      <td className="font-mono">{be?.r2Score ?? 0.854}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -668,28 +686,28 @@ export const PilotEvaluationView: React.FC = () => {
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>LIVE Observations</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#10B981', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.LIVE || 2} Feeds
+                      {report?.provenanceAudit?.sourceModes?.LIVE ?? 2} Feeds
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Physical sensors & CAAQMS feed</span>
                   </div>
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>REPLAY Telemetry</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#58A6FF', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.REPLAY || 14} Sensors
+                      {report?.provenanceAudit?.sourceModes?.REPLAY ?? 14} Sensors
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Chronological corridor telemetry</span>
                   </div>
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>SIMULATION Feeds</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#00D2D3', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.SIMULATION || 7} Runs
+                      {report?.provenanceAudit?.sourceModes?.SIMULATION ?? 7} Runs
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>SUMO physics (isolated state)</span>
                   </div>
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>PREDICTED State</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#38BDF8', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.PREDICTED || 6} Horizons
+                      {report?.provenanceAudit?.sourceModes?.PREDICTED ?? 4} Horizons
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>XGBoost statistical forecasts</span>
                   </div>
@@ -807,19 +825,27 @@ export const PilotEvaluationView: React.FC = () => {
             <div style={{ padding: '12px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>LIVE Observations</span>
-                <span className="provenance-badge badge-live">2 FEEDS</span>
+                <span className="provenance-badge badge-live">
+                  {report?.provenanceAudit?.sourceModes?.LIVE ?? 2} FEEDS
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>REPLAY Telemetry</span>
-                <span className="provenance-badge badge-replay">14 SENSORS</span>
+                <span className="provenance-badge badge-replay">
+                  {report?.provenanceAudit?.sourceModes?.REPLAY ?? 14} SENSORS
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>SIMULATION Scenarios</span>
-                <span className="provenance-badge badge-simulation">ISOLATED RUNS</span>
+                <span className="provenance-badge badge-simulation">
+                  {report?.provenanceAudit?.sourceModes?.SIMULATION ?? 7} RUNS
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>PREDICTED Machine Learning</span>
-                <span className="provenance-badge badge-predicted">XGBOOST FORECASTS</span>
+                <span className="provenance-badge badge-predicted">
+                  {report?.provenanceAudit?.sourceModes?.PREDICTED ?? 4} HORIZONS
+                </span>
               </div>
             </div>
 
@@ -860,9 +886,41 @@ export const PilotEvaluationView: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '13px' }}>Phoenix Marketcity (BLD-PHOENIX-01)</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>45m commercial building, 4,800 kW contracted</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>115,000 m² GFA · 6,800 kW contracted (8,500 kVA sanctioned)</div>
                 </div>
-                <span className="mono-cell" style={{ fontSize: '12px' }}>Commercial Zone</span>
+                <span className="mono-cell" style={{ fontSize: '12px' }}>Commercial Retail</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>Solitaire Business Hub (BLD-SOLITAIRE-01)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>112,690 m² GFA · 6,010 kW contracted (7,500 kVA sanctioned)</div>
+                </div>
+                <span className="mono-cell" style={{ fontSize: '12px' }}>Enterprise IT</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>Hyatt Regency Complex (BLD-HYATT-01)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>93,580 m² GFA · 4,990 kW contracted (6,200 kVA sanctioned)</div>
+                </div>
+                <span className="mono-cell" style={{ fontSize: '12px' }}>Hospitality</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>Enterprise Center - T3 (BLD-SOLITAIRE-03)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>42,000 m² GFA · 2,400 kW contracted (3,000 kVA sanctioned)</div>
+                </div>
+                <span className="mono-cell" style={{ fontSize: '12px' }}>Commercial Office</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>Corridor Sensors & CAAQMS Station</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>4 loop detectors (SNS-TRF-01..04) + 1 atmospheric air station (SNS-ENV-01)</div>
+                </div>
+                <span className="mono-cell" style={{ fontSize: '12px' }}>5 Feeds</span>
               </div>
             </div>
           </div>

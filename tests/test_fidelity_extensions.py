@@ -184,7 +184,7 @@ async def test_weather_client_live_and_fallback():
     # Test diurnal fallback explicitly
     fallback = weather_client._compute_diurnal_fallback(datetime(2026, 9, 20, 14, 0, tzinfo=timezone.utc))
     assert fallback["source_mode"] == "SIMULATION"
-    assert fallback["source_id"] == "diurnal-model:pune-viman-nagar"
+    assert fallback["source_id"] == "diurnal-atmospheric-model:pune-corridor"
     assert 20.0 <= fallback["temperature_c"] <= 40.0
 
 

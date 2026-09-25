@@ -87,7 +87,7 @@ class AdvisoryRuleEngine:
             status=RecommendationStatus.ACTIVE,
             targetEntityId="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
             title="Commercial Peak Demand Threshold Approaching at Phoenix Marketcity",
-            description="60-minute energy demand forecast projects electrical load of 4,940 kW, crossing the contracted demand threshold (4,800 kW).",
+            description="60-minute energy demand forecast projects electrical load of 4,940 kW, crossing the 4,800 kW elevated demand advisory threshold (contract capacity: 6,800 kW).",
             triggerRule="RULE-NRG-PEAK-SURGE",
             evidence=RecommendationEvidence(
                 sourceMode=SourceMode.PREDICTED,
@@ -256,14 +256,52 @@ class AdvisoryRuleEngine:
             # Evaluate energy forecast on BLD-PHOENIX-01
             energy_fc = forecast_service.get_energy_forecast("urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01")
             predicted_load = float(energy_fc.get("predictedValue", 4200.0))
+            peak_thresh = float(energy_fc.get("peakThresholdKw", 4800.0))
 
-            if predicted_load > 4800.0:
+            if predicted_load > peak_thresh:
                 rec_id = "REC-NRG-20260920-002"
                 if rec_id in self._recommendations:
                     rec = self._recommendations[rec_id]
                     rec.evidence.observedOrPredictedValue = predicted_load
                     rec.evidence.timestamp = now
                     rec.updatedAt = now
+                else:
+                    new_energy_rec = AdvisoryRecommendation(
+                        recommendationId=rec_id,
+                        domain=RecommendationDomain.ENERGY,
+                        severity=RecommendationSeverity.WARNING,
+                        status=RecommendationStatus.ACTIVE,
+                        targetEntityId="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+                        title="Commercial Peak Demand Threshold Approaching at Phoenix Marketcity",
+                        description=f"60-minute energy demand forecast projects electrical load of {predicted_load:.1f} kW, crossing the {peak_thresh:.0f} kW elevated demand advisory threshold (contract capacity: 6,800 kW).",
+                        triggerRule="RULE-NRG-PEAK-SURGE",
+                        evidence=RecommendationEvidence(
+                            sourceMode=SourceMode.PREDICTED,
+                            metricName="electricalDemandKw",
+                            observedOrPredictedValue=predicted_load,
+                            threshold=peak_thresh,
+                            unit="kW",
+                            horizonMinutes=60,
+                            modelVersion=str(energy_fc.get("modelVersion", "energy-xgb-v1")),
+                            confidenceScore=0.92,
+                            timestamp=now
+                        ),
+                        suggestedAction="Advise building management to stage commercial chiller compressors and adjust HVAC setpoint by +0.5°C between 14:00-17:00 IST to avert tariff surcharges.",
+                        humanApprovalRequired=True,
+                        governanceNotice="Advisory only. Requires human verification and municipal authorization before any physical intervention.",
+                        auditTrail=[
+                            AuditLogEntry(
+                                timestamp=now,
+                                previousStatus=RecommendationStatus.ACTIVE,
+                                newStatus=RecommendationStatus.ACTIVE,
+                                reviewer="System Rule Engine",
+                                notes=f"Automated trigger: 60-min load forecast {predicted_load:.1f} kW exceeded {peak_thresh:.0f} kW limit."
+                            )
+                        ],
+                        createdAt=now,
+                        updatedAt=now
+                    )
+                    self._recommendations[rec_id] = new_energy_rec
 
             return list(self._recommendations.values())
 

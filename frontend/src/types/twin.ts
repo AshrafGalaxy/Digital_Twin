@@ -34,6 +34,9 @@ export interface EntityCurrentState {
     queueLengthMeters?: number;
     congestionIndex?: number;
     activePowerKw?: number;
+    reactivePowerKvar?: number;
+    powerFactor?: number;
+    energyConsumptionKwh?: number;
   };
   qualityStatus: QualityStatus;
   freshnessSeconds: number;
@@ -68,14 +71,28 @@ export interface TrafficSensorAsset {
 
 export interface BuildingAsset {
   id: string;
+  type?: string;
   name: string;
   category: string;
+  location?: {
+    type: string;
+    coordinates: [number, number];
+  };
   grossFloorAreaSqMeters: number;
+  occupancyType?: string;
+  electricalConnection?: {
+    substation: string;
+    sanctionedLoadKVA: number;
+    contractDemandKW: number;
+  };
   baselineMetrics: {
     averageDaytimeDemandKW: number;
     peakEveningDemandKW: number;
     nightBaseDemandKW: number;
+    powerFactor?: number;
   };
+  dataClassification?: string;
+  sourceMode?: SourceMode;
   provenanceNotice: string;
 }
 
@@ -195,6 +212,7 @@ export interface EnergyForecast {
   unit: string;
   modelVersion: string;
   inputQualityStatus: string;
+  contractDemandKw?: number;
   isPeakDemandAlert: boolean;
   peakThresholdKw: number;
   baselineComparison: {
@@ -271,4 +289,42 @@ export interface AdvisorySummary {
   infoCount: number;
   byDomain: Record<string, number>;
 }
+
+export interface AirQualityStationAsset {
+  id: string;
+  name: string;
+  type: string;
+  agency: string;
+  coordinates: [number, number];
+  distanceKm: number;
+  direction: string;
+  status: string;
+}
+
+export interface EnvironmentState {
+  stationId: string;
+  stationName: string;
+  temperatureC: number;
+  humidityPct: number;
+  apparentTempC?: number;
+  surfacePressureHpa?: number;
+  windSpeedKmh: number;
+  windDir: string;
+  windDirectionDeg?: number;
+  pm25: number;
+  pm10: number;
+  no2: number;
+  co?: number;
+  so2?: number;
+  o3?: number;
+  aqi: number;
+  aqiCategory: string;
+  determiningPollutant?: string;
+  sourceMode: SourceMode;
+  sourceId?: string;
+  observedAt: string;
+  lastSynced?: string;
+  dataHonestyCaveat?: string;
+}
+
 

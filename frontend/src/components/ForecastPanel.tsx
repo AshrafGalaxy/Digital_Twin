@@ -16,12 +16,14 @@ interface ForecastPanelProps {
   entityType: 'RoadSegment' | 'Building';
   entityId: string;
   currentValue?: number;
+  contractDemandKw?: number;
 }
 
 export const ForecastPanel: React.FC<ForecastPanelProps> = ({
   entityType,
   entityId,
-  currentValue
+  currentValue,
+  contractDemandKw
 }) => {
   const [trafficForecast, setTrafficForecast] = useState<TrafficForecast | null>(null);
   const [energyForecast, setEnergyForecast] = useState<EnergyForecast | null>(null);
@@ -279,7 +281,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
               <Clock size={12} /> Target: {new Date(energyForecast.targetTimestamp).toLocaleTimeString()}
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#10B981' }}>
-              Contracted: 5,500 kW
+              Contracted: {((contractDemandKw ?? energyForecast.contractDemandKw ?? 6800) as number).toLocaleString()} kW
             </span>
           </div>
         </div>

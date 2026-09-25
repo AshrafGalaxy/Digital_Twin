@@ -28,13 +28,29 @@ class ForecastService:
             current_speed=speed
         )
 
+    DEFAULT_FACILITY_BASELINES: Dict[str, float] = {
+        "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01": 4200.0,
+        "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01": 4200.0,
+        "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01": 4200.0,
+        "BLD-PHOENIX-01": 4200.0,
+        "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01": 4800.0,
+        "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01": 4800.0,
+        "BLD-SOLITAIRE-01": 4800.0,
+        "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01": 3100.0,
+        "urn:ngsi-ld:BuildingZone:PUNE:BLD-HYATT-01": 3100.0,
+        "BLD-HYATT-01": 3100.0,
+        "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-03": 1950.0,
+        "urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-03": 1950.0,
+        "BLD-SOLITAIRE-03": 1950.0,
+    }
+
     def get_energy_forecast(
         self,
         building_id: str,
         current_kw: Optional[float] = None
     ) -> Dict[str, Any]:
         """Generates 60-minute ahead active power forecast for commercial building."""
-        kw = current_kw if current_kw is not None else 4420.0
+        kw = current_kw if current_kw is not None else self.DEFAULT_FACILITY_BASELINES.get(building_id, 4200.0)
         return self.forecaster.predict_building_energy(
             building_id=building_id,
             current_kw=kw

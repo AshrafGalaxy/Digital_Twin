@@ -29,17 +29,21 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   const currentSpeed = currentState?.metrics?.averageSpeedKmh ?? 24.5;
   const congestionIdx = currentState?.metrics?.congestionIndex ?? 0.45;
 
+  const computeLos = (spd: number): string => {
+    if (spd >= 42) return 'A';
+    if (spd >= 38) return 'B';
+    if (spd >= 32) return 'C';
+    if (spd >= 25) return 'D';
+    if (spd >= 18) return 'E';
+    return 'F';
+  };
+
   // Rank segments by congestion (lowest speed first)
   const rankedSegments = [...roadSegments].map(seg => {
     const s = liveStates[seg.id];
     const spd = s?.metrics?.averageSpeedKmh ?? seg.speedLimitKmh;
     const cong = s?.metrics?.congestionIndex ?? Math.max(0, 1 - spd / seg.speedLimitKmh);
-    let los = 'A';
-    if (spd < 18) los = 'F';
-    else if (spd < 25) los = 'E';
-    else if (spd < 32) los = 'D';
-    else if (spd < 38) los = 'C';
-    else if (spd < 42) los = 'B';
+    const los = computeLos(spd);
 
     return {
       ...seg,
@@ -121,8 +125,8 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             </div>
             <div className="metric-box">
               <span className="metric-box-label">Level of Service (LOS)</span>
-              <span className="metric-box-val" style={{ color: currentSpeed < 20 ? '#EF4444' : '#F59E0B' }}>
-                {currentSpeed < 18 ? 'LOS F' : currentSpeed < 28 ? 'LOS D' : 'LOS B'}
+              <span className="metric-box-val" style={{ color: currentSpeed < 20 ? '#EF4444' : currentSpeed < 32 ? '#F59E0B' : '#10B981' }}>
+                LOS {computeLos(currentSpeed)}
               </span>
             </div>
           </div>
