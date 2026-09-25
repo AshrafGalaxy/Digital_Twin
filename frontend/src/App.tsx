@@ -22,6 +22,8 @@ import {
   RoadSegmentAsset,
   SourceMode,
   MunicipalRole,
+  BuildingAsset,
+  EnvironmentState,
   AdvisorySummary,
   AuthUser
 } from './types/twin';
@@ -30,6 +32,8 @@ import {
   fetchStudyArea,
   fetchIntersections,
   fetchRoadSegments,
+  fetchEnergyEntities,
+  fetchCurrentEnvironment,
   fetchCurrentState,
   fetchHistoricalSnapshot,
   controlReplaySession,
@@ -38,9 +42,14 @@ import {
 } from './services/api';
 
 export const App: React.FC = () => {
+  const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup'>(() => {
+    const rawHash = window.location.hash.replace('#', '');
+    return rawHash === 'signup' || rawHash === 'get-started' ? 'signup' : 'signin';
+  });
+
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const rawHash = window.location.hash.replace('#', '');
-    if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup') {
+    if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup' || rawHash === 'get-started') {
       return 'auth';
     }
     const validTabs: TabId[] = [
@@ -61,8 +70,9 @@ export const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('tab') || params.get('view');
     if (viewParam === 'landing') return 'landing';
-    if (viewParam === 'auth' || viewParam === 'signin' || viewParam === 'signup') return 'auth';
-    return 'operations';
+    if (viewParam === 'auth' || viewParam === 'signin' || viewParam === 'signup' || viewParam === 'get-started') return 'auth';
+    if (viewParam && validTabs.includes(viewParam as TabId)) return viewParam as TabId;
+    return 'landing';
   });
 
   // Keep URL hash synchronized with activeTab
@@ -72,7 +82,13 @@ export const App: React.FC = () => {
     }
     const handleHashChange = () => {
       const rawHash = window.location.hash.replace('#', '');
-      if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup') {
+      if (rawHash === 'auth' || rawHash === 'signin') {
+        setAuthInitialMode('signin');
+        setActiveTab('auth');
+        return;
+      }
+      if (rawHash === 'signup' || rawHash === 'get-started') {
+        setAuthInitialMode('signup');
         setActiveTab('auth');
         return;
       }
@@ -98,6 +114,7 @@ export const App: React.FC = () => {
   const [studyAreaGeoJson, setStudyAreaGeoJson] = useState<any>(null);
   const [roadSegments, setRoadSegments] = useState<RoadSegmentAsset[]>([]);
   const [intersections, setIntersections] = useState<IntersectionAsset[]>([]);
+  const [energyEntities, setEnergyEntities] = useState<BuildingAsset[]>([]);
   const [liveStates, setLiveStates] = useState<Record<string, EntityCurrentState>>({});
   const [selectedEntity, setSelectedEntity] = useState<RoadSegmentAsset | IntersectionAsset | null>(null);
   const [compareEntity, setCompareEntity] = useState<RoadSegmentAsset | null>(null);
@@ -107,34 +124,60 @@ export const App: React.FC = () => {
   const [isScenarioStudioOpen, setIsScenarioStudioOpen] = useState<boolean>(false);
   const [isAdvisoryCenterOpen, setIsAdvisoryCenterOpen] = useState<boolean>(false);
   const [advisorySummary, setAdvisorySummary] = useState<AdvisorySummary | null>(null);
+  const [currentEnvironment, setCurrentEnvironment] = useState<EnvironmentState | null>(null);
 
   // Dynamic Real-Time Corridor Telemetry State
   const [liveEnergyKw, setLiveEnergyKw] = useState<number>(4862.0);
   const [liveSensorsCount, setLiveSensorsCount] = useState<number>(10);
   const lastWsMessageRef = useRef<number>(Date.now());
 
-  // Municipal Authentication & Session State with localStorage persistence
+  // Municipal Authentication & Session State with localStorage persistence & cryptographic JWT validation
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     const saved = localStorage.getItem('digital_twin_auth_user');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // An authentic municipal session MUST have a valid cryptographic JWT token
+        if (!parsed || !parsed.token || typeof parsed.token !== 'string') {
+          localStorage.removeItem('digital_twin_auth_user');
+          localStorage.removeItem('municipal_role');
+          return null;
+        }
+        // Verify token expiry from JWT payload
+        try {
+          const parts = parsed.token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            if (payload.exp && Date.now() / 1000 > payload.exp) {
+              localStorage.removeItem('digital_twin_auth_user');
+              localStorage.removeItem('municipal_role');
+              return null;
+            }
+          }
+        } catch {
+          // If token claims cannot be parsed, treat as invalid
+          localStorage.removeItem('digital_twin_auth_user');
+          localStorage.removeItem('municipal_role');
+          return null;
+        }
+        return parsed;
       } catch {
+        localStorage.removeItem('digital_twin_auth_user');
+        localStorage.removeItem('municipal_role');
         return null;
       }
     }
-    // Default demo session for immediate exploration
-    return {
-      id: 'usr-traffic-01',
-      name: 'Vikram Desai',
-      email: 'traffic.engineer@pmc.gov.in',
-      role: 'Traffic Systems Engineer',
-      department: 'Transportation Operations Division',
-      authenticatedAt: new Date().toISOString()
-    };
+    // Default to unauthenticated visitor state (no hardcoded mock)
+    return null;
   });
 
   const userRole: MunicipalRole = authUser?.role || 'Municipal Analyst';
+
+  const handleNavigateAuth = useCallback((mode: 'signin' | 'signup' = 'signin') => {
+    setAuthInitialMode(mode);
+    window.location.hash = mode === 'signup' ? 'signup' : 'signin';
+    setActiveTab('auth');
+  }, []);
 
   const handleAuthSuccess = useCallback((user: AuthUser) => {
     setAuthUser(user);
@@ -148,7 +191,9 @@ export const App: React.FC = () => {
   const handleSignOut = useCallback(() => {
     setAuthUser(null);
     localStorage.removeItem('digital_twin_auth_user');
-    setActiveTab('auth');
+    localStorage.removeItem('municipal_role');
+    window.location.hash = 'landing';
+    setActiveTab('landing');
   }, []);
 
 
@@ -221,17 +266,21 @@ export const App: React.FC = () => {
   useEffect(() => {
     async function loadAssets() {
       try {
-        const [area, segs, inters, initialStates, summary] = await Promise.all([
+        const [area, segs, inters, energyAssets, initialStates, summary] = await Promise.all([
           fetchStudyArea(),
           fetchRoadSegments(),
           fetchIntersections(),
+          fetchEnergyEntities().catch(() => []),
           fetchCurrentState(),
           fetchAdvisorySummary().catch(() => null)
         ]);
         setStudyAreaGeoJson(area);
         setRoadSegments(segs);
         setIntersections(inters);
+        if (energyAssets && energyAssets.length > 0) setEnergyEntities(energyAssets);
         if (summary) setAdvisorySummary(summary);
+
+        fetchCurrentEnvironment().then(setCurrentEnvironment).catch(() => null);
 
         const stateMap: Record<string, EntityCurrentState> = {};
         initialStates.forEach(s => {
@@ -258,6 +307,12 @@ export const App: React.FC = () => {
           if (data.activeSensors !== undefined && typeof data.activeSensors === 'number') {
             setLiveSensorsCount(data.activeSensors);
           }
+          if (data.environment) {
+            setCurrentEnvironment(prev => ({
+              ...(prev || {}),
+              ...data.environment
+            }));
+          }
           if (data.sourceMode) {
             setCurrentMode(data.sourceMode as SourceMode);
           }
@@ -282,6 +337,27 @@ export const App: React.FC = () => {
                 averageSpeedKmh: data.metrics.averageSpeedKmh,
                 congestionIndex: data.metrics.congestionIndex,
                 queueLengthMeters: data.metrics.queueLengthMeters
+              },
+              qualityStatus: 'VALID',
+              freshnessSeconds: 1.0
+            }
+          }));
+        } else if (data.eventType === 'ENERGY_STATE_UPDATED') {
+          const entityId = data.entityId;
+          const newMode = (data.sourceMode as SourceMode) || 'SIMULATION';
+          setLiveStates(prev => ({
+            ...prev,
+            [entityId]: {
+              entityId,
+              entityType: 'Building',
+              sourceMode: newMode,
+              observedAt: data.observedAt,
+              updatedAt: new Date().toISOString(),
+              metrics: {
+                activePowerKw: data.metrics.activePowerKw,
+                reactivePowerKvar: data.metrics.reactivePowerKvar,
+                powerFactor: data.metrics.powerFactor,
+                energyConsumptionKwh: data.metrics.energyConsumptionKwh
               },
               qualityStatus: 'VALID',
               freshnessSeconds: 1.0
@@ -448,10 +524,12 @@ export const App: React.FC = () => {
               if (authUser) {
                 setActiveTab(targetTab || 'operations');
               } else {
+                setAuthInitialMode('signup');
+                window.location.hash = 'signup';
                 setActiveTab('auth');
               }
             }}
-            onNavigateAuth={() => setActiveTab('auth')}
+            onNavigateAuth={handleNavigateAuth}
             authUser={authUser}
             onSignOut={handleSignOut}
           />
@@ -460,8 +538,12 @@ export const App: React.FC = () => {
         {/* VIEW 0B: Dedicated Municipal Authentication & Role Gateway */}
         {activeTab === 'auth' && (
           <AuthPageView
+            initialMode={authInitialMode}
             onAuthSuccess={handleAuthSuccess}
-            onNavigateHome={() => setActiveTab('landing')}
+            onNavigateHome={() => {
+              window.location.hash = 'landing';
+              setActiveTab('landing');
+            }}
           />
         )}
 
@@ -544,12 +626,19 @@ export const App: React.FC = () => {
 
         {/* VIEW 3: Energy Analytics & Commercial Load Forecasting */}
         {activeTab === 'energy' && (
-          <EnergyAnalyticsView sourceMode={effectiveMode} />
+          <EnergyAnalyticsView
+            sourceMode={effectiveMode}
+            energyEntities={energyEntities}
+            liveStates={effectiveStates}
+          />
         )}
 
         {/* VIEW 4: Environmental Context & Air Quality Monitoring */}
         {activeTab === 'environment' && (
-          <EnvironmentContextView sourceMode={effectiveMode} />
+          <EnvironmentContextView
+            sourceMode={effectiveMode}
+            environmentData={currentEnvironment}
+          />
         )}
 
         {/* VIEW 5: Scenario Studio — Microscopic Simulation Sandbox */}

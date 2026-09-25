@@ -230,10 +230,38 @@ class TelemetryStreamerWorker:
                         "metrics": metrics
                     })
 
-                # 2. Generate & Persist Commercial Building Energy Observation
-                energy_load_kw = max(2200.0, min(5200.0, 2400.0 + 2200.0 * rush_intensity + random.uniform(-80, 80)))
-                reactive_kvar = energy_load_kw * 0.32
-                power_factor = round(random.uniform(0.94, 0.97), 3)
+                # 2. Generate & Persist Commercial Building Energy Observations for Corridor Facilities
+                commercial_facilities = [
+                    {
+                        "id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01", "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01"],
+                        "base_load": 2400.0,
+                        "peak_delta": 2200.0,
+                        "contract_kw": 6800.0,
+                    },
+                    {
+                        "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
+                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01"],
+                        "base_load": 2100.0,
+                        "peak_delta": 2000.0,
+                        "contract_kw": 6010.0,
+                    },
+                    {
+                        "id": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
+                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-HYATT-01"],
+                        "base_load": 1800.0,
+                        "peak_delta": 1700.0,
+                        "contract_kw": 4990.0,
+                    },
+                    {
+                        "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-03",
+                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-03"],
+                        "base_load": 900.0,
+                        "peak_delta": 850.0,
+                        "contract_kw": 2400.0,
+                    },
+                ]
+
                 energy_stmt = text("""
                     INSERT INTO energy_observations (
                         observed_at, building_id, source_mode, active_power_kw,
@@ -243,54 +271,82 @@ class TelemetryStreamerWorker:
                         :reactive_power_kvar, :power_factor, :energy_consumption_kwh, 'VALID'
                     )
                 """)
-                # Insert Energy Observation under Canonical URN and legacy alias
-                canonical_bld_id = "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01"
-                legacy_bld_id = "urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01"
-                spatial_bld_id = "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01"
 
-                for b_id in (canonical_bld_id, legacy_bld_id):
-                    await session.execute(energy_stmt, {
-                        "observed_at": now_iso,
-                        "building_id": b_id,
-                        "source_mode": self.mode,
-                        "active_power_kw": round(energy_load_kw, 2),
-                        "reactive_power_kvar": round(reactive_kvar, 2),
-                        "power_factor": power_factor,
-                        "energy_consumption_kwh": round(energy_load_kw * 24.0, 1)
-                    })
+                primary_energy_load_kw = 4420.0
+                building_metrics_list = []
+                for fac in commercial_facilities:
+                    fac_load_kw = max(
+                        fac["base_load"] * 0.7,
+                        min(fac["contract_kw"] * 0.95, fac["base_load"] + fac["peak_delta"] * rush_intensity + random.uniform(-40, 40))
+                    )
+                    if fac["id"] == "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01":
+                        primary_energy_load_kw = fac_load_kw
+                    reactive_kvar = fac_load_kw * 0.32
+                    power_factor = round(random.uniform(0.94, 0.97), 3)
 
-                # Update Building Current State for canonical and alias URNs
-                bld_metrics = {
-                    "activePowerKw": round(energy_load_kw, 1),
-                    "reactivePowerKvar": round(reactive_kvar, 1),
-                    "powerFactor": power_factor,
-                    "energyConsumptionKwh": round(energy_load_kw * 24.0, 1)
-                }
-                for b_id, b_type in [
-                    (canonical_bld_id, "Building"),
-                    (spatial_bld_id, "BuildingZone"),
-                    (legacy_bld_id, "BuildingZone"),
-                ]:
-                    await session.execute(upsert_state, {
-                        "entity_id": b_id,
-                        "entity_type": b_type,
-                        "source_mode": self.mode,
-                        "observed_at": now_iso,
-                        "updated_at": now_iso,
-                        "metrics": json.dumps(bld_metrics),
-                        "quality_status": "VALID",
-                        "freshness_seconds": 0.0
+                    # Insert observation for canonical ID and legacy/spatial aliases
+                    all_ids = [fac["id"]] + [a for a in fac["aliases"] if a != fac["id"]]
+                    for b_id in all_ids:
+                        await session.execute(energy_stmt, {
+                            "observed_at": now_iso,
+                            "building_id": b_id,
+                            "source_mode": self.mode,
+                            "active_power_kw": round(fac_load_kw, 2),
+                            "reactive_power_kvar": round(reactive_kvar, 2),
+                            "power_factor": power_factor,
+                            "energy_consumption_kwh": round(fac_load_kw * 24.0, 1)
+                        })
+
+                    # Update Building Current State for canonical and alias URNs
+                    bld_metrics = {
+                        "activePowerKw": round(fac_load_kw, 1),
+                        "reactivePowerKvar": round(reactive_kvar, 1),
+                        "powerFactor": power_factor,
+                        "energyConsumptionKwh": round(fac_load_kw * 24.0, 1)
+                    }
+                    building_metrics_list.append({
+                        "entityId": fac["id"],
+                        "aliases": fac["aliases"],
+                        "metrics": bld_metrics
                     })
+                    for b_id in [fac["id"]]:
+                        await session.execute(upsert_state, {
+                            "entity_id": b_id,
+                            "entity_type": "Building",
+                            "source_mode": self.mode,
+                            "observed_at": now_iso,
+                            "updated_at": now_iso,
+                            "metrics": json.dumps(bld_metrics),
+                            "quality_status": "VALID",
+                            "freshness_seconds": 0.0
+                        })
+                    for a_id in fac["aliases"]:
+                        await session.execute(upsert_state, {
+                            "entity_id": a_id,
+                            "entity_type": "BuildingZone",
+                            "source_mode": self.mode,
+                            "observed_at": now_iso,
+                            "updated_at": now_iso,
+                            "metrics": json.dumps(bld_metrics),
+                            "quality_status": "VALID",
+                            "freshness_seconds": 0.0
+                        })
+
+                energy_load_kw = primary_energy_load_kw
 
                 # 3. Generate & Persist Environmental Air Quality & Weather Observation
                 weather = await self.weather_client.get_current_weather()
-                temp = weather.get("temperature_c", round(28.0 + 4.0 * math.sin((hour - 8.0) * math.pi / 12.0), 1))
-                humidity = weather.get("humidity_pct", round(62.0 - 15.0 * math.sin((hour - 8.0) * math.pi / 12.0), 1))
+                temp = weather.get("temperature_c", 28.5)
+                humidity = weather.get("humidity_pct", 56.0)
+                wind_speed = weather.get("wind_speed_kmh", 11.2)
+                wind_dir = weather.get("wind_direction_cardinal", "WSW (240°)")
+                pm25 = weather.get("pm25", 48.0)
+                pm10 = weather.get("pm10", 90.0)
+                no2 = weather.get("no2", 36.0)
+                co = weather.get("co", 410.0)
+                aqi = weather.get("aqi", 135)
+                aqi_category = weather.get("aqi_category", "Moderate")
                 weather_mode = weather.get("source_mode", self.mode)
-
-                aqi = round(110.0 + 35.0 * rush_intensity + random.uniform(-5, 5), 1)
-                pm25 = round(40.0 + 22.0 * rush_intensity + random.uniform(-2, 2), 1)
-                pm10 = round(75.0 + 30.0 * rush_intensity + random.uniform(-4, 4), 1)
 
                 env_stmt = text("""
                     INSERT INTO environment_observations (
@@ -300,19 +356,50 @@ class TelemetryStreamerWorker:
                     ) VALUES (
                         :observed_at, :station_id, :source_mode, :aqi_value,
                         :pm25, :pm10, :temperature_c, :relative_humidity_pct,
-                        0.0, 'VALID'
+                        :precipitation_mm, 'VALID'
                     )
                 """)
-                await session.execute(env_stmt, {
-                    "observed_at": now_iso,
-                    "station_id": "urn:ngsi-ld:AirQualityStation:PUNE:STATION-VIMAN-AQI-01",
-                    "source_mode": weather_mode,
-                    "aqi_value": aqi,
+
+                primary_station_id = "urn:ngsi-ld:AirQualityStation:PUNE:STATION-VIMAN-AQI-01"
+                corridor_station_id = "urn:ngsi-ld:AirQualityStation:PUNE:STATION-CORRIDOR-AQI-01"
+
+                for st_id in (primary_station_id, corridor_station_id):
+                    await session.execute(env_stmt, {
+                        "observed_at": now_iso,
+                        "station_id": st_id,
+                        "source_mode": weather_mode,
+                        "aqi_value": aqi,
+                        "pm25": pm25,
+                        "pm10": pm10,
+                        "temperature_c": temp,
+                        "relative_humidity_pct": humidity,
+                        "precipitation_mm": weather.get("precipitation_mm", 0.0)
+                    })
+
+                # Update Building/Station Current State for AirQualityStation
+                env_metrics = {
+                    "aqi": aqi,
+                    "aqiCategory": aqi_category,
+                    "temperatureC": temp,
+                    "humidityPct": humidity,
+                    "windSpeedKmh": wind_speed,
+                    "windDirection": wind_dir,
                     "pm25": pm25,
                     "pm10": pm10,
-                    "temperature_c": temp,
-                    "relative_humidity_pct": humidity
-                })
+                    "no2": no2,
+                    "co": co
+                }
+                for st_id in (primary_station_id, corridor_station_id):
+                    await session.execute(upsert_state, {
+                        "entity_id": st_id,
+                        "entity_type": "AirQualityStation",
+                        "source_mode": weather_mode,
+                        "observed_at": now_iso,
+                        "updated_at": now_iso,
+                        "metrics": json.dumps(env_metrics),
+                        "quality_status": "VALID",
+                        "freshness_seconds": 0.0
+                    })
 
                 await session.commit()
 
@@ -335,7 +422,22 @@ class TelemetryStreamerWorker:
                         "averageQueueLengthMeters": round(total_queue / n_segs, 1),
                         "energyActivePowerKw": round(energy_load_kw, 1),
                         "activeSensors": len(SENSOR_STATIONS),
-                        "aqi": aqi
+                        "aqi": aqi,
+                        "environment": {
+                            "stationId": corridor_station_id,
+                            "aqi": aqi,
+                            "aqiCategory": aqi_category,
+                            "temperatureC": temp,
+                            "humidityPct": humidity,
+                            "windSpeedKmh": wind_speed,
+                            "windDir": wind_dir,
+                            "pm25": pm25,
+                            "pm10": pm10,
+                            "no2": no2,
+                            "co": co,
+                            "sourceMode": weather_mode,
+                            "observedAt": now_iso
+                        }
                     }
                     if asyncio.iscoroutinefunction(self.broadcast_callback):
                         await self.broadcast_callback(corridor_summary)
@@ -355,6 +457,22 @@ class TelemetryStreamerWorker:
                             await self.broadcast_callback(msg)
                         else:
                             self.broadcast_callback(msg)
+
+                    # Also broadcast individual building energy updates so energy analytics and 3D buildings stay live
+                    for bld_item in building_metrics_list:
+                        all_target_ids = [bld_item["entityId"]] + bld_item.get("aliases", [])
+                        for target_id in set(all_target_ids):
+                            energy_msg = {
+                                "eventType": "ENERGY_STATE_UPDATED",
+                                "entityId": target_id,
+                                "observedAt": now_iso,
+                                "sourceMode": self.mode,
+                                "metrics": bld_item["metrics"]
+                            }
+                            if asyncio.iscoroutinefunction(self.broadcast_callback):
+                                await self.broadcast_callback(energy_msg)
+                            else:
+                                self.broadcast_callback(energy_msg)
 
                 return {
                     "status": "TICK_SUCCESS",

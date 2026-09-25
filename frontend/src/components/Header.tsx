@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
             <DigitalTwinLogo size={22} glow />
             <span className="brand-title">Digital Twin</span>
           </div>
-          <span className="brand-subtitle">Viman Nagar ↔ Somnath Nagar Corridor (Pune)</span>
+          <span className="brand-subtitle">Dual Arterial Corridor Decision Support</span>
           <button
             className="brand-overview-btn"
             onClick={() => onSelectTab('landing')}
@@ -138,44 +138,57 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Authenticated Municipal Officer Profile Badge with Sign Out */}
-          <div
-            className="status-pill user-profile-chip"
-            title={`Authenticated Officer: ${authUser?.name || 'Municipal Officer'} (${userRole})`}
-          >
-            <span
-              className="role-badge-dot"
-              style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                flexShrink: 0,
-                backgroundColor:
-                  userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
-                  userRole === 'Energy Grid Manager' ? '#10B981' :
-                  userRole === 'Executive Auditor' ? '#38BDF8' : '#2F81F7',
-                boxShadow: `0 0 6px ${
-                  userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
-                  userRole === 'Energy Grid Manager' ? '#10B981' :
-                  userRole === 'Executive Auditor' ? '#38BDF8' : '#2F81F7'
-                }`
-              }}
-            />
-            <User size={12} color="var(--color-primary-hover)" style={{ flexShrink: 0 }} />
-            <span className="user-profile-title" style={{ fontWeight: 600, fontSize: '11.5px', color: '#F0F6FC' }}>
-              {authUser?.name ? `${authUser.name} • ${userRole}` : userRole}
-            </span>
-            {onSignOut && (
-              <button
-                type="button"
-                className="header-signout-btn"
-                onClick={onSignOut}
-                title="Sign out of municipal session"
-              >
-                <LogOut size={11} />
-                <span>Sign Out</span>
-              </button>
-            )}
-          </div>
+          {authUser ? (
+            <div
+              className="status-pill user-profile-chip"
+              title={`Authenticated Officer: ${authUser.name} (${userRole})`}
+            >
+              <span
+                className="role-badge-dot"
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  flexShrink: 0,
+                  backgroundColor:
+                    userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
+                    userRole === 'Energy Grid Manager' ? '#10B981' :
+                    userRole === 'Executive Auditor' ? '#38BDF8' : '#2F81F7',
+                  boxShadow: `0 0 6px ${
+                    userRole === 'Traffic Systems Engineer' ? '#F59E0B' :
+                    userRole === 'Energy Grid Manager' ? '#10B981' :
+                    userRole === 'Executive Auditor' ? '#38BDF8' : '#2F81F7'
+                  }`
+                }}
+              />
+              <User size={12} color="var(--color-primary-hover)" style={{ flexShrink: 0 }} />
+              <span className="user-profile-title" style={{ fontWeight: 600, fontSize: '11.5px', color: '#F0F6FC' }}>
+                {authUser.name && authUser.name !== userRole ? `${authUser.name} • ${userRole}` : (authUser.role || userRole)}
+              </span>
+              {onSignOut && (
+                <button
+                  type="button"
+                  className="header-signout-btn"
+                  onClick={onSignOut}
+                  title="Sign out of municipal session"
+                >
+                  <LogOut size={11} />
+                  <span>Sign Out</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="status-pill header-signin-btn"
+              onClick={() => onSelectTab('auth')}
+              title="Sign in with authorized municipal credentials"
+              style={{ cursor: 'pointer', background: 'rgba(56, 139, 253, 0.15)', borderColor: 'rgba(56, 139, 253, 0.4)', color: '#58A6FF' }}
+            >
+              <User size={12} color="#58A6FF" />
+              <span style={{ fontWeight: 600, fontSize: '11.5px' }}>Officer Sign In</span>
+            </button>
+          )}
 
           {/* Source Mode Provenance Pill */}
           <div

@@ -6,7 +6,9 @@ import {
   BuildingAsset,
   AdvisoryRecommendation,
   AdvisorySummary,
-  AuthUser
+  AuthUser,
+  EnvironmentState,
+  AirQualityStationAsset
 } from '../types/twin';
 
 const API_BASE = '/api/v1';
@@ -590,6 +592,21 @@ export async function registerMunicipalUser(payload: {
 export async function fetchMunicipalRoles(): Promise<{ roles: string[]; metadata: Record<string, any> }> {
   const res = await fetch(`${API_BASE}/auth/roles`);
   if (!res.ok) throw new Error('Failed to fetch municipal roles');
+  return res.json();
+}
+
+export async function fetchCurrentEnvironment(stationId?: string): Promise<EnvironmentState> {
+  const url = stationId
+    ? `${API_BASE}/environment/current?station_id=${encodeURIComponent(stationId)}`
+    : `${API_BASE}/environment/current`;
+  const res = await resilientFetch(url);
+  if (!res.ok) throw new Error('Failed to fetch environment state');
+  return res.json();
+}
+
+export async function fetchEnvironmentStations(): Promise<AirQualityStationAsset[]> {
+  const res = await resilientFetch(`${API_BASE}/environment/stations`);
+  if (!res.ok) throw new Error('Failed to fetch environment stations');
   return res.json();
 }
 

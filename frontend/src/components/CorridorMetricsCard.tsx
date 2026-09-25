@@ -113,7 +113,7 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
         fontSize: '11px',
         color: 'var(--text-muted)'
       }}>
-        <span>Basis: {sourceMode === 'SIMULATION' ? 'SUMO Physics' : 'Replay Telemetry'}</span>
+        <span>Basis: {sourceMode === 'LIVE' ? 'Real-Time Telemetry' : sourceMode === 'SIMULATION' ? 'SUMO Physics' : 'Replay Telemetry'}</span>
         <span style={{ color: '#10B981', fontWeight: 500 }}>Advisory Only</span>
       </div>
     </div>
