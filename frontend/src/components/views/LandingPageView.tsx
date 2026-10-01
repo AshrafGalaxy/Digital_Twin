@@ -307,6 +307,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </div>
 
             <div className="landing-hero-orbit-canvas">
+              <div className="orbit-radar-crosshair-x"></div>
+              <div className="orbit-radar-crosshair-y"></div>
               <div className="orbit-ring orbit-ring-1">
                 <div className="orbit-particle particle-cyan"></div>
               </div>
@@ -337,6 +339,53 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <span className="orbit-mc-tag predicted">PREDICTED</span>
               </div>
             </div>
+
+            {/* Stage Telemetry Footer Matrix */}
+            <div className="hero-stage-footer">
+              <div className="stage-footer-item">
+                <span className="stage-footer-dot green"></span>
+                <span className="stage-footer-label font-mono">TRAFFIC FLOW</span>
+                <span className="stage-footer-val font-mono">98.6% SYNC</span>
+              </div>
+              <div className="stage-footer-item">
+                <span className="stage-footer-dot cyan"></span>
+                <span className="stage-footer-label font-mono">MICROGRID</span>
+                <span className="stage-footer-val font-mono">4.8 MW</span>
+              </div>
+              <div className="stage-footer-item">
+                <span className="stage-footer-dot purple"></span>
+                <span className="stage-footer-label font-mono">AIR MESH</span>
+                <span className="stage-footer-val font-mono">42 AQI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Full-Width Multi-Domain Platform Capabilities Banner */}
+        <div className="landing-hero-stats-strip">
+          <div className="hero-stat-block">
+            <span className="hero-stat-value font-mono">&lt; 100ms</span>
+            <span className="hero-stat-label">Telemetry Ingestion Latency</span>
+          </div>
+          <div className="hero-stat-sep"></div>
+          <div className="hero-stat-block">
+            <span className="hero-stat-value font-mono">Multi-Domain</span>
+            <span className="hero-stat-label">Mobility &amp; Microgrid Sync</span>
+          </div>
+          <div className="hero-stat-sep"></div>
+          <div className="hero-stat-block">
+            <span className="hero-stat-value font-mono">Conformal 90%</span>
+            <span className="hero-stat-label">Calibrated Forecast Bounds</span>
+          </div>
+          <div className="hero-stat-sep"></div>
+          <div className="hero-stat-block">
+            <span className="hero-stat-value font-mono">Strict Separation</span>
+            <span className="hero-stat-label">Observed vs Simulated State</span>
+          </div>
+          <div className="hero-stat-sep"></div>
+          <div className="hero-stat-block">
+            <span className="hero-stat-value font-mono">Zero PII</span>
+            <span className="hero-stat-label">Privacy-Preserving Telemetry</span>
           </div>
         </div>
       </header>
