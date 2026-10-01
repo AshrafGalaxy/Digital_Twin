@@ -45,25 +45,25 @@
   --radius-lg: 12px;
   --radius-full: 9999px;
 
-  /* Deep Space Obsidian Dark Surfaces */
-  --color-bg: #06090E;
-  --color-surface: rgba(12, 17, 26, 0.94);
-  --color-surface-raised: rgba(18, 24, 36, 0.96);
-  --color-surface-subtle: rgba(9, 13, 20, 0.92);
+  /* True AMOLED Obsidian Black Surfaces */
+  --color-bg: #000000;
+  --color-surface: rgba(9, 9, 11, 0.94);
+  --color-surface-raised: rgba(15, 15, 18, 0.96);
+  --color-surface-subtle: rgba(5, 5, 7, 0.92);
   --color-surface-selected: rgba(47, 129, 247, 0.16);
-  --color-overlay: rgba(2, 4, 8, 0.88);
+  --color-overlay: rgba(0, 0, 0, 0.92);
 
-  /* Vibrant High-Contrast Text (GitHub Dark Spec) */
+  /* Vibrant High-Contrast Text */
   --color-text: #F0F6FC;
   --color-text-secondary: #C9D1D9;
   --color-text-muted: #8B949E;
   --color-text-faint: #6E7681;
-  --color-text-inverse: #06090E;
+  --color-text-inverse: #000000;
 
   /* Crisp Defined Borders */
-  --color-border: #1E2635;
-  --color-border-strong: #2D394D;
-  --color-divider: rgba(240, 246, 252, 0.08);
+  --color-border: #16171B;
+  --color-border-strong: #222329;
+  --color-divider: rgba(255, 255, 255, 0.06);
 
   /* Royal Blue Primary & Linear Accents */
   --color-primary: #2F81F7;
@@ -4280,16 +4280,15 @@ body {
 .landing-workspace {
   width: 100%;
   min-height: 100vh;
-  background-color: #06090E;
+  background-color: #000000;
   overflow-x: hidden;
 }
 
 .landing-root {
   min-height: 100vh;
-  background-color: #06090E;
+  background-color: #000000;
   background-image: 
-    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(31, 111, 235, 0.09) 0%, transparent 70%),
-    radial-gradient(circle at 80% 25%, rgba(56, 189, 248, 0.035) 0%, transparent 45%);
+    radial-gradient(ellipse 80% 35% at 50% -5%, rgba(37, 99, 235, 0.06) 0%, transparent 60%);
   color: var(--color-text, #F0F6FC);
   font-family: var(--font-sans);
   position: relative;
@@ -4317,12 +4316,12 @@ body {
   height: 50px;
   padding: 0 6px 0 16px;
   box-sizing: border-box;
-  background: rgba(12, 17, 26, 0.92);
+  background: rgba(8, 8, 10, 0.88);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.85);
 }
 
 .landing-nav-brand {
@@ -4592,7 +4591,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 6px 16px;
-  background: linear-gradient(180deg, rgba(16, 23, 38, 0.78) 0%, rgba(9, 14, 25, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(14, 14, 18, 0.85) 0%, rgba(6, 6, 8, 0.96) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -4601,8 +4600,8 @@ body {
   overflow: hidden;
   box-shadow: 
     inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 0 rgba(0, 0, 0, 0.45),
-    0 3px 12px -2px rgba(0, 0, 0, 0.55);
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.6),
+    0 3px 12px -2px rgba(0, 0, 0, 0.7);
   transition: 
     border-color 300ms cubic-bezier(0.16, 1, 0.3, 1),
     background 300ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -4639,13 +4638,13 @@ body {
 
 .landing-shimmer-tag:hover {
   border-color: rgba(56, 189, 248, 0.32);
-  background: linear-gradient(180deg, rgba(20, 31, 52, 0.88) 0%, rgba(11, 18, 32, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(18, 19, 24, 0.9) 0%, rgba(10, 10, 14, 0.98) 100%);
   transform: translateY(-1.5px);
   box-shadow: 
     inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
     inset 0 0 16px 0 rgba(56, 189, 248, 0.06),
-    0 8px 24px -4px rgba(0, 0, 0, 0.75),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    0 8px 24px -4px rgba(0, 0, 0, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .shimmer-pulse-gem,
@@ -4864,16 +4863,15 @@ body {
   position: relative;
   width: 100%;
   max-width: 470px;
-  background: radial-gradient(circle at 50% 20%, rgba(22, 27, 34, 0.96) 0%, rgba(13, 17, 23, 0.99) 100%);
-  border: 1px solid rgba(56, 189, 248, 0.22);
-  border-radius: 12px;
+  background: radial-gradient(circle at 50% 15%, rgba(14, 15, 18, 0.96) 0%, rgba(6, 6, 8, 0.99) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
   padding: 16px 20px 18px;
   box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.65),
-    0 0 28px rgba(47, 129, 247, 0.15),
+    0 24px 56px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
@@ -4883,7 +4881,7 @@ body {
   justify-content: space-between;
   padding-bottom: 12px;
   margin-bottom: 6px;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .hero-stage-status {
@@ -5028,17 +5026,17 @@ body {
 .orbit-metric-card {
   position: absolute;
   z-index: 4;
-  background: rgba(22, 27, 34, 0.92);
+  background: rgba(12, 12, 16, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(88, 166, 255, 0.22);
-  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.75),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   animation: orbitCardFloat 5s ease-in-out infinite;
 }
@@ -5116,7 +5114,7 @@ body {
   gap: 8px;
   padding-top: 12px;
   margin-top: 10px;
-  border-top: 1px solid rgba(48, 54, 61, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .stage-footer-item {
@@ -5173,12 +5171,12 @@ body {
   justify-content: space-around;
   gap: 16px;
   padding: 14px 24px;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(48, 54, 61, 0.6);
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  background: rgba(8, 8, 10, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
   margin-top: 24px;
 }
 
@@ -5207,7 +5205,7 @@ body {
 .hero-stat-sep {
   width: 1px;
   height: 24px;
-  background: rgba(48, 54, 61, 0.8);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Responsive Breakpoints for Hero */
@@ -5397,24 +5395,24 @@ body {
 }
 
 .bento-card {
-  background: rgba(22, 27, 34, 0.94);
-  border: 1px solid #30363D;
-  border-radius: 8px; /* rectangular */
+  background: rgba(8, 8, 11, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .bento-card:hover {
-  border-color: rgba(88, 166, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(13, 14, 18, 0.96);
   transform: translateY(-2px);
   box-shadow: 
-    0 16px 40px rgba(0, 0, 0, 0.6),
-    0 0 24px rgba(47, 129, 247, 0.12),
+    0 16px 40px rgba(0, 0, 0, 0.85),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -5442,9 +5440,9 @@ body {
 .bento-icon-box {
   width: 36px;
   height: 36px;
-  border-radius: 6px;
-  background: rgba(13, 17, 23, 0.8);
-  border: 1px solid #30363D;
+  border-radius: 8px;
+  background: rgba(16, 17, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6077,23 +6075,23 @@ body {
 }
 
 .faq-card {
-  background: rgba(22, 27, 34, 0.9);
-  border: 1px solid #30363D;
-  border-radius: 8px; /* rectangular */
+  background: rgba(8, 8, 11, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
   padding: 16px 20px;
   cursor: pointer;
   transition: all 220ms ease;
 }
 
 .faq-card:hover {
-  border-color: rgba(88, 166, 255, 0.45);
-  background: rgba(26, 32, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(13, 14, 18, 0.95);
 }
 
 .faq-card.expanded {
-  border-color: rgba(88, 166, 255, 0.5);
-  background: rgba(22, 27, 34, 0.98);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(14, 15, 20, 0.98);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .faq-question-row {
@@ -6115,8 +6113,8 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: rgba(30, 36, 46, 0.7);
-  border: 1px solid rgba(48, 54, 61, 0.8);
+  background: rgba(18, 19, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6162,16 +6160,16 @@ body {
 }
 
 .final-cta-card {
-  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(47, 129, 247, 0.18), transparent 70%),
-              rgba(22, 27, 34, 0.95);
-  border: 1px solid #30363D;
-  border-radius: 8px; /* rectangular */
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.12), transparent 70%),
+              rgba(8, 8, 11, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
   padding: 56px 32px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.7);
 }
 
 .final-cta-badge {
@@ -6216,8 +6214,8 @@ body {
    12. Semantic Footer
    ======================================================== */
 .landing-footer {
-  border-top: 1px solid #30363D;
-  background: rgba(13, 17, 23, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(4, 4, 6, 0.98);
   padding: 60px 24px 32px;
 }
 
@@ -6228,7 +6226,7 @@ body {
   grid-template-columns: 1.5fr 2fr;
   gap: 48px;
   padding-bottom: 40px;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer-brand {
