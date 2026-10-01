@@ -296,36 +296,48 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
         </div>
 
-        {/* Hero Visual: Animated Data Orbit Canvas */}
-        <div className="landing-hero-orbit-canvas">
-          <div className="orbit-ring orbit-ring-1">
-            <div className="orbit-particle particle-cyan"></div>
-          </div>
-          <div className="orbit-ring orbit-ring-2">
-            <div className="orbit-particle particle-violet"></div>
-          </div>
-          <div className="orbit-ring orbit-ring-3">
-            <div className="orbit-particle particle-amber"></div>
-          </div>
-          <div className="orbit-core">
-            <DigitalTwinLogo size={48} glow />
-          </div>
+        {/* Hero Visual: Contained Telemetry Stage */}
+        <div className="landing-hero-stage">
+          <div className="hero-stage-card">
+            <div className="hero-stage-topbar">
+              <div className="hero-stage-status">
+                <span className="stage-pulse-dot"></span>
+                <span className="stage-status-text font-mono">LIVE ARTERIAL TWIN MESH</span>
+              </div>
+              <span className="hero-stage-badge font-mono">VERIFIED</span>
+            </div>
 
-          {/* Floating Metric Cards */}
-          <div className="orbit-metric-card orbit-mc-1">
-            <span className="orbit-mc-label font-mono">CORRIDOR SPEED</span>
-            <span className="orbit-mc-value font-mono">33.0 km/h</span>
-            <span className="orbit-mc-tag live">LIVE</span>
-          </div>
-          <div className="orbit-metric-card orbit-mc-2">
-            <span className="orbit-mc-label font-mono">PEAK LOAD</span>
-            <span className="orbit-mc-value font-mono">4,862 kW</span>
-            <span className="orbit-mc-tag simulation">SIMULATION</span>
-          </div>
-          <div className="orbit-metric-card orbit-mc-3">
-            <span className="orbit-mc-label font-mono">UNCERTAINTY</span>
-            <span className="orbit-mc-value font-mono">&plusmn; 3.4 km/h</span>
-            <span className="orbit-mc-tag predicted">PREDICTED</span>
+            <div className="landing-hero-orbit-canvas">
+              <div className="orbit-ring orbit-ring-1">
+                <div className="orbit-particle particle-cyan"></div>
+              </div>
+              <div className="orbit-ring orbit-ring-2">
+                <div className="orbit-particle particle-violet"></div>
+              </div>
+              <div className="orbit-ring orbit-ring-3">
+                <div className="orbit-particle particle-amber"></div>
+              </div>
+              <div className="orbit-core">
+                <DigitalTwinLogo size={44} glow />
+              </div>
+
+              {/* Floating Metric Cards */}
+              <div className="orbit-metric-card orbit-mc-1">
+                <span className="orbit-mc-label font-mono">CORRIDOR SPEED</span>
+                <span className="orbit-mc-value font-mono">34.2 km/h</span>
+                <span className="orbit-mc-tag live">LIVE</span>
+              </div>
+              <div className="orbit-metric-card orbit-mc-2">
+                <span className="orbit-mc-label font-mono">PEAK LOAD</span>
+                <span className="orbit-mc-value font-mono">4,862 kW</span>
+                <span className="orbit-mc-tag simulation">SIMULATION</span>
+              </div>
+              <div className="orbit-metric-card orbit-mc-3">
+                <span className="orbit-mc-label font-mono">UNCERTAINTY</span>
+                <span className="orbit-mc-value font-mono">&plusmn; 3.4 km/h</span>
+                <span className="orbit-mc-tag predicted">PREDICTED</span>
+              </div>
+            </div>
           </div>
         </div>
       </header>

@@ -30,10 +30,18 @@ export const DigitalTwinLogo: React.FC<DigitalTwinLogoProps> = ({
       }}
       aria-label="Digital Twin Platform Logo"
     >
-      {/* White Circular Container Badge */}
-      <circle cx="256" cy="256" r="238" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="4" />
+      {/* Gradient & Glow Filter Defs */}
+      <defs>
+        <linearGradient id="dtLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="100%" stopColor="#2F81F7" />
+        </linearGradient>
+      </defs>
 
-      {/* Single Continuous Solid Digital Twin Telemetry Glyph */}
+      {/* Sleek Dark Tech Badge Container */}
+      <circle cx="256" cy="256" r="238" fill="rgba(22, 27, 34, 0.95)" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="12" />
+
+      {/* Refined Telemetry Waveform Glyph */}
       <path
         d="M 457 224
            A 204 204 0 0 0 68 177
@@ -46,8 +54,8 @@ export const DigitalTwinLogo: React.FC<DigitalTwinLogoProps> = ({
            C 444 282, 456 308, 444 335
            A 204 204 0 0 1 55 288"
         fill="none"
-        stroke="#1D4ED8"
-        strokeWidth="34"
+        stroke="url(#dtLogoGrad)"
+        strokeWidth="24"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
