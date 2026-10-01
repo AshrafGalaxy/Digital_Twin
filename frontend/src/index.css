@@ -6036,18 +6036,6 @@ body {
   color: #8B949E;
   line-height: 1.6;
   max-width: 360px;
-  margin-bottom: 16px;
-}
-
-.footer-corridor-badge {
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: #8B949E;
-  background: rgba(22, 27, 34, 0.8);
-  border: 1px solid #30363D;
-  padding: 4px 8px;
-  border-radius: 4px; /* rectangular */
-  display: inline-block;
 }
 
 .footer-links-grid {
@@ -6092,26 +6080,11 @@ body {
   max-width: 1140px;
   margin: 24px auto 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   font-size: 11.5px;
   color: #8B949E;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.footer-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.footer-status .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-live);
-  box-shadow: 0 0 6px var(--color-live);
+  text-align: center;
 }
 
 /* ========================================================

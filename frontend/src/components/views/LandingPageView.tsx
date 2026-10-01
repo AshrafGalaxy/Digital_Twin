@@ -36,7 +36,6 @@ interface LandingPageViewProps {
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onLaunchConsole,
-  onNavigateAuth,
   authUser,
   onSignOut
 }) => {
@@ -718,14 +717,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="footer-brand-column">
             <div className="footer-brand">
               <DigitalTwinLogo size={20} />
-              <span className="brand-title">Digital Twin Analytics</span>
+              <span className="brand-title">Digital Twin</span>
             </div>
             <p className="footer-description">
-              Evidence backed urban decision-support platform for multi-domain transportation and commercial microgrid analytics.
+              Evidence backed urban decision-support platform for multi-domain transportation and commercial microgrid operations.
             </p>
-            <div className="footer-corridor-badge">
-              <span>Dual Arterial Corridor • High-Fidelity Physics & Decision Support Architecture</span>
-            </div>
           </div>
 
           <div className="footer-links-grid">
@@ -744,22 +740,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <button className="footer-link" onClick={() => onLaunchConsole('health')}>System Health</button>
               <button className="footer-link" onClick={() => scrollToAnchor('provenance')}>Provenance Contract</button>
             </div>
-
-            <div className="footer-link-group">
-              <span className="group-title">Access</span>
-              <button className="footer-link" onClick={() => setIsContactModalOpen(true)}>Request Access</button>
-              <button className="footer-link" onClick={() => onNavigateAuth ? onNavigateAuth('signin') : onLaunchConsole('auth')}>Operator Portal</button>
-            </div>
           </div>
         </div>
 
         <div className="footer-bottom-row">
           <div className="footer-legal">
             <span>Precision Urban Digital Twin • Strictly Non-Actuating Decision Support</span>
-          </div>
-          <div className="footer-status font-mono">
-            <span className="status-dot"></span>
-            <span>System Status: Authoritative Seed Active (100% Provenance Compliance)</span>
           </div>
         </div>
       </footer>
