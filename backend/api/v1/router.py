@@ -14,6 +14,7 @@ from .endpoints import (
     evaluation,
     forecasts,
     health,
+    inquiries,
     interop,
     recommendations,
     scenarios,
@@ -26,6 +27,7 @@ from .endpoints import (
 api_v1_router = APIRouter(prefix="/api/v1")
 
 api_v1_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_v1_router.include_router(inquiries.router, prefix="/inquiries", tags=["Inquiries"])
 
 api_v1_router.include_router(health.router)
 api_v1_router.include_router(canonical_resources.router)

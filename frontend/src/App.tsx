@@ -521,11 +521,15 @@ export const App: React.FC = () => {
         {activeTab === 'landing' && (
           <LandingPageView
             onLaunchConsole={(targetTab) => {
+              if (targetTab === 'evaluation') {
+                setActiveTab('evaluation');
+                return;
+              }
               if (authUser) {
                 setActiveTab(targetTab || 'operations');
               } else {
-                setAuthInitialMode('signup');
-                window.location.hash = 'signup';
+                setAuthInitialMode('signin');
+                window.location.hash = 'signin';
                 setActiveTab('auth');
               }
             }}

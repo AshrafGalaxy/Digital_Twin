@@ -168,3 +168,22 @@ def test_architectural_invariants():
         # Current state is observed/replayed, not predicted
         assert item.get("sourceMode") in ("LIVE", "REPLAY", "SIMULATION")
         assert item.get("sourceMode") != "PREDICTED"
+
+def test_access_inquiry_submission():
+    """Verifies POST /api/v1/inquiries/request-access accepts and records provisioning requests."""
+    payload = {
+        "organization": "Department of Transportation",
+        "work_email": "mobility.director@city.gov",
+        "contact_name": "Dr. Sarah Chen, Director of Traffic Systems",
+        "jurisdiction": "Metro Arterial Corridor",
+        "domain": "Intelligent Traffic Mobility & Adaptive Signal Control",
+        "infrastructure_scale": "10-50 Intersections",
+        "message": "Evaluating Webster delay optimization and green wave progression for pilot corridor."
+    }
+    res = client.post("/api/v1/inquiries/request-access", json=payload)
+    assert res.status_code == 201
+    data = res.json()
+    assert "inquiry_id" in data
+    assert data["inquiry_id"].startswith("INQ-")
+    assert data["status"] == "received"
+    assert "received_at" in data

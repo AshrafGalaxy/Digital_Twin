@@ -56,7 +56,7 @@ export const CorridorDioramaAsset: React.FC = () => {
         </radialGradient>
         <circle cx="600" cy="100" r="100" fill="url(#nodeEastGlow)" pointerEvents="none" />
 
-        {/* 1.8 km Distance Ruler Axis Base */}
+        {/* Distance Ruler Axis Base */}
         <line x1="60" y1="155" x2="700" y2="155" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" />
         {/* Major Distance Ticks */}
         <line x1="60" y1="150" x2="60" y2="160" stroke="#38BDF8" strokeWidth="1.5" />
@@ -65,20 +65,20 @@ export const CorridorDioramaAsset: React.FC = () => {
         <line x1="600" y1="150" x2="600" y2="160" stroke="#10B981" strokeWidth="1.5" />
         <line x1="700" y1="150" x2="700" y2="160" stroke="#10B981" strokeWidth="1.5" />
 
-        {/* Main Arterial Highway Ribbon (Nagar Road) */}
+        {/* Main Arterial Highway Ribbon */}
         <rect x="50" y="88" width="660" height="24" rx="4" fill="url(#corridorRoadbed)" stroke="#334155" strokeWidth="1" />
         {/* Median Divider Glowing Strip */}
         <line x1="50" y1="100" x2="710" y2="100" stroke="url(#corridorGlowLine)" strokeWidth="1.5" strokeDasharray="8 6" opacity="0.8" />
 
-        {/* Cross Approach Legs (Viman Nagar North/South) */}
+        {/* Cross Approach Legs (West Node Crossway) */}
         <rect x="146" y="50" width="28" height="100" rx="3" fill="#1E293B" stroke="#334155" strokeWidth="1" opacity="0.85" />
         <line x1="160" y1="50" x2="160" y2="150" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
 
-        {/* Cross Approach Legs (Somnath Nagar North/South) */}
+        {/* Cross Approach Legs (East Node Crossway) */}
         <rect x="586" y="50" width="28" height="100" rx="3" fill="#1E293B" stroke="#334155" strokeWidth="1" opacity="0.85" />
         <line x1="600" y1="50" x2="600" y2="150" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1" strokeDasharray="4 4" />
 
-        {/* WEST NODE: INT-VN-01 (Viman Nagar Chowk) */}
+        {/* WEST NODE: INT-VN-01 */}
         <g transform="translate(160, 100)">
           {/* Radar Scanner Ring */}
           <circle r="30" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.2" strokeDasharray="4 4">
@@ -91,7 +91,7 @@ export const CorridorDioramaAsset: React.FC = () => {
           <circle cx="0" cy="0" r="3" fill="#38BDF8" />
         </g>
 
-        {/* CENTRAL COMMERCIAL FACILITY: BLD-PHOENIX-01 (Phoenix Marketcity) */}
+        {/* CENTRAL COMMERCIAL FACILITY: BLD-PHOENIX-01 */}
         <g transform="translate(340, 24)">
           {/* Multi-Tiered Isometric Architectural Silhouette */}
           {/* Base Podium Block */}
@@ -115,7 +115,7 @@ export const CorridorDioramaAsset: React.FC = () => {
           <path d="M 40 70 L 40 64" stroke="#F59E0B" strokeWidth="1.5" strokeDasharray="2 2" />
         </g>
 
-        {/* EAST NODE: INT-SN-01 (Somnath Nagar Chowk) */}
+        {/* EAST NODE: INT-SN-01 */}
         <g transform="translate(600, 100)">
           {/* Radar Scanner Ring */}
           <circle r="30" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.2" strokeDasharray="4 4">
@@ -128,7 +128,7 @@ export const CorridorDioramaAsset: React.FC = () => {
           <circle cx="0" cy="0" r="3" fill="#10B981" />
         </g>
 
-        {/* Dynamic Traffic Packets Flowing Along Nagar Road */}
+        {/* Dynamic Traffic Packets Flowing Along Arterial Highway */}
         <circle cx="110" cy="94" r="3" fill="#38BDF8" filter="url(#dioramaBloom)" />
         <circle cx="230" cy="94" r="3" fill="#38BDF8" filter="url(#dioramaBloom)" />
         <circle cx="270" cy="106" r="3" fill="#10B981" filter="url(#dioramaBloom)" />

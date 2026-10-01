@@ -378,13 +378,13 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
           <div className="auth-footer-toggle">
             {authMode === 'signin' ? (
               <span>
-                New officer?{' '}
+                Need access credentials?{' '}
                 <button
                   type="button"
                   className="auth-link-btn"
-                  onClick={() => { setAuthMode('signup'); setErrorMessage(null); }}
+                  onClick={onNavigateHome}
                 >
-                  Create an account
+                  Request agency access
                 </button>
               </span>
             ) : (

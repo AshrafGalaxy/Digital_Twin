@@ -12,8 +12,6 @@ import {
   FileText,
   Database,
   Lock,
-  BarChart3,
-  User,
   LogOut,
   Gauge,
   MapPin
@@ -27,6 +25,7 @@ import { ConformalBandsAsset } from '../landing/ConformalBandsAsset';
 import { MicroscopicPhysicsAsset } from '../landing/MicroscopicPhysicsAsset';
 import { CorridorDioramaAsset } from '../landing/CorridorDioramaAsset';
 import { CorridorAssetsShowcase } from '../landing/CorridorAssetsShowcase';
+import { ContactAccessModal } from '../landing/ContactAccessModal';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
@@ -43,6 +42,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState<boolean>(false);
 
   // Scroll Reveal Observer for Sections
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
@@ -113,16 +113,16 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
   const faqItems = [
     {
-      q: 'Does this digital twin automatically actuate physical traffic signals?',
+      q: 'Does this digital twin automatically actuate physical traffic signals or grid switches?',
       a: 'No. The platform operates strictly as read-only decision support. Recommendations are advisory and require human authorization outside the platform before any field action. Physical signal controller actuation is strictly prohibited by architectural invariants.'
     },
     {
-      q: 'How does the system enforce state separation between simulation and reality?',
+      q: 'How does the platform enforce state separation between simulation and reality?',
       a: 'Observed telemetry (LIVE/REPLAY), physical SUMO simulation (SIMULATION), and machine learning forecasts (PREDICTED) are partitioned into isolated database tables. Simulations and forecasts can never overwrite observed twin state.'
     },
     {
-      q: 'What physical corridor boundary is monitored?',
-      a: 'The arterial corridor digital twin encompassing 10 monitored road segments between intersection INT-VN-01 and intersection INT-SN-01, along with the primary commercial facility (BLD-PHOENIX-01).'
+      q: 'How are new corridors, intersections, and microgrid facilities onboarded?',
+      a: 'The platform utilizes modular NGSI-LD semantic schemas. Roadway geometry, detector loops, signal timing plans, and building smart meters are provisioned declaratively through geographic GeoJSON corridors and validated against physical boundary schemas.'
     },
     {
       q: 'How are model uncertainties and forecasting errors communicated?',
@@ -133,8 +133,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       a: 'Strictly no. Ingestion is restricted to macroscopic road segment velocities, loop detector counts, environmental air quality indices, and commercial building aggregate meter power. Facial recognition, automated license plate recognition, and individual vehicle tracking are strictly forbidden.'
     },
     {
-      q: 'How are sensor failures and network disconnects handled?',
-      a: 'Telemetry observations exceeding freshness thresholds (>180 seconds for traffic velocity, >900 seconds for building power) are automatically tagged as STALE. Stale or invalid data is highlighted in amber/red and rejected by decision-support algorithms.'
+      q: 'How do agencies and research partners obtain operational access?',
+      a: 'Access to the live operations console is provisioned per authorized agency. Prospective municipal authorities, transit agencies, and research partners can submit an access inquiry via the Request Access intake portal.'
     }
   ];
 
@@ -158,43 +158,32 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
           <div className="landing-nav-actions">
             {authUser ? (
-              <button
-                type="button"
-                className="landing-btn-signin"
-                onClick={onSignOut}
-                title="Sign out of municipal session"
-              >
-                <LogOut size={13} />
-                <span>Sign Out</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="landing-btn-signin"
-                onClick={() => onNavigateAuth ? onNavigateAuth('signin') : onLaunchConsole('auth')}
-                title="Sign in with authorized credentials"
-              >
-                <User size={13} />
-                <span>Sign In</span>
-              </button>
-            )}
-
-            {authUser ? (
-              <button
-                className="landing-btn-primary"
-                onClick={() => onLaunchConsole('operations')}
-                title="Open real-time digital twin operations dashboard"
-              >
-                <span>Dashboard</span>
-                <ArrowRight size={14} />
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="landing-btn-signin"
+                  onClick={onSignOut}
+                  title="Sign out of active session"
+                >
+                  <LogOut size={13} />
+                  <span>Sign Out</span>
+                </button>
+                <button
+                  className="landing-btn-primary"
+                  onClick={() => onLaunchConsole('operations')}
+                  title="Open real-time digital twin operations dashboard"
+                >
+                  <span>Dashboard</span>
+                  <ArrowRight size={14} />
+                </button>
+              </>
             ) : (
               <button
                 className="landing-btn-primary"
-                onClick={() => onNavigateAuth ? onNavigateAuth('signup') : onLaunchConsole('auth')}
-                title="Get started with corridor digital twin"
+                onClick={() => setIsContactModalOpen(true)}
+                title="Request agency access or consultation"
               >
-                <span>Get Started</span>
+                <span>Request Access</span>
                 <ArrowRight size={14} />
               </button>
             )}
@@ -217,22 +206,24 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('faq')}>FAQ</button>
-            {!authUser ? (
-              <button className="landing-mobile-item" onClick={() => onNavigateAuth ? onNavigateAuth('signin') : onLaunchConsole('auth')}>
-                Sign In
-              </button>
-            ) : (
-              <button className="landing-mobile-item" onClick={onSignOut}>
-                Sign Out
-              </button>
-            )}
             {authUser ? (
-              <button className="landing-mobile-item highlight" onClick={() => onLaunchConsole('operations')}>
-                Dashboard <ArrowRight size={14} />
-              </button>
+              <>
+                <button className="landing-mobile-item" onClick={onSignOut}>
+                  Sign Out
+                </button>
+                <button className="landing-mobile-item highlight" onClick={() => onLaunchConsole('operations')}>
+                  Dashboard <ArrowRight size={14} />
+                </button>
+              </>
             ) : (
-              <button className="landing-mobile-item highlight" onClick={() => onNavigateAuth ? onNavigateAuth('signup') : onLaunchConsole('auth')}>
-                Get Started <ArrowRight size={14} />
+              <button
+                className="landing-mobile-item highlight"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsContactModalOpen(true);
+                }}
+              >
+                Request Access <ArrowRight size={14} />
               </button>
             )}
           </div>
@@ -245,9 +236,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           {/* Luminous Shimmer Tag */}
           <div className="landing-shimmer-tag">
             <span className="shimmer-pulse-gem"></span>
-            <span className="shimmer-tag-title">PRECISION URBAN MOBILITY & ENERGY TWIN</span>
+            <span className="shimmer-tag-title">PRECISION URBAN DIGITAL TWIN</span>
             <span className="shimmer-tag-sep">/</span>
-            <span className="shimmer-tag-metric">REAL-TIME DECISION SUPPORT</span>
+            <span className="shimmer-tag-metric">MULTI-DOMAIN DECISION SUPPORT</span>
           </div>
 
           {/* Headline per B5 (No hyphens, meaningful breaks, left-to-right gradient) */}
@@ -257,32 +248,34 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
           {/* Subheadline */}
           <p className="landing-hero-subheadline">
-            Synchronize traffic velocity, building energy consumption, and environmental metrics along the dual arterial corridor with verifiable mathematical provenance.
+            Synchronize hydrodynamic traffic mobility, commercial building microgrids, environmental air quality, and structural health with mathematical provenance and human-in-the-loop governance.
           </p>
 
           {/* CTA Group */}
           <div className="landing-cta-group">
-            <button
-              className="landing-btn-large-primary"
-              onClick={() => {
-                if (authUser) {
-                  onLaunchConsole('operations');
-                } else if (onNavigateAuth) {
-                  onNavigateAuth('signup');
-                } else {
-                  onLaunchConsole('auth');
-                }
-              }}
-            >
-              <span>{authUser ? 'Dashboard' : 'Get Started'}</span>
-              <ArrowRight size={16} />
-            </button>
+            {authUser ? (
+              <button
+                className="landing-btn-large-primary"
+                onClick={() => onLaunchConsole('operations')}
+              >
+                <span>Dashboard</span>
+                <ArrowRight size={16} />
+              </button>
+            ) : (
+              <button
+                className="landing-btn-large-primary"
+                onClick={() => setIsContactModalOpen(true)}
+              >
+                <span>Request Access</span>
+                <ArrowRight size={16} />
+              </button>
+            )}
             <button
               className="landing-btn-large-secondary"
-              onClick={() => scrollToAnchor('provenance')}
+              onClick={() => scrollToAnchor('how-it-works')}
             >
               <Eye size={16} />
-              <span>Inspect Provenance Guarantee</span>
+              <span>Explore Architecture</span>
             </button>
           </div>
 
@@ -362,11 +355,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="section-header">
           <div className="landing-badge font-mono">
             <Activity size={13} color="var(--color-primary)" />
-            <span>REAL-TIME ARTERIAL CORRIDOR TELEMETRY</span>
+            <span>MULTI-DOMAIN URBAN TELEMETRY</span>
           </div>
-          <h2 className="section-title">High-Fidelity Corridor Intelligence Architecture</h2>
+          <h2 className="section-title">High-Fidelity Urban Intelligence Architecture</h2>
           <p className="section-subtitle">
-            Engineered with microscopic kinematic physics, conformal machine learning uncertainty envelopes, and commercial energy load analytics.
+            Engineered with hydrodynamic traffic dynamics, building thermal microgrids, conformal uncertainty envelopes, and strict mathematical provenance.
           </p>
         </div>
 
@@ -377,7 +370,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Car size={18} color="var(--color-primary)" /></div>
                 <div>
-                  <h3 className="bento-title">Arterial Kinematics & Velocity Synchronization</h3>
+                  <h3 className="bento-title">Hydrodynamic Traffic Mobility & Arterial Progression</h3>
                   <span className="bento-sub font-mono">10 Monitored Segments • Dual Arterial Corridor</span>
                 </div>
               </div>
@@ -394,8 +387,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Zap size={18} color="var(--color-warning)" /></div>
                 <div>
-                  <h3 className="bento-title">Commercial Chiller Demands</h3>
-                  <span className="bento-sub font-mono">BLD-PHOENIX-01 • 15m Telemetry</span>
+                  <h3 className="bento-title">Commercial Microgrid & Chiller Demands</h3>
+                  <span className="bento-sub font-mono">2R-2C ETP Modeling • 15m Telemetry</span>
                 </div>
               </div>
             </div>
@@ -446,12 +439,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <div className="bento-icon-box"><MapPin size={18} color="var(--color-primary-hover)" /></div>
                 <div>
                   <h3 className="bento-title">Monitored Corridor Physical Topology</h3>
-                  <span className="bento-sub font-mono">Dual Arterial Corridor • Nodes INT-VN-01 ↔ INT-SN-01</span>
+                  <span className="bento-sub font-mono">Dual Arterial Corridor • Multimodal Nodes & Facilities</span>
                 </div>
               </div>
             </div>
             <p className="bento-text">
-              Architectural diorama registering West Node (INT-VN-01), East Node (INT-SN-01), and the commercial facility complex (BLD-PHOENIX-01).
+              Architectural diorama registering West Node, East Node, and the central commercial microgrid complex.
             </p>
             <CorridorDioramaAsset />
           </div>
@@ -607,21 +600,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
           <div className="stat-divider"></div>
           <div className="stat-column">
-            <span className="stat-value font-mono">10</span>
-            <span className="stat-label">Monitored Segments</span>
-            <span className="stat-sub">Eastbound & Westbound</span>
+            <span className="stat-value font-mono">Multimodal</span>
+            <span className="stat-label">Integrated Domains</span>
+            <span className="stat-sub">Mobility, Energy & AQI</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-column">
             <span className="stat-value font-mono">2</span>
             <span className="stat-label">Signalized Nodes</span>
-            <span className="stat-sub">INT-VN-01 & INT-SN-01</span>
+            <span className="stat-sub">Coordinated Phasing</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-column">
             <span className="stat-value font-mono">4,862 kW</span>
             <span className="stat-label">Peak Commercial Load</span>
-            <span className="stat-sub">Phoenix Marketcity</span>
+            <span className="stat-sub">Commercial Microgrid</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-column">
@@ -670,36 +663,38 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="final-cta-card">
           <div className="final-cta-badge">
             <Activity size={14} color="var(--color-primary)" />
-            <span>Ready for Municipal Demonstration</span>
+            <span>Agency & Municipal Access Intake</span>
           </div>
           <h2 className="final-cta-title">
-            Inspect the arterial corridor digital twin live
+            Request Access to the Urban Digital Twin Platform
           </h2>
           <p className="final-cta-subtitle">
-            Explore 2D and 3D geospatial views, time scrubber historical replay, microscopic scenario simulations, and commercial energy advisories in real time.
+            Explore 2D and 3D geospatial views, time scrubber historical replay, microscopic scenario simulations, and commercial microgrid advisories with full provenance guarantees.
           </p>
           <div className="final-cta-actions">
-            <button
-              className="landing-btn-large-primary"
-              onClick={() => {
-                if (authUser) {
-                  onLaunchConsole('operations');
-                } else if (onNavigateAuth) {
-                  onNavigateAuth('signup');
-                } else {
-                  onLaunchConsole('auth');
-                }
-              }}
-            >
-              <span>{authUser ? 'Dashboard' : 'Get Started'}</span>
-              <ArrowRight size={16} />
-            </button>
+            {authUser ? (
+              <button
+                className="landing-btn-large-primary"
+                onClick={() => onLaunchConsole('operations')}
+              >
+                <span>Dashboard</span>
+                <ArrowRight size={16} />
+              </button>
+            ) : (
+              <button
+                className="landing-btn-large-primary"
+                onClick={() => setIsContactModalOpen(true)}
+              >
+                <span>Request Access</span>
+                <ArrowRight size={16} />
+              </button>
+            )}
             <button
               className="landing-btn-large-secondary"
-              onClick={() => onLaunchConsole('evaluation')}
+              onClick={() => scrollToAnchor('how-it-works')}
             >
-              <BarChart3 size={16} />
-              <span>Review Pilot Evaluation Report</span>
+              <Layers size={16} />
+              <span>Explore Architecture</span>
             </button>
           </div>
         </div>
@@ -714,10 +709,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <span className="brand-title">Digital Twin Analytics</span>
             </div>
             <p className="footer-description">
-              Evidence backed urban decision-support platform for arterial transportation and commercial energy corridor analytics.
+              Evidence backed urban decision-support platform for multi-domain transportation and commercial microgrid analytics.
             </p>
             <div className="footer-corridor-badge">
-              <span>Boundary: Arterial Node INT-VN-01 ↔ Node INT-SN-01</span>
+              <span>Dual Arterial Corridor • High-Fidelity Physics & Decision Support Architecture</span>
             </div>
           </div>
 
@@ -737,12 +732,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <button className="footer-link" onClick={() => onLaunchConsole('health')}>System Health</button>
               <button className="footer-link" onClick={() => scrollToAnchor('provenance')}>Provenance Contract</button>
             </div>
+
+            <div className="footer-link-group">
+              <span className="group-title">Access</span>
+              <button className="footer-link" onClick={() => setIsContactModalOpen(true)}>Request Access</button>
+              <button className="footer-link" onClick={() => onNavigateAuth ? onNavigateAuth('signin') : onLaunchConsole('auth')}>Operator Portal</button>
+            </div>
           </div>
         </div>
 
         <div className="footer-bottom-row">
           <div className="footer-legal">
-            <span>Decision Support Demonstration • Strictly Non-Actuating • Pune Smart City</span>
+            <span>Precision Urban Digital Twin • Strictly Non-Actuating Decision Support</span>
           </div>
           <div className="footer-status font-mono">
             <span className="status-dot"></span>
@@ -750,6 +751,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
         </div>
       </footer>
+
+      {/* Enterprise Contact & Access Intake Modal */}
+      <ContactAccessModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        onLaunchConsole={onLaunchConsole}
+      />
     </div>
   );
 };
