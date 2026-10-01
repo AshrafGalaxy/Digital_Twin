@@ -4,6 +4,7 @@ import { MapPin, Cpu, Zap, Car, ShieldCheck, Layers } from 'lucide-react';
 export interface AssetDetail {
   id: string;
   name: string;
+  shortName?: string;
   category: 'intersection' | 'segment' | 'building';
   categoryLabel: string;
   location: string;
@@ -18,6 +19,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
   {
     id: 'INT-01',
     name: 'Primary Arterial Gateway Junction',
+    shortName: 'Gateway Junction',
     category: 'intersection',
     categoryLabel: 'SIGNALIZED INTERSECTION',
     location: 'Western Arterial Ingress / Multimodal Crossroad Node',
@@ -30,6 +32,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
   {
     id: 'INT-02',
     name: 'Eastern Transit Terminal Junction',
+    shortName: 'Transit Junction',
     category: 'intersection',
     categoryLabel: 'SIGNALIZED INTERSECTION',
     location: 'Eastern Arterial Flank / Transit Corridor Crossing',
@@ -42,6 +45,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
   {
     id: 'SEG-01',
     name: 'Eastbound Arterial Mainline',
+    shortName: 'Eastbound Corridor',
     category: 'segment',
     categoryLabel: 'ARTERIAL ROADWAY SEGMENT',
     location: 'Western Gateway → Eastern Terminal (Eastbound Vector)',
@@ -54,6 +58,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
   {
     id: 'SEG-02',
     name: 'Westbound Arterial Mainline',
+    shortName: 'Westbound Corridor',
     category: 'segment',
     categoryLabel: 'ARTERIAL ROADWAY SEGMENT',
     location: 'Eastern Terminal → Western Gateway (Westbound Vector)',
@@ -66,6 +71,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
   {
     id: 'FAC-01',
     name: 'Central Commercial Microgrid Facility',
+    shortName: 'Commercial Microgrid',
     category: 'building',
     categoryLabel: 'COMMERCIAL FACILITY',
     location: 'Central Corridor Commercial Infrastructure Zone',
@@ -342,7 +348,7 @@ export const CorridorAssetsShowcase: React.FC<CorridorAssetsShowcaseProps> = ({
               </div>
               <div className="nav-tab-info">
                 <span className="nav-tab-id font-mono">{asset.id}</span>
-                <span className="nav-tab-title">{asset.name}</span>
+                <span className="nav-tab-title">{asset.shortName || asset.name}</span>
               </div>
             </button>
           );

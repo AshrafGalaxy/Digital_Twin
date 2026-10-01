@@ -10,17 +10,6 @@ export const ArterialWaveAsset: React.FC = () => {
         loading="eager"
       />
       <div className="bento-img-overlay" aria-hidden="true" />
-      <div className="bento-img-telemetry">
-        <div className="bento-telemetry-pill">
-          <span className="bento-pill-dot" />
-          <span className="bento-pill-label">SYNCHRONIZED ARTERIAL FLOW</span>
-        </div>
-        <div className="bento-telemetry-metric">
-          34.2 km/h • 2,400 PCU/h
-        </div>
-      </div>
     </div>
   );
 };
-
-

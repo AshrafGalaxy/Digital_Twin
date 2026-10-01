@@ -425,53 +425,53 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <EnergyCurveAsset />
           </div>
 
-          {/* Bento Cell 3: Span 1 col - Conformal Prediction Intervals & XAI */}
+          {/* Bento Cell 3: Span 1 col - In-Pavement Ground Sensors */}
           <div className="bento-card bento-span-1">
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Cpu size={18} color="var(--color-accent-violet)" /></div>
                 <div>
-                  <h3 className="bento-title">Conformal Uncertainty (80%/90%)</h3>
-                  <span className="bento-sub font-mono">LightGBM • TreeSHAP Explainability</span>
+                  <h3 className="bento-title">In-Pavement Ground Sensors</h3>
+                  <span className="bento-sub font-mono">Flush Loop Arrays • Physical Calibration</span>
                 </div>
               </div>
             </div>
             <p className="bento-text">
-              Zero speculative forecasts. Every velocity prediction is bounded by rigorous conformal uncertainty bands and TreeSHAP feature attributions.
+              Precision in-pavement inductive detectors capture vehicle presence, axle counts, and occupancy to establish physical ground truth.
             </p>
             <ConformalBandsAsset />
           </div>
 
-          {/* Bento Cell 4: Span 1 col - SUMO Microscopic Physics Engine */}
+          {/* Bento Cell 4: Span 1 col - Edge Telemetry Cabinets */}
           <div className="bento-card bento-span-1">
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Gauge size={18} color="var(--color-success)" /></div>
                 <div>
-                  <h3 className="bento-title">Microscopic Physics Engine</h3>
-                  <span className="bento-sub font-mono">Krauss Car-Following Model</span>
+                  <h3 className="bento-title">Edge Telemetry Cabinets</h3>
+                  <span className="bento-sub font-mono">NEMA Enclosures • Field Ingestion</span>
                 </div>
               </div>
             </div>
             <p className="bento-text">
-              Multi-lane microscopic vehicle physics with calibrated gap-acceptance, queue dissipation, and BRTS transit priority lanes.
+              Pole-mounted weatherproof hardware aggregates roadside detector signals and signal phases before transmission to the central pipeline.
             </p>
             <MicroscopicPhysicsAsset />
           </div>
 
-          {/* Bento Cell 5: Span 2 cols - Corridor Physical Topology & Diorama */}
-          <div className="bento-card bento-span-2">
+          {/* Bento Cell 5: Span 1 col - Physical Corridor Topology */}
+          <div className="bento-card bento-span-1">
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><MapPin size={18} color="var(--color-primary-hover)" /></div>
                 <div>
-                  <h3 className="bento-title">Monitored Corridor Physical Topology</h3>
-                  <span className="bento-sub font-mono">Dual Arterial Corridor • Multimodal Nodes & Facilities</span>
+                  <h3 className="bento-title">Physical Corridor Topology</h3>
+                  <span className="bento-sub font-mono">Architectural Scale Twin • Arterial Spines</span>
                 </div>
               </div>
             </div>
             <p className="bento-text">
-              Architectural diorama registering West Node, East Node, and the central commercial microgrid complex.
+              Physical illuminated scale replica registering signalized nodes, directional lanes, and the central commercial microgrid facility.
             </p>
             <CorridorDioramaAsset />
           </div>
