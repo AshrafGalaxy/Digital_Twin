@@ -4315,13 +4315,13 @@ body {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   height: 50px;
-  padding: 0 8px 0 14px;
+  padding: 0 6px 0 16px;
   box-sizing: border-box;
   background: rgba(12, 17, 26, 0.92);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: 14px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
@@ -4378,14 +4378,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  padding: 0 12px;
+  height: 36px;
+  padding: 0 14px;
   box-sizing: border-box;
   background: transparent;
   color: #C9D1D9;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: color 140ms ease, border-color 140ms ease;
@@ -4435,7 +4435,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
+  height: 36px;
   padding: 0 16px;
   box-sizing: border-box;
   gap: 7px;
@@ -4443,7 +4443,7 @@ body {
   color: #FFFFFF;
   font-size: 13px;
   font-weight: 550;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid rgba(88, 166, 255, 0.4);
   cursor: pointer;
   overflow: hidden;
