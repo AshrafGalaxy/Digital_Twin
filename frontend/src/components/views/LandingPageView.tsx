@@ -65,42 +65,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Tagline Scroll Animation per B11 (Word-by-word illumination)
-  const taglineWords = [
-    'Urban', 'analytics', 'without', 'unverified', 'assertions.',
-    'Every', 'insight', 'backed', 'by', 'physical', 'sensors,',
-    'conformal', 'error', 'bounds,', 'and', 'human', 'in', 'the', 'loop', 'governance.'
-  ];
-  const [illuminatedCount, setIlluminatedCount] = useState<number>(0);
-  const taglineSectionRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const el = taglineSectionRef.current;
-    if (!el) return;
-
-    const handleScroll = () => {
-      const rect = el.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      
-      // Calculate scroll progress through the tagline section (0 to 1)
-      const startTrigger = windowHeight * 0.90;
-      const endTrigger = windowHeight * 0.35;
-      
-      if (rect.top > startTrigger) {
-        setIlluminatedCount(0);
-      } else if (rect.top < endTrigger) {
-        setIlluminatedCount(taglineWords.length);
-      } else {
-        const progress = Math.min(1, Math.max(0, (startTrigger - rect.top) / (startTrigger - endTrigger)));
-        const targetWords = Math.floor(progress * taglineWords.length);
-        setIlluminatedCount(targetWords);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [taglineWords.length]);
 
   const scrollToAnchor = (id: string) => {
     setIsMobileMenuOpen(false);
@@ -139,6 +104,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
   return (
     <div className="landing-root">
+      {/* Top Header Progressive Gradient Blur Scrim */}
+      <div className="landing-nav-scrim" aria-hidden="true" />
+
       {/* 1. Structured Command Navigation */}
       <nav className="landing-command-nav" aria-label="Main Navigation">
         <div className="landing-nav-inner">
@@ -298,12 +266,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         {/* Hero Visual: Contained Telemetry Stage */}
         <div className="landing-hero-stage">
           <div className="hero-stage-card">
+            {/* Topbar with Clean Status & Badge */}
             <div className="hero-stage-topbar">
               <div className="hero-stage-status">
                 <span className="stage-pulse-dot"></span>
-                <span className="stage-status-text font-mono">LIVE ARTERIAL TWIN MESH</span>
+                <span className="stage-status-text font-mono">LIVE TELEMETRY STREAM</span>
               </div>
-              <span className="hero-stage-badge font-mono">VERIFIED</span>
+              <span className="hero-stage-badge font-mono">
+                MULTIMODAL ARTERIAL / 1.8 KM
+              </span>
             </div>
 
             <div className="landing-hero-orbit-canvas">
@@ -322,21 +293,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <DigitalTwinLogo size={44} glow />
               </div>
 
-              {/* Floating Metric Cards */}
+              {/* Minimalist Floating Telemetry Cards */}
               <div className="orbit-metric-card orbit-mc-1">
                 <span className="orbit-mc-label font-mono">CORRIDOR SPEED</span>
                 <span className="orbit-mc-value font-mono">34.2 km/h</span>
                 <span className="orbit-mc-tag live">LIVE</span>
               </div>
               <div className="orbit-metric-card orbit-mc-2">
-                <span className="orbit-mc-label font-mono">PEAK LOAD</span>
+                <span className="orbit-mc-label font-mono">MICROGRID LOAD</span>
                 <span className="orbit-mc-value font-mono">4,862 kW</span>
-                <span className="orbit-mc-tag simulation">SIMULATION</span>
+                <span className="orbit-mc-tag live">OBSERVED</span>
               </div>
               <div className="orbit-metric-card orbit-mc-3">
-                <span className="orbit-mc-label font-mono">UNCERTAINTY</span>
-                <span className="orbit-mc-value font-mono">&plusmn; 3.4 km/h</span>
-                <span className="orbit-mc-tag predicted">PREDICTED</span>
+                <span className="orbit-mc-label font-mono">STREAM LATENCY</span>
+                <span className="orbit-mc-value font-mono">42 ms</span>
+                <span className="orbit-mc-tag simulation">VERIFIED</span>
               </div>
             </div>
 
@@ -344,18 +315,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <div className="hero-stage-footer">
               <div className="stage-footer-item">
                 <span className="stage-footer-dot green"></span>
-                <span className="stage-footer-label font-mono">TRAFFIC FLOW</span>
-                <span className="stage-footer-val font-mono">98.6% SYNC</span>
+                <span className="stage-footer-label font-mono">INGESTION</span>
+                <span className="stage-footer-val font-mono">&lt; 42ms</span>
               </div>
               <div className="stage-footer-item">
                 <span className="stage-footer-dot cyan"></span>
-                <span className="stage-footer-label font-mono">MICROGRID</span>
-                <span className="stage-footer-val font-mono">4.8 MW</span>
+                <span className="stage-footer-label font-mono">DATA INTEGRITY</span>
+                <span className="stage-footer-val font-mono">100% SHA-256</span>
               </div>
               <div className="stage-footer-item">
                 <span className="stage-footer-dot purple"></span>
-                <span className="stage-footer-label font-mono">AIR MESH</span>
-                <span className="stage-footer-val font-mono">42 AQI</span>
+                <span className="stage-footer-label font-mono">CALIBRATION</span>
+                <span className="stage-footer-val font-mono">CONFORMAL 90%</span>
               </div>
             </div>
           </div>
@@ -390,22 +361,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </header>
 
-      {/* 3. Mandatory B11 Tagline Reveal Section */}
-      <section className="landing-tagline-section" ref={taglineSectionRef}>
+      {/* 3. Operational Integrity & Core Philosophy Section */}
+      <section className="landing-tagline-section">
         <div className="landing-tagline-container">
-          <div className="tagline-eyebrow">
+          <div className="tagline-eyebrow font-mono">
             <span className="eyebrow-pulse"></span>
-            <span>Core Philosophy & Operational Integrity</span>
+            <span>CORE PHILOSOPHY &amp; OPERATIONAL INTEGRITY</span>
           </div>
-          <p className="landing-tagline-copy">
-            {taglineWords.map((word, idx) => (
-              <span
-                key={idx}
-                className={`tagline-word ${idx < illuminatedCount ? 'illuminated' : 'dim'}`}
-              >
-                {word}{' '}
-              </span>
-            ))}
+          <h2 className="landing-tagline-headline">
+            Urban analytics without unverified assertions.
+          </h2>
+          <p className="landing-tagline-subcopy">
+            Every operational insight backed by physical sensors, calibrated conformal bounds, and human-in-the-loop municipal governance.
           </p>
         </div>
       </section>
@@ -610,7 +577,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="mode-badge-cell live">LIVE</span>
                 </td>
                 <td>Verified direct feed from on-corridor physical sensors or permitted real-time APIs.</td>
-                <td className="font-mono">SEG-NR-EB-01 Velocity</td>
+                <td className="font-mono">SEG-01 Arterial Velocity</td>
                 <td>Active freshness verification with sub-180 second heartbeat threshold.</td>
               </tr>
               <tr>
@@ -618,7 +585,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="mode-badge-cell replay">REPLAY</span>
                 </td>
                 <td>Historical corridor telemetry played back chronologically from authoritative archives.</td>
-                <td className="font-mono">TimeScrubber -30m replay</td>
+                <td className="font-mono">Playback -30m Stream</td>
                 <td>Never labeled as live. Preserves exact historical sensor timeline.</td>
               </tr>
               <tr>

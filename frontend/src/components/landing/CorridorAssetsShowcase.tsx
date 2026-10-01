@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Cpu, Zap, Car, ShieldCheck, Layers } from 'lucide-react';
 
-interface AssetDetail {
+export interface AssetDetail {
   id: string;
   name: string;
   category: 'intersection' | 'segment' | 'building';
@@ -14,344 +14,308 @@ interface AssetDetail {
   accentColor: string;
 }
 
-const CORRIDOR_ASSETS: AssetDetail[] = [
+export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
   {
-    id: 'INT-VN-01',
-    name: 'West Intersection Node',
+    id: 'INT-01',
+    name: 'Primary Arterial Gateway Junction',
     category: 'intersection',
     categoryLabel: 'SIGNALIZED INTERSECTION',
-    location: 'Dual Arterial / West Crossroad Node',
-    geometry: '4 Approach Legs • 12 Coordinated Phases',
-    capacity: '4,200 PCU / hr Peak Capacity',
-    sensors: ['8 Inductive Loop Sensors', 'Virtual Stop-Line Detectors', 'Radar Speed Profiler'],
-    decisionSupport: 'Advisory green split reallocation during arterial queue spillback.',
+    location: 'Western Arterial Ingress / Multimodal Crossroad Node',
+    geometry: '4 Approach Legs • 12 Coordinated Phase Actuation',
+    capacity: '4,200 PCU / hr Peak Throughput',
+    sensors: ['8 Inductive In-Pavement Loops', 'Virtual Stop-Line Profilers', 'Multi-Leg Approach Radar'],
+    decisionSupport: 'Automated green-split reallocation during downstream queue spillback.',
     accentColor: '#38BDF8'
   },
   {
-    id: 'INT-SN-01',
-    name: 'East Intersection Node',
+    id: 'INT-02',
+    name: 'Eastern Transit Terminal Junction',
     category: 'intersection',
     categoryLabel: 'SIGNALIZED INTERSECTION',
-    location: 'Dual Arterial / East Transit Flank Crossing',
-    geometry: '3 Approach Legs • Transit Priority Flank',
-    capacity: '3,600 PCU / hr Peak Capacity',
-    sensors: ['6 Inductive Loop Detectors', 'Transit Beacon Detectors', 'Approach Radar Profiler'],
-    decisionSupport: 'Downstream queue dissipation pacing to prevent arterial gridlock back-propagation.',
+    location: 'Eastern Arterial Flank / Transit Corridor Crossing',
+    geometry: '3 Approach Legs • Transit Priority Dedicated Phase',
+    capacity: '3,600 PCU / hr Peak Throughput',
+    sensors: ['6 Directional Loop Arrays', 'Transit Priority Beacons', 'Continuous Velocity Radar'],
+    decisionSupport: 'Dynamic queue dissipation pacing to prevent arterial gridlock back-propagation.',
     accentColor: '#10B981'
   },
   {
-    id: 'SEG-NR-EB',
-    name: 'Eastbound Arterial Corridor',
+    id: 'SEG-01',
+    name: 'Eastbound Arterial Mainline',
     category: 'segment',
-    categoryLabel: 'ARTERIAL ROAD SEGMENT',
-    location: 'West Node → East Node (Eastbound Arterial)',
+    categoryLabel: 'ARTERIAL ROADWAY SEGMENT',
+    location: 'Western Gateway → Eastern Terminal (Eastbound Vector)',
     geometry: '3 Main Travel Lanes + Dedicated Service Flank',
-    capacity: 'Design Speed: 45 km/h • 2,400 veh/hr Flow',
-    sensors: ['3 Sequential Loop Stations (IL-01..03)', 'Synthetic Kinematics Micro-Feed', 'Continuous Radar Profiler'],
-    decisionSupport: 'Conformal speed forecast alerts for pre-congestion queue formation.',
+    capacity: 'Design Velocity: 50 km/h • 2,400 veh/hr Free Flow',
+    sensors: ['3 Sequential Loop Stations', 'Microscopic Kinematics Tracker', 'Arterial Radar Array'],
+    decisionSupport: 'Conformal velocity forecast alerts identifying pre-congestion queue formation.',
     accentColor: '#58A6FF'
   },
   {
-    id: 'SEG-NR-WB',
-    name: 'Westbound Arterial Corridor',
+    id: 'SEG-02',
+    name: 'Westbound Arterial Mainline',
     category: 'segment',
-    categoryLabel: 'ARTERIAL ROAD SEGMENT',
-    location: 'East Node → West Node (Westbound Arterial)',
+    categoryLabel: 'ARTERIAL ROADWAY SEGMENT',
+    location: 'Eastern Terminal → Western Gateway (Westbound Vector)',
     geometry: '3 Main Travel Lanes + Ingress Deceleration Buffer',
-    capacity: 'Design Speed: 45 km/h • Weekend Surge: 3,100 veh/hr',
-    sensors: ['Commercial Facility Turning Detectors', 'Loop Arrays (IL-04..06)', 'Queue Spillback Monitor'],
-    decisionSupport: 'Commercial ingress deceleration buffer advisories for weekend shopping peaks.',
+    capacity: 'Design Velocity: 50 km/h • Peak Surge: 3,100 veh/hr',
+    sensors: ['Commercial Turning Ingress Loop Arrays', 'Deceleration Buffer Stations', 'Queue Spillback Monitor'],
+    decisionSupport: 'Facility ingress buffer pacing during weekend commercial activity surges.',
     accentColor: '#818CF8'
   },
   {
-    id: 'BLD-PHOENIX-01',
-    name: 'Commercial Microgrid Complex',
+    id: 'FAC-01',
+    name: 'Central Commercial Microgrid Facility',
     category: 'building',
     categoryLabel: 'COMMERCIAL FACILITY',
-    location: 'Central Arterial Commercial Zone',
-    geometry: '5 Commercial Levels • 120,000 m² Conditioned Area',
-    capacity: 'Peak Power: 4,862 kW • Contract Demand: 5,200 kW',
-    sensors: ['11kV Main Grid Feeder Meter', 'Chiller Plant Sub-Meters (3 Units)', 'HVAC Zone Thermosensors'],
-    decisionSupport: 'Automated 15-minute chiller pre-cooling advisory to shave 380 kW during peak tariff.',
+    location: 'Central Corridor Commercial Infrastructure Zone',
+    geometry: '5 Commercial Levels • 120,000 m² Conditioned Footprint',
+    capacity: 'Peak Electrical Demand: 4,862 kW • Contract Cap: 5,200 kW',
+    sensors: ['Primary 11kV Grid Ingress Meter', 'Chiller Sub-Metering Plant (3 Units)', 'Zonal HVAC Thermal Telemetry'],
+    decisionSupport: 'Automated 15-minute chiller pre-cooling advisory shaving 380 kW during peak tariff hours.',
     accentColor: '#F59E0B'
   }
 ];
 
-export const CorridorAssetsShowcase: React.FC = () => {
-  const [selectedId, setSelectedId] = useState<string>('INT-VN-01');
-  const activeAsset = CORRIDOR_ASSETS.find((a) => a.id === selectedId) || CORRIDOR_ASSETS[0];
+export interface CorridorAssetsShowcaseProps {
+  assets?: AssetDetail[];
+  initialAssetId?: string;
+  title?: string;
+  subtitle?: string;
+}
 
-  const renderAssetBlueprint = (id: string) => {
-    switch (id) {
-      case 'INT-VN-01':
-        return (
-          <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="vnBeamH" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#10B981" stopOpacity="0.1" />
-                <stop offset="50%" stopColor="#10B981" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#10B981" stopOpacity="0.1" />
-              </linearGradient>
-              <radialGradient id="vnRadarPulse" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.0" />
-              </radialGradient>
-            </defs>
-            {/* Background Grid Pattern */}
-            <rect width="460" height="260" fill="#0A0E17" />
-            <circle cx="230" cy="130" r="110" fill="url(#vnRadarPulse)" pointerEvents="none" />
-
-            {/* 4-Way Intersection Roadbeds */}
-            {/* East-West Arterial (Nagar Road) */}
-            <rect x="20" y="100" width="420" height="60" rx="4" fill="#161B22" stroke="#30363D" strokeWidth="1" />
-            <line x1="20" y1="130" x2="440" y2="130" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1.5" strokeDasharray="8 6" />
-
-            {/* North-South Crossing (Viman Nagar Road) */}
-            <rect x="200" y="20" width="60" height="220" rx="4" fill="#161B22" stroke="#30363D" strokeWidth="1" />
-            <line x1="230" y1="20" x2="230" y2="240" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1.5" strokeDasharray="8 6" />
-
-            {/* Center Intersection Box */}
-            <rect x="200" y="100" width="60" height="60" fill="#1C2128" stroke="#38BDF8" strokeWidth="1.2" />
-
-            {/* Coordinated Signal Phases (Green on East-West Arterial) */}
-            <line x1="25" y1="130" x2="195" y2="130" stroke="url(#vnBeamH)" strokeWidth="3" strokeLinecap="round" />
-            <line x1="265" y1="130" x2="435" y2="130" stroke="url(#vnBeamH)" strokeWidth="3" strokeLinecap="round" />
-
-            {/* Stop-Line Inductive Loops */}
-            <rect x="180" y="104" width="12" height="22" rx="2" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" strokeWidth="1" />
-            <rect x="180" y="134" width="12" height="22" rx="2" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" strokeWidth="1" />
-            <rect x="268" y="104" width="12" height="22" rx="2" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" strokeWidth="1" />
-            <rect x="268" y="134" width="12" height="22" rx="2" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" strokeWidth="1" />
-
-            {/* Central Signal Controller Node with Pulse Rings */}
-            <circle cx="230" cy="130" r="38" fill="none" stroke="#38BDF8" strokeWidth="1" opacity="0.3" strokeDasharray="4 4">
-              <animateTransform attributeName="transform" type="rotate" from="0 230 130" to="360 230 130" dur="16s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="230" cy="130" r="18" fill="none" stroke="#38BDF8" strokeWidth="1.5" opacity="0.6" />
-            <circle cx="230" cy="130" r="6" fill="#38BDF8" />
-
-            {/* Signal Indicator Beacons */}
-            <circle cx="195" cy="95" r="4" fill="#10B981" />
-            <circle cx="265" cy="95" r="4" fill="#EF4444" />
-            <circle cx="195" cy="165" r="4" fill="#EF4444" />
-            <circle cx="265" cy="165" r="4" fill="#10B981" />
-          </svg>
-        );
-
-      case 'INT-SN-01':
-        return (
-          <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="snTransitGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#10B981" stopOpacity="0.1" />
-                <stop offset="60%" stopColor="#10B981" stopOpacity="0.85" />
-                <stop offset="100%" stopColor="#10B981" stopOpacity="0.1" />
-              </linearGradient>
-            </defs>
-            <rect width="460" height="260" fill="#0A0E17" />
-
-            {/* East-West Arterial Roadway */}
-            <rect x="20" y="90" width="420" height="66" rx="4" fill="#161B22" stroke="#30363D" strokeWidth="1" />
-            <line x1="20" y1="123" x2="440" y2="123" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1.5" strokeDasharray="8 6" />
-
-            {/* Somnath Nagar Road Crossing Leg */}
-            <rect x="250" y="156" width="60" height="84" rx="3" fill="#161B22" stroke="#30363D" strokeWidth="1" />
-            <line x1="280" y1="156" x2="280" y2="240" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1.5" strokeDasharray="6 6" />
-
-            {/* Dedicated BRTS Transit Priority Flank */}
-            <rect x="20" y="60" width="420" height="24" rx="3" fill="rgba(16, 185, 129, 0.08)" stroke="#10B981" strokeWidth="1" strokeDasharray="4 3" />
-            <line x1="20" y1="72" x2="440" y2="72" stroke="url(#snTransitGrad)" strokeWidth="2.5" />
-
-            {/* PMPML Transit Detection Beacons */}
-            <circle cx="120" cy="72" r="5" fill="#10B981" />
-            <circle cx="120" cy="72" r="14" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.4" />
-            <circle cx="340" cy="72" r="5" fill="#10B981" />
-            <circle cx="340" cy="72" r="14" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.4" />
-
-            {/* Intersection Junction Core */}
-            <g transform="translate(280, 123)">
-              <circle r="36" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.25" strokeDasharray="4 4" />
-              <circle r="16" fill="none" stroke="#10B981" strokeWidth="1.2" opacity="0.5" />
-              <circle r="6" fill="#10B981" />
-            </g>
-
-            {/* Inductive Loop Array IL-SN */}
-            <rect x="220" y="96" width="12" height="22" rx="2" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" strokeWidth="1" />
-            <rect x="220" y="128" width="12" height="22" rx="2" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" strokeWidth="1" />
-          </svg>
-        );
-
-      case 'SEG-NR-EB':
-        return (
-          <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="segEbFlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#38BDF8" />
-                <stop offset="50%" stopColor="#2F81F7" />
-                <stop offset="100%" stopColor="#10B981" />
-              </linearGradient>
-            </defs>
-            <rect width="460" height="260" fill="#0A0E17" />
-
-            {/* 3 Main Travel Lanes */}
-            <rect x="20" y="60" width="420" height="100" rx="6" fill="#161B22" stroke="#30363D" strokeWidth="1" />
-            <line x1="20" y1="93" x2="440" y2="93" stroke="rgba(255, 255, 255, 0.16)" strokeWidth="1.2" strokeDasharray="10 8" />
-            <line x1="20" y1="126" x2="440" y2="126" stroke="rgba(255, 255, 255, 0.16)" strokeWidth="1.2" strokeDasharray="10 8" />
-
-            {/* Dedicated Service Road Flank */}
-            <rect x="20" y="174" width="420" height="32" rx="4" fill="rgba(30, 41, 59, 0.5)" stroke="#334155" strokeWidth="1" />
-            <line x1="20" y1="190" x2="440" y2="190" stroke="rgba(255, 255, 255, 0.1)" strokeWidth="1" strokeDasharray="6 6" />
-
-            {/* 3 Sequential Loop Detector Stations */}
-            {/* Station IL-01 */}
-            <g transform="translate(100, 60)">
-              <rect width="8" height="100" fill="rgba(56, 189, 248, 0.15)" stroke="#38BDF8" strokeWidth="1" />
-              <circle cx="4" cy="0" r="3.5" fill="#38BDF8" />
-            </g>
-            {/* Station IL-02 */}
-            <g transform="translate(230, 60)">
-              <rect width="8" height="100" fill="rgba(56, 189, 248, 0.15)" stroke="#38BDF8" strokeWidth="1" />
-              <circle cx="4" cy="0" r="3.5" fill="#38BDF8" />
-            </g>
-            {/* Station IL-03 */}
-            <g transform="translate(360, 60)">
-              <rect width="8" height="100" fill="rgba(16, 185, 129, 0.15)" stroke="#10B981" strokeWidth="1" />
-              <circle cx="4" cy="0" r="3.5" fill="#10B981" />
-            </g>
-
-            {/* High-Speed Velocity Wave Spline */}
-            <path
-              d="M 20 76 C 90 76, 160 110, 230 110 C 300 110, 370 76, 440 76"
-              fill="none"
-              stroke="url(#segEbFlow)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            {/* Vehicle Pods */}
-            <circle cx="80" cy="76" r="4.5" fill="#38BDF8" />
-            <circle cx="210" cy="110" r="4.5" fill="#2F81F7" />
-            <circle cx="340" cy="85" r="4.5" fill="#10B981" />
-          </svg>
-        );
-
-      case 'SEG-NR-WB':
-        return (
-          <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="segWbFlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#818CF8" />
-                <stop offset="50%" stopColor="#F59E0B" />
-                <stop offset="100%" stopColor="#38BDF8" />
-              </linearGradient>
-            </defs>
-            <rect width="460" height="260" fill="#0A0E17" />
-
-            {/* Westbound Main Travel Roadway */}
-            <rect x="20" y="90" width="420" height="100" rx="6" fill="#161B22" stroke="#30363D" strokeWidth="1" />
-            <line x1="20" y1="123" x2="440" y2="123" stroke="rgba(255, 255, 255, 0.16)" strokeWidth="1.2" strokeDasharray="10 8" />
-            <line x1="20" y1="156" x2="440" y2="156" stroke="rgba(255, 255, 255, 0.16)" strokeWidth="1.2" strokeDasharray="10 8" />
-
-            {/* Commercial Mall Turning Ingress Leg */}
-            <path
-              d="M 220 90 C 230 40, 270 25, 330 25 L 440 25"
-              fill="none"
-              stroke="rgba(245, 158, 11, 0.4)"
-              strokeWidth="28"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 220 90 C 230 40, 270 25, 330 25 L 440 25"
-              fill="none"
-              stroke="#F59E0B"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-            />
-
-            {/* Ingress Deceleration Buffer Zone */}
-            <rect x="160" y="86" width="90" height="40" rx="4" fill="rgba(245, 158, 11, 0.12)" stroke="#F59E0B" strokeWidth="1" strokeDasharray="3 3" />
-
-            {/* Loop Detectors IL-04..06 */}
-            <g transform="translate(130, 90)">
-              <rect width="8" height="100" fill="rgba(129, 140, 248, 0.15)" stroke="#818CF8" strokeWidth="1" />
-              <circle cx="4" cy="0" r="3.5" fill="#818CF8" />
-            </g>
-            <g transform="translate(300, 90)">
-              <rect width="8" height="100" fill="rgba(56, 189, 248, 0.15)" stroke="#38BDF8" strokeWidth="1" />
-              <circle cx="4" cy="0" r="3.5" fill="#38BDF8" />
-            </g>
-
-            {/* Vehicle Trajectories with Mall Turning Curve */}
-            <circle cx="360" cy="140" r="4.5" fill="#818CF8" />
-            <circle cx="200" cy="105" r="4.5" fill="#F59E0B" />
-            <circle cx="280" cy="40" r="4" fill="#F59E0B" />
-          </svg>
-        );
-
-      case 'BLD-PHOENIX-01':
-        return (
-          <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="bldFacadeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(245, 158, 11, 0.35)" />
-                <stop offset="100%" stopColor="rgba(15, 23, 42, 0.9)" />
-              </linearGradient>
-            </defs>
-            <rect width="460" height="260" fill="#0A0E17" />
-
-            {/* Main Commercial Complex 3D Isometric Architecture */}
-            <g transform="translate(140, 45)">
-              {/* Podium Base Facet */}
-              <polygon points="90,40 190,0 190,110 90,150" fill="url(#bldFacadeGlow)" stroke="#F59E0B" strokeWidth="1.2" />
-              <polygon points="0,75 90,40 90,150 0,185" fill="rgba(15, 23, 42, 0.95)" stroke="#D97706" strokeWidth="1" />
-              <polygon points="90,40 0,75 100,35 190,0" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" strokeWidth="1" />
-
-              {/* Floor Plates (5 Levels) */}
-              <line x1="90" y1="62" x2="190" y2="22" stroke="rgba(245, 158, 11, 0.45)" strokeWidth="1" />
-              <line x1="90" y1="84" x2="190" y2="44" stroke="rgba(245, 158, 11, 0.45)" strokeWidth="1" />
-              <line x1="90" y1="106" x2="190" y2="66" stroke="rgba(245, 158, 11, 0.45)" strokeWidth="1" />
-              <line x1="90" y1="128" x2="190" y2="88" stroke="rgba(245, 158, 11, 0.45)" strokeWidth="1" />
-
-              {/* 3 Rooftop Chiller Sub-Stations with Thermal Glow */}
-              <g transform="translate(100, 30)">
-                <circle cx="15" cy="0" r="10" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.5" />
-                <circle cx="15" cy="0" r="4" fill="#10B981" />
-                <circle cx="45" cy="-8" r="10" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.5" />
-                <circle cx="45" cy="-8" r="4" fill="#10B981" />
-                <circle cx="75" cy="-16" r="10" fill="none" stroke="#10B981" strokeWidth="1" opacity="0.5" />
-                <circle cx="75" cy="-16" r="4" fill="#10B981" />
-              </g>
-
-              {/* 11kV Electrical Main Ingress Feed Line */}
-              <path d="M -90 160 L -30 160 L 0 170" fill="none" stroke="#EF4444" strokeWidth="2" strokeDasharray="4 3" />
-              <circle cx="-90" cy="160" r="5" fill="#EF4444" />
-            </g>
-          </svg>
-        );
-
-      default:
-        return null;
+export const CorridorAssetsShowcase: React.FC<CorridorAssetsShowcaseProps> = ({
+  assets = DEFAULT_CORRIDOR_ASSETS,
+  initialAssetId,
+  title = 'Authoritative Physical Corridor Model',
+  subtitle = 'Direct physical twin mappings for signalized intersections, arterial travel segments, and commercial energy infrastructure across the multimodal corridor.'
+}) => {
+  const [selectedId, setSelectedId] = useState<string>(() => {
+    if (initialAssetId && assets.some((a) => a.id === initialAssetId)) {
+      return initialAssetId;
     }
+    return assets[0]?.id || '';
+  });
+
+  const activeAsset = assets.find((a) => a.id === selectedId) || assets[0];
+
+  if (!activeAsset) {
+    return null;
+  }
+
+  const renderAssetBlueprint = (asset: AssetDetail) => {
+    const { category, accentColor, id, name, geometry, capacity, sensors } = asset;
+
+    if (category === 'intersection') {
+      const approachMatch = geometry.match(/(\d+)\s*Approach/i);
+      const isFourWay = approachMatch ? parseInt(approachMatch[1], 10) >= 4 : true;
+
+      return (
+        <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+          <defs>
+            <radialGradient id={`glow-${id}`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor={accentColor} stopOpacity="0.15" />
+              <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          {/* Clean Dark Canvas Bed */}
+          <rect width="460" height="260" fill="#07070A" />
+          <circle cx="230" cy="125" r="110" fill={`url(#glow-${id})`} pointerEvents="none" />
+
+          {/* East-West Arterial Roadbed */}
+          <rect x="24" y="95" width="412" height="60" rx="6" fill="#101014" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+          <line x1="24" y1="125" x2="436" y2="125" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1.2" strokeDasharray="8 6" />
+
+          {/* North-South Crossroad Leg(s) */}
+          {isFourWay ? (
+            <>
+              <rect x="200" y="16" width="60" height="218" rx="6" fill="#101014" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+              <line x1="230" y1="16" x2="230" y2="234" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1.2" strokeDasharray="8 6" />
+            </>
+          ) : (
+            <>
+              <rect x="200" y="95" width="60" height="139" rx="6" fill="#101014" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+              <line x1="230" y1="125" x2="230" y2="234" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1.2" strokeDasharray="8 6" />
+            </>
+          )}
+
+          {/* Intersection Box */}
+          <rect x="200" y="95" width="60" height="60" fill="#15151B" stroke={accentColor} strokeWidth="1.2" />
+
+          {/* Signal Indicator Beacons */}
+          <circle cx="194" cy="90" r="3.5" fill="#10B981" />
+          <circle cx="266" cy="90" r="3.5" fill="#EF4444" />
+          <circle cx="194" cy="160" r="3.5" fill="#EF4444" />
+          <circle cx="266" cy="160" r="3.5" fill="#10B981" />
+
+          {/* Controller Node Center Hub */}
+          <circle cx="230" cy="125" r="28" fill="none" stroke={accentColor} strokeWidth="1" opacity="0.3" strokeDasharray="3 3" />
+          <circle cx="230" cy="125" r="14" fill="none" stroke={accentColor} strokeWidth="1.5" opacity="0.6" />
+          <circle cx="230" cy="125" r="5" fill={accentColor} />
+
+          {/* Top Identifier Header */}
+          <g transform="translate(28, 24)">
+            <text x="0" y="12" fill={accentColor} fontSize="11" fontWeight="600" letterSpacing="0.04em">
+              {id} • {name.toUpperCase()}
+            </text>
+          </g>
+
+          {/* Bottom Telemetry HUD */}
+          <g transform="translate(28, 226)">
+            <rect width="404" height="22" rx="4" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+            <text x="12" y="15" fill="#94A3B8" fontSize="9" fontWeight="500">
+              CAPACITY: <tspan fill="#FFFFFF">{capacity}</tspan>
+            </text>
+            <text x="235" y="15" fill={accentColor} fontSize="9" fontWeight="600" letterSpacing="0.03em">
+              {sensors.length} ACTIVE SENSOR CHANNELS
+            </text>
+          </g>
+        </svg>
+      );
+    }
+
+    if (category === 'segment') {
+      const isWestbound = id.toLowerCase().includes('02') || name.toLowerCase().includes('westbound');
+      const dirLabel = isWestbound ? 'WESTBOUND ARTERIAL VECTOR' : 'EASTBOUND ARTERIAL VECTOR';
+
+      return (
+        <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+          <defs>
+            <linearGradient id={`flow-${id}`} x1={isWestbound ? '100%' : '0%'} y1="0%" x2={isWestbound ? '0%' : '100%'} y2="0%">
+              <stop offset="0%" stopColor={accentColor} />
+              <stop offset="60%" stopColor="#38BDF8" />
+              <stop offset="100%" stopColor="#10B981" />
+            </linearGradient>
+          </defs>
+
+          {/* Clean Dark Canvas Bed */}
+          <rect width="460" height="260" fill="#07070A" />
+
+          {/* Roadway Surface */}
+          <rect x="24" y="64" width="412" height="96" rx="8" fill="#101014" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+          <line x1="24" y1="96" x2="436" y2="96" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1.2" strokeDasharray="10 8" />
+          <line x1="24" y1="128" x2="436" y2="128" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1.2" strokeDasharray="10 8" />
+
+          {/* Service Buffer Flank */}
+          <rect x="24" y="168" width="412" height="28" rx="4" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="1" />
+
+          {/* Velocity Progression Vector */}
+          <path
+            d={isWestbound
+              ? "M 436 80 C 350 80, 290 112, 230 112 C 170 112, 110 80, 24 80"
+              : "M 24 80 C 110 80, 170 112, 230 112 C 290 112, 350 80, 436 80"}
+            fill="none"
+            stroke={`url(#flow-${id})`}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+
+          {/* Vehicle Pods */}
+          <circle cx={isWestbound ? 350 : 90} cy="80" r="4.5" fill={accentColor} />
+          <circle cx="230" cy="112" r="4.5" fill="#38BDF8" />
+          <circle cx={isWestbound ? 90 : 350} cy="88" r="4.5" fill="#10B981" />
+
+          {/* Top Header */}
+          <g transform="translate(28, 24)">
+            <text x="0" y="12" fill={accentColor} fontSize="11" fontWeight="600" letterSpacing="0.04em">
+              {id} • {dirLabel}
+            </text>
+          </g>
+
+          {/* Bottom Telemetry HUD */}
+          <g transform="translate(28, 226)">
+            <rect width="404" height="22" rx="4" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+            <text x="12" y="15" fill="#94A3B8" fontSize="9" fontWeight="500">
+              OPERATIONAL RATING: <tspan fill="#FFFFFF">{capacity}</tspan>
+            </text>
+          </g>
+        </svg>
+      );
+    }
+
+    if (category === 'building') {
+      return (
+        <svg viewBox="0 0 460 260" className="showcase-blueprint-svg" xmlns="http://www.w3.org/2000/svg" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+          <defs>
+            <linearGradient id={`bldFac-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={`${accentColor}30`} />
+              <stop offset="100%" stopColor="rgba(10, 10, 14, 0.95)" />
+            </linearGradient>
+          </defs>
+
+          {/* Clean Dark Canvas Bed */}
+          <rect width="460" height="260" fill="#07070A" />
+
+          {/* Isometric Building Facility */}
+          <g transform="translate(130, 36)">
+            <polygon points="100,45 200,0 200,120 100,165" fill={`url(#bldFac-${id})`} stroke={accentColor} strokeWidth="1.2" />
+            <polygon points="0,85 100,45 100,165 0,205" fill="rgba(16, 16, 22, 0.95)" stroke={accentColor} strokeWidth="1" opacity="0.8" />
+            <polygon points="100,45 0,85 105,40 200,0" fill={`${accentColor}20`} stroke={accentColor} strokeWidth="1" />
+
+            {/* Floor Plates */}
+            {[70, 94, 118, 142].map((yOffset, idx) => (
+              <line key={idx} x1="100" y1={yOffset} x2="200" y2={yOffset - 45} stroke={`${accentColor}35`} strokeWidth="1" />
+            ))}
+
+            {/* Rooftop Sub-Metering Array */}
+            <g transform="translate(110, 30)">
+              <circle cx="20" cy="0" r="3.5" fill="#10B981" />
+              <circle cx="50" cy="-8" r="3.5" fill="#10B981" />
+              <circle cx="80" cy="-16" r="3.5" fill="#10B981" />
+            </g>
+
+            {/* 11kV Feeder Ingress */}
+            <path d="M -80 165 L -20 165 L 0 180" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeDasharray="4 3" />
+            <circle cx="-80" cy="165" r="4" fill="#EF4444" />
+            <text x="-80" y="155" fill="#EF4444" fontSize="8" fontWeight="600" letterSpacing="0.05em">
+              11kV SUBSTATION FEEDER
+            </text>
+          </g>
+
+          {/* Top Header */}
+          <g transform="translate(28, 24)">
+            <text x="0" y="12" fill={accentColor} fontSize="11" fontWeight="600" letterSpacing="0.04em">
+              {id} • {name.toUpperCase()}
+            </text>
+          </g>
+
+          {/* Bottom Telemetry HUD */}
+          <g transform="translate(28, 226)">
+            <rect width="404" height="22" rx="4" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
+            <text x="12" y="15" fill="#94A3B8" fontSize="9" fontWeight="500">
+              DEMAND CAP: <tspan fill="#FFFFFF">{capacity}</tspan>
+            </text>
+            <text x="245" y="15" fill={accentColor} fontSize="9" fontWeight="600" letterSpacing="0.03em">
+              {sensors.length} VERIFIED METER FEEDS
+            </text>
+          </g>
+        </svg>
+      );
+    }
+
+    return null;
   };
 
   return (
     <section className="corridor-assets-section" id="assets-showcase">
-      {/* Centered Modern Section Header (No mention of 1.8 km) */}
+      {/* Centered Modern Section Header */}
       <div className="section-header-centered">
         <div className="landing-badge font-mono">
           <Layers size={13} color="var(--color-primary)" />
-          <span>SPATIAL INFRASTRUCTURE TWIN • DUAL ARTERIAL</span>
+          <span>SPATIAL INFRASTRUCTURE TWIN • ARTERIAL CORRIDOR</span>
         </div>
         <h2 className="landing-section-title">
-          Authoritative Physical Corridor Model
+          {title}
         </h2>
         <p className="landing-section-subtitle">
-          Direct physical twin mappings for signalized intersections, arterial travel segments, and commercial energy infrastructure across the dual arterial corridor.
+          {subtitle}
         </p>
       </div>
 
       {/* Modern Segmented Navigation Bar */}
       <div className="corridor-asset-nav" role="tablist">
-        {CORRIDOR_ASSETS.map((asset) => {
+        {assets.map((asset) => {
           const isActive = selectedId === asset.id;
           return (
             <button
@@ -394,7 +358,7 @@ export const CorridorAssetsShowcase: React.FC = () => {
             <span className="vector-pane-title font-mono">{activeAsset.id} SCHEMATIC</span>
           </div>
           <div className="vector-canvas-wrap">
-            {renderAssetBlueprint(activeAsset.id)}
+            {renderAssetBlueprint(activeAsset)}
           </div>
         </div>
 
@@ -462,3 +426,5 @@ export const CorridorAssetsShowcase: React.FC = () => {
     </section>
   );
 };
+
+
