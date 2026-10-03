@@ -96,27 +96,31 @@ export const CorridorCompareSlider: React.FC = () => {
           />
           <div className="compare-overlay-twin" />
 
-          {/* Twin Metadata Annotations */}
-          <div className="compare-badge-stack twin-badges">
-            <div className="compare-status-badge twin font-mono">
-              <ShieldCheck size={13} color="#10B981" />
-              <span>DIGITAL TWIN SYNCHRONIZED</span>
-            </div>
-            <div className="compare-metric-card twin">
-              <div className="card-row">
-                <Activity size={14} color="#38BDF8" />
-                <span className="card-label font-mono">GREEN-WAVE COORDINATION</span>
+          {/* Twin Top Status Tag */}
+          <div className="compare-hud-tag top-right twin font-mono">
+            <span className="hud-indicator-dot twin" />
+            <ShieldCheck size={13} color="#10B981" />
+            <span className="hud-title">DIGITAL TWIN SYNCHRONIZED</span>
+            <span className="hud-pill-mode twin">1 Hz REPLAY</span>
+          </div>
+
+          {/* Twin Bottom Telemetry HUD */}
+          <div className="compare-telemetry-hud bottom-right twin">
+            <div className="hud-metric-pill twin">
+              <div className="hud-pill-header">
+                <Activity size={13} color="#38BDF8" />
+                <span className="hud-pill-label font-mono">GREEN-WAVE CORRIDOR</span>
+                <span className="hud-pill-state twin font-mono">ACTIVE</span>
               </div>
-              <span className="card-value font-mono">CONTINUOUS 1 Hz OPTIMIZATION</span>
-              <span className="card-subtext">Dynamic split balancing prevents arterial queue back-propagation</span>
+              <span className="hud-pill-val font-mono">1 Hz Continuous Adaptive</span>
             </div>
-            <div className="compare-metric-card twin">
-              <div className="card-row">
-                <Zap size={14} color="#F59E0B" />
-                <span className="card-label font-mono">DISTRICT ENERGY TWIN</span>
+            <div className="hud-metric-pill twin">
+              <div className="hud-pill-header">
+                <Zap size={13} color="#F59E0B" />
+                <span className="hud-pill-label font-mono">DISTRICT ENERGY TWIN</span>
+                <span className="hud-pill-state twin font-mono">OPTIMIZED</span>
               </div>
-              <span className="card-value font-mono">380 kW TARIFF SHAVED</span>
-              <span className="card-subtext">15-minute predictive pre-cooling scheduled prior to peak utility tariff</span>
+              <span className="hud-pill-val font-mono">380 kW Peak Tariff Shaved</span>
             </div>
           </div>
         </div>
@@ -133,27 +137,31 @@ export const CorridorCompareSlider: React.FC = () => {
           />
           <div className="compare-overlay-legacy" />
 
-          {/* Legacy Metadata Annotations */}
-          <div className="compare-badge-stack legacy-badges">
-            <div className="compare-status-badge legacy font-mono">
-              <ShieldAlert size={13} color="#EF4444" />
-              <span>CONVENTIONAL MUNICIPAL OPERATIONS</span>
-            </div>
-            <div className="compare-metric-card legacy">
-              <div className="card-row">
-                <AlertTriangle size={14} color="#EF4444" />
-                <span className="card-label font-mono">FRAGMENTED SIGNAL CONTROL</span>
+          {/* Legacy Top Status Tag */}
+          <div className="compare-hud-tag top-left legacy font-mono">
+            <span className="hud-indicator-dot legacy" />
+            <ShieldAlert size={13} color="#EF4444" />
+            <span className="hud-title">CONVENTIONAL OPERATIONS</span>
+            <span className="hud-pill-mode legacy">UNSYNCHRONIZED</span>
+          </div>
+
+          {/* Legacy Bottom Telemetry HUD */}
+          <div className="compare-telemetry-hud bottom-left legacy">
+            <div className="hud-metric-pill legacy">
+              <div className="hud-pill-header">
+                <AlertTriangle size={13} color="#EF4444" />
+                <span className="hud-pill-label font-mono">SIGNAL CONTROL</span>
+                <span className="hud-pill-state legacy font-mono">ISOLATED</span>
               </div>
-              <span className="card-value font-mono">RIGID TIME-OF-DAY CYCLES</span>
-              <span className="card-subtext">Isolated intersection controllers blind to upstream arterial queue surges</span>
+              <span className="hud-pill-val font-mono">Rigid 120s Fixed Cycles</span>
             </div>
-            <div className="compare-metric-card legacy">
-              <div className="card-row">
-                <Clock size={14} color="#F87171" />
-                <span className="card-label font-mono">PEAK TARIFF SURCHARGE</span>
+            <div className="hud-metric-pill legacy">
+              <div className="hud-pill-header">
+                <Clock size={13} color="#F87171" />
+                <span className="hud-pill-label font-mono">COMMERCIAL MICROGRID</span>
+                <span className="hud-pill-state legacy font-mono">SURCHARGE</span>
               </div>
-              <span className="card-value font-mono">UNMITIGATED DEMAND SPIKES</span>
-              <span className="card-subtext">Chiller plants hit maximum utility demand tariffs without predictive dispatch</span>
+              <span className="hud-pill-val font-mono">Unmitigated Demand Spikes</span>
             </div>
           </div>
         </div>
@@ -176,7 +184,10 @@ export const CorridorCompareSlider: React.FC = () => {
       <div className="compare-specs-summary">
         <div className="specs-summary-card legacy">
           <div className="summary-header">
-            <span className="summary-tag font-mono">LEGACY PARADIGM</span>
+            <div className="summary-tag-row">
+              <span className="summary-tag font-mono">LEGACY PARADIGM</span>
+              <span className="summary-status-pill legacy font-mono">UNCOORDINATED</span>
+            </div>
             <h3 className="summary-title">Fragmented Department Silos</h3>
           </div>
           <ul className="summary-bullets">
@@ -189,7 +200,10 @@ export const CorridorCompareSlider: React.FC = () => {
 
         <div className="specs-summary-card twin">
           <div className="summary-header">
-            <span className="summary-tag font-mono">TWIN SYNCHRONIZED</span>
+            <div className="summary-tag-row">
+              <span className="summary-tag font-mono">TWIN SYNCHRONIZED</span>
+              <span className="summary-status-pill twin font-mono">CROSS-DOMAIN SYNC</span>
+            </div>
             <h3 className="summary-title">Integrated Municipal Intelligence</h3>
           </div>
           <ul className="summary-bullets">

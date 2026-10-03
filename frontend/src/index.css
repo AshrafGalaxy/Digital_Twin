@@ -7459,88 +7459,160 @@ body {
   pointer-events: none;
 }
 
-.compare-badge-stack {
+/* Optimized On-Image Telemetry HUD Tags */
+.compare-hud-tag {
   position: absolute;
-  bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-  z-index: 2;
-  max-width: 340px;
-}
-
-.compare-badge-stack.twin-badges {
-  right: 20px;
-  align-items: flex-end;
-  text-align: right;
-}
-
-.compare-badge-stack.legacy-badges {
-  left: 20px;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.compare-status-badge {
+  top: 18px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  backdrop-filter: blur(8px);
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
 }
 
-.compare-status-badge.twin {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #34D399;
-}
-
-.compare-status-badge.legacy {
-  background: rgba(239, 68, 68, 0.15);
+.compare-hud-tag.top-left {
+  left: 18px;
+  background: rgba(16, 10, 10, 0.88);
   border: 1px solid rgba(239, 68, 68, 0.35);
   color: #F87171;
 }
 
-.compare-metric-card {
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: rgba(10, 12, 16, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(12px);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.compare-hud-tag.top-right {
+  right: 18px;
+  background: rgba(8, 14, 12, 0.88);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34D399;
 }
 
-.card-row {
+.hud-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hud-indicator-dot.legacy {
+  background: #EF4444;
+}
+
+.hud-indicator-dot.twin {
+  background: #10B981;
+}
+
+.hud-title {
+  letter-spacing: 0.04em;
+}
+
+.hud-pill-mode {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.hud-pill-mode.legacy {
+  background: rgba(239, 68, 68, 0.18);
+  color: #FCA5A5;
+}
+
+.hud-pill-mode.twin {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6EE7B7;
+}
+
+/* Bottom Telemetry Floating HUD */
+.compare-telemetry-hud {
+  position: absolute;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3;
+  pointer-events: none;
+  max-width: 280px;
+}
+
+.compare-telemetry-hud.bottom-left {
+  left: 18px;
+  align-items: flex-start;
+}
+
+.compare-telemetry-hud.bottom-right {
+  right: 18px;
+  align-items: flex-end;
+}
+
+.hud-metric-pill {
+  padding: 8px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-metric-pill.legacy {
+  background: rgba(16, 10, 10, 0.88);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  text-align: left;
+}
+
+.hud-metric-pill.twin {
+  background: rgba(8, 14, 16, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  text-align: right;
+}
+
+.hud-pill-header {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.card-label {
+.hud-metric-pill.twin .hud-pill-header {
+  justify-content: flex-end;
+}
+
+.hud-pill-label {
   font-size: 9.5px;
   font-weight: 700;
   color: #8B949E;
   letter-spacing: 0.05em;
 }
 
-.card-value {
-  font-size: 12px;
+.hud-pill-state {
+  font-size: 8.5px;
   font-weight: 700;
-  color: #F0F6FC;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
 }
 
-.card-subtext {
-  font-family: var(--font-sans);
-  font-size: 10.5px;
-  color: #8B949E;
-  line-height: 1.45;
+.hud-pill-state.legacy {
+  background: rgba(239, 68, 68, 0.16);
+  color: #EF4444;
+}
+
+.hud-pill-state.twin {
+  background: rgba(56, 189, 248, 0.16);
+  color: #38BDF8;
+}
+
+.hud-pill-val {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #F0F6FC;
 }
 
 .compare-handle-line {
@@ -7572,10 +7644,11 @@ body {
   color: #38BDF8;
 }
 
+/* Comparison Specifications Summary Grid */
 .compare-specs-summary {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
 }
 
 @media (max-width: 768px) {
@@ -7585,36 +7658,137 @@ body {
 }
 
 .specs-summary-card {
-  padding: 20px 22px;
-  border-radius: 12px;
-  background: rgba(10, 12, 16, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  padding: 26px 28px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(10, 12, 16, 0.96);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  transition: transform 200ms ease;
 }
 
-.specs-summary-card.legacy {
-  border-left: 3px solid #EF4444;
+.specs-summary-card:hover {
+  transform: translateY(-2px);
 }
 
-.specs-summary-card.twin {
-  border-left: 3px solid #10B981;
+/* Animated Perimeter Beam (Sleek, Minimalist, Ultra-Premium, Non-Glowing) */
+.specs-summary-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+  z-index: 0;
+  animation: borderSpin 9s linear infinite;
+}
+
+.specs-summary-card:hover::before {
+  animation-duration: 5s;
+}
+
+.specs-summary-card.legacy::before {
+  background: conic-gradient(
+    from 0deg,
+    rgba(239, 68, 68, 0.15) 0deg,
+    rgba(239, 68, 68, 0.3) 60deg,
+    #EF4444 120deg,
+    rgba(239, 68, 68, 0.4) 160deg,
+    rgba(239, 68, 68, 0.15) 220deg,
+    rgba(239, 68, 68, 0.15) 360deg
+  );
+}
+
+.specs-summary-card.twin::before {
+  background: conic-gradient(
+    from 0deg,
+    rgba(16, 185, 129, 0.15) 0deg,
+    rgba(16, 185, 129, 0.3) 60deg,
+    #10B981 120deg,
+    rgba(16, 185, 129, 0.4) 160deg,
+    rgba(16, 185, 129, 0.15) 220deg,
+    rgba(16, 185, 129, 0.15) 360deg
+  );
+}
+
+/* Inner Plate: Creates a crisp 1.5px border on all 4 sides */
+.specs-summary-card::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  background: rgba(8, 10, 14, 0.97);
+  border-radius: 12.5px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Elevate all content above the inner plate */
+.specs-summary-card > * {
+  position: relative;
+  z-index: 2;
 }
 
 .summary-header {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.summary-tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .summary-tag {
-  font-size: 9.5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #8B949E;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+
+.specs-summary-card.legacy .summary-tag {
+  color: #F87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.specs-summary-card.twin .summary-tag {
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.summary-status-pill {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.summary-status-pill.legacy {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.summary-status-pill.twin {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.08);
 }
 
 .summary-title {
-  font-size: 16px;
+  font-family: var(--font-sans);
+  font-size: 17px;
   font-weight: 700;
   color: #F8FAFC;
-  margin: 4px 0 0;
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .summary-bullets {
@@ -7623,22 +7797,45 @@ body {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .summary-bullets li {
-  font-size: 12.5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
   color: #C9D1D9;
   line-height: 1.5;
   position: relative;
-  padding-left: 14px;
+  padding-left: 18px;
 }
 
-.summary-bullets li::before {
+.specs-summary-card.legacy .summary-bullets li::before {
   content: '•';
   position: absolute;
   left: 0;
-  color: #8B949E;
+  color: #EF4444;
+  font-size: 16px;
+  line-height: 1;
+  top: 1px;
+}
+
+.specs-summary-card.twin .summary-bullets li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #10B981;
+  font-size: 16px;
+  line-height: 1;
+  top: 1px;
+}
+
+@keyframes borderSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* ========================================================
