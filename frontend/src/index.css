@@ -4884,14 +4884,13 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
-  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1), border-color 280ms ease, box-shadow 280ms ease;
+  transition: border-color 280ms ease, box-shadow 280ms ease;
 }
 
 .hero-stage-card:hover {
-  transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 32px 68px rgba(0, 0, 0, 0.95),
+    0 24px 56px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
@@ -4970,23 +4969,27 @@ body {
   pointer-events: none;
 }
 
-/* Concentric Orbit Rings */
+/* Concentric Orbit Rings with Hardware Acceleration */
 .orbit-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(47, 129, 247, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  box-sizing: border-box;
+  pointer-events: none;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .orbit-ring-1 {
   width: 90%;
   height: 90%;
-  animation: orbitSpin 18s linear infinite;
+  animation: orbitSpin 20s linear infinite;
 }
 
 .orbit-ring-2 {
   width: 66%;
   height: 66%;
-  animation: orbitSpin 12s linear infinite reverse;
+  animation: orbitSpin 14s linear infinite reverse;
 }
 
 .orbit-ring-3 {
@@ -5000,30 +5003,104 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* Orbit Particles */
+/* Smoothly Animated Orbit Particles */
 .orbit-particle {
   position: absolute;
-  top: -4px;
+  top: -5px;
   left: 50%;
-  width: 8px;
-  height: 8px;
-  margin-left: -4px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
   border-radius: 50%;
+  will-change: transform, box-shadow;
+}
+
+.orbit-particle::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .orbit-particle.particle-cyan {
   background: #38BDF8;
-  box-shadow: 0 0 12px 3px rgba(56, 189, 248, 0.6);
+  color: #38BDF8;
+  box-shadow: 0 0 14px 3px rgba(56, 189, 248, 0.7);
+  animation: dotPulseCyan 3s ease-in-out infinite;
+}
+
+.orbit-particle.particle-cyan::after {
+  border: 1.5px solid #38BDF8;
+  animation: dotRipple 3s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 .orbit-particle.particle-violet {
   background: #A78BFA;
-  box-shadow: 0 0 12px 3px rgba(167, 139, 250, 0.6);
+  color: #A78BFA;
+  box-shadow: 0 0 14px 3px rgba(167, 139, 250, 0.7);
+  animation: dotPulseViolet 2.5s ease-in-out infinite 0.7s;
+}
+
+.orbit-particle.particle-violet::after {
+  border: 1.5px solid #A78BFA;
+  animation: dotRipple 2.5s cubic-bezier(0, 0, 0.2, 1) infinite 0.7s;
 }
 
 .orbit-particle.particle-amber {
   background: #F59E0B;
-  box-shadow: 0 0 12px 3px rgba(245, 158, 11, 0.6);
+  color: #F59E0B;
+  box-shadow: 0 0 14px 3px rgba(245, 158, 11, 0.7);
+  animation: dotPulseAmber 2.1s ease-in-out infinite 1.4s;
+}
+
+.orbit-particle.particle-amber::after {
+  border: 1.5px solid #F59E0B;
+  animation: dotRipple 2.1s cubic-bezier(0, 0, 0.2, 1) infinite 1.4s;
+}
+
+@keyframes dotPulseCyan {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px 2px rgba(56, 189, 248, 0.6), 0 0 20px 4px rgba(56, 189, 248, 0.25);
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 18px 4px rgba(56, 189, 248, 0.95), 0 0 32px 8px rgba(56, 189, 248, 0.5);
+  }
+}
+
+@keyframes dotPulseViolet {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px 2px rgba(167, 139, 250, 0.6), 0 0 20px 4px rgba(167, 139, 250, 0.25);
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 18px 4px rgba(167, 139, 250, 0.95), 0 0 32px 8px rgba(167, 139, 250, 0.5);
+  }
+}
+
+@keyframes dotPulseAmber {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.6), 0 0 20px 4px rgba(245, 158, 11, 0.25);
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.95), 0 0 32px 8px rgba(245, 158, 11, 0.5);
+  }
+}
+
+@keyframes dotRipple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
 }
 
 /* Central Glow Core */
@@ -5156,17 +5233,35 @@ body {
 
 .stage-footer-dot.green {
   background: #10B981;
+  color: #10B981;
   box-shadow: 0 0 6px #10B981;
+  animation: footerDotGlow 2.4s ease-in-out infinite 0s;
 }
 
 .stage-footer-dot.cyan {
   background: #38BDF8;
+  color: #38BDF8;
   box-shadow: 0 0 6px #38BDF8;
+  animation: footerDotGlow 2.4s ease-in-out infinite 0.8s;
 }
 
 .stage-footer-dot.purple {
   background: #A78BFA;
+  color: #A78BFA;
   box-shadow: 0 0 6px #A78BFA;
+  animation: footerDotGlow 2.4s ease-in-out infinite 1.6s;
+}
+
+@keyframes footerDotGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+    box-shadow: 0 0 10px 2px currentColor;
+  }
 }
 
 .stage-footer-label {
