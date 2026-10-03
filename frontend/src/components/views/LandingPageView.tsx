@@ -27,7 +27,6 @@ import { CorridorDioramaAsset } from '../landing/CorridorDioramaAsset';
 import { CorridorAssetsShowcase } from '../landing/CorridorAssetsShowcase';
 import { ContactAccessModal } from '../landing/ContactAccessModal';
 import { NumberTicker } from '../common/NumberTicker';
-import { ProvenanceSandbox } from '../landing/ProvenanceSandbox';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
@@ -659,34 +658,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </p>
         </div>
 
-        {/* Option B: Animated Flowing Data Beam Pipeline */}
-        <div className="pipeline-flowing-beam-wrap" aria-hidden="true">
-          <div className="flowing-beam-track">
-            <div className="beam-travel-particle particle-flow-1"></div>
-            <div className="beam-travel-particle particle-flow-2"></div>
-          </div>
-          <div className="flowing-beam-milestones">
-            <div className="beam-milestone active">
-              <span className="milestone-dot"></span>
-              <span className="milestone-text font-mono">STAGE 01: INGESTION</span>
-            </div>
-            <div className="beam-arrow-indicator font-mono">
-              <span>VALIDATED FEEDS &gt;&gt;</span>
-            </div>
-            <div className="beam-milestone active">
-              <span className="milestone-dot"></span>
-              <span className="milestone-text font-mono">STAGE 02: TRI-STATE SCHEMA</span>
-            </div>
-            <div className="beam-arrow-indicator font-mono">
-              <span>CONFORMAL ENVELOPE &gt;&gt;</span>
-            </div>
-            <div className="beam-milestone active">
-              <span className="milestone-dot"></span>
-              <span className="milestone-text font-mono">STAGE 03: ADVISORIES</span>
-            </div>
-          </div>
-        </div>
-
         <div className="steps-container">
           {/* Step 1 */}
           <div className="step-card">
@@ -756,9 +727,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             Every dynamic measurement, model output, and visualization badge across the platform is explicitly labeled with its authoritative source mode.
           </p>
         </div>
-
-        {/* Option E: Interactive Provenance Mode Simulator Sandbox */}
-        <ProvenanceSandbox />
 
         <div className="provenance-table-wrapper">
           <table className="provenance-matrix-table">
