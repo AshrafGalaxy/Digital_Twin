@@ -4969,181 +4969,23 @@ body {
   pointer-events: none;
 }
 
-/* Static Concentric Radar Guideway Tracks */
-.orbit-track {
+/* High-Precision SVG Orbital Engine */
+.orbit-vector-system {
   position: absolute;
   top: 50%;
   left: 50%;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  max-width: 370px;
+  max-height: 370px;
   transform: translate(-50%, -50%);
-  box-sizing: border-box;
   pointer-events: none;
+  z-index: 2;
+  overflow: visible;
 }
 
-.orbit-track-1 {
-  width: 90%;
-  height: 90%;
-  border: 1px dashed rgba(56, 189, 248, 0.16);
-}
-
-.orbit-track-2 {
-  width: 66%;
-  height: 66%;
-  border: 1px solid rgba(167, 139, 250, 0.14);
-}
-
-.orbit-track-3 {
-  width: 44%;
-  height: 44%;
-  border: 1px dashed rgba(245, 158, 11, 0.18);
-}
-
-/* Dynamic Rotating Orbit Rings */
-.orbit-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  box-sizing: border-box;
-  pointer-events: none;
-  transform-origin: center center;
+.orbit-vector-group {
   will-change: transform;
-}
-
-.orbit-ring-1 {
-  width: 90%;
-  height: 90%;
-  animation: orbitRotateCW 22s linear infinite;
-}
-
-.orbit-ring-2 {
-  width: 66%;
-  height: 66%;
-  animation: orbitRotateCCW 15s linear infinite;
-}
-
-.orbit-ring-3 {
-  width: 44%;
-  height: 44%;
-  animation: orbitRotateCW 9s linear infinite;
-}
-
-@keyframes orbitRotateCW {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-@keyframes orbitRotateCCW {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(-360deg);
-  }
-}
-
-/* Smoothly Animated Orbit Particles Traveling Along Circumference */
-.orbit-particle {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  will-change: transform, box-shadow;
-}
-
-.orbit-particle::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.orbit-particle.particle-cyan {
-  background: #38BDF8;
-  color: #38BDF8;
-  box-shadow: 0 0 14px 4px rgba(56, 189, 248, 0.75);
-  animation: dotPulseCyan 3s ease-in-out infinite;
-}
-
-.orbit-particle.particle-cyan::after {
-  border: 1.5px solid #38BDF8;
-  animation: dotRipple 3s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-.orbit-particle.particle-violet {
-  background: #A78BFA;
-  color: #A78BFA;
-  box-shadow: 0 0 14px 4px rgba(167, 139, 250, 0.75);
-  animation: dotPulseViolet 2.5s ease-in-out infinite 0.7s;
-}
-
-.orbit-particle.particle-violet::after {
-  border: 1.5px solid #A78BFA;
-  animation: dotRipple 2.5s cubic-bezier(0, 0, 0.2, 1) infinite 0.7s;
-}
-
-.orbit-particle.particle-amber {
-  background: #F59E0B;
-  color: #F59E0B;
-  box-shadow: 0 0 14px 4px rgba(245, 158, 11, 0.75);
-  animation: dotPulseAmber 2.1s ease-in-out infinite 1.4s;
-}
-
-.orbit-particle.particle-amber::after {
-  border: 1.5px solid #F59E0B;
-  animation: dotRipple 2.1s cubic-bezier(0, 0, 0.2, 1) infinite 1.4s;
-}
-
-@keyframes dotPulseCyan {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px 2px rgba(56, 189, 248, 0.6), 0 0 20px 4px rgba(56, 189, 248, 0.25);
-  }
-  50% {
-    transform: scale(1.25);
-    box-shadow: 0 0 18px 4px rgba(56, 189, 248, 0.95), 0 0 32px 8px rgba(56, 189, 248, 0.5);
-  }
-}
-
-@keyframes dotPulseViolet {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px 2px rgba(167, 139, 250, 0.6), 0 0 20px 4px rgba(167, 139, 250, 0.25);
-  }
-  50% {
-    transform: scale(1.25);
-    box-shadow: 0 0 18px 4px rgba(167, 139, 250, 0.95), 0 0 32px 8px rgba(167, 139, 250, 0.5);
-  }
-}
-
-@keyframes dotPulseAmber {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.6), 0 0 20px 4px rgba(245, 158, 11, 0.25);
-  }
-  50% {
-    transform: scale(1.25);
-    box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.95), 0 0 32px 8px rgba(245, 158, 11, 0.5);
-  }
-}
-
-@keyframes dotRipple {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.85;
-  }
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
 }
 
 /* Central Glow Core */

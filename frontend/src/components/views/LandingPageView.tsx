@@ -281,21 +281,176 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <div className="orbit-radar-crosshair-x"></div>
               <div className="orbit-radar-crosshair-y"></div>
 
-              {/* Static Concentric Radar Guideway Tracks */}
-              <div className="orbit-track orbit-track-1" aria-hidden="true"></div>
-              <div className="orbit-track orbit-track-2" aria-hidden="true"></div>
-              <div className="orbit-track orbit-track-3" aria-hidden="true"></div>
+              {/* High-Precision SVG Orbital Engine with Luminous Comet Trails */}
+              <svg
+                className="orbit-vector-system"
+                viewBox="0 0 400 400"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <defs>
+                  {/* Outer Orbit (Cyan) Gradient Trail */}
+                  <linearGradient
+                    id="orbit-trail-cyan"
+                    x1="52"
+                    y1="200"
+                    x2="200"
+                    y2="52"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor="#38BDF8" stopOpacity="0" />
+                    <stop offset="65%" stopColor="#38BDF8" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.95" />
+                  </linearGradient>
 
-              {/* Dynamic Rotating Orbiters with Telemetry Nodes */}
-              <div className="orbit-ring orbit-ring-1">
-                <div className="orbit-particle particle-cyan"></div>
-              </div>
-              <div className="orbit-ring orbit-ring-2">
-                <div className="orbit-particle particle-violet"></div>
-              </div>
-              <div className="orbit-ring orbit-ring-3">
-                <div className="orbit-particle particle-amber"></div>
-              </div>
+                  {/* Mid Orbit (Violet) Gradient Trail */}
+                  <linearGradient
+                    id="orbit-trail-violet"
+                    x1="308"
+                    y1="200"
+                    x2="200"
+                    y2="92"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor="#A78BFA" stopOpacity="0" />
+                    <stop offset="65%" stopColor="#A78BFA" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.95" />
+                  </linearGradient>
+
+                  {/* Inner Orbit (Amber) Gradient Trail */}
+                  <linearGradient
+                    id="orbit-trail-amber"
+                    x1="132"
+                    y1="200"
+                    x2="200"
+                    y2="132"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor="#F59E0B" stopOpacity="0" />
+                    <stop offset="65%" stopColor="#F59E0B" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.95" />
+                  </linearGradient>
+
+                  {/* Glow Filters for Telemetry Beacons */}
+                  <filter id="glow-cyan" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter id="glow-violet" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter id="glow-amber" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Concentric Radar Guideways */}
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="148"
+                  stroke="rgba(56, 189, 248, 0.16)"
+                  strokeWidth="1"
+                  strokeDasharray="3 5"
+                />
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="108"
+                  stroke="rgba(167, 139, 250, 0.14)"
+                  strokeWidth="1"
+                />
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="68"
+                  stroke="rgba(245, 158, 11, 0.18)"
+                  strokeWidth="1"
+                  strokeDasharray="2 4"
+                />
+
+                {/* Orbit 1: Outer Cyan Satellite (r=148, Clockwise, 7.5s) */}
+                <g className="orbit-vector-group orbit-outer-cw">
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0 200 200"
+                    to="360 200 200"
+                    dur="7.5s"
+                    repeatCount="indefinite"
+                  />
+                  {/* Sweeping Luminous Comet Trail */}
+                  <path
+                    d="M 52 200 A 148 148 0 0 1 200 52"
+                    stroke="url(#orbit-trail-cyan)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  {/* Leading Beacon */}
+                  <circle cx="200" cy="52" r="9" fill="rgba(56, 189, 248, 0.22)" />
+                  <circle cx="200" cy="52" r="4.5" fill="#38BDF8" filter="url(#glow-cyan)" />
+                  <circle cx="200" cy="52" r="2" fill="#FFFFFF" />
+                </g>
+
+                {/* Orbit 2: Mid Violet Satellite (r=108, Counter-Clockwise, 5.4s) */}
+                <g className="orbit-vector-group orbit-mid-ccw">
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="120 200 200"
+                    to="-240 200 200"
+                    dur="5.4s"
+                    repeatCount="indefinite"
+                  />
+                  {/* Sweeping Luminous Comet Trail */}
+                  <path
+                    d="M 308 200 A 108 108 0 0 0 200 92"
+                    stroke="url(#orbit-trail-violet)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  {/* Leading Beacon */}
+                  <circle cx="200" cy="92" r="8" fill="rgba(167, 139, 250, 0.22)" />
+                  <circle cx="200" cy="92" r="4.5" fill="#A78BFA" filter="url(#glow-violet)" />
+                  <circle cx="200" cy="92" r="2" fill="#FFFFFF" />
+                </g>
+
+                {/* Orbit 3: Inner Amber Satellite (r=68, Clockwise, 3.8s) */}
+                <g className="orbit-vector-group orbit-inner-cw">
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="240 200 200"
+                    to="600 200 200"
+                    dur="3.8s"
+                    repeatCount="indefinite"
+                  />
+                  {/* Sweeping Luminous Comet Trail */}
+                  <path
+                    d="M 132 200 A 68 68 0 0 1 200 132"
+                    stroke="url(#orbit-trail-amber)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  {/* Leading Beacon */}
+                  <circle cx="200" cy="132" r="7" fill="rgba(245, 158, 11, 0.24)" />
+                  <circle cx="200" cy="132" r="4" fill="#F59E0B" filter="url(#glow-amber)" />
+                  <circle cx="200" cy="132" r="1.8" fill="#FFFFFF" />
+                </g>
+              </svg>
+
               <div className="orbit-core">
                 <DigitalTwinLogo size={44} glow />
               </div>
