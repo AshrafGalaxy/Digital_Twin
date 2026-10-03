@@ -328,6 +328,50 @@ export const CorridorAssetsShowcase: React.FC<CorridorAssetsShowcaseProps> = ({
         </p>
       </div>
 
+      {/* Option D: Interactive Arterial Corridor Topology Spine */}
+      <div className="corridor-topology-spine" aria-label="1.8 km Arterial Corridor Spatial Spine">
+        <div className="spine-track-line" />
+        <div className="spine-nodes-row">
+          {assets.map((asset) => {
+            const isActive = selectedId === asset.id;
+            return (
+              <button
+                key={asset.id}
+                type="button"
+                className={`spine-node-btn ${isActive ? 'active' : ''}`}
+                onClick={() => setSelectedId(asset.id)}
+                title={`Select ${asset.id}: ${asset.name}`}
+              >
+                <div
+                  className="spine-node-marker"
+                  style={{
+                    borderColor: isActive ? asset.accentColor : 'rgba(255, 255, 255, 0.2)',
+                    backgroundColor: isActive ? asset.accentColor : 'rgba(10, 10, 14, 0.95)',
+                    boxShadow: isActive ? `0 0 16px ${asset.accentColor}` : 'none'
+                  }}
+                >
+                  <span className="spine-marker-pulse" />
+                </div>
+                <div className="spine-node-meta">
+                  <span
+                    className="spine-node-id font-mono"
+                    style={{ color: isActive ? asset.accentColor : undefined }}
+                  >
+                    {asset.id}
+                  </span>
+                  <span className="spine-node-label">{asset.shortName || asset.name}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="spine-footer-meta font-mono">
+          <span>&larr; WESTERN ARTERIAL INGRESS</span>
+          <span className="spine-distance">1.8 KM NAGAR ROAD CORRIDOR</span>
+          <span>EASTERN TRANSIT TERMINAL &rarr;</span>
+        </div>
+      </div>
+
       {/* Modern Segmented Navigation Bar */}
       <div className="corridor-asset-nav" role="tablist">
         {assets.map((asset) => {
