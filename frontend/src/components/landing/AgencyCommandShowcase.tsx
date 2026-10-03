@@ -162,8 +162,7 @@ export const AgencyCommandShowcase: React.FC = () => {
               className={`agency-tab-btn ${isActive ? 'active' : ''}`}
               onClick={() => setActiveTabId(role.id)}
               style={{
-                borderColor: isActive ? role.accentColor : undefined,
-                boxShadow: isActive ? `0 0 16px ${role.accentColor}25` : undefined
+                borderColor: isActive ? role.accentColor : undefined
               }}
             >
               <div

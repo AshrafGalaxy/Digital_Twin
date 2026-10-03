@@ -116,7 +116,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <nav className="landing-command-nav" aria-label="Main Navigation">
         <div className="landing-nav-inner">
           <div className="landing-nav-brand" onClick={() => scrollToAnchor('hero')}>
-            <DigitalTwinLogo size={24} glow />
+            <DigitalTwinLogo size={24} />
             <span className="brand-name">Digital Twin</span>
           </div>
 
@@ -410,9 +410,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     strokeLinecap="round"
                   />
                   {/* Leading Beacon */}
-                  <circle cx="200" cy="52" r="9" fill="rgba(56, 189, 248, 0.22)" />
-                  <circle cx="200" cy="52" r="4.5" fill="#38BDF8" filter="url(#glow-cyan)" />
-                  <circle cx="200" cy="52" r="2" fill="#FFFFFF" />
+                  <circle cx="200" cy="52" r="8" fill="rgba(56, 189, 248, 0.18)" />
+                  <circle cx="200" cy="52" r="4" fill="#38BDF8" />
+                  <circle cx="200" cy="52" r="1.8" fill="#FFFFFF" />
                 </g>
 
                 {/* Orbit 2: Mid Violet Satellite (r=108, Counter-Clockwise, 5.4s) */}
@@ -433,9 +433,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     strokeLinecap="round"
                   />
                   {/* Leading Beacon */}
-                  <circle cx="200" cy="92" r="8" fill="rgba(167, 139, 250, 0.22)" />
-                  <circle cx="200" cy="92" r="4.5" fill="#A78BFA" filter="url(#glow-violet)" />
-                  <circle cx="200" cy="92" r="2" fill="#FFFFFF" />
+                  <circle cx="200" cy="92" r="7" fill="rgba(167, 139, 250, 0.18)" />
+                  <circle cx="200" cy="92" r="4" fill="#A78BFA" />
+                  <circle cx="200" cy="92" r="1.8" fill="#FFFFFF" />
                 </g>
 
                 {/* Orbit 3: Inner Amber Satellite (r=68, Clockwise, 3.8s) */}
@@ -456,14 +456,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     strokeLinecap="round"
                   />
                   {/* Leading Beacon */}
-                  <circle cx="200" cy="132" r="7" fill="rgba(245, 158, 11, 0.24)" />
-                  <circle cx="200" cy="132" r="4" fill="#F59E0B" filter="url(#glow-amber)" />
-                  <circle cx="200" cy="132" r="1.8" fill="#FFFFFF" />
+                  <circle cx="200" cy="132" r="6" fill="rgba(245, 158, 11, 0.2)" />
+                  <circle cx="200" cy="132" r="3.5" fill="#F59E0B" />
+                  <circle cx="200" cy="132" r="1.5" fill="#FFFFFF" />
                 </g>
               </svg>
 
               <div className="orbit-core">
-                <DigitalTwinLogo size={44} glow />
+                <DigitalTwinLogo size={44} />
               </div>
 
               {/* Minimalist Floating Telemetry Cards */}

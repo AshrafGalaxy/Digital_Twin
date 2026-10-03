@@ -274,7 +274,7 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                   border: '1px solid #30363D',
                   padding: '6px 14px',
                   borderRadius: '6px',
-                  fontFamily: 'monospace',
+                  fontFamily: 'var(--font-mono)',
                   fontSize: '13px',
                   color: '#58A6FF',
                   marginBottom: '16px'

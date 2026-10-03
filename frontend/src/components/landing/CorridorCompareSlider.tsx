@@ -108,7 +108,7 @@ export const CorridorCompareSlider: React.FC = () => {
                 <span className="card-label font-mono">GREEN-WAVE COORDINATION</span>
               </div>
               <span className="card-value font-mono">CONTINUOUS 1 Hz OPTIMIZATION</span>
-              <span className="card-subtext font-mono">Dynamic split balancing prevents arterial queue back-propagation</span>
+              <span className="card-subtext">Dynamic split balancing prevents arterial queue back-propagation</span>
             </div>
             <div className="compare-metric-card twin">
               <div className="card-row">
@@ -116,7 +116,7 @@ export const CorridorCompareSlider: React.FC = () => {
                 <span className="card-label font-mono">DISTRICT ENERGY TWIN</span>
               </div>
               <span className="card-value font-mono">380 kW TARIFF SHAVED</span>
-              <span className="card-subtext font-mono">15-minute predictive pre-cooling scheduled prior to peak utility tariff</span>
+              <span className="card-subtext">15-minute predictive pre-cooling scheduled prior to peak utility tariff</span>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@ export const CorridorCompareSlider: React.FC = () => {
                 <span className="card-label font-mono">FRAGMENTED SIGNAL CONTROL</span>
               </div>
               <span className="card-value font-mono">RIGID TIME-OF-DAY CYCLES</span>
-              <span className="card-subtext font-mono">Isolated intersection controllers blind to upstream arterial queue surges</span>
+              <span className="card-subtext">Isolated intersection controllers blind to upstream arterial queue surges</span>
             </div>
             <div className="compare-metric-card legacy">
               <div className="card-row">
@@ -153,7 +153,7 @@ export const CorridorCompareSlider: React.FC = () => {
                 <span className="card-label font-mono">PEAK TARIFF SURCHARGE</span>
               </div>
               <span className="card-value font-mono">UNMITIGATED DEMAND SPIKES</span>
-              <span className="card-subtext font-mono">Chiller plants hit maximum utility demand tariffs without predictive dispatch</span>
+              <span className="card-subtext">Chiller plants hit maximum utility demand tariffs without predictive dispatch</span>
             </div>
           </div>
         </div>

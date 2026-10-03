@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
             tabIndex={0}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
           >
-            <DigitalTwinLogo size={22} glow />
+            <DigitalTwinLogo size={22} />
             <span className="brand-title">Digital Twin</span>
           </div>
           <span className="brand-subtitle">Dual Arterial Corridor Decision Support</span>

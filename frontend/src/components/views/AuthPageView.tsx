@@ -165,7 +165,7 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
           {/* Centered Brand Header */}
           <div className="auth-header-minimal">
             <div className="auth-logo-badge" onClick={onNavigateHome} title="Go to Platform Overview">
-              <DigitalTwinLogo size={32} glow />
+              <DigitalTwinLogo size={32} />
             </div>
             <h1 className="auth-title">
               {authMode === 'signin' ? 'Sign in to Twin Console' : 'Create Officer Account'}

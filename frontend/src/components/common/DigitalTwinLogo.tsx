@@ -4,14 +4,12 @@ interface DigitalTwinLogoProps {
   size?: number;
   className?: string;
   style?: React.CSSProperties;
-  glow?: boolean;
 }
 
 export const DigitalTwinLogo: React.FC<DigitalTwinLogoProps> = ({
   size = 22,
   className = '',
-  style = {},
-  glow = false
+  style = {}
 }) => {
   return (
     <svg
@@ -24,7 +22,6 @@ export const DigitalTwinLogo: React.FC<DigitalTwinLogoProps> = ({
         flexShrink: 0,
         display: 'inline-block',
         verticalAlign: 'middle',
-        filter: glow ? 'drop-shadow(0 0 8px rgba(47, 129, 247, 0.6))' : undefined,
         borderRadius: '50%',
         ...style
       }}

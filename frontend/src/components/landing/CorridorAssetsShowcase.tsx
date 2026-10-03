@@ -173,8 +173,7 @@ export const CorridorAssetsShowcase: React.FC = () => {
               className={`infrastructure-nav-card ${isActive ? 'active' : ''}`}
               onClick={() => setSelectedId(asset.id)}
               style={{
-                borderColor: isActive ? asset.accentColor : undefined,
-                boxShadow: isActive ? `0 0 20px ${asset.accentColor}25` : undefined
+                borderColor: isActive ? asset.accentColor : undefined
               }}
             >
               <div
@@ -210,7 +209,7 @@ export const CorridorAssetsShowcase: React.FC = () => {
           <div className="visual-column-topbar">
             <div className="visual-topbar-left">
               <span className="pulse-indicator" style={{ background: activeAsset.accentColor }} />
-              <span className="font-mono text-xs font-semibold text-slate-300">
+              <span className="topbar-entity-id font-mono">
                 TWIN ENTITY: {activeAsset.id}
               </span>
             </div>
@@ -256,10 +255,10 @@ export const CorridorAssetsShowcase: React.FC = () => {
             ) : (
               <div className="telemetry-view-wrap">
                 <div className="telemetry-view-header">
-                  <span className="font-mono text-xs font-bold text-slate-300">
+                  <span className="telemetry-header-title font-mono">
                     VERIFIED SENSOR CHANNELS
                   </span>
-                  <span className="font-mono text-xs text-sky-400">STATUS: HEALTHY</span>
+                  <span className="telemetry-header-status font-mono">STATUS: HEALTHY</span>
                 </div>
                 <div className="telemetry-channels-list">
                   {activeAsset.telemetryModalities.map((sensor, idx) => (

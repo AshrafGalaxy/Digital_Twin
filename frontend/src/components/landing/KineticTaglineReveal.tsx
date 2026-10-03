@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ShieldCheck, Database, Sliders, Sparkles } from 'lucide-react';
+import { ShieldCheck, Database, Sliders, CheckCircle2 } from 'lucide-react';
 
 const TAGLINE_WORDS = [
   'Every',
@@ -59,31 +59,23 @@ export const KineticTaglineReveal: React.FC = () => {
     };
   }, []);
 
-  const isTagGlowing = activeWordIndex >= 0;
+  const isTagActive = activeWordIndex >= 0;
   const progressPercent = Math.round(scrollProgress * 100);
 
   return (
     <section className="tagline-reveal-track" ref={trackRef}>
       <div className="tagline-sticky-wrapper">
         <div className="tagline-reveal-inner">
-          {/* Glowing Governance Philosophy Tag */}
-          <div
-            className={`tagline-eyebrow font-mono ${isTagGlowing ? 'glowing' : ''}`}
-            style={{
-              borderColor: isTagGlowing ? '#38BDF8' : undefined,
-              boxShadow: isTagGlowing
-                ? `0 0 24px rgba(56, 189, 248, ${0.35 + scrollProgress * 0.45}), 0 0 48px rgba(56, 189, 248, 0.25)`
-                : undefined
-            }}
-          >
-            <span className={`shimmer-pulse-gem ${isTagGlowing ? 'active-gem' : ''}`} />
+          {/* Crisp, Unglowed Governance Philosophy Tag */}
+          <div className={`kinetic-eyebrow font-mono ${isTagActive ? 'active' : ''}`}>
+            <span className={`eyebrow-indicator ${isTagActive ? 'active' : ''}`} />
             <span className="eyebrow-title">GOVERNANCE PHILOSOPHY</span>
             <span className="eyebrow-sep">/</span>
             <span className="eyebrow-state font-mono">
               {progressPercent === 100 ? (
-                <span className="flex items-center gap-1 text-emerald-400">
-                  <Sparkles size={11} className="inline mr-1" />
-                  VERIFIED
+                <span className="eyebrow-verified">
+                  <CheckCircle2 size={12} />
+                  <span>VERIFIED</span>
                 </span>
               ) : (
                 <span>{progressPercent}% ILLUMINATED</span>

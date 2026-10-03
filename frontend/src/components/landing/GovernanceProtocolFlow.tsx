@@ -191,11 +191,11 @@ export const GovernanceProtocolFlow: React.FC = () => {
             <div className="guarantee-quote-box">
               <div className="quote-header">
                 <Lock size={14} color="#10B981" />
-                <span className="font-mono text-emerald-400 font-semibold text-xs">GOVERNANCE CONTRACT</span>
+                <span className="quote-tag font-mono">GOVERNANCE CONTRACT</span>
               </div>
               <p className="quote-text">{PROTOCOL_STAGES[activeStep].invariantGuarantee}</p>
             </div>
-            <div className="guarantee-footer font-mono">
+            <div className="guarantee-footer">
               <FileCheck size={13} color="#8B949E" />
               <span>Auditable via PostgreSQL schema constraints and TimescaleDB time-series triggers.</span>
             </div>
