@@ -26,6 +26,7 @@ import { MicroscopicPhysicsAsset } from '../landing/MicroscopicPhysicsAsset';
 import { CorridorDioramaAsset } from '../landing/CorridorDioramaAsset';
 import { CorridorAssetsShowcase } from '../landing/CorridorAssetsShowcase';
 import { ContactAccessModal } from '../landing/ContactAccessModal';
+import { SpotlightTiltCard } from '../common/SpotlightTiltCard';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
@@ -554,7 +555,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
         <div className="landing-bento-grid">
           {/* Bento Cell 1: Span 2 cols - Arterial Kinematics Waveform */}
-          <div className="bento-card bento-span-2">
+          <SpotlightTiltCard
+            className="bento-card bento-span-2"
+            spotlightColor="rgba(56, 189, 248, 0.12)"
+            maxTilt={2.2}
+          >
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Car size={18} color="var(--color-primary)" /></div>
@@ -568,10 +573,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Real-time velocity tracking across 10 corridor segments calibrated against physical loop detector arrays and microscopic SUMO traffic simulations.
             </p>
             <ArterialWaveAsset />
-          </div>
+          </SpotlightTiltCard>
 
           {/* Bento Cell 2: Span 1 col - Commercial Building Energy Load */}
-          <div className="bento-card bento-span-1">
+          <SpotlightTiltCard
+            className="bento-card bento-span-1"
+            spotlightColor="rgba(245, 158, 11, 0.12)"
+            maxTilt={2.6}
+          >
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Zap size={18} color="var(--color-warning)" /></div>
@@ -585,10 +594,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               15-minute interval power profiling with automated pre-cooling advisories to shave 380 kW during peak tariff hours.
             </p>
             <EnergyCurveAsset />
-          </div>
+          </SpotlightTiltCard>
 
           {/* Bento Cell 3: Span 1 col - In-Pavement Ground Sensors */}
-          <div className="bento-card bento-span-1">
+          <SpotlightTiltCard
+            className="bento-card bento-span-1"
+            spotlightColor="rgba(167, 139, 250, 0.12)"
+            maxTilt={2.6}
+          >
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Cpu size={18} color="var(--color-accent-violet)" /></div>
@@ -602,10 +615,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Precision in-pavement inductive detectors capture vehicle presence, axle counts, and occupancy to establish physical ground truth.
             </p>
             <ConformalBandsAsset />
-          </div>
+          </SpotlightTiltCard>
 
           {/* Bento Cell 4: Span 1 col - Edge Telemetry Cabinets */}
-          <div className="bento-card bento-span-1">
+          <SpotlightTiltCard
+            className="bento-card bento-span-1"
+            spotlightColor="rgba(16, 185, 129, 0.12)"
+            maxTilt={2.6}
+          >
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><Gauge size={18} color="var(--color-success)" /></div>
@@ -619,10 +636,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Pole-mounted weatherproof hardware aggregates roadside detector signals and signal phases before transmission to the central pipeline.
             </p>
             <MicroscopicPhysicsAsset />
-          </div>
+          </SpotlightTiltCard>
 
           {/* Bento Cell 5: Span 1 col - Physical Corridor Topology */}
-          <div className="bento-card bento-span-1">
+          <SpotlightTiltCard
+            className="bento-card bento-span-1"
+            spotlightColor="rgba(56, 189, 248, 0.12)"
+            maxTilt={2.6}
+          >
             <div className="bento-card-header">
               <div className="bento-title-group">
                 <div className="bento-icon-box"><MapPin size={18} color="var(--color-primary-hover)" /></div>
@@ -636,7 +657,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Physical illuminated scale replica registering signalized nodes, directional lanes, and the central commercial microgrid facility.
             </p>
             <CorridorDioramaAsset />
-          </div>
+          </SpotlightTiltCard>
         </div>
       </section>
 
@@ -655,7 +676,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
         <div className="steps-container">
           {/* Step 1 */}
-          <div className="step-card">
+          <SpotlightTiltCard
+            className="step-card"
+            spotlightColor="rgba(56, 189, 248, 0.12)"
+            maxTilt={2.0}
+          >
             <div className="step-number-tag font-mono">01</div>
             <div className="step-content">
               <div className="step-header">
@@ -671,10 +696,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <li>Stale threshold triggers if feed exceeds 180s</li>
               </ul>
             </div>
-          </div>
+          </SpotlightTiltCard>
 
           {/* Step 2 */}
-          <div className="step-card">
+          <SpotlightTiltCard
+            className="step-card"
+            spotlightColor="rgba(167, 139, 250, 0.12)"
+            maxTilt={2.0}
+          >
             <div className="step-number-tag font-mono">02</div>
             <div className="step-content">
               <div className="step-header">
@@ -690,10 +719,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <li>Predictions carry conformal confidence intervals</li>
               </ul>
             </div>
-          </div>
+          </SpotlightTiltCard>
 
           {/* Step 3 */}
-          <div className="step-card">
+          <SpotlightTiltCard
+            className="step-card"
+            spotlightColor="rgba(16, 185, 129, 0.12)"
+            maxTilt={2.0}
+          >
             <div className="step-number-tag font-mono">03</div>
             <div className="step-content">
               <div className="step-header">
@@ -709,7 +742,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <li>Complete municipal audit trail with source mode</li>
               </ul>
             </div>
-          </div>
+          </SpotlightTiltCard>
         </div>
       </section>
 

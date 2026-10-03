@@ -5391,6 +5391,67 @@ body {
   margin: 0 auto;
 }
 
+/* ========================================================
+   Spotlight & 3D Tilt Interactive Card Primitives
+   ======================================================== */
+.spotlight-tilt-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: perspective(1000px) rotateX(var(--card-rotate-x, 0deg)) rotateY(var(--card-rotate-y, 0deg));
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+
+.spotlight-tilt-card.is-hovered {
+  transition: transform 0.08s ease-out, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Surface Ambient Spotlight */
+.spotlight-radial-beam {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  background: radial-gradient(
+    420px circle at var(--spotlight-x, -500px) var(--spotlight-y, -500px),
+    var(--spotlight-color, rgba(56, 189, 248, 0.08)) 0%,
+    transparent 70%
+  );
+  transition: opacity 0.3s ease;
+}
+
+.spotlight-tilt-card.is-hovered .spotlight-radial-beam {
+  opacity: 1;
+}
+
+/* Specular Border Illumination Layer */
+.spotlight-border-beam {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  border: 1px solid transparent;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  background: radial-gradient(
+    280px circle at var(--spotlight-x, -500px) var(--spotlight-y, -500px),
+    rgba(255, 255, 255, 0.24) 0%,
+    rgba(56, 189, 248, 0.18) 45%,
+    transparent 80%
+  );
+  transition: opacity 0.3s ease;
+}
+
+.spotlight-tilt-card.is-hovered .spotlight-border-beam {
+  opacity: 1;
+}
+
 .bento-card {
   background: rgba(8, 8, 11, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -5400,14 +5461,17 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.bento-card > * {
+  position: relative;
+  z-index: 3;
 }
 
 .bento-card:hover {
   border-color: rgba(255, 255, 255, 0.16);
   background: rgba(14, 14, 18, 0.98);
-  transform: translateY(-2px);
   box-shadow: 
     0 18px 48px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -6067,14 +6131,18 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.step-card > * {
+  position: relative;
+  z-index: 3;
 }
 
 .step-card:hover {
-  transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.16);
   background: rgba(14, 14, 18, 0.98);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
