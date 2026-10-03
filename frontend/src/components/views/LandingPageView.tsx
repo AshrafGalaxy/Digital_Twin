@@ -280,6 +280,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <div className="landing-hero-orbit-canvas">
               <div className="orbit-radar-crosshair-x"></div>
               <div className="orbit-radar-crosshair-y"></div>
+
+              {/* Static Concentric Radar Guideway Tracks */}
+              <div className="orbit-track orbit-track-1" aria-hidden="true"></div>
+              <div className="orbit-track orbit-track-2" aria-hidden="true"></div>
+              <div className="orbit-track orbit-track-3" aria-hidden="true"></div>
+
+              {/* Dynamic Rotating Orbiters with Telemetry Nodes */}
               <div className="orbit-ring orbit-ring-1">
                 <div className="orbit-particle particle-cyan"></div>
               </div>

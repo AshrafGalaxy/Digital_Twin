@@ -5,6 +5,7 @@ export interface AssetDetail {
   id: string;
   name: string;
   shortName?: string;
+  imageUrl?: string;
   category: 'intersection' | 'segment' | 'building';
   categoryLabel: string;
   location: string;
@@ -20,6 +21,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
     id: 'INT-01',
     name: 'Primary Arterial Gateway Junction',
     shortName: 'Gateway Junction',
+    imageUrl: '/assets/images/corridor-int-01-gateway.png',
     category: 'intersection',
     categoryLabel: 'SIGNALIZED INTERSECTION',
     location: 'Western Arterial Ingress / Multimodal Crossroad Node',
@@ -33,6 +35,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
     id: 'INT-02',
     name: 'Eastern Transit Terminal Junction',
     shortName: 'Transit Junction',
+    imageUrl: '/assets/images/corridor-int-02-transit.png',
     category: 'intersection',
     categoryLabel: 'SIGNALIZED INTERSECTION',
     location: 'Eastern Arterial Flank / Transit Corridor Crossing',
@@ -46,6 +49,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
     id: 'SEG-01',
     name: 'Eastbound Arterial Mainline',
     shortName: 'Eastbound Corridor',
+    imageUrl: '/assets/images/twilight-city-highway-light-trails.png',
     category: 'segment',
     categoryLabel: 'ARTERIAL ROADWAY SEGMENT',
     location: 'Western Gateway → Eastern Terminal (Eastbound Vector)',
@@ -59,6 +63,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
     id: 'SEG-02',
     name: 'Westbound Arterial Mainline',
     shortName: 'Westbound Corridor',
+    imageUrl: '/assets/images/corridor-seg-02-westbound.png',
     category: 'segment',
     categoryLabel: 'ARTERIAL ROADWAY SEGMENT',
     location: 'Eastern Terminal → Western Gateway (Westbound Vector)',
@@ -72,6 +77,7 @@ export const DEFAULT_CORRIDOR_ASSETS: AssetDetail[] = [
     id: 'FAC-01',
     name: 'Central Commercial Microgrid Facility',
     shortName: 'Commercial Microgrid',
+    imageUrl: '/assets/images/twilight-glass-corporate-complex.png',
     category: 'building',
     categoryLabel: 'COMMERCIAL FACILITY',
     location: 'Central Corridor Commercial Infrastructure Zone',
@@ -102,6 +108,9 @@ export const CorridorAssetsShowcase: React.FC<CorridorAssetsShowcaseProps> = ({
     }
     return assets[0]?.id || '';
   });
+
+  const [viewMode, setViewMode] = useState<'visual' | 'blueprint'>('visual');
+  const [imgErrorMap, setImgErrorMap] = useState<Record<string, boolean>>({});
 
   const activeAsset = assets.find((a) => a.id === selectedId) || assets[0];
 
@@ -357,14 +366,48 @@ export const CorridorAssetsShowcase: React.FC<CorridorAssetsShowcaseProps> = ({
 
       {/* High-Fidelity Showcase Stage */}
       <div className="corridor-showcase-stage">
-        {/* Left: Bespoke Interactive Vector Blueprint */}
+        {/* Left: Bespoke Interactive Photographic Twin & Vector Blueprint */}
         <div className="showcase-vector-pane">
           <div className="vector-pane-header">
-            <div className="vector-pane-indicator" style={{ background: activeAsset.accentColor }} />
-            <span className="vector-pane-title font-mono">{activeAsset.id} SCHEMATIC</span>
+            <div className="vector-pane-title-group">
+              <div className="vector-pane-indicator" style={{ background: activeAsset.accentColor }} />
+              <span className="vector-pane-title font-mono">
+                {activeAsset.id} {viewMode === 'visual' && activeAsset.imageUrl && !imgErrorMap[activeAsset.id] ? 'PHOTOGRAPHIC TWIN' : 'SCHEMATIC BLUEPRINT'}
+              </span>
+            </div>
+            {activeAsset.imageUrl && !imgErrorMap[activeAsset.id] && (
+              <div className="showcase-view-toggle">
+                <button
+                  type="button"
+                  className={`showcase-toggle-btn ${viewMode === 'visual' ? 'active' : ''}`}
+                  onClick={() => setViewMode('visual')}
+                >
+                  PHOTO
+                </button>
+                <button
+                  type="button"
+                  className={`showcase-toggle-btn ${viewMode === 'blueprint' ? 'active' : ''}`}
+                  onClick={() => setViewMode('blueprint')}
+                >
+                  SCHEMATIC
+                </button>
+              </div>
+            )}
           </div>
           <div className="vector-canvas-wrap">
-            {renderAssetBlueprint(activeAsset)}
+            {viewMode === 'visual' && activeAsset.imageUrl && !imgErrorMap[activeAsset.id] ? (
+              <div className="showcase-photo-frame">
+                <img
+                  src={activeAsset.imageUrl}
+                  alt={activeAsset.name}
+                  className="showcase-photo-img"
+                  onError={() => setImgErrorMap((prev) => ({ ...prev, [activeAsset.id]: true }))}
+                />
+                <div className="showcase-photo-overlay" aria-hidden="true" />
+              </div>
+            ) : (
+              renderAssetBlueprint(activeAsset)
+            )}
           </div>
         </div>
 
