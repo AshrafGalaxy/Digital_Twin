@@ -25,6 +25,10 @@ import { ConformalBandsAsset } from '../landing/ConformalBandsAsset';
 import { MicroscopicPhysicsAsset } from '../landing/MicroscopicPhysicsAsset';
 import { CorridorDioramaAsset } from '../landing/CorridorDioramaAsset';
 import { CorridorAssetsShowcase } from '../landing/CorridorAssetsShowcase';
+import { KineticTaglineReveal } from '../landing/KineticTaglineReveal';
+import { CorridorCompareSlider } from '../landing/CorridorCompareSlider';
+import { AgencyCommandShowcase } from '../landing/AgencyCommandShowcase';
+import { GovernanceProtocolFlow } from '../landing/GovernanceProtocolFlow';
 import { ContactAccessModal } from '../landing/ContactAccessModal';
 import { NumberTicker } from '../common/NumberTicker';
 
@@ -118,8 +122,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
           <div className="landing-nav-links">
             <button className="landing-nav-link" onClick={() => scrollToAnchor('pillars')}>Telemetry</button>
-            <button className="landing-nav-link" onClick={() => scrollToAnchor('assets-showcase')}>Physical Assets</button>
-            <button className="landing-nav-link" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('assets-showcase')}>Assets</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('transformation')}>Impact</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('how-it-works')}>Pipeline</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('governance')}>Governance</button>
+            <button className="landing-nav-link" onClick={() => scrollToAnchor('operations')}>Operations</button>
             <button className="landing-nav-link" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-nav-link" onClick={() => scrollToAnchor('faq')}>FAQ</button>
           </div>
@@ -171,7 +178,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="landing-mobile-menu">
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('pillars')}>Telemetry</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('assets-showcase')}>Physical Assets</button>
-            <button className="landing-mobile-item" onClick={() => scrollToAnchor('how-it-works')}>Architecture</button>
+            <button className="landing-mobile-item" onClick={() => scrollToAnchor('transformation')}>Impact Comparison</button>
+            <button className="landing-mobile-item" onClick={() => scrollToAnchor('how-it-works')}>Execution Pipeline</button>
+            <button className="landing-mobile-item" onClick={() => scrollToAnchor('governance')}>Governance Protocol</button>
+            <button className="landing-mobile-item" onClick={() => scrollToAnchor('operations')}>Agency Operations</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('provenance')}>Provenance</button>
             <button className="landing-mobile-item" onClick={() => scrollToAnchor('faq')}>FAQ</button>
             {authUser ? (
@@ -645,10 +655,16 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
+      {/* 4. Kinetic Tagline Reveal (Word-by-Word Illumination) */}
+      <KineticTaglineReveal />
+
       {/* 5. Corridor Physical Assets Interactive Showcase */}
       <CorridorAssetsShowcase />
 
-      {/* 5. How It Works Section (3-Step Pipeline) */}
+      {/* 6. Interactive Before vs. After Transformation Slider */}
+      <CorridorCompareSlider />
+
+      {/* 7. How It Works Section (3-Step Pipeline) */}
       <section id="how-it-works" className="landing-section dark-alt" ref={(el) => (revealRefs.current[1] = el)}>
         <div className="section-header">
           <span className="section-eyebrow">Execution Pipeline</span>
@@ -718,7 +734,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
-      {/* 6. Provenance & Data Honesty Showcase */}
+      {/* 8. End-to-End Decision Delivery Protocol */}
+      <GovernanceProtocolFlow />
+
+      {/* 9. Multi-Domain Municipal Agency Command Hub */}
+      <AgencyCommandShowcase />
+
+      {/* 10. Provenance & Data Honesty Showcase */}
       <section id="provenance" className="landing-section" ref={(el) => (revealRefs.current[2] = el)}>
         <div className="section-header">
           <span className="section-eyebrow">Integrity Contract</span>
