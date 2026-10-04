@@ -1,223 +1,287 @@
 import React, { useState } from 'react';
 import {
-  ShieldCheck,
+  Activity,
   Database,
-  Lock,
   Sliders,
+  ShieldCheck,
   CheckCircle2,
+  Lock,
+  ArrowRight,
+  Terminal,
   FileCheck,
-  Layers,
-  Activity
+  Check
 } from 'lucide-react';
 
 interface ProtocolStage {
   step: string;
+  stageCode: string;
   title: string;
   subtitle: string;
-  badge: string;
+  statusBadge: string;
   accentColor: string;
   icon: 'ingest' | 'quarantine' | 'conformal' | 'human';
-  details: string[];
+  details: {
+    code: string;
+    text: string;
+  }[];
   invariantGuarantee: string;
+  auditLogSample: string;
 }
 
 const PROTOCOL_STAGES: ProtocolStage[] = [
   {
     step: '01',
-    title: 'Sensor Ingestion & Bound Clamping',
-    subtitle: 'Edge Telemetry Validation',
-    badge: '1 Hz STREAM',
+    stageCode: 'INGEST',
+    title: 'Edge Ingestion & Bound Clamping',
+    subtitle: 'Physical Sensor Validation',
+    statusBadge: '1 Hz STREAM : VERIFIED',
     accentColor: '#38BDF8',
     icon: 'ingest',
     details: [
-      'Physical speed bounds enforce hard 0 to 120 km/h limits.',
-      'Future timestamps and negative values automatically quarantined.',
-      'Observations exceeding 180s automatically flagged as STALE.'
+      { code: 'CHK-01', text: 'Hard velocity bounds clamp speed strictly to 0-120 km/h limits.' },
+      { code: 'CHK-02', text: 'Negative readings, null payloads, and future timestamps quarantined.' },
+      { code: 'CHK-03', text: 'Observations exceeding 180s automatically flagged as STALE.' }
     ],
-    invariantGuarantee: 'Guarantees corrupted edge telemetry never pollutes downstream models.'
+    invariantGuarantee: 'Corrupted edge telemetry never enters model inference pipelines.',
+    auditLogSample: '[16:54:01.002] STAGE 01 PASS : 100% telemetry records verified within physical bounds [0, 120 km/h]'
   },
   {
     step: '02',
+    stageCode: 'QUARANTINE',
     title: 'Tri-State Schema Quarantine',
     subtitle: 'Authoritative Storage Isolation',
-    badge: 'POSTGRESQL',
+    statusBadge: 'POSTGRESQL : ISOLATED',
     accentColor: '#10B981',
     icon: 'quarantine',
     details: [
-      'Observed telemetry stored strictly in live time-series tables.',
-      'Microscopic SUMO simulations isolated in ephemeral scenario runs.',
-      'Machine learning predictions stored in separate schema tables.'
+      { code: 'CHK-01', text: 'Observed telemetry stored strictly in live time-series tables.' },
+      { code: 'CHK-02', text: 'SUMO microscopic simulations isolated in ephemeral run tables.' },
+      { code: 'CHK-03', text: 'Machine learning forecasts partitioned into distinct schema tables.' }
     ],
-    invariantGuarantee: 'Synthetic simulations and predictions NEVER overwrite physical ground truth.'
+    invariantGuarantee: 'Synthetic simulations and predictions NEVER overwrite physical ground truth.',
+    auditLogSample: '[16:54:01.120] STAGE 02 PASS : Observed, simulation, and predicted states isolated in distinct schemas'
   },
   {
     step: '03',
+    stageCode: 'CONFORMAL',
     title: 'Conformal Inference & XAI',
-    subtitle: 'Uncertainty & Explainability',
-    badge: 'CONFORMAL 90%',
+    subtitle: 'Uncertainty & Attribution',
+    statusBadge: 'CONFORMAL 90% : CALIBRATED',
     accentColor: '#F59E0B',
     icon: 'conformal',
     details: [
-      'Every prediction provides calibrated 80% and 90% confidence intervals.',
-      'Top-5 TreeSHAP feature attributions calculate exact feature influence.',
-      'Population Stability Index (PSI) monitors training distribution drift.'
+      { code: 'CHK-01', text: 'Conformal bands calculate rigorous 80% and 90% confidence bounds.' },
+      { code: 'CHK-02', text: 'Top-5 TreeSHAP feature attributions calculate exact feature weights.' },
+      { code: 'CHK-03', text: 'Population Stability Index (PSI) flags distribution drift (>=0.25).' }
     ],
-    invariantGuarantee: 'Every forecast provides verifiable mathematical confidence boundaries.'
+    invariantGuarantee: 'Zero point predictions without conformal uncertainty confidence intervals.',
+    auditLogSample: '[16:54:01.240] STAGE 03 PASS : Forecast generated with 90% confidence band [14.2, 18.6 km/h], PSI=0.04 (STABLE)'
   },
   {
     step: '04',
-    title: 'Human-in-the-Loop Advisory Delivery',
-    subtitle: 'Non-Actuation Governance',
-    badge: 'READ-ONLY CONTRACT',
+    stageCode: 'CLEARANCE',
+    title: 'Human-in-the-Loop Delivery',
+    subtitle: 'Non-Actuation Protocol',
+    statusBadge: 'READ-ONLY : ADVISORY',
     accentColor: '#818CF8',
     icon: 'human',
     details: [
-      'Advisories are purely recommendations for municipal traffic engineers.',
-      'Platform provides zero autonomous signal controller actuation.',
-      'Complete operator audit trail logged with timestamp and user credential.'
+      { code: 'CHK-01', text: 'Platform provides read-only decision support for municipal operators.' },
+      { code: 'CHK-02', text: 'Zero autonomous signal controller or grid actuation capability.' },
+      { code: 'CHK-03', text: 'Immutable operator authorization audit trail with credential logs.' }
     ],
-    invariantGuarantee: 'All physical field changes require certified municipal human authorization.'
+    invariantGuarantee: 'Physical field action requires certified municipal authorization outside twin.',
+    auditLogSample: '[16:54:01.350] STAGE 04 PASS : Operator advisory queued in TMC console; 0 autonomous actuations executed'
   }
 ];
 
 export const GovernanceProtocolFlow: React.FC = () => {
-  const [activeStep, setActiveStep] = useState<number>(0);
+  const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
 
   const renderIcon = (type: ProtocolStage['icon'], color: string) => {
     switch (type) {
       case 'ingest':
-        return <Activity size={18} color={color} />;
+        return <Activity size={18} color={color} strokeWidth={2.2} />;
       case 'quarantine':
-        return <Database size={18} color={color} />;
+        return <Database size={18} color={color} strokeWidth={2.2} />;
       case 'conformal':
-        return <Sliders size={18} color={color} />;
+        return <Sliders size={18} color={color} strokeWidth={2.2} />;
       case 'human':
-        return <ShieldCheck size={18} color={color} />;
-      default:
-        return <Layers size={18} color={color} />;
+        return <ShieldCheck size={18} color={color} strokeWidth={2.2} />;
     }
   };
 
   return (
-    <section id="governance" className="landing-section governance-protocol-section">
+    <section id="governance" className="landing-section governance-pipeline-section">
       <div className="section-header">
         <span className="section-eyebrow font-mono">Deterministic Integrity</span>
         <h2 className="section-title">The four-stage municipal decision delivery protocol</h2>
         <p className="section-subtitle">
-          From edge sensor ingestion to certified operator review, explore how our architectural invariants prevent unvalidated autonomous actuation.
+          From edge sensor ingestion to certified operator clearance, our sequential architectural invariants eliminate synthetic contamination and prevent unvalidated autonomous actuation.
         </p>
       </div>
 
-      {/* Protocol Stage Selector Grid */}
-      <div className="protocol-nav-grid" role="tablist" aria-label="Governance Protocol Stages">
-        {PROTOCOL_STAGES.map((stage, idx) => {
-          const isActive = idx === activeStep;
-          return (
-            <button
-              key={stage.step}
-              role="tab"
-              aria-selected={isActive}
-              className={`protocol-nav-card ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveStep(idx)}
-            >
-              <div className="nav-card-inner">
-                <div
-                  className="nav-card-icon-badge"
-                  style={{
-                    color: isActive ? stage.accentColor : '#94A3B8',
-                    background: isActive ? `${stage.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
-                    borderColor: isActive ? `${stage.accentColor}45` : 'rgba(255, 255, 255, 0.08)'
-                  }}
+      {/* Sequential Pipeline Flow Board */}
+      <div className="governance-pipeline-board">
+        {/* Top Conduit Flow Navigator */}
+        <div className="pipeline-conduit-track font-mono" role="tablist" aria-label="Governance Pipeline Sequence">
+          {PROTOCOL_STAGES.map((stg, idx) => {
+            const isSelected = activeStageIdx === idx;
+            return (
+              <React.Fragment key={stg.step}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  className={`pipeline-conduit-node ${isSelected ? 'selected' : ''}`}
+                  onClick={() => setActiveStageIdx(idx)}
                 >
-                  {renderIcon(stage.icon, isActive ? stage.accentColor : '#94A3B8')}
-                </div>
-                <div className="nav-card-text">
-                  <div className="nav-card-top-row">
+                  <span
+                    className="conduit-node-bullet"
+                    style={{
+                      borderColor: isSelected ? stg.accentColor : 'rgba(255, 255, 255, 0.2)',
+                      background: isSelected ? stg.accentColor : 'rgba(255, 255, 255, 0.05)'
+                    }}
+                  >
+                    {isSelected ? <Check size={10} color="#000000" strokeWidth={3} /> : stg.step}
+                  </span>
+                  <div className="conduit-node-labels">
+                    <span className="conduit-node-step" style={{ color: isSelected ? stg.accentColor : '#64748B' }}>
+                      STAGE {stg.step}
+                    </span>
+                    <span className="conduit-node-name">{stg.stageCode}</span>
+                  </div>
+                </button>
+                {idx < PROTOCOL_STAGES.length - 1 && (
+                  <div className="pipeline-conduit-connector" aria-hidden="true">
+                    <ArrowRight size={14} className="connector-arrow" />
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {/* 4 Connected Sequential Stage Station Columns */}
+        <div className="pipeline-stages-grid">
+          {PROTOCOL_STAGES.map((stage, idx) => {
+            const isSelected = activeStageIdx === idx;
+            return (
+              <div
+                key={stage.step}
+                className={`stage-station-column ${isSelected ? 'active-station' : ''}`}
+                onClick={() => setActiveStageIdx(idx)}
+              >
+                {/* Stage Header */}
+                <div className="station-top-meta">
+                  <div className="station-index-group font-mono">
                     <span
-                      className="nav-card-id font-mono"
-                      style={{ color: isActive ? stage.accentColor : '#64748B' }}
+                      className="station-step-num"
+                      style={{
+                        color: stage.accentColor,
+                        background: `${stage.accentColor}18`,
+                        borderColor: `${stage.accentColor}40`
+                      }}
                     >
                       STAGE {stage.step}
                     </span>
-                    <span className="nav-card-category font-mono">
-                      {stage.badge}
-                    </span>
+                    <span className="station-stage-code">{stage.stageCode}</span>
                   </div>
-                  <span className="nav-card-title">{stage.title}</span>
+                  <span
+                    className="station-status-pill font-mono"
+                    style={{
+                      color: stage.accentColor,
+                      borderColor: `${stage.accentColor}30`,
+                      background: `${stage.accentColor}10`
+                    }}
+                  >
+                    {stage.statusBadge}
+                  </span>
+                </div>
+
+                {/* Station Title & Domain */}
+                <div className="station-headline-wrap">
+                  <div
+                    className="station-icon-box"
+                    style={{
+                      background: `${stage.accentColor}15`,
+                      borderColor: `${stage.accentColor}35`
+                    }}
+                  >
+                    {renderIcon(stage.icon, stage.accentColor)}
+                  </div>
+                  <div>
+                    <h3 className="station-title">{stage.title}</h3>
+                    <span className="station-subtitle font-mono">{stage.subtitle}</span>
+                  </div>
+                </div>
+
+                {/* Strict Engineering Checks List */}
+                <div className="station-checks-wrap">
+                  <span className="checks-label font-mono">STRICT OPERATING CHECKS</span>
+                  <ul className="station-checks-list">
+                    {stage.details.map((chk, cIdx) => (
+                      <li key={cIdx} className="check-row">
+                        <span className="check-code font-mono">{chk.code}</span>
+                        <CheckCircle2 size={13} color={stage.accentColor} className="check-icon" />
+                        <span className="check-text">{chk.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Station Invariant Contract Card */}
+                <div className="station-contract-box">
+                  <div className="contract-top-bar font-mono">
+                    <Lock size={12} color="var(--color-success)" />
+                    <span>ARCHITECTURAL INVARIANT</span>
+                  </div>
+                  <p className="contract-statement">{stage.invariantGuarantee}</p>
                 </div>
               </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Active Stage Detailed Spotlight */}
-      <div className="protocol-spotlight-card">
-        <div className="spotlight-topbar">
-          <div className="spotlight-title-group">
-            <div
-              className="spotlight-icon-box"
-              style={{
-                background: `${PROTOCOL_STAGES[activeStep].accentColor}18`,
-                borderColor: `${PROTOCOL_STAGES[activeStep].accentColor}40`
-              }}
-            >
-              {renderIcon(PROTOCOL_STAGES[activeStep].icon, PROTOCOL_STAGES[activeStep].accentColor)}
-            </div>
-            <div>
-              <span className="spotlight-step-tag font-mono" style={{ color: PROTOCOL_STAGES[activeStep].accentColor }}>
-                STAGE {PROTOCOL_STAGES[activeStep].step} PROTOCOL SPECIFICATION
-              </span>
-              <h3 className="spotlight-heading">{PROTOCOL_STAGES[activeStep].title}</h3>
-            </div>
-          </div>
-          <div className="spec-meta-row font-mono">
-            <span
-              className="spec-category-badge"
-              style={{
-                color: PROTOCOL_STAGES[activeStep].accentColor,
-                borderColor: `${PROTOCOL_STAGES[activeStep].accentColor}40`,
-                background: `${PROTOCOL_STAGES[activeStep].accentColor}15`
-              }}
-            >
-              {PROTOCOL_STAGES[activeStep].badge}
-            </span>
-            <span className="spec-online-indicator font-mono">
-              <span className="pulse-indicator" style={{ background: 'var(--color-success)' }} />
-              <span>INVARIANT ENFORCED</span>
-            </span>
-          </div>
+            );
+          })}
         </div>
 
-        <div className="spotlight-grid">
-          {/* Rules & Validation Checks */}
-          <div className="spotlight-details-pane">
-            <span className="pane-label font-mono">STRICT OPERATING CHECKS</span>
-            <ul className="spotlight-rules-list">
-              {PROTOCOL_STAGES[activeStep].details.map((detail, idx) => (
-                <li key={idx} className="rule-item">
-                  <span className="rule-item-badge font-mono">CHK-0{idx + 1}</span>
-                  <CheckCircle2 size={15} color={PROTOCOL_STAGES[activeStep].accentColor} className="rule-icon" />
-                  <span className="rule-item-text">{detail}</span>
-                </li>
-              ))}
-            </ul>
+        {/* Authoritative PostgreSQL Audit Ledger Feed (Bottom Terminal) */}
+        <div className="pipeline-audit-terminal">
+          <div className="audit-terminal-header font-mono">
+            <div className="terminal-header-left">
+              <Terminal size={14} color="var(--color-primary)" />
+              <span className="terminal-title">AUTHORITATIVE POSTGRESQL / TIMESCALEDB INVARIANT LEDGER</span>
+              <span className="terminal-live-badge">
+                <span className="pulse-indicator" style={{ background: 'var(--color-success)' }} />
+                <span>ACTIVE ENFORCEMENT</span>
+              </span>
+            </div>
+            <div className="terminal-header-right">
+              <FileCheck size={12} color="#64748B" />
+              <span>SCHEMA TRIGGERS VERIFIED</span>
+            </div>
           </div>
 
-          {/* Invariant Architectural Guarantee */}
-          <div className="spotlight-guarantee-pane">
-            <span className="pane-label font-mono">NON-NEGOTIABLE ARCHITECTURAL INVARIANT</span>
-            <div className="guarantee-quote-box">
-              <div className="quote-header">
-                <Lock size={14} color="var(--color-success)" />
-                <span className="quote-tag font-mono">GOVERNANCE CONTRACT</span>
-              </div>
-              <p className="quote-text">{PROTOCOL_STAGES[activeStep].invariantGuarantee}</p>
-            </div>
-            <div className="guarantee-footer">
-              <FileCheck size={13} color="#8B949E" />
-              <span>Auditable via PostgreSQL schema constraints and TimescaleDB triggers.</span>
-            </div>
+          <div className="audit-log-entries-list font-mono">
+            {PROTOCOL_STAGES.map((stg, idx) => {
+              const isHighlighted = activeStageIdx === idx;
+              return (
+                <div
+                  key={stg.step}
+                  className={`audit-log-row ${isHighlighted ? 'highlighted' : ''}`}
+                  onClick={() => setActiveStageIdx(idx)}
+                >
+                  <span className="log-stage-tag" style={{ color: stg.accentColor }}>
+                    [STAGE {stg.step}]
+                  </span>
+                  <span className="log-text">{stg.auditLogSample}</span>
+                  <span className="log-status font-mono">ENFORCED</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="audit-terminal-footer font-mono">
+            <span>INVARIANT CONTRACT: All 4 stages must pass verification prior to human advisory presentation.</span>
+            <span className="footer-system-note">POSTGRESQL SYSTEM OF RECORD : RESILIENT LOCAL SQLITE READY</span>
           </div>
         </div>
       </div>

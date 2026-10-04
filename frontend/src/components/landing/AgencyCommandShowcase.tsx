@@ -8,7 +8,9 @@ import {
   Database,
   Layers,
   Cpu,
-  ArrowRight
+  ArrowRight,
+  Radio,
+  ChevronRight
 } from 'lucide-react';
 import { NumberTicker } from '../common/NumberTicker';
 
@@ -23,6 +25,7 @@ interface AgencyRole {
   imageUrl: string;
   imageCaption: string;
   icon: 'traffic' | 'energy' | 'transit' | 'governance';
+  statusSummary: string;
   kpis: {
     label: string;
     value: number;
@@ -44,13 +47,14 @@ const AGENCY_ROLES: AgencyRole[] = [
     id: 'traffic',
     shortCode: 'TMC-01',
     category: 'TRAFFIC COMMAND',
-    tabLabel: 'Traffic Management Center',
+    tabLabel: 'Traffic Operations Center',
     agencyName: 'Municipal Traffic Operations Center (TMC)',
     roleDescription: 'Arterial corridor hydrodynamic monitoring, coordinated green wave phase balancing, and rapid bottleneck shockwave dissipation.',
     accentColor: '#38BDF8',
     imageUrl: '/assets/images/twilight-city-highway-light-trails.png',
-    imageCaption: 'ARTERIAL FLOW HYDRODYNAMIC TWIN',
+    imageCaption: 'ARTERIAL HYDRODYNAMIC FLOW TWIN',
     icon: 'traffic',
+    statusSummary: 'Arterial Flow Stable : 18.4% Efficiency',
     kpis: [
       { label: 'Corridor Flow Efficiency', value: 18.4, suffix: '%', description: 'Peak travel time improvement' },
       { label: 'Loop Sensor Ingestion', value: 100, suffix: '%', description: 'Continuous 1 Hz stream' },
@@ -75,6 +79,7 @@ const AGENCY_ROLES: AgencyRole[] = [
     imageUrl: '/assets/images/tech-campus-substation-grid.png',
     imageCaption: 'DISTRICT COMMERCIAL SUBSTATION & MICROGRID TWIN',
     icon: 'energy',
+    statusSummary: 'Peak Curtailment Ready : 380 kW Shaved',
     kpis: [
       { label: 'Peak Demand Shaved', value: 380, suffix: ' kW', description: 'During afternoon tariff surge' },
       { label: 'Fiscal Meter Cadence', value: 15, suffix: ' min', description: 'Utility pulse interval' },
@@ -99,6 +104,7 @@ const AGENCY_ROLES: AgencyRole[] = [
     imageUrl: '/assets/images/corridor-int-02-transit.png',
     imageCaption: 'REGIONAL MULTIMODAL TRANSIT CORRIDOR TWIN',
     icon: 'transit',
+    statusSummary: 'Transit Priority Window : 94.2% Adherence',
     kpis: [
       { label: 'Headway Reliability', value: 94.2, suffix: '%', description: 'On-schedule transit adherence' },
       { label: 'Transit Delay Reduced', value: 16.5, prefix: '-', suffix: '%', description: 'At signalized crossings' },
@@ -116,13 +122,14 @@ const AGENCY_ROLES: AgencyRole[] = [
     id: 'governance',
     shortCode: 'AUD-01',
     category: 'AUDIT OVERSIGHT',
-    tabLabel: 'Municipal Audit & Commission',
+    tabLabel: 'City Audit Commission',
     agencyName: 'City Council & Municipal Audit Oversight',
     roleDescription: 'Transparent algorithm governance, immutable TimescaleDB audit records, feature drift monitoring, and strict non-actuation verification.',
     accentColor: '#818CF8',
     imageUrl: '/assets/images/cinematic-illuminated-urban-model.png',
     imageCaption: 'AUTHORITATIVE SYSTEM OF RECORD & AUDIT TWIN',
     icon: 'governance',
+    statusSummary: 'Audit Ledger Verified : 0 Actuations',
     kpis: [
       { label: 'Telemetry Validation Rate', value: 100, suffix: '%', description: 'Physical bounds checked' },
       { label: 'Autonomous Actuations', value: 0, suffix: '', description: 'Human authorization required' },
@@ -168,117 +175,134 @@ export const AgencyCommandShowcase: React.FC = () => {
         </p>
       </div>
 
-      {/* Agency Command Selector Grid */}
-      <div className="agency-nav-grid" role="tablist" aria-label="Municipal Agency Commands">
-        {AGENCY_ROLES.map((role) => {
-          const isActive = role.id === activeTabId;
-          return (
-            <button
-              key={role.id}
-              role="tab"
-              aria-selected={isActive}
-              className={`agency-nav-card ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveTabId(role.id)}
-            >
-              <div className="nav-card-inner">
-                <div
-                  className="nav-card-icon-badge"
-                  style={{
-                    color: isActive ? role.accentColor : '#94A3B8',
-                    background: isActive ? `${role.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
-                    borderColor: isActive ? `${role.accentColor}45` : 'rgba(255, 255, 255, 0.08)'
-                  }}
-                >
-                  {renderRoleIcon(role.icon, isActive ? role.accentColor : '#94A3B8')}
-                </div>
-                <div className="nav-card-text">
-                  <div className="nav-card-top-row">
-                    <span
-                      className="nav-card-id font-mono"
-                      style={{ color: isActive ? role.accentColor : '#64748B' }}
-                    >
-                      {role.shortCode}
-                    </span>
-                    <span className="nav-card-category font-mono">
-                      {role.category}
-                    </span>
-                  </div>
-                  <span className="nav-card-title">{role.tabLabel}</span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Active Agency Command Panel */}
-      <div className="agency-display-card">
-        {/* Top Info Banner */}
-        <div className="agency-card-topbar">
-          <div className="agency-title-group">
-            <div className="spec-meta-row font-mono">
-              <span
-                className="spec-category-badge"
-                style={{
-                  color: activeRole.accentColor,
-                  background: `${activeRole.accentColor}15`,
-                  borderColor: `${activeRole.accentColor}40`
-                }}
-              >
-                {activeRole.shortCode} : {activeRole.category}
-              </span>
-              <span className="spec-online-indicator font-mono">
-                <span className="pulse-indicator" style={{ background: 'var(--color-success)' }} />
-                <span>DECISION-SUPPORT READY</span>
-              </span>
-            </div>
-            <h3 className="agency-name">{activeRole.agencyName}</h3>
-            <p className="agency-role-desc">{activeRole.roleDescription}</p>
+      {/* Master-Detail Command Console Deck */}
+      <div className="command-deck-container">
+        {/* Left Column: Command Roster Dock */}
+        <div className="command-roster-dock" role="tablist" aria-label="Municipal Command Channels">
+          <div className="roster-dock-header font-mono">
+            <Radio size={12} color="var(--color-primary)" />
+            <span>MUNICIPAL COMMAND CHANNELS</span>
           </div>
-          <div className="agency-governance-tag font-mono">
-            <Database size={13} color="var(--color-primary)" />
-            <span>AUTHORITATIVE POSTGRESQL STORE</span>
+
+          <div className="roster-channels-list">
+            {AGENCY_ROLES.map((role) => {
+              const isActive = role.id === activeTabId;
+              return (
+                <button
+                  key={role.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`roster-channel-card ${isActive ? 'active' : ''}`}
+                  onClick={() => setActiveTabId(role.id)}
+                >
+                  <div
+                    className="channel-accent-bar"
+                    style={{ background: isActive ? role.accentColor : 'transparent' }}
+                  />
+                  <div
+                    className="channel-icon-wrap"
+                    style={{
+                      color: isActive ? role.accentColor : '#94A3B8',
+                      background: isActive ? `${role.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
+                      borderColor: isActive ? `${role.accentColor}45` : 'rgba(255, 255, 255, 0.08)'
+                    }}
+                  >
+                    {renderRoleIcon(role.icon, isActive ? role.accentColor : '#94A3B8')}
+                  </div>
+                  <div className="channel-meta">
+                    <div className="channel-top-line font-mono">
+                      <span className="channel-code" style={{ color: isActive ? role.accentColor : '#64748B' }}>
+                        {role.shortCode}
+                      </span>
+                      <span className="channel-badge">{role.category}</span>
+                    </div>
+                    <span className="channel-title">{role.tabLabel}</span>
+                    <span className="channel-status font-mono">{role.statusSummary}</span>
+                  </div>
+                  <ChevronRight
+                    size={14}
+                    className={`channel-arrow ${isActive ? 'active' : ''}`}
+                    color={isActive ? role.accentColor : '#64748B'}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Roster Footer Guarantee */}
+          <div className="roster-dock-footer font-mono">
+            <Database size={11} color="var(--color-primary)" />
+            <span>POSTGRESQL MULTI-TENANT ISOLATION</span>
           </div>
         </div>
 
-        {/* Dynamic Agency Stage Content */}
-        <div className="agency-grid-layout">
-          {/* Left Column: KPI Cards with Number Ticker */}
-          <div className="agency-kpis-column">
-            <span className="column-label font-mono">SYNCHRONIZED TELEMETRY METRICS</span>
-            <div className="agency-kpis-grid">
-              {activeRole.kpis.map((kpi, idx) => (
-                <div key={idx} className="agency-kpi-card">
-                  <span className="kpi-label font-mono">{kpi.label}</span>
-                  <div className="kpi-value-row">
-                    <span className="kpi-number font-mono" style={{ color: activeRole.accentColor }}>
-                      <NumberTicker
-                        value={kpi.value}
-                        decimals={kpi.value % 1 !== 0 ? 1 : 0}
-                        prefix={kpi.prefix}
-                        suffix={kpi.suffix}
-                      />
-                    </span>
-                  </div>
-                  <span className="kpi-desc">{kpi.description}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Feature Asset Banner with dynamic image & caption */}
-            <div className="agency-preview-asset">
-              <img src={activeRole.imageUrl} alt={activeRole.agencyName} className="asset-cover-img" />
-              <div className="asset-caption font-mono">
-                <Cpu size={12} color={activeRole.accentColor} />
-                <span>{activeRole.imageCaption}</span>
+        {/* Right Column: Live Agency Operations Cockpit */}
+        <div className="agency-cockpit-panel">
+          {/* Cockpit Topbar */}
+          <div className="cockpit-topbar">
+            <div className="cockpit-header-left">
+              <div className="spec-meta-row font-mono">
+                <span
+                  className="spec-category-badge"
+                  style={{
+                    color: activeRole.accentColor,
+                    background: `${activeRole.accentColor}15`,
+                    borderColor: `${activeRole.accentColor}40`
+                  }}
+                >
+                  {activeRole.shortCode} : {activeRole.category}
+                </span>
+                <span className="spec-online-indicator font-mono">
+                  <span className="pulse-indicator" style={{ background: 'var(--color-success)' }} />
+                  <span>OPERATIONAL TWIN SYNCHRONIZED</span>
+                </span>
               </div>
+              <h3 className="cockpit-title">{activeRole.agencyName}</h3>
+              <p className="cockpit-desc">{activeRole.roleDescription}</p>
+            </div>
+            <div className="cockpit-header-right font-mono">
+              <Database size={13} color="var(--color-primary)" />
+              <span>AUTHORITATIVE POSTGRESQL STORE</span>
             </div>
           </div>
 
-          {/* Right Column: Active Decision Advisory Workflow Card */}
-          <div className="agency-advisory-column">
-            <span className="column-label font-mono">HUMAN-IN-THE-LOOP ADVISORY PIPELINE</span>
-            <div className="agency-advisory-card">
+          {/* Real-time KPI Metric Gauges */}
+          <div className="cockpit-kpi-grid">
+            {activeRole.kpis.map((kpi, idx) => (
+              <div key={idx} className="cockpit-kpi-card">
+                <span className="kpi-label font-mono">{kpi.label}</span>
+                <div className="kpi-value-row">
+                  <span className="kpi-number font-mono" style={{ color: activeRole.accentColor }}>
+                    <NumberTicker
+                      value={kpi.value}
+                      decimals={kpi.value % 1 !== 0 ? 1 : 0}
+                      prefix={kpi.prefix}
+                      suffix={kpi.suffix}
+                    />
+                  </span>
+                </div>
+                <span className="kpi-desc">{kpi.description}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Cockpit Lower Execution Split */}
+          <div className="cockpit-lower-split">
+            {/* Visual Footprint Card */}
+            <div className="cockpit-footprint-card">
+              <div className="footprint-image-wrap">
+                <img src={activeRole.imageUrl} alt={activeRole.agencyName} className="footprint-image" />
+                <div className="footprint-hud-reticle top-left font-mono">+</div>
+                <div className="footprint-hud-reticle top-right font-mono">+</div>
+                <div className="footprint-caption font-mono">
+                  <Cpu size={12} color={activeRole.accentColor} />
+                  <span>{activeRole.imageCaption}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Human-in-the-Loop Advisory & Clearance */}
+            <div className="cockpit-advisory-card">
               <div className="advisory-top-meta">
                 <span className={`advisory-urgency-badge ${activeRole.activeAdvisory.urgency.toLowerCase()} font-mono`}>
                   {activeRole.activeAdvisory.urgency} ADVISORY
@@ -302,7 +326,7 @@ export const AgencyCommandShowcase: React.FC = () => {
               <div className="advisory-authorization-footer">
                 <div className="auth-lock-info font-mono">
                   <ShieldCheck size={14} color="#10B981" />
-                  <span>REQUIRES OPERATOR CLEARANCE PRIOR TO FIELD ACTUATION</span>
+                  <span>REQUIRES OPERATOR CLEARANCE PRIOR TO FIELD ACTION</span>
                 </div>
                 <button
                   type="button"
