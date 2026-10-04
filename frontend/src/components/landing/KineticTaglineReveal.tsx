@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { motion, useScroll, useTransform, useSpring, MotionValue } from 'framer-motion';
 import { ShieldCheck, Database, Sliders, CheckCircle2 } from 'lucide-react';
 
 const TAGLINE_WORDS = [
@@ -17,98 +18,73 @@ const TAGLINE_WORDS = [
   'governance.'
 ];
 
-export const KineticTaglineReveal: React.FC = () => {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [activeWordIndex, setActiveWordIndex] = useState<number>(-1);
-  const [scrollProgress, setScrollProgress] = useState<number>(0);
+interface KineticWordProps {
+  word: string;
+  index: number;
+  total: number;
+  progress: MotionValue<number>;
+}
 
-  const calculateProgress = useCallback(() => {
-    const track = trackRef.current;
-    const wrapper = wrapperRef.current;
-    if (!track || !wrapper) return;
+const KineticWord: React.FC<KineticWordProps> = ({ word, index, total, progress }) => {
+  // Overlapping progressive window for each word across scroll travel
+  const start = (index / total) * 0.82;
+  const end = Math.min(start + 0.18, 1.0);
 
-    const rect = track.getBoundingClientRect();
-    const windowHeight = window.innerHeight;
-
-    // The sticky wrapper docks at top: 14vh
-    const topDock = windowHeight * 0.14;
-    // Total distance the wrapper travels in sticky state
-    const scrollRange = Math.max(rect.height - wrapper.offsetHeight, 100);
-    // How much user has scrolled past the sticky docking threshold
-    const currentScroll = topDock - rect.top;
-
-    if (currentScroll <= 0) {
-      setActiveWordIndex(-1);
-      setScrollProgress(0);
-    } else {
-      const progress = Math.min(Math.max(currentScroll / scrollRange, 0), 1);
-      setScrollProgress(progress);
-
-      const wordCount = TAGLINE_WORDS.length;
-      // Progressively light up words 0..12
-      const targetIndex = Math.min(
-        Math.floor(progress * (wordCount + 0.5)),
-        wordCount - 1
-      );
-      setActiveWordIndex(targetIndex);
-    }
-  }, []);
-
-  useEffect(() => {
-    let rafId: number | null = null;
-    const onScrollOrResize = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        calculateProgress();
-        rafId = null;
-      });
-    };
-
-    window.addEventListener('scroll', onScrollOrResize, { passive: true });
-    window.addEventListener('resize', onScrollOrResize, { passive: true });
-    document.addEventListener('scroll', onScrollOrResize, { passive: true });
-
-    // Also attach to any scrollable parent element as fallback
-    const track = trackRef.current;
-    const listeners: HTMLElement[] = [];
-    if (track) {
-      let parent = track.parentElement;
-      while (parent) {
-        const overflowY = window.getComputedStyle(parent).overflowY;
-        if (overflowY === 'auto' || overflowY === 'scroll') {
-          parent.addEventListener('scroll', onScrollOrResize, { passive: true });
-          listeners.push(parent);
-        }
-        parent = parent.parentElement;
-      }
-    }
-
-    calculateProgress();
-
-    return () => {
-      window.removeEventListener('scroll', onScrollOrResize);
-      window.removeEventListener('resize', onScrollOrResize);
-      document.removeEventListener('scroll', onScrollOrResize);
-      listeners.forEach((el) => el.removeEventListener('scroll', onScrollOrResize));
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [calculateProgress]);
-
-  const isTagActive = activeWordIndex >= 0;
-  const progressPercent = Math.round(scrollProgress * 100);
+  const opacity = useTransform(progress, [start, end], [0.22, 1.0]);
+  const color = useTransform(progress, [start, end], ['#475569', '#F8FAFC']);
+  const y = useTransform(progress, [start, end], [3, 0]);
 
   return (
-    <section className="tagline-reveal-track" ref={trackRef}>
-      <div className="tagline-sticky-wrapper" ref={wrapperRef}>
+    <motion.span
+      className="tagline-word"
+      style={{ opacity, color, y }}
+    >
+      {word}
+    </motion.span>
+  );
+};
+
+export const KineticTaglineReveal: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Measure section progress as it scrolls through the active viewing zone of the viewport
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start 0.88', 'start 0.24']
+  });
+
+  // Physics spring smoothing to turn discrete mouse wheel notches into liquid-smooth continuous flow
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 24,
+    mass: 0.15,
+    restDelta: 0.001
+  });
+
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+
+  useEffect(() => {
+    const unsubscribe = smoothProgress.on('change', (latest) => {
+      const pct = Math.min(100, Math.max(0, Math.round(latest * 100)));
+      setProgressPercent(pct);
+    });
+    return () => unsubscribe();
+  }, [smoothProgress]);
+
+  const isTagActive = progressPercent > 0;
+  const isVerified = progressPercent >= 98;
+
+  return (
+    <section className="tagline-reveal-track" ref={containerRef}>
+      <div className="tagline-sticky-wrapper">
         <div className="tagline-reveal-inner">
-          {/* Crisp, Unglowed Governance Philosophy Tag */}
+          {/* Crisp, Standard Governance Philosophy Tag */}
           <div className={`kinetic-eyebrow font-mono ${isTagActive ? 'active' : ''}`}>
             <span className={`eyebrow-indicator ${isTagActive ? 'active' : ''}`} />
             <span className="eyebrow-title">GOVERNANCE PHILOSOPHY</span>
             <span className="eyebrow-sep">/</span>
             <span className="eyebrow-state font-mono">
-              {progressPercent === 100 ? (
+              {isVerified ? (
                 <span className="eyebrow-verified">
                   <CheckCircle2 size={12} />
                   <span>VERIFIED</span>
@@ -119,19 +95,17 @@ export const KineticTaglineReveal: React.FC = () => {
             </span>
           </div>
 
-          {/* Word by word illuminated headline */}
+          {/* Silky Continuous Word-by-Word Illuminated Headline */}
           <h2 className="tagline-heading" aria-label={TAGLINE_WORDS.join(' ')}>
-            {TAGLINE_WORDS.map((word, idx) => {
-              const isLit = idx <= activeWordIndex;
-              return (
-                <span
-                  key={idx}
-                  className={`tagline-word ${isLit ? 'lit' : ''}`}
-                >
-                  {word}
-                </span>
-              );
-            })}
+            {TAGLINE_WORDS.map((word, idx) => (
+              <KineticWord
+                key={idx}
+                word={word}
+                index={idx}
+                total={TAGLINE_WORDS.length}
+                progress={smoothProgress}
+              />
+            ))}
           </h2>
 
           <p className="tagline-subtext">

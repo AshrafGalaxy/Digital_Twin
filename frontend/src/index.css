@@ -479,11 +479,22 @@ body,
 }
 
 /* Natural viewport scroll mode for Landing and Auth pages */
-html.landing-scroll-mode,
-body.landing-scroll-mode,
-body.landing-scroll-mode #root {
+html.landing-scroll-mode {
   overflow-y: auto !important;
   overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100% !important;
+}
+
+body.landing-scroll-mode {
+  overflow-y: visible !important;
+  overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100% !important;
+}
+
+body.landing-scroll-mode #root {
+  overflow: visible !important;
   height: auto !important;
   min-height: 100% !important;
 }
@@ -501,6 +512,14 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+.font-sans {
+  font-family: var(--font-sans) !important;
 }
 
 /* Precision Dark Operational Scrollbar (Eliminates native light sidebar on Windows) */
@@ -7209,35 +7228,27 @@ body {
    8. Kinetic Tagline Reveal (Word-by-Word Illumination)
    ======================================================== */
 .tagline-reveal-track {
-  min-height: 100vh;
   position: relative;
   background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.03) 0%, transparent 60%);
-  padding: 0;
-  margin-bottom: 0;
+  padding: 56px 24px 20px;
+  max-width: 1240px;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
   .tagline-reveal-track {
-    min-height: 85vh;
+    padding: 40px 16px 16px;
   }
 }
 
 .tagline-sticky-wrapper {
-  position: sticky;
-  top: 14vh;
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 24px;
+  padding: 0;
   box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .tagline-sticky-wrapper {
-    top: 10vh;
-    padding: 16px 16px;
-  }
 }
 
 .tagline-reveal-inner {
@@ -7324,13 +7335,7 @@ body {
   margin-right: 0.34em;
   margin-bottom: 0.14em;
   color: #334155;
-  transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: color;
-}
-
-.tagline-word.lit {
-  color: #F8FAFC;
-  text-shadow: none;
+  will-change: opacity, transform, color;
 }
 
 .tagline-subtext {
@@ -7365,6 +7370,11 @@ body {
   font-weight: 600;
   color: #C9D1D9;
   letter-spacing: 0.04em;
+}
+
+/* Eliminate excessive gap to Corridor Assets Showcase (Physical-to-Digital Mapping) */
+.assets-showcase-section {
+  padding-top: 24px !important;
 }
 
 /* ========================================================
