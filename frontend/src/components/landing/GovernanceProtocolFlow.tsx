@@ -32,9 +32,9 @@ const PROTOCOL_STAGES: ProtocolStage[] = [
   {
     step: '01',
     stageCode: 'INGEST',
-    title: 'Edge Ingestion & Bound Clamping',
+    title: 'Edge Ingestion & Clamping',
     subtitle: 'Physical Sensor Validation',
-    statusBadge: '1 Hz STREAM : VERIFIED',
+    statusBadge: 'VERIFIED',
     accentColor: '#38BDF8',
     icon: 'ingest',
     details: [
@@ -50,7 +50,7 @@ const PROTOCOL_STAGES: ProtocolStage[] = [
     stageCode: 'QUARANTINE',
     title: 'Tri-State Schema Quarantine',
     subtitle: 'Authoritative Storage Isolation',
-    statusBadge: 'POSTGRESQL : ISOLATED',
+    statusBadge: 'ISOLATED',
     accentColor: '#10B981',
     icon: 'quarantine',
     details: [
@@ -66,7 +66,7 @@ const PROTOCOL_STAGES: ProtocolStage[] = [
     stageCode: 'CONFORMAL',
     title: 'Conformal Inference & XAI',
     subtitle: 'Uncertainty & Attribution',
-    statusBadge: 'CONFORMAL 90% : CALIBRATED',
+    statusBadge: '90% CALIBRATED',
     accentColor: '#F59E0B',
     icon: 'conformal',
     details: [
@@ -82,7 +82,7 @@ const PROTOCOL_STAGES: ProtocolStage[] = [
     stageCode: 'CLEARANCE',
     title: 'Human-in-the-Loop Delivery',
     subtitle: 'Non-Actuation Protocol',
-    statusBadge: 'READ-ONLY : ADVISORY',
+    statusBadge: 'ADVISORY',
     accentColor: '#818CF8',
     icon: 'human',
     details: [
@@ -210,7 +210,7 @@ export const GovernanceProtocolFlow: React.FC = () => {
                   >
                     {renderIcon(stage.icon, stage.accentColor)}
                   </div>
-                  <div>
+                  <div className="station-headline-text">
                     <h3 className="station-title">{stage.title}</h3>
                     <span className="station-subtitle font-mono">{stage.subtitle}</span>
                   </div>
