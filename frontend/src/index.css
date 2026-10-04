@@ -7230,14 +7230,14 @@ body {
 .tagline-reveal-track {
   position: relative;
   background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.03) 0%, transparent 60%);
-  padding: 56px 24px 20px;
+  padding: 64px 24px 44px;
   max-width: 1240px;
   margin: 0 auto;
 }
 
 @media (max-width: 768px) {
   .tagline-reveal-track {
-    padding: 40px 16px 16px;
+    padding: 48px 16px 32px;
   }
 }
 
@@ -7327,15 +7327,31 @@ body {
   letter-spacing: -0.025em;
   margin: 0 0 16px;
   text-wrap: balance;
-  color: #334155;
 }
 
-.tagline-word {
+.tagline-word-wrapper {
+  position: relative;
   display: inline-block;
   margin-right: 0.34em;
-  margin-bottom: 0.14em;
+  margin-bottom: 0.12em;
+  vertical-align: baseline;
+}
+
+.tagline-word-base {
+  display: inline-block;
   color: #334155;
-  will-change: opacity, transform, color;
+  user-select: none;
+}
+
+.tagline-word-lit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  color: #F8FAFC;
+  pointer-events: none;
+  white-space: nowrap;
+  will-change: opacity, transform;
 }
 
 .tagline-subtext {
@@ -7372,9 +7388,9 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* Eliminate excessive gap to Corridor Assets Showcase (Physical-to-Digital Mapping) */
+/* Balanced, breathable spacing between Governance Philosophy and Physical-to-Digital Mapping */
 .assets-showcase-section {
-  padding-top: 24px !important;
+  padding-top: 52px !important;
 }
 
 /* ========================================================

@@ -26,39 +26,47 @@ interface KineticWordProps {
 }
 
 const KineticWord: React.FC<KineticWordProps> = ({ word, index, total, progress }) => {
-  // Overlapping progressive window for each word across scroll travel
-  const start = (index / total) * 0.82;
-  const end = Math.min(start + 0.18, 1.0);
+  // Cascading continuous window with generous 24% soft overlap
+  const start = (index / (total + 1.5)) * 0.78;
+  const end = Math.min(start + 0.24, 1.0);
 
-  const opacity = useTransform(progress, [start, end], [0.22, 1.0]);
-  const color = useTransform(progress, [start, end], ['#475569', '#F8FAFC']);
-  const y = useTransform(progress, [start, end], [3, 0]);
+  // Hardware-accelerated GPU opacity and subtle 2px micro-glide
+  const opacity = useTransform(progress, [start, end], [0, 1]);
+  const y = useTransform(progress, [start, end], [2, 0]);
 
   return (
-    <motion.span
-      className="tagline-word"
-      style={{ opacity, color, y }}
-    >
-      {word}
-    </motion.span>
+    <span className="tagline-word-wrapper">
+      {/* Base muted word in low-contrast slate */}
+      <span className="tagline-word-base" aria-hidden="true">
+        {word}
+      </span>
+      {/* Illuminated word in pure white, smoothly blended on the compositor thread */}
+      <motion.span
+        className="tagline-word-lit"
+        aria-hidden="true"
+        style={{ opacity, y }}
+      >
+        {word}
+      </motion.span>
+    </span>
   );
 };
 
 export const KineticTaglineReveal: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Measure section progress as it scrolls through the active viewing zone of the viewport
+  // Measure section progress across a generous, comfortable viewing window
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ['start 0.88', 'start 0.24']
+    offset: ['start 0.92', 'end 0.20']
   });
 
-  // Physics spring smoothing to turn discrete mouse wheel notches into liquid-smooth continuous flow
+  // Soft hydraulic damping spring to convert mouse wheel detents into continuous liquid flow
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 120,
-    damping: 24,
-    mass: 0.15,
-    restDelta: 0.001
+    stiffness: 75,
+    damping: 26,
+    mass: 0.45,
+    restDelta: 0.0005
   });
 
   const [progressPercent, setProgressPercent] = useState<number>(0);
@@ -72,7 +80,7 @@ export const KineticTaglineReveal: React.FC = () => {
   }, [smoothProgress]);
 
   const isTagActive = progressPercent > 0;
-  const isVerified = progressPercent >= 98;
+  const isVerified = progressPercent >= 95;
 
   return (
     <section className="tagline-reveal-track" ref={containerRef}>
@@ -95,7 +103,7 @@ export const KineticTaglineReveal: React.FC = () => {
             </span>
           </div>
 
-          {/* Silky Continuous Word-by-Word Illuminated Headline */}
+          {/* Silky Continuous Dual-Layer Illuminated Headline */}
           <h2 className="tagline-heading" aria-label={TAGLINE_WORDS.join(' ')}>
             {TAGLINE_WORDS.map((word, idx) => (
               <KineticWord
