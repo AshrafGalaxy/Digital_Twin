@@ -173,7 +173,6 @@ export const CorridorAssetsShowcase: React.FC = () => {
   };
 
   const activeAsset = INFRASTRUCTURE_ASSETS.find((a) => a.id === selectedId) || INFRASTRUCTURE_ASSETS[0];
-  const activeIndex = INFRASTRUCTURE_ASSETS.findIndex((a) => a.id === selectedId);
 
   const renderIcon = (type: InfrastructureAsset['icon'], color: string) => {
     switch (type) {
@@ -198,23 +197,19 @@ export const CorridorAssetsShowcase: React.FC = () => {
         <p className="section-subtitle">
           Synchronize heterogeneous urban physical infrastructure into an authoritative digital twin with strict mathematical provenance and zero autonomous field actuation.
         </p>
+      </div>
 
-        {/* Showcase Status Bar & Auto-Cycle Controller */}
-        <div className="showcase-status-bar font-mono">
-          <div className="status-bar-left">
-            <span className="status-live-beacon" />
-            <span className="status-text">SYNCHRONIZED URBAN INFRASTRUCTURE ({activeIndex + 1} OF {INFRASTRUCTURE_ASSETS.length})</span>
-          </div>
-          <button
-            type="button"
-            className={`cycle-control-btn ${isAutoCycling ? 'active' : ''}`}
-            onClick={toggleAutoCycling}
-            aria-label={isAutoCycling ? 'Pause automated rotation' : 'Resume automated rotation'}
-            title={isAutoCycling ? 'Pause automated rotation' : 'Resume automated rotation'}
-          >
-            {isAutoCycling ? <Pause size={13} /> : <Play size={13} />}
-          </button>
-        </div>
+      {/* Sleek Minimalist Controls Row */}
+      <div className="showcase-controls-bar">
+        <button
+          type="button"
+          className={`cycle-control-btn ${isAutoCycling ? 'active' : ''}`}
+          onClick={toggleAutoCycling}
+          aria-label={isAutoCycling ? 'Pause automated rotation' : 'Resume automated rotation'}
+          title={isAutoCycling ? 'Pause automated rotation' : 'Resume automated rotation'}
+        >
+          {isAutoCycling ? <Pause size={13} /> : <Play size={13} />}
+        </button>
       </div>
 
       {/* Asset Navigation Selector */}
@@ -251,12 +246,6 @@ export const CorridorAssetsShowcase: React.FC = () => {
                     <span className="nav-card-category font-mono">
                       {asset.category.split(' ')[0]}
                     </span>
-                    {isActive && (
-                      <span className="nav-card-live-tag font-mono">
-                        <span className="live-dot" style={{ background: asset.accentColor }} />
-                        ACTIVE
-                      </span>
-                    )}
                   </div>
                   <span className="nav-card-title">{asset.title}</span>
                 </div>

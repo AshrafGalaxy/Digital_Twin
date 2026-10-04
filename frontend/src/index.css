@@ -5843,36 +5843,12 @@ body {
   margin: 0 auto;
 }
 
-/* Showcase Status Bar & Auto-Cycle Controller */
-.showcase-status-bar {
+/* Sleek Minimalist Showcase Controls Bar */
+.showcase-controls-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 18px;
-  padding: 8px 14px;
-  background: rgba(14, 18, 26, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-
-.status-bar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #94A3B8;
-}
-
-.status-live-beacon {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
-  animation: pulseBeacon 2s ease-in-out infinite;
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 
 .cycle-control-btn {
@@ -6008,28 +5984,6 @@ body {
   color: #64748B;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.nav-card-live-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #10B981;
-  background: rgba(16, 185, 129, 0.12);
-  padding: 1px 5px;
-  border-radius: 4px;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-}
-
-.nav-card-live-tag .live-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  animation: pulseBeacon 1.8s ease-in-out infinite;
 }
 
 .nav-card-title {
@@ -6402,20 +6356,25 @@ body {
 .spec-category-badge {
   font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 2px 7px;
-  border-radius: 4px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 5px;
   border: 1px solid;
+  text-transform: uppercase;
 }
 
 .spec-online-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 9.5px;
-  color: #10B981;
-  letter-spacing: 0.05em;
+  color: #34D399;
+  letter-spacing: 0.06em;
   font-weight: 600;
+  padding: 3px 8px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 5px;
 }
 
 .spec-asset-title {
