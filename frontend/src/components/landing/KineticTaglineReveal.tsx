@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ShieldCheck, Database, Sliders, CheckCircle2 } from 'lucide-react';
 
 const TAGLINE_WORDS = [
@@ -19,52 +19,88 @@ const TAGLINE_WORDS = [
 
 export const KineticTaglineReveal: React.FC = () => {
   const trackRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [activeWordIndex, setActiveWordIndex] = useState<number>(-1);
   const [scrollProgress, setScrollProgress] = useState<number>(0);
 
-  useEffect(() => {
+  const calculateProgress = useCallback(() => {
     const track = trackRef.current;
-    if (!track) return;
+    const wrapper = wrapperRef.current;
+    if (!track || !wrapper) return;
 
-    const handleScroll = () => {
-      const rect = track.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
+    const rect = track.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
 
-      // Start illuminating when top enters upper viewport
-      const startOffset = windowHeight * 0.45;
-      const totalScrollDistance = rect.height - windowHeight * 0.35;
-      const currentScroll = startOffset - rect.top;
+    // The sticky wrapper docks at top: 14vh
+    const topDock = windowHeight * 0.14;
+    // Total distance the wrapper travels in sticky state
+    const scrollRange = Math.max(rect.height - wrapper.offsetHeight, 100);
+    // How much user has scrolled past the sticky docking threshold
+    const currentScroll = topDock - rect.top;
 
-      if (currentScroll <= 0) {
-        setActiveWordIndex(-1);
-        setScrollProgress(0);
-      } else {
-        const progress = Math.min(Math.max(currentScroll / totalScrollDistance, 0), 1);
-        setScrollProgress(progress);
+    if (currentScroll <= 0) {
+      setActiveWordIndex(-1);
+      setScrollProgress(0);
+    } else {
+      const progress = Math.min(Math.max(currentScroll / scrollRange, 0), 1);
+      setScrollProgress(progress);
 
-        const wordCount = TAGLINE_WORDS.length;
-        // Map 0..1 progress to word indices -1..wordCount-1
-        const targetIndex = Math.min(Math.floor(progress * (wordCount + 1)) - 1, wordCount - 1);
-        setActiveWordIndex(targetIndex);
-      }
+      const wordCount = TAGLINE_WORDS.length;
+      // Progressively light up words 0..12
+      const targetIndex = Math.min(
+        Math.floor(progress * (wordCount + 0.5)),
+        wordCount - 1
+      );
+      setActiveWordIndex(targetIndex);
+    }
+  }, []);
+
+  useEffect(() => {
+    let rafId: number | null = null;
+    const onScrollOrResize = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        calculateProgress();
+        rafId = null;
+      });
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
-    handleScroll();
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    document.addEventListener('scroll', onScrollOrResize, { passive: true });
+
+    // Also attach to any scrollable parent element as fallback
+    const track = trackRef.current;
+    const listeners: HTMLElement[] = [];
+    if (track) {
+      let parent = track.parentElement;
+      while (parent) {
+        const overflowY = window.getComputedStyle(parent).overflowY;
+        if (overflowY === 'auto' || overflowY === 'scroll') {
+          parent.addEventListener('scroll', onScrollOrResize, { passive: true });
+          listeners.push(parent);
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    calculateProgress();
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
+      document.removeEventListener('scroll', onScrollOrResize);
+      listeners.forEach((el) => el.removeEventListener('scroll', onScrollOrResize));
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [calculateProgress]);
 
   const isTagActive = activeWordIndex >= 0;
   const progressPercent = Math.round(scrollProgress * 100);
 
   return (
     <section className="tagline-reveal-track" ref={trackRef}>
-      <div className="tagline-sticky-wrapper">
+      <div className="tagline-sticky-wrapper" ref={wrapperRef}>
         <div className="tagline-reveal-inner">
           {/* Crisp, Unglowed Governance Philosophy Tag */}
           <div className={`kinetic-eyebrow font-mono ${isTagActive ? 'active' : ''}`}>
@@ -91,9 +127,6 @@ export const KineticTaglineReveal: React.FC = () => {
                 <span
                   key={idx}
                   className={`tagline-word ${isLit ? 'lit' : ''}`}
-                  style={{
-                    transitionDelay: `${Math.min(idx * 15, 120)}ms`
-                  }}
                 >
                   {word}
                 </span>

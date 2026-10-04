@@ -485,8 +485,23 @@ export const App: React.FC = () => {
     }
   }, [effectiveUpdated, effectiveMode, scrubberMinutesAgo, advisorySummary, aggregates.avgSpeed]);
 
+  // Synchronize natural viewport scroll mode for landing and auth pages vs locked container for map console
+  useEffect(() => {
+    if (activeTab === 'landing' || activeTab === 'auth') {
+      document.documentElement.classList.add('landing-scroll-mode');
+      document.body.classList.add('landing-scroll-mode');
+    } else {
+      document.documentElement.classList.remove('landing-scroll-mode');
+      document.body.classList.remove('landing-scroll-mode');
+    }
+    return () => {
+      document.documentElement.classList.remove('landing-scroll-mode');
+      document.body.classList.remove('landing-scroll-mode');
+    };
+  }, [activeTab]);
+
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${activeTab === 'landing' ? 'landing-mode' : activeTab === 'auth' ? 'auth-mode' : ''}`}>
       {/* Skip to Main Content Link for Keyboard Accessibility (WCAG 2.4.1 Bypass Blocks) */}
       <a href="#main-content" className="skip-link">
         Skip to main content
