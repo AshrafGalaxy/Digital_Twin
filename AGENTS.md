@@ -8,8 +8,9 @@
 
 ## 1. Operating Scope & Boundaries
 
-- **Corridor Boundary:** Viman Nagar Chowk ↔ Somnath Nagar Chowk (1.8 km arterial, Nagar Road, Pune, Maharashtra).
-- **Physical Assets:** 2 signalized intersections (`INT-VN-01`, `INT-SN-01`), 10 road segments (`SEG-NR-EB-01..03`, `SEG-NR-WB-01..03`, approach legs), 1 commercial building entity (`BLD-PHOENIX-01`).
+- **Reference Corridor Deployment:** Viman Nagar Chowk ↔ Somnath Nagar Chowk (1.8 km arterial, Nagar Road, Pune, Maharashtra) serves strictly as the authoritative reference calibration pilot and empirical demonstration instance.
+- **Physical Assets (Reference Pilot):** 2 signalized intersections (`INT-VN-01`, `INT-SN-01`), 10 road segments (`SEG-NR-EB-01..03`, `SEG-NR-WB-01..03`, approach legs), 1 commercial building entity (`BLD-PHOENIX-01`).
+- **Mandatory Generalization Directive:** The platform architecture, core models, API schemas, and frontend copy must remain generalized, scalable, and modular for any municipal arterial corridor deployment in any city. We do NOT specifically or exclusively build for the Pune arterial corridor (Viman Nagar and Nagar Road). Never hardcode pilot-specific locations, geometries, or facility names (e.g. Pune, Viman Nagar, Nagar Road, Phoenix) into generic architectural sections, core platform thesis statements, or component foundations. Reference deployment parameters must remain configurable and explicitly scoped as demonstration instances rather than platform limits.
 - **Telemetry Modes:** `REPLAY` (historical corridor telemetry) and `SIMULATION` (SUMO physics feeds).
 - **Strict Prohibitions:** Physical traffic signal actuation, CCTV/video ingestion, facial/plate recognition, individual GPS traces, blockchain, and LLM-driven autonomous actuation.
 
@@ -19,9 +20,10 @@
 
 1. **System of Record:** PostgreSQL/TimescaleDB (or resilient local SQLite engine) is authoritative. MQTT is transport only.
 2. **State Separation Invariant:** Observed (`LIVE`/`REPLAY`), `SIMULATION`, and `PREDICTED` records are strictly separated into distinct tables. Predictions and simulations must **never** overwrite observed twin state.
-3. **Strict Non-Actuation:** The platform is read-only decision support. Recommendations are advisory and require human authorization outside the platform before any field action.
-4. **Mandatory Provenance:** Every dynamic value returned by APIs or displayed in the UI must specify `sourceMode`, `observedAt`/`generatedAt`, unit, and quality status.
-5. **Strictly No Emojis:** Never use emojis in UI components, toolbars, buttons, badges, tables, tooltips, or alerts. Use professional vector iconography (Lucide React) or clean, professional text instead.
+3. **Corridor Generalization Invariant:** The platform is an open, generalized urban analytics engine for any municipal arterial network. Never hardcode pilot-specific identifiers, geography, or counts as platform invariants. Reference pilot data (Viman Nagar / Nagar Road) represents a single demonstration deployment.
+4. **Strict Non-Actuation:** The platform is read-only decision support. Recommendations are advisory and require human authorization outside the platform before any field action.
+5. **Mandatory Provenance:** Every dynamic value returned by APIs or displayed in the UI must specify `sourceMode`, `observedAt`/`generatedAt`, unit, and quality status.
+6. **Strictly No Emojis:** Never use emojis in UI components, toolbars, buttons, badges, tables, tooltips, or alerts. Use professional vector iconography (Lucide React) or clean, professional text instead.
 
 ---
 
