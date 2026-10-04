@@ -14,11 +14,14 @@ import { NumberTicker } from '../common/NumberTicker';
 
 interface AgencyRole {
   id: string;
+  shortCode: string;
+  category: string;
   tabLabel: string;
   agencyName: string;
   roleDescription: string;
   accentColor: string;
-  imageUrl?: string;
+  imageUrl: string;
+  imageCaption: string;
   icon: 'traffic' | 'energy' | 'transit' | 'governance';
   kpis: {
     label: string;
@@ -39,10 +42,14 @@ interface AgencyRole {
 const AGENCY_ROLES: AgencyRole[] = [
   {
     id: 'traffic',
+    shortCode: 'TMC-01',
+    category: 'TRAFFIC COMMAND',
     tabLabel: 'Traffic Management Center',
     agencyName: 'Municipal Traffic Operations Center (TMC)',
     roleDescription: 'Arterial corridor hydrodynamic monitoring, coordinated green wave phase balancing, and rapid bottleneck shockwave dissipation.',
     accentColor: '#38BDF8',
+    imageUrl: '/assets/images/twilight-city-highway-light-trails.png',
+    imageCaption: 'ARTERIAL FLOW HYDRODYNAMIC TWIN',
     icon: 'traffic',
     kpis: [
       { label: 'Corridor Flow Efficiency', value: 18.4, suffix: '%', description: 'Peak travel time improvement' },
@@ -59,11 +66,14 @@ const AGENCY_ROLES: AgencyRole[] = [
   },
   {
     id: 'energy',
+    shortCode: 'ENR-01',
+    category: 'DISTRICT MICROGRID',
     tabLabel: 'District Energy & Microgrid',
     agencyName: 'Municipal Energy & District Facilities Bureau',
     roleDescription: 'Commercial district electrical microgrid synchronization, chiller plant pre-cooling scheduling, and regional peak tariff avoidance.',
     accentColor: '#F59E0B',
     imageUrl: '/assets/images/tech-campus-substation-grid.png',
+    imageCaption: 'DISTRICT COMMERCIAL SUBSTATION & MICROGRID TWIN',
     icon: 'energy',
     kpis: [
       { label: 'Peak Demand Shaved', value: 380, suffix: ' kW', description: 'During afternoon tariff surge' },
@@ -80,10 +90,14 @@ const AGENCY_ROLES: AgencyRole[] = [
   },
   {
     id: 'transit',
+    shortCode: 'TRN-01',
+    category: 'MULTIMODAL TRANSIT',
     tabLabel: 'Transit Fleet Authority',
     agencyName: 'Regional Multimodal Transit Authority',
     roleDescription: 'Dedicated transit right-of-way synchronization, headway spacing, priority signal preemption, and bus schedule reliability.',
     accentColor: '#10B981',
+    imageUrl: '/assets/images/corridor-int-02-transit.png',
+    imageCaption: 'REGIONAL MULTIMODAL TRANSIT CORRIDOR TWIN',
     icon: 'transit',
     kpis: [
       { label: 'Headway Reliability', value: 94.2, suffix: '%', description: 'On-schedule transit adherence' },
@@ -100,10 +114,14 @@ const AGENCY_ROLES: AgencyRole[] = [
   },
   {
     id: 'governance',
+    shortCode: 'AUD-01',
+    category: 'AUDIT OVERSIGHT',
     tabLabel: 'Municipal Audit & Commission',
     agencyName: 'City Council & Municipal Audit Oversight',
     roleDescription: 'Transparent algorithm governance, immutable TimescaleDB audit records, feature drift monitoring, and strict non-actuation verification.',
     accentColor: '#818CF8',
+    imageUrl: '/assets/images/cinematic-illuminated-urban-model.png',
+    imageCaption: 'AUTHORITATIVE SYSTEM OF RECORD & AUDIT TWIN',
     icon: 'governance',
     kpis: [
       { label: 'Telemetry Validation Rate', value: 100, suffix: '%', description: 'Physical bounds checked' },
@@ -128,30 +146,30 @@ export const AgencyCommandShowcase: React.FC = () => {
   const renderRoleIcon = (icon: AgencyRole['icon'], color: string) => {
     switch (icon) {
       case 'traffic':
-        return <Car size={16} color={color} />;
+        return <Car size={18} strokeWidth={2.2} color={color} />;
       case 'energy':
-        return <Zap size={16} color={color} />;
+        return <Zap size={18} strokeWidth={2.2} color={color} />;
       case 'transit':
-        return <Navigation size={16} color={color} />;
+        return <Navigation size={18} strokeWidth={2.2} color={color} />;
       case 'governance':
-        return <ShieldCheck size={16} color={color} />;
+        return <ShieldCheck size={18} strokeWidth={2.2} color={color} />;
       default:
-        return <Layers size={16} color={color} />;
+        return <Layers size={18} strokeWidth={2.2} color={color} />;
     }
   };
 
   return (
     <section id="operations" className="landing-section agency-command-section">
       <div className="section-header">
-        <span className="section-eyebrow">Multi-Agency Collaboration</span>
+        <span className="section-eyebrow font-mono">Multi-Agency Collaboration</span>
         <h2 className="section-title">One corridor twin across four municipal commands</h2>
         <p className="section-subtitle">
           Break departmental silos. Synchronize traffic engineers, energy managers, transit coordinators, and audit commissions on a unified system of record.
         </p>
       </div>
 
-      {/* Modern Tabs Navigation Bar */}
-      <div className="agency-tabs-nav" role="tablist">
+      {/* Agency Command Selector Grid */}
+      <div className="agency-nav-grid" role="tablist" aria-label="Municipal Agency Commands">
         {AGENCY_ROLES.map((role) => {
           const isActive = role.id === activeTabId;
           return (
@@ -159,22 +177,35 @@ export const AgencyCommandShowcase: React.FC = () => {
               key={role.id}
               role="tab"
               aria-selected={isActive}
-              className={`agency-tab-btn ${isActive ? 'active' : ''}`}
+              className={`agency-nav-card ${isActive ? 'active' : ''}`}
               onClick={() => setActiveTabId(role.id)}
-              style={{
-                borderColor: isActive ? role.accentColor : undefined
-              }}
             >
-              <div
-                className="agency-tab-icon"
-                style={{
-                  background: isActive ? `${role.accentColor}20` : 'rgba(255, 255, 255, 0.04)',
-                  borderColor: isActive ? `${role.accentColor}50` : 'rgba(255, 255, 255, 0.08)'
-                }}
-              >
-                {renderRoleIcon(role.icon, isActive ? role.accentColor : '#8B949E')}
+              <div className="nav-card-inner">
+                <div
+                  className="nav-card-icon-badge"
+                  style={{
+                    color: isActive ? role.accentColor : '#94A3B8',
+                    background: isActive ? `${role.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
+                    borderColor: isActive ? `${role.accentColor}45` : 'rgba(255, 255, 255, 0.08)'
+                  }}
+                >
+                  {renderRoleIcon(role.icon, isActive ? role.accentColor : '#94A3B8')}
+                </div>
+                <div className="nav-card-text">
+                  <div className="nav-card-top-row">
+                    <span
+                      className="nav-card-id font-mono"
+                      style={{ color: isActive ? role.accentColor : '#64748B' }}
+                    >
+                      {role.shortCode}
+                    </span>
+                    <span className="nav-card-category font-mono">
+                      {role.category}
+                    </span>
+                  </div>
+                  <span className="nav-card-title">{role.tabLabel}</span>
+                </div>
               </div>
-              <span className="agency-tab-label">{role.tabLabel}</span>
             </button>
           );
         })}
@@ -185,8 +216,21 @@ export const AgencyCommandShowcase: React.FC = () => {
         {/* Top Info Banner */}
         <div className="agency-card-topbar">
           <div className="agency-title-group">
-            <div className="agency-badge font-mono" style={{ color: activeRole.accentColor, borderColor: `${activeRole.accentColor}40` }}>
-              {activeRole.tabLabel.toUpperCase()}
+            <div className="spec-meta-row font-mono">
+              <span
+                className="spec-category-badge"
+                style={{
+                  color: activeRole.accentColor,
+                  background: `${activeRole.accentColor}15`,
+                  borderColor: `${activeRole.accentColor}40`
+                }}
+              >
+                {activeRole.shortCode} : {activeRole.category}
+              </span>
+              <span className="spec-online-indicator font-mono">
+                <span className="pulse-indicator" style={{ background: 'var(--color-success)' }} />
+                <span>DECISION-SUPPORT READY</span>
+              </span>
             </div>
             <h3 className="agency-name">{activeRole.agencyName}</h3>
             <p className="agency-role-desc">{activeRole.roleDescription}</p>
@@ -221,16 +265,14 @@ export const AgencyCommandShowcase: React.FC = () => {
               ))}
             </div>
 
-            {/* Optional Feature Asset Banner if image present */}
-            {activeRole.imageUrl && (
-              <div className="agency-preview-asset">
-                <img src={activeRole.imageUrl} alt={activeRole.agencyName} className="asset-cover-img" />
-                <div className="asset-caption font-mono">
-                  <Cpu size={12} color="#F59E0B" />
-                  <span>DISTRICT COMMERCIAL SUBSTATION & MICROGRID TWIN</span>
-                </div>
+            {/* Feature Asset Banner with dynamic image & caption */}
+            <div className="agency-preview-asset">
+              <img src={activeRole.imageUrl} alt={activeRole.agencyName} className="asset-cover-img" />
+              <div className="asset-caption font-mono">
+                <Cpu size={12} color={activeRole.accentColor} />
+                <span>{activeRole.imageCaption}</span>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Right Column: Active Decision Advisory Workflow Card */}

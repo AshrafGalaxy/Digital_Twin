@@ -8119,63 +8119,48 @@ body {
   margin: 0 auto;
 }
 
-.agency-tabs-nav {
+.agency-nav-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
-@media (max-width: 960px) {
-  .agency-tabs-nav {
+@media (max-width: 1024px) {
+  .agency-nav-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 580px) {
-  .agency-tabs-nav {
+@media (max-width: 640px) {
+  .agency-nav-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.agency-tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+.agency-nav-card {
+  position: relative;
   background: rgba(10, 12, 16, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 12px;
+  padding: 12px 14px;
   cursor: pointer;
   text-align: left;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
-  transition: all 200ms ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.agency-tab-btn:hover {
-  background: rgba(16, 18, 24, 0.95);
-  border-color: rgba(255, 255, 255, 0.16);
+.agency-nav-card:hover {
+  background: rgba(16, 18, 26, 0.95);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
 }
 
-.agency-tab-btn.active {
-  background: rgba(20, 22, 30, 0.98);
-}
-
-.agency-tab-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.agency-tab-label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #F0F6FC;
+.agency-nav-card.active {
+  background: rgba(16, 20, 30, 0.98);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .agency-display-card {
@@ -8491,84 +8476,61 @@ body {
   margin: 0 auto;
 }
 
-.protocol-stepper-nav {
+.protocol-nav-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
-@media (max-width: 860px) {
-  .protocol-stepper-nav {
+@media (max-width: 1024px) {
+  .protocol-nav-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
-  .protocol-stepper-nav {
+@media (max-width: 640px) {
+  .protocol-nav-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.protocol-step-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: rgba(10, 12, 16, 0.8);
+.protocol-nav-card {
+  position: relative;
+  background: rgba(10, 12, 16, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 12px;
+  padding: 12px 14px;
   cursor: pointer;
   text-align: left;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
-  transition: all 200ms ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.protocol-step-item:hover {
-  background: rgba(16, 18, 24, 0.95);
-  border-color: rgba(255, 255, 255, 0.16);
+.protocol-nav-card:hover {
+  background: rgba(16, 18, 26, 0.95);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
 }
 
-.protocol-step-item.active {
-  background: rgba(18, 20, 28, 0.98);
-  border-color: rgba(255, 255, 255, 0.2);
+.protocol-nav-card.active {
+  background: rgba(16, 20, 30, 0.98);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.step-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
+.rule-item-badge {
+  font-size: 9px;
   font-weight: 700;
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+  letter-spacing: 0.04em;
   flex-shrink: 0;
-  transition: all 200ms ease;
-}
-
-.step-nav-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.step-nav-sub {
-  font-size: 9.5px;
-  color: #8B949E;
-  letter-spacing: 0.05em;
-}
-
-.step-nav-title {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #F0F6FC;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 1px;
 }
 
 .protocol-spotlight-card {

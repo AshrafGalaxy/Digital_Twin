@@ -101,15 +101,15 @@ export const GovernanceProtocolFlow: React.FC = () => {
   return (
     <section id="governance" className="landing-section governance-protocol-section">
       <div className="section-header">
-        <span className="section-eyebrow">Deterministic Integrity</span>
+        <span className="section-eyebrow font-mono">Deterministic Integrity</span>
         <h2 className="section-title">The four-stage municipal decision delivery protocol</h2>
         <p className="section-subtitle">
           From edge sensor ingestion to certified operator review, explore how our architectural invariants prevent unvalidated autonomous actuation.
         </p>
       </div>
 
-      {/* Protocol Stepper Header */}
-      <div className="protocol-stepper-nav" role="tablist">
+      {/* Protocol Stage Selector Grid */}
+      <div className="protocol-nav-grid" role="tablist" aria-label="Governance Protocol Stages">
         {PROTOCOL_STAGES.map((stage, idx) => {
           const isActive = idx === activeStep;
           return (
@@ -117,22 +117,34 @@ export const GovernanceProtocolFlow: React.FC = () => {
               key={stage.step}
               role="tab"
               aria-selected={isActive}
-              className={`protocol-step-item ${isActive ? 'active' : ''}`}
+              className={`protocol-nav-card ${isActive ? 'active' : ''}`}
               onClick={() => setActiveStep(idx)}
             >
-              <div
-                className="step-circle font-mono"
-                style={{
-                  borderColor: isActive ? stage.accentColor : 'rgba(255, 255, 255, 0.1)',
-                  color: isActive ? stage.accentColor : '#8B949E',
-                  background: isActive ? `${stage.accentColor}18` : 'rgba(14, 16, 22, 0.8)'
-                }}
-              >
-                {stage.step}
-              </div>
-              <div className="step-nav-meta">
-                <span className="step-nav-sub font-mono">{stage.subtitle}</span>
-                <span className="step-nav-title">{stage.title}</span>
+              <div className="nav-card-inner">
+                <div
+                  className="nav-card-icon-badge"
+                  style={{
+                    color: isActive ? stage.accentColor : '#94A3B8',
+                    background: isActive ? `${stage.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
+                    borderColor: isActive ? `${stage.accentColor}45` : 'rgba(255, 255, 255, 0.08)'
+                  }}
+                >
+                  {renderIcon(stage.icon, isActive ? stage.accentColor : '#94A3B8')}
+                </div>
+                <div className="nav-card-text">
+                  <div className="nav-card-top-row">
+                    <span
+                      className="nav-card-id font-mono"
+                      style={{ color: isActive ? stage.accentColor : '#64748B' }}
+                    >
+                      STAGE {stage.step}
+                    </span>
+                    <span className="nav-card-category font-mono">
+                      {stage.badge}
+                    </span>
+                  </div>
+                  <span className="nav-card-title">{stage.title}</span>
+                </div>
               </div>
             </button>
           );
@@ -159,16 +171,22 @@ export const GovernanceProtocolFlow: React.FC = () => {
               <h3 className="spotlight-heading">{PROTOCOL_STAGES[activeStep].title}</h3>
             </div>
           </div>
-          <span
-            className="spotlight-badge font-mono"
-            style={{
-              color: PROTOCOL_STAGES[activeStep].accentColor,
-              borderColor: `${PROTOCOL_STAGES[activeStep].accentColor}35`,
-              background: `${PROTOCOL_STAGES[activeStep].accentColor}12`
-            }}
-          >
-            {PROTOCOL_STAGES[activeStep].badge}
-          </span>
+          <div className="spec-meta-row font-mono">
+            <span
+              className="spec-category-badge"
+              style={{
+                color: PROTOCOL_STAGES[activeStep].accentColor,
+                borderColor: `${PROTOCOL_STAGES[activeStep].accentColor}40`,
+                background: `${PROTOCOL_STAGES[activeStep].accentColor}15`
+              }}
+            >
+              {PROTOCOL_STAGES[activeStep].badge}
+            </span>
+            <span className="spec-online-indicator font-mono">
+              <span className="pulse-indicator" style={{ background: 'var(--color-success)' }} />
+              <span>INVARIANT ENFORCED</span>
+            </span>
+          </div>
         </div>
 
         <div className="spotlight-grid">
@@ -178,8 +196,9 @@ export const GovernanceProtocolFlow: React.FC = () => {
             <ul className="spotlight-rules-list">
               {PROTOCOL_STAGES[activeStep].details.map((detail, idx) => (
                 <li key={idx} className="rule-item">
+                  <span className="rule-item-badge font-mono">CHK-0{idx + 1}</span>
                   <CheckCircle2 size={15} color={PROTOCOL_STAGES[activeStep].accentColor} className="rule-icon" />
-                  <span>{detail}</span>
+                  <span className="rule-item-text">{detail}</span>
                 </li>
               ))}
             </ul>
@@ -190,14 +209,14 @@ export const GovernanceProtocolFlow: React.FC = () => {
             <span className="pane-label font-mono">NON-NEGOTIABLE ARCHITECTURAL INVARIANT</span>
             <div className="guarantee-quote-box">
               <div className="quote-header">
-                <Lock size={14} color="#10B981" />
+                <Lock size={14} color="var(--color-success)" />
                 <span className="quote-tag font-mono">GOVERNANCE CONTRACT</span>
               </div>
               <p className="quote-text">{PROTOCOL_STAGES[activeStep].invariantGuarantee}</p>
             </div>
             <div className="guarantee-footer">
               <FileCheck size={13} color="#8B949E" />
-              <span>Auditable via PostgreSQL schema constraints and TimescaleDB time-series triggers.</span>
+              <span>Auditable via PostgreSQL schema constraints and TimescaleDB triggers.</span>
             </div>
           </div>
         </div>
