@@ -27,12 +27,6 @@ export interface InfrastructureAsset {
   scale: string;
   sensing: string;
   cadence: string;
-  operationalMetrics: {
-    labelA: string;
-    valA: string;
-    labelB: string;
-    valB: string;
-  };
   telemetryModalities: string[];
   triStateIsolation: {
     live: string;
@@ -47,117 +41,93 @@ export const INFRASTRUCTURE_ASSETS: InfrastructureAsset[] = [
     id: 'INT-01',
     category: 'SIGNALIZED ARTERIAL JUNCTION',
     title: 'Coordinated Multi-Leg Intersection',
-    role: 'Multi-phase signal coordination with real-time green split balancing, kinematic approach monitoring, and queue spillback suppression.',
+    role: 'Multi-phase signal progression, queue spillback monitoring, and dynamic arrival split balancing.',
     imageUrl: '/assets/images/corridor-int-01-gateway.png',
     accentColor: '#38BDF8',
     icon: 'intersection',
-    scale: 'Multi-Approach Arterial Crossroad',
-    sensing: 'Inductive Loops & Doppler Radar',
-    cadence: '1 Hz Stream (<180s Freshness)',
-    operationalMetrics: {
-      labelA: 'PEAK PHASE SPLIT',
-      valA: '48s / 32s Balanced',
-      labelB: 'QUEUE SPILLBACK RISK',
-      valB: '< 2.4% (Conformal 90%)'
-    },
+    scale: 'Arterial Junction',
+    sensing: 'Loops & Radar',
+    cadence: '1 Hz Real-Time',
     telemetryModalities: [
       'In-pavement inductive vehicle loops',
       'Virtual stop-line approach profilers',
       'Multi-directional Doppler radar'
     ],
     triStateIsolation: {
-      live: 'Observed approach vehicle counts and phase timings stored immutably in live telemetry tables.',
-      simulation: 'SUMO corridor green-wave experiments isolated in sandbox scenario runs.',
-      predicted: '15-minute queue spillback forecasts calculated with conformal uncertainty bounds.'
+      live: 'Approach counts and signal phases stored immutably in TimescaleDB.',
+      simulation: 'SUMO green-wave experiments isolated in sandbox scenario schemas.',
+      predicted: '15-minute queue spillback forecasts bounded by conformal intervals.'
     },
-    decisionSupport: 'Generates green-split adjustment advisories to balance upstream arrival waves and prevent downstream crossroad gridlock.'
+    decisionSupport: 'Advises green-split adjustments to balance upstream arrivals and prevent crossroad gridlock.'
   },
   {
     id: 'TRN-01',
     category: 'TRANSIT INFRASTRUCTURE',
     title: 'Multimodal Transit Corridor Terminal',
-    role: 'Dedicated transit right-of-way synchronization, dynamic signal preemption windowing, and passenger throughput preservation.',
+    role: 'Dedicated transit right-of-way synchronization, headway reliability tracking, and signal preemption windowing.',
     imageUrl: '/assets/images/corridor-int-02-transit.png',
     accentColor: '#10B981',
     icon: 'transit',
-    scale: 'High-Volume Transit Arterial Link',
-    sensing: 'Priority Beacons & Speed Profilers',
-    cadence: 'Continuous & Event-Triggered',
-    operationalMetrics: {
-      labelA: 'SCHEDULE ADHERENCE',
-      valA: '98.4% On-Corridor',
-      labelB: 'SIGNAL PREEMPTION',
-      valB: 'Dynamic Window Ready'
-    },
+    scale: 'Transit Link',
+    sensing: 'Transit Beacons',
+    cadence: 'Event-Triggered',
     telemetryModalities: [
       'Dedicated transit transponder beacons',
       'Directional approach velocity radar',
       'Virtual queue dissipation sensors'
     ],
     triStateIsolation: {
-      live: 'Transit vehicle headway observations recorded directly as ground-truth telemetry.',
-      simulation: 'Alternative preemption and lane-restriction scenarios modeled without impacting live signals.',
-      predicted: 'Travel-time reliability projections tagged with calibrated confidence intervals.'
+      live: 'Vehicle headway and transponder observations logged as ground truth.',
+      simulation: 'Transit preemption trade-off experiments isolated in sandboxes.',
+      predicted: 'Travel-time reliability projections calibrated with conformal bands.'
     },
-    decisionSupport: 'Advises signal priority extensions for approaching transit vehicles while pacing cross-street pedestrian clearance intervals.'
+    decisionSupport: 'Advises signal priority extensions for approaching transit vehicles during peak periods.'
   },
   {
     id: 'SEG-01',
     category: 'ROADWAY ARTERIAL',
     title: 'High-Capacity Arterial Highway',
-    role: 'Continuous hydrodynamic velocity profiling, spatial density calculation, and bottleneck shockwave dissipation across mainline lanes.',
+    role: 'Continuous hydrodynamic velocity profiling, spatial density tracking, and bottleneck shockwave dissipation.',
     imageUrl: '/assets/images/corridor-seg-02-westbound.png',
     accentColor: '#818CF8',
     icon: 'corridor',
-    scale: 'Multi-Lane Express Arterial',
-    sensing: 'Pavement Sensors & Spatial Arrays',
-    cadence: '30s Rolling Windows',
-    operationalMetrics: {
-      labelA: 'MEAN HYDRODYNAMIC VELOCITY',
-      valA: '42.6 km/h Flowing',
-      labelB: 'SPATIAL DENSITY',
-      valB: '24 veh/km (Stable Flow)'
-    },
+    scale: 'Express Arterial',
+    sensing: 'Pavement Sensors',
+    cadence: '30s Rolling',
     telemetryModalities: [
       'Sequential in-pavement loop arrays',
       'Continuous velocity radar stations',
       'Ambient weather and surface sensors'
     ],
     triStateIsolation: {
-      live: 'Lane velocities clamped between 0 and 120 km/h and logged to PostgreSQL time-series tables.',
-      simulation: 'Microscopic shockwave simulations evaluated strictly within isolated scenario schemas.',
-      predicted: 'Multi-horizon corridor velocity forecasts paired with TreeSHAP feature attributions.'
+      live: 'Lane velocities clamped between 0 and 120 km/h and logged immutably.',
+      simulation: 'Microscopic shockwave models evaluated in isolated run schemas.',
+      predicted: 'Multi-horizon speed forecasts paired with TreeSHAP attributions.'
     },
-    decisionSupport: 'Recommends dynamic variable advisory speeds and ramp metering paces before physical queue shockwaves materialize.'
+    decisionSupport: 'Recommends dynamic variable advisory speeds before physical queue shockwaves form.'
   },
   {
     id: 'BLD-01',
     category: 'DISTRICT MICROGRID',
     title: 'Commercial Facility Microgrid',
-    role: 'High-capacity commercial building energy twin modeling, HVAC chiller plant pre-cooling scheduling, and regional peak tariff avoidance.',
+    role: 'Commercial facility energy twin modeling, HVAC chiller pre-cooling dispatches, and peak tariff avoidance.',
     imageUrl: '/assets/images/twilight-glass-corporate-complex.png',
     accentColor: '#F59E0B',
     icon: 'microgrid',
-    scale: 'Multi-Zone Commercial Complex',
-    sensing: 'Fiscal Ingress & Chiller Sub-Meters',
-    cadence: '15-Min Fiscal Intervals',
-    operationalMetrics: {
-      labelA: 'INGRESS DEMAND LOAD',
-      valA: '4,862 kW Peak Measured',
-      labelB: 'PEAK SHAVE CAPACITY',
-      valB: '-420 kW Chiller Pre-Cool'
-    },
+    scale: 'District Microgrid',
+    sensing: 'Fiscal Meters',
+    cadence: '15-Min Intervals',
     telemetryModalities: [
       'Primary electrical grid ingress meters',
       '3-phase chiller plant sub-metering arrays',
       'Zonal indoor and outdoor ambient thermal probes'
     ],
     triStateIsolation: {
-      live: 'Utility billing pulses and electrical loads committed as authoritative ground-truth measurements.',
-      simulation: 'Thermodynamic building cooling simulations isolated from operational metering.',
-      predicted: 'Peak demand forecasts projected with conformal bounds to avert contract demand penalties.'
+      live: 'Utility billing pulses and electrical loads committed as ground truth.',
+      simulation: 'Thermodynamic cooling simulations isolated from operational metering.',
+      predicted: 'Peak demand forecasts bounded by conformal intervals to avert penalties.'
     },
-    decisionSupport: 'Recommends 15-minute predictive chiller pre-cooling dispatches to shave high-cost electrical peak demand periods.'
+    decisionSupport: 'Recommends 15-minute predictive chiller pre-cooling dispatches to shave peak charges.'
   }
 ];
 
@@ -437,23 +407,7 @@ export const CorridorAssetsShowcase: React.FC = () => {
             </div>
           </div>
 
-          {/* Real-time Operational Telemetry Readout */}
-          <div className="spec-telemetry-metrics-strip font-mono">
-            <div className="spec-metric-pill">
-              <span className="metric-pill-dot" style={{ background: activeAsset.accentColor }} />
-              <span className="metric-pill-label">{activeAsset.operationalMetrics.labelA}:</span>
-              <span className="metric-pill-val" style={{ color: activeAsset.accentColor }}>
-                {activeAsset.operationalMetrics.valA}
-              </span>
-            </div>
-            <div className="spec-metric-pill">
-              <span className="metric-pill-dot" style={{ background: 'var(--color-success)' }} />
-              <span className="metric-pill-label">{activeAsset.operationalMetrics.labelB}:</span>
-              <span className="metric-pill-val">
-                {activeAsset.operationalMetrics.valB}
-              </span>
-            </div>
-          </div>
+
 
           {/* Tri-State Architecture Separation Guarantee */}
           <div className="tri-state-card">
