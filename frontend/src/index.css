@@ -5878,23 +5878,23 @@ body {
 .cycle-control-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  color: #CBD5E1;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
   cursor: pointer;
   transition: all 180ms ease;
+  flex-shrink: 0;
 }
 
 .cycle-control-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.1);
   color: #FFFFFF;
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .cycle-control-btn.active {
@@ -7557,56 +7557,27 @@ body {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  color: #94A3B8;
-  letter-spacing: 0.06em;
-  margin-bottom: 18px;
+  color: #38BDF8;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
   padding: 5px 14px;
-  background: rgba(14, 18, 26, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  transition: all 180ms ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-.kinetic-eyebrow.active {
   background: rgba(56, 189, 248, 0.08);
-  color: #F8FAFC;
-  border-color: rgba(56, 189, 248, 0.45);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .eyebrow-indicator {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #64748B;
-  transition: background 180ms ease;
+  background: #38BDF8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
   flex-shrink: 0;
 }
 
-.eyebrow-indicator.active {
-  background: #38BDF8;
-}
-
 .eyebrow-title {
-  letter-spacing: 0.06em;
-}
-
-.eyebrow-sep {
-  opacity: 0.35;
-  color: #8B949E;
-}
-
-.eyebrow-state {
-  color: #38BDF8;
-  font-weight: 600;
-  min-width: 32px;
-}
-
-.eyebrow-verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #34D399;
+  letter-spacing: 0.08em;
 }
 
 .tagline-heading {

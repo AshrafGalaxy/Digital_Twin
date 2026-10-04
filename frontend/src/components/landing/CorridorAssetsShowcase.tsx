@@ -209,10 +209,10 @@ export const CorridorAssetsShowcase: React.FC = () => {
             type="button"
             className={`cycle-control-btn ${isAutoCycling ? 'active' : ''}`}
             onClick={toggleAutoCycling}
-            title={isAutoCycling ? 'Pause auto-cycle' : 'Resume auto-cycle'}
+            aria-label={isAutoCycling ? 'Pause automated rotation' : 'Resume automated rotation'}
+            title={isAutoCycling ? 'Pause automated rotation' : 'Resume automated rotation'}
           >
-            {isAutoCycling ? <Pause size={12} /> : <Play size={12} />}
-            <span>{isAutoCycling ? 'AUTO-ADVANCE ON (5.0s)' : 'ROTATION PAUSED'}</span>
+            {isAutoCycling ? <Pause size={13} /> : <Play size={13} />}
           </button>
         </div>
       </div>

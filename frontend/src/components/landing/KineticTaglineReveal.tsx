@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, MotionValue } from 'framer-motion';
-import { ShieldCheck, Database, Sliders, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Database, Sliders } from 'lucide-react';
 
 const TAGLINE_WORDS = [
   'Every',
@@ -69,38 +69,14 @@ export const KineticTaglineReveal: React.FC = () => {
     restDelta: 0.0005
   });
 
-  const [progressPercent, setProgressPercent] = useState<number>(0);
-
-  useEffect(() => {
-    const unsubscribe = smoothProgress.on('change', (latest) => {
-      const pct = Math.min(100, Math.max(0, Math.round(latest * 100)));
-      setProgressPercent(pct);
-    });
-    return () => unsubscribe();
-  }, [smoothProgress]);
-
-  const isTagActive = progressPercent > 0;
-  const isVerified = progressPercent >= 95;
-
   return (
     <section className="tagline-reveal-track" ref={containerRef}>
       <div className="tagline-sticky-wrapper">
         <div className="tagline-reveal-inner">
           {/* Crisp, Standard Governance Philosophy Tag */}
-          <div className={`kinetic-eyebrow font-mono ${isTagActive ? 'active' : ''}`}>
-            <span className={`eyebrow-indicator ${isTagActive ? 'active' : ''}`} />
+          <div className="kinetic-eyebrow font-mono">
+            <span className="eyebrow-indicator" />
             <span className="eyebrow-title">GOVERNANCE PHILOSOPHY</span>
-            <span className="eyebrow-sep">/</span>
-            <span className="eyebrow-state font-mono">
-              {isVerified ? (
-                <span className="eyebrow-verified">
-                  <CheckCircle2 size={12} />
-                  <span>VERIFIED</span>
-                </span>
-              ) : (
-                <span>{progressPercent}% ILLUMINATED</span>
-              )}
-            </span>
           </div>
 
           {/* Silky Continuous Dual-Layer Illuminated Headline */}
