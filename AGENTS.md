@@ -24,6 +24,7 @@
 4. **Strict Non-Actuation:** The platform is read-only decision support. Recommendations are advisory and require human authorization outside the platform before any field action.
 5. **Mandatory Provenance:** Every dynamic value returned by APIs or displayed in the UI must specify `sourceMode`, `observedAt`/`generatedAt`, unit, and quality status.
 6. **Strictly No Emojis:** Never use emojis in UI components, toolbars, buttons, badges, tables, tooltips, or alerts. Use professional vector iconography (Lucide React) or clean, professional text instead.
+7. **Strict Prohibition on Em Dashes:** Never use em dashes (`—`) or en dashes in UI copy, technical documentation, API schemas, or code comments. Use standard punctuation such as hyphens (`-`), colons (`:`), commas (`,`), or periods (`.`) instead.
 
 ---
 
@@ -82,5 +83,6 @@ A contribution is complete only when:
 - [ ] Frontend builds cleanly with 0 TypeScript/build errors (`npm run build`).
 - [ ] Transient scripts, scratch files, and caches are deleted immediately after execution.
 - [ ] Contains zero emojis in frontend components, toolbars, and alerts (vector icons or plain text only).
+- [ ] Contains zero em dashes in UI copy, technical documentation, or code comments.
 - [ ] It contains zero hardcoded secrets or unlicensed data.
 - [ ] Commit messages follow concise conventional syntax (<60 chars). Strictly NEVER include the word "phase" or phase tags (e.g. "Phase 8", "P4B").

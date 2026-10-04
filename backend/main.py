@@ -82,8 +82,8 @@ async def lifespan(app: FastAPI):
     logger.info("Digital Twin backend shutdown complete.")
 
 app = FastAPI(
-    title="Digital Twin — Smart City Analytics API",
-    description="Backend API supporting the Viman Nagar–Somnath Nagar corridor digital twin.",
+    title="Digital Twin: Smart City Analytics API",
+    description="Backend API supporting the reference corridor digital twin.",
     version="1.0.0",
     lifespan=lifespan
 )

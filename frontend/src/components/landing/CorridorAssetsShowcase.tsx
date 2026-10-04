@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import {
-  GitMerge,
-  Navigation,
-  Car,
-  Zap,
+  Waypoints,
+  TrainFront,
+  Route,
+  Building2,
   ShieldCheck,
-  Layers,
   Radio,
   Eye,
   Cpu,
   Clock,
   Database,
-  CheckCircle2
+  CheckCircle2,
+  Play,
+  Pause,
+  Layers
 } from 'lucide-react';
 
 export interface InfrastructureAsset {
@@ -25,6 +27,12 @@ export interface InfrastructureAsset {
   scale: string;
   sensing: string;
   cadence: string;
+  operationalMetrics: {
+    labelA: string;
+    valA: string;
+    labelB: string;
+    valB: string;
+  };
   telemetryModalities: string[];
   triStateIsolation: {
     live: string;
@@ -46,6 +54,12 @@ export const INFRASTRUCTURE_ASSETS: InfrastructureAsset[] = [
     scale: 'Multi-Approach Arterial Crossroad',
     sensing: 'Inductive Loops & Doppler Radar',
     cadence: '1 Hz Stream (<180s Freshness)',
+    operationalMetrics: {
+      labelA: 'PEAK PHASE SPLIT',
+      valA: '48s / 32s Balanced',
+      labelB: 'QUEUE SPILLBACK RISK',
+      valB: '< 2.4% (Conformal 90%)'
+    },
     telemetryModalities: [
       'In-pavement inductive vehicle loops',
       'Virtual stop-line approach profilers',
@@ -69,6 +83,12 @@ export const INFRASTRUCTURE_ASSETS: InfrastructureAsset[] = [
     scale: 'High-Volume Transit Arterial Link',
     sensing: 'Priority Beacons & Speed Profilers',
     cadence: 'Continuous & Event-Triggered',
+    operationalMetrics: {
+      labelA: 'SCHEDULE ADHERENCE',
+      valA: '98.4% On-Corridor',
+      labelB: 'SIGNAL PREEMPTION',
+      valB: 'Dynamic Window Ready'
+    },
     telemetryModalities: [
       'Dedicated transit transponder beacons',
       'Directional approach velocity radar',
@@ -92,6 +112,12 @@ export const INFRASTRUCTURE_ASSETS: InfrastructureAsset[] = [
     scale: 'Multi-Lane Express Arterial',
     sensing: 'Pavement Sensors & Spatial Arrays',
     cadence: '30s Rolling Windows',
+    operationalMetrics: {
+      labelA: 'MEAN HYDRODYNAMIC VELOCITY',
+      valA: '42.6 km/h Flowing',
+      labelB: 'SPATIAL DENSITY',
+      valB: '24 veh/km (Stable Flow)'
+    },
     telemetryModalities: [
       'Sequential in-pavement loop arrays',
       'Continuous velocity radar stations',
@@ -115,10 +141,16 @@ export const INFRASTRUCTURE_ASSETS: InfrastructureAsset[] = [
     scale: 'Multi-Zone Commercial Complex',
     sensing: 'Fiscal Ingress & Chiller Sub-Meters',
     cadence: '15-Min Fiscal Intervals',
+    operationalMetrics: {
+      labelA: 'INGRESS DEMAND LOAD',
+      valA: '4,862 kW Peak Measured',
+      labelB: 'PEAK SHAVE CAPACITY',
+      valB: '-420 kW Chiller Pre-Cool'
+    },
     telemetryModalities: [
       'Primary electrical grid ingress meters',
       '3-phase chiller plant sub-metering arrays',
-      'Zonal indoor & outdoor ambient thermal probes'
+      'Zonal indoor and outdoor ambient thermal probes'
     ],
     triStateIsolation: {
       live: 'Utility billing pulses and electrical loads committed as authoritative ground-truth measurements.',
@@ -133,48 +165,86 @@ export const CorridorAssetsShowcase: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string>('INT-01');
   const [viewMode, setViewMode] = useState<'visual' | 'telemetry'>('visual');
   const [imgErrorMap, setImgErrorMap] = useState<Record<string, boolean>>({});
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isAutoCycling, setIsAutoCycling] = useState<boolean>(true);
+  const [progress, setProgress] = useState<number>(0);
 
-  // 6-second auto-cycle between infrastructure assets (INT-01 -> TRN-01 -> SEG-01 -> BLD-01)
+  // Smooth, deterministic auto-cycle: 5000ms duration per slide, updated at 50ms ticks
   useEffect(() => {
-    if (isPaused) return;
+    if (!isAutoCycling) return;
+
+    const intervalMs = 50;
+    const totalDurationMs = 5000;
+    const step = (intervalMs / totalDurationMs) * 100;
 
     const timer = setInterval(() => {
-      setSelectedId((currentId) => {
-        const currentIndex = INFRASTRUCTURE_ASSETS.findIndex((a) => a.id === currentId);
-        const nextIndex = (currentIndex + 1) % INFRASTRUCTURE_ASSETS.length;
-        return INFRASTRUCTURE_ASSETS[nextIndex].id;
+      setProgress((prev) => {
+        if (prev + step >= 100) {
+          setSelectedId((currentId) => {
+            const currentIndex = INFRASTRUCTURE_ASSETS.findIndex((a) => a.id === currentId);
+            const nextIndex = (currentIndex + 1) % INFRASTRUCTURE_ASSETS.length;
+            return INFRASTRUCTURE_ASSETS[nextIndex].id;
+          });
+          return 0;
+        }
+        return prev + step;
       });
-    }, 6000);
+    }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [isPaused]);
+  }, [isAutoCycling]);
+
+  const handleSelectAsset = (id: string) => {
+    setSelectedId(id);
+    setProgress(0);
+  };
+
+  const toggleAutoCycling = () => {
+    setIsAutoCycling((prev) => !prev);
+  };
 
   const activeAsset = INFRASTRUCTURE_ASSETS.find((a) => a.id === selectedId) || INFRASTRUCTURE_ASSETS[0];
+  const activeIndex = INFRASTRUCTURE_ASSETS.findIndex((a) => a.id === selectedId);
 
   const renderIcon = (type: InfrastructureAsset['icon'], color: string) => {
     switch (type) {
       case 'intersection':
-        return <GitMerge size={22} color={color} />;
+        return <Waypoints size={20} strokeWidth={2.2} color={color} />;
       case 'transit':
-        return <Navigation size={22} color={color} />;
+        return <TrainFront size={20} strokeWidth={2.2} color={color} />;
       case 'corridor':
-        return <Car size={22} color={color} />;
+        return <Route size={20} strokeWidth={2.2} color={color} />;
       case 'microgrid':
-        return <Zap size={22} color={color} />;
+        return <Building2 size={20} strokeWidth={2.2} color={color} />;
       default:
-        return <Layers size={22} color={color} />;
+        return <Layers size={20} strokeWidth={2.2} color={color} />;
     }
   };
 
   return (
     <section id="assets-showcase" className="landing-section assets-showcase-section">
       <div className="section-header">
-        <span className="section-eyebrow">Physical-to-Digital Mapping</span>
+        <span className="section-eyebrow font-mono">Physical-to-Digital Mapping</span>
         <h2 className="section-title">Multi-asset urban infrastructure network</h2>
         <p className="section-subtitle">
           Synchronize heterogeneous urban physical infrastructure into an authoritative digital twin with strict mathematical provenance and zero autonomous field actuation.
         </p>
+
+        {/* Showcase Status Bar & Auto-Cycle Controller */}
+        <div className="showcase-status-bar font-mono">
+          <div className="status-bar-left">
+            <span className="status-live-beacon" />
+            <span className="status-text">SYNCHRONIZED URBAN INFRASTRUCTURE ({activeIndex + 1} OF {INFRASTRUCTURE_ASSETS.length})</span>
+          </div>
+          <button
+            type="button"
+            className={`cycle-control-btn ${isAutoCycling ? 'active' : ''}`}
+            onClick={toggleAutoCycling}
+            title={isAutoCycling ? 'Pause auto-cycle' : 'Resume auto-cycle'}
+          >
+            {isAutoCycling ? <Pause size={12} /> : <Play size={12} />}
+            <span>{isAutoCycling ? 'AUTO-ADVANCE ON (5.0s)' : 'ROTATION PAUSED'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Asset Navigation Selector */}
@@ -186,48 +256,60 @@ export const CorridorAssetsShowcase: React.FC = () => {
               key={asset.id}
               role="tab"
               aria-selected={isActive}
-              className={`infrastructure-nav-card ${isActive ? 'active' : ''} ${isPaused ? 'paused' : ''}`}
-              onClick={() => setSelectedId(asset.id)}
-              onMouseEnter={() => setIsPaused(true)}
-              onMouseLeave={() => setIsPaused(false)}
-              style={{
-                borderColor: isActive ? asset.accentColor : undefined,
-                color: isActive ? asset.accentColor : undefined
-              }}
+              className={`infrastructure-nav-card ${isActive ? 'active' : ''}`}
+              onClick={() => handleSelectAsset(asset.id)}
             >
-              <div
-                className="nav-card-icon-badge"
-                style={{
-                  background: isActive ? `${asset.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
-                  borderColor: isActive ? `${asset.accentColor}40` : 'rgba(255, 255, 255, 0.08)'
-                }}
-              >
-                {renderIcon(asset.icon, isActive ? asset.accentColor : '#8B949E')}
-              </div>
-              <div className="nav-card-text">
-                <div className="nav-card-top">
-                  <span
-                    className="nav-card-id font-mono"
-                    style={{ color: isActive ? asset.accentColor : '#8B949E' }}
-                  >
-                    {asset.id}
-                  </span>
-                  <span className="nav-card-category font-mono">{asset.category.split(' ')[0]}</span>
+              <div className="nav-card-inner">
+                <div
+                  className="nav-card-icon-badge"
+                  style={{
+                    color: isActive ? asset.accentColor : '#94A3B8',
+                    background: isActive ? `${asset.accentColor}18` : 'rgba(255, 255, 255, 0.03)',
+                    borderColor: isActive ? `${asset.accentColor}45` : 'rgba(255, 255, 255, 0.08)'
+                  }}
+                >
+                  {renderIcon(asset.icon, isActive ? asset.accentColor : '#94A3B8')}
                 </div>
-                <span className="nav-card-title">{asset.title}</span>
+                <div className="nav-card-text">
+                  <div className="nav-card-top-row">
+                    <span
+                      className="nav-card-id font-mono"
+                      style={{ color: isActive ? asset.accentColor : '#64748B' }}
+                    >
+                      {asset.id}
+                    </span>
+                    <span className="nav-card-category font-mono">
+                      {asset.category.split(' ')[0]}
+                    </span>
+                    {isActive && (
+                      <span className="nav-card-live-tag font-mono">
+                        <span className="live-dot" style={{ background: asset.accentColor }} />
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <span className="nav-card-title">{asset.title}</span>
+                </div>
               </div>
-              {isActive && <div className="nav-card-progress-bar" />}
+
+              {/* Recessed Progress Bar with matching rounded bottom corners */}
+              <div className="nav-card-progress-track">
+                <div
+                  className="nav-card-progress-fill"
+                  style={{
+                    width: isActive ? `${progress}%` : '0%',
+                    background: asset.accentColor,
+                    boxShadow: `0 0 10px ${asset.accentColor}`
+                  }}
+                />
+              </div>
             </button>
           );
         })}
       </div>
 
       {/* Main Asset Showcase Stage */}
-      <div
-        className="infrastructure-stage-panel"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      <div className="infrastructure-stage-panel">
         {/* Left Column: Visual Twin Photographic Frame */}
         <div className="stage-visual-column">
           <div className="visual-column-topbar">
@@ -259,7 +341,7 @@ export const CorridorAssetsShowcase: React.FC = () => {
 
           <div className="visual-display-body">
             {viewMode === 'visual' && !imgErrorMap[activeAsset.id] ? (
-              <div className="photographic-view-wrap">
+              <div className="photographic-view-wrap" key={activeAsset.id}>
                 <img
                   src={activeAsset.imageUrl}
                   alt={activeAsset.title}
@@ -267,6 +349,11 @@ export const CorridorAssetsShowcase: React.FC = () => {
                   onError={() => setImgErrorMap((prev) => ({ ...prev, [activeAsset.id]: true }))}
                 />
                 <div className="photographic-overlay" aria-hidden="true" />
+                <div className="photographic-hud-reticle top-left font-mono">+</div>
+                <div className="photographic-hud-reticle top-right font-mono">+</div>
+                <div className="photographic-hud-reticle bottom-left font-mono">+</div>
+                <div className="photographic-hud-reticle bottom-right font-mono">+</div>
+
                 <div className="photographic-status-chip font-mono">
                   <span className="status-live-dot" />
                   <span>SYSTEM OF RECORD: POSTGRESQL</span>
@@ -277,7 +364,7 @@ export const CorridorAssetsShowcase: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="telemetry-view-wrap">
+              <div className="telemetry-view-wrap" key={`${activeAsset.id}-telem`}>
                 <div className="telemetry-view-header">
                   <span className="telemetry-header-title font-mono">
                     VERIFIED SENSOR CHANNELS
@@ -346,6 +433,24 @@ export const CorridorAssetsShowcase: React.FC = () => {
               <span className="attr-label font-mono">TELEMETRY CADENCE</span>
               <span className="attr-value font-mono" style={{ color: activeAsset.accentColor }}>
                 {activeAsset.cadence}
+              </span>
+            </div>
+          </div>
+
+          {/* Real-time Operational Telemetry Readout */}
+          <div className="spec-telemetry-metrics-strip font-mono">
+            <div className="spec-metric-pill">
+              <span className="metric-pill-dot" style={{ background: activeAsset.accentColor }} />
+              <span className="metric-pill-label">{activeAsset.operationalMetrics.labelA}:</span>
+              <span className="metric-pill-val" style={{ color: activeAsset.accentColor }}>
+                {activeAsset.operationalMetrics.valA}
+              </span>
+            </div>
+            <div className="spec-metric-pill">
+              <span className="metric-pill-dot" style={{ background: 'var(--color-success)' }} />
+              <span className="metric-pill-label">{activeAsset.operationalMetrics.labelB}:</span>
+              <span className="metric-pill-val">
+                {activeAsset.operationalMetrics.valB}
               </span>
             </div>
           </div>

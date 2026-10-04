@@ -251,7 +251,7 @@ export const ScenarioStudioView: React.FC = () => {
       {/* View Header */}
       <div className="view-header">
         <div>
-          <h1 className="view-title">Scenario Studio — Microscopic Simulation Sandbox</h1>
+          <h1 className="view-title">Scenario Studio: Microscopic Simulation Sandbox</h1>
           <p className="view-subtitle">
             Controlled baseline vs. intervention simulation on Viman Nagar Chowk (VN-01) ↔ Somnath Nagar Chowk (SN-01) corridor using calibrated SUMO kinematics.
           </p>

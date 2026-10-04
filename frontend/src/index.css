@@ -5843,6 +5843,66 @@ body {
   margin: 0 auto;
 }
 
+/* Showcase Status Bar & Auto-Cycle Controller */
+.showcase-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 8px 14px;
+  background: rgba(14, 18, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.status-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94A3B8;
+}
+
+.status-live-beacon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  animation: pulseBeacon 2s ease-in-out infinite;
+}
+
+.cycle-control-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #CBD5E1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.cycle-control-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.cycle-control-btn.active {
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+
 .infrastructure-nav-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -5863,83 +5923,81 @@ body {
 }
 
 .infrastructure-nav-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
   position: relative;
-  overflow: hidden;
-  background: rgba(10, 12, 16, 0.85);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: rgba(10, 12, 18, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
   outline: none;
+  overflow: hidden;
   transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
 .infrastructure-nav-card:hover {
-  background: rgba(16, 18, 24, 0.95);
+  background: rgba(16, 20, 30, 0.96);
   border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
 .infrastructure-nav-card.active {
-  background: rgba(18, 22, 30, 0.98);
+  background: linear-gradient(180deg, rgba(20, 26, 38, 0.98) 0%, rgba(11, 14, 22, 0.98) 100%);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
 }
 
-/* Subtle auto-advance progress countdown bar on active card */
-.nav-card-progress-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  background: currentColor;
-  opacity: 0.65;
+.nav-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
   width: 100%;
-  transform-origin: left center;
-  animation: navProgressCountdown 6s linear infinite;
-}
-
-@keyframes navProgressCountdown {
-  0% { transform: scaleX(0); }
-  100% { transform: scaleX(1); }
-}
-
-.infrastructure-nav-card.paused .nav-card-progress-bar {
-  animation-play-state: paused;
+  box-sizing: border-box;
 }
 
 .nav-card-icon-badge {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 0;
   transition: all 200ms ease;
+}
+
+.infrastructure-nav-card:hover .nav-card-icon-badge {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.04);
+}
+
+.infrastructure-nav-card.active .nav-card-icon-badge {
+  transform: scale(1.05);
 }
 
 .nav-card-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
-  overflow: hidden;
+  flex: 1;
 }
 
-.nav-card-top {
+.nav-card-top-row {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .nav-card-id {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -5947,17 +6005,129 @@ body {
 .nav-card-category {
   font-size: 9px;
   font-weight: 600;
-  color: #8B949E;
-  letter-spacing: 0.05em;
+  color: #64748B;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nav-card-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.nav-card-live-tag .live-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: pulseBeacon 1.8s ease-in-out infinite;
 }
 
 .nav-card-title {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: #F0F6FC;
+  color: #F1F5F9;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Recessed Bottom Progress Bar: perfectly matches rounded bottom corners */
+.nav-card-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom-left-radius: 11px;
+  border-bottom-right-radius: 11px;
+  overflow: hidden;
+}
+
+.nav-card-progress-fill {
+  height: 100%;
+  transition: width 50ms linear;
+}
+
+/* HUD Corner Reticles */
+.photographic-hud-reticle {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  color: rgba(56, 189, 248, 0.45);
+  pointer-events: none;
+  z-index: 2;
+  user-select: none;
+}
+
+.photographic-hud-reticle.top-left {
+  top: 12px;
+  left: 12px;
+}
+
+.photographic-hud-reticle.top-right {
+  top: 12px;
+  right: 12px;
+}
+
+.photographic-hud-reticle.bottom-left {
+  bottom: 44px;
+  left: 12px;
+}
+
+.photographic-hud-reticle.bottom-right {
+  bottom: 44px;
+  right: 12px;
+}
+
+/* Operational Telemetry Metrics Strip */
+.spec-telemetry-metrics-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(12, 15, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+}
+
+.spec-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+}
+
+.metric-pill-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.metric-pill-label {
+  color: #64748B;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.metric-pill-val {
+  color: #F1F5F9;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .infrastructure-stage-panel {

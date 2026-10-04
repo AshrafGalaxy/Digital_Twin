@@ -660,7 +660,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {/* VIEW 5: Scenario Studio — Microscopic Simulation Sandbox */}
+        {/* VIEW 5: Scenario Studio: Microscopic Simulation Sandbox */}
         {activeTab === 'scenarios' && (
           <ScenarioStudioView />
         )}

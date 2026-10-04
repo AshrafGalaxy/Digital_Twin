@@ -199,7 +199,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
               <Cpu size={20} color="var(--color-primary)" />
             </div>
             <div>
-              <h2 id="scenario-studio-title" className="scenario-title">Scenario Studio — Microscopic Traffic Simulation</h2>
+              <h2 id="scenario-studio-title" className="scenario-title">Scenario Studio: Microscopic Traffic Simulation</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
                 <span className="provenance-badge badge-simulation">SIMULATION</span>
                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>

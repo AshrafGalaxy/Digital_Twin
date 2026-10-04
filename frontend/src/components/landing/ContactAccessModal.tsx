@@ -546,8 +546,8 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                     boxSizing: 'border-box'
                   }}
                 >
-                  <option value="1-10 Intersections / Corridors">Pilot Corridor (1–10 Intersections / Feeder Buses)</option>
-                  <option value="10-50 Intersections">Arterial Network (10–50 Intersections / Campus Grid)</option>
+                  <option value="1-10 Intersections / Corridors">Pilot Corridor (1-10 Intersections / Feeder Buses)</option>
+                  <option value="10-50 Intersections">Arterial Network (10-50 Intersections / Campus Grid)</option>
                   <option value="City-wide Arterial Grid">Metropolitan Grid (50+ Intersections / Multi-Building Facility)</option>
                   <option value="Academic & Research Exploration">Academic Research & Simulation Modeling</option>
                 </select>

@@ -554,7 +554,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </h2>
 
           <p className="landing-tagline-subcopy">
-            Architected for any municipal arterial corridor: physical sensor observations are immutably segregated from synthetic simulations and predictive models—guaranteeing verifiable data provenance, rigorous uncertainty quantification, and safe decision support across multimodal urban networks.
+            Architected for any municipal arterial corridor: physical sensor observations are immutably segregated from synthetic simulations and predictive models, guaranteeing verifiable data provenance, rigorous uncertainty quantification, and safe decision support across multimodal urban networks.
           </p>
 
           {/* Interactive Authoritative Verification Rail */}

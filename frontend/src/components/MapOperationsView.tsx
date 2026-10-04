@@ -1372,7 +1372,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                         <span className="font-mono">
                           {state?.metrics && (state.metrics as any).forecastSpeedKmh != null
                             ? `${(state.metrics as any).forecastSpeedKmh.toFixed(1)} km/h`
-                            : '—'}
+                            : '-'}
                         </span>
                       </td>
                       <td>

@@ -251,7 +251,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         ) : recommendations.length === 0 ? (
           <div className="empty-results-box" style={{ padding: '36px' }}>
             <CheckCircle2 size={32} color="#10B981" />
-            <p style={{ marginTop: '8px', fontWeight: 600 }}>All Clear — No Active Advisories</p>
+            <p style={{ marginTop: '8px', fontWeight: 600 }}>All Clear: No Active Advisories</p>
             <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
               All telemetry metrics are currently operating within nominal baseline safety envelopes.
             </p>
