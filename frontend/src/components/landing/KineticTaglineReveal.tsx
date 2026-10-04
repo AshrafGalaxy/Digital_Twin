@@ -26,9 +26,9 @@ interface KineticWordProps {
 }
 
 const KineticWord: React.FC<KineticWordProps> = ({ word, index, total, progress }) => {
-  // Cascading continuous window with generous 24% soft overlap
-  const start = (index / (total + 1.5)) * 0.78;
-  const end = Math.min(start + 0.24, 1.0);
+  // Cascading continuous window with soft overlap: all words finish illuminating by 0.80 progress
+  const start = (index / total) * 0.62;
+  const end = Math.min(start + 0.18, 0.80);
 
   // Hardware-accelerated GPU opacity and subtle 2px micro-glide
   const opacity = useTransform(progress, [start, end], [0, 1]);
@@ -55,17 +55,17 @@ const KineticWord: React.FC<KineticWordProps> = ({ word, index, total, progress 
 export const KineticTaglineReveal: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Measure section progress across a generous, comfortable viewing window
+  // Complete illumination while the section is centered, well before it scrolls toward the top
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ['start 0.92', 'end 0.20']
+    offset: ['start 0.88', 'center 0.50']
   });
 
-  // Soft hydraulic damping spring to convert mouse wheel detents into continuous liquid flow
+  // Responsive spring with low mass for instant, liquid-smooth reaction without latency lag
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 75,
-    damping: 26,
-    mass: 0.45,
+    stiffness: 140,
+    damping: 24,
+    mass: 0.15,
     restDelta: 0.0005
   });
 
