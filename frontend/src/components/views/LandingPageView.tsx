@@ -544,13 +544,59 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="tagline-eyebrow font-mono">
             <span className="eyebrow-pulse"></span>
             <span>CORE PHILOSOPHY &amp; OPERATIONAL INTEGRITY</span>
+            <span className="tagline-eyebrow-sep">/</span>
+            <span className="tagline-eyebrow-code font-mono">ARCHITECTURAL CONTRACT</span>
           </div>
+
           <h2 className="landing-tagline-headline">
-            Urban analytics without unverified assertions.
+            <span>Urban analytics </span>
+            <span className="headline-gradient">without unverified assertions.</span>
           </h2>
+
           <p className="landing-tagline-subcopy">
-            Every operational insight backed by physical sensors, calibrated conformal bounds, and human-in-the-loop municipal governance.
+            Every operational insight is backed by physical sensors, calibrated conformal uncertainty bounds, and human-in-the-loop municipal governance.
           </p>
+
+          {/* Interactive Authoritative Verification Rail */}
+          <div className="tagline-verification-rail font-mono">
+            <div className="verification-chip">
+              <div className="chip-indicator live" />
+              <div className="chip-content">
+                <span className="chip-title">PHYSICAL TELEMETRY</span>
+                <span className="chip-sub">100% SENSOR VERIFIED</span>
+              </div>
+            </div>
+
+            <div className="verification-rail-divider" />
+
+            <div className="verification-chip">
+              <div className="chip-indicator simulation" />
+              <div className="chip-content">
+                <span className="chip-title">SUMO PHYSICS SIM</span>
+                <span className="chip-sub">STRICTLY ISOLATED</span>
+              </div>
+            </div>
+
+            <div className="verification-rail-divider" />
+
+            <div className="verification-chip">
+              <div className="chip-indicator predicted" />
+              <div className="chip-content">
+                <span className="chip-title">CONFORMAL ML</span>
+                <span className="chip-sub">BOUNDED UNCERTAINTY</span>
+              </div>
+            </div>
+
+            <div className="verification-rail-divider" />
+
+            <div className="verification-chip">
+              <div className="chip-indicator success" />
+              <div className="chip-content">
+                <span className="chip-title">MUNICIPAL OVERSIGHT</span>
+                <span className="chip-sub">ZERO BLIND ACTUATION</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
