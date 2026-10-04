@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GitMerge,
   Navigation,
@@ -133,21 +133,37 @@ export const CorridorAssetsShowcase: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string>('INT-01');
   const [viewMode, setViewMode] = useState<'visual' | 'telemetry'>('visual');
   const [imgErrorMap, setImgErrorMap] = useState<Record<string, boolean>>({});
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+
+  // 6-second auto-cycle between infrastructure assets (INT-01 -> TRN-01 -> SEG-01 -> BLD-01)
+  useEffect(() => {
+    if (isPaused) return;
+
+    const timer = setInterval(() => {
+      setSelectedId((currentId) => {
+        const currentIndex = INFRASTRUCTURE_ASSETS.findIndex((a) => a.id === currentId);
+        const nextIndex = (currentIndex + 1) % INFRASTRUCTURE_ASSETS.length;
+        return INFRASTRUCTURE_ASSETS[nextIndex].id;
+      });
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, [isPaused]);
 
   const activeAsset = INFRASTRUCTURE_ASSETS.find((a) => a.id === selectedId) || INFRASTRUCTURE_ASSETS[0];
 
   const renderIcon = (type: InfrastructureAsset['icon'], color: string) => {
     switch (type) {
       case 'intersection':
-        return <GitMerge size={16} color={color} />;
+        return <GitMerge size={22} color={color} />;
       case 'transit':
-        return <Navigation size={16} color={color} />;
+        return <Navigation size={22} color={color} />;
       case 'corridor':
-        return <Car size={16} color={color} />;
+        return <Car size={22} color={color} />;
       case 'microgrid':
-        return <Zap size={16} color={color} />;
+        return <Zap size={22} color={color} />;
       default:
-        return <Layers size={16} color={color} />;
+        return <Layers size={22} color={color} />;
     }
   };
 
@@ -170,10 +186,13 @@ export const CorridorAssetsShowcase: React.FC = () => {
               key={asset.id}
               role="tab"
               aria-selected={isActive}
-              className={`infrastructure-nav-card ${isActive ? 'active' : ''}`}
+              className={`infrastructure-nav-card ${isActive ? 'active' : ''} ${isPaused ? 'paused' : ''}`}
               onClick={() => setSelectedId(asset.id)}
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
               style={{
-                borderColor: isActive ? asset.accentColor : undefined
+                borderColor: isActive ? asset.accentColor : undefined,
+                color: isActive ? asset.accentColor : undefined
               }}
             >
               <div
@@ -197,13 +216,18 @@ export const CorridorAssetsShowcase: React.FC = () => {
                 </div>
                 <span className="nav-card-title">{asset.title}</span>
               </div>
+              {isActive && <div className="nav-card-progress-bar" />}
             </button>
           );
         })}
       </div>
 
       {/* Main Asset Showcase Stage */}
-      <div className="infrastructure-stage-panel">
+      <div
+        className="infrastructure-stage-panel"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
         {/* Left Column: Visual Twin Photographic Frame */}
         <div className="stage-visual-column">
           <div className="visual-column-topbar">

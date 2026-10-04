@@ -538,23 +538,23 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </header>
 
-      {/* 3. Operational Integrity & Core Philosophy Section */}
+      {/* 3. Authoritative Corridor Scope & Operational Integrity Section */}
       <section className="landing-tagline-section">
         <div className="landing-tagline-container">
           <div className="tagline-eyebrow font-mono">
             <span className="eyebrow-pulse"></span>
-            <span>CORE PHILOSOPHY &amp; OPERATIONAL INTEGRITY</span>
-            <span className="tagline-eyebrow-sep">/</span>
-            <span className="tagline-eyebrow-code font-mono">ARCHITECTURAL CONTRACT</span>
+            <span>PUNE ARTERIAL CORRIDOR</span>
+            <span className="tagline-eyebrow-sep">•</span>
+            <span className="tagline-eyebrow-code font-mono">INT-VN-01 ↔ INT-SN-01</span>
           </div>
 
           <h2 className="landing-tagline-headline">
-            <span>Urban analytics </span>
-            <span className="headline-gradient">without unverified assertions.</span>
+            <span>Empirical observation first. </span>
+            <span className="headline-gradient">Zero synthetic contamination.</span>
           </h2>
 
           <p className="landing-tagline-subcopy">
-            Every operational insight is backed by physical sensors, calibrated conformal uncertainty bounds, and human-in-the-loop municipal governance.
+            1.8 km Nagar Road arterial spine monitored at 1 Hz cadence, immutably recorded in PostgreSQL TimescaleDB, and mathematically bounded by calibrated uncertainty envelopes.
           </p>
 
           {/* Interactive Authoritative Verification Rail */}
@@ -562,7 +562,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <div className="verification-chip">
               <div className="chip-indicator live" />
               <div className="chip-content">
-                <span className="chip-title">PHYSICAL TELEMETRY</span>
+                <span className="chip-title">10 MONITORED ROAD ARCS</span>
                 <span className="chip-sub">100% SENSOR VERIFIED</span>
               </div>
             </div>
@@ -572,8 +572,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <div className="verification-chip">
               <div className="chip-indicator simulation" />
               <div className="chip-content">
-                <span className="chip-title">SUMO PHYSICS SIM</span>
-                <span className="chip-sub">STRICTLY ISOLATED</span>
+                <span className="chip-title">2 SIGNALIZED NODES</span>
+                <span className="chip-sub">INT-VN-01 &amp; INT-SN-01</span>
               </div>
             </div>
 
@@ -582,8 +582,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <div className="verification-chip">
               <div className="chip-indicator predicted" />
               <div className="chip-content">
-                <span className="chip-title">CONFORMAL ML</span>
-                <span className="chip-sub">BOUNDED UNCERTAINTY</span>
+                <span className="chip-title">4,862 kW PEAK DEMAND</span>
+                <span className="chip-sub">PHOENIX MICROGRID</span>
               </div>
             </div>
 
@@ -592,8 +592,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <div className="verification-chip">
               <div className="chip-indicator success" />
               <div className="chip-content">
-                <span className="chip-title">MUNICIPAL OVERSIGHT</span>
-                <span className="chip-sub">ZERO BLIND ACTUATION</span>
+                <span className="chip-title">MUNICIPAL GOVERNANCE</span>
+                <span className="chip-sub">READ-ONLY DECISION SUPPORT</span>
               </div>
             </div>
           </div>
