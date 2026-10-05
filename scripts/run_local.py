@@ -40,15 +40,14 @@ RESET = "\033[0m"
 def print_banner():
     banner = f"""
 {CYAN}{BOLD}==============================================================================
-               DIGITAL TWIN — SMART CITY ANALYTICS PLATFORM
+               DIGITAL TWIN - SMART CITY ANALYTICS PLATFORM
 =============================================================================={RESET}
-{GREEN}[OK] Backend API Server:{RESET}      http://localhost:8000
-{GREEN}[OK] Swagger API Docs:{RESET}        http://localhost:8000/docs
-{GREEN}[OK] Operations Dashboard:{RESET}    http://localhost:5173
-{GREEN}[OK] WebSocket State Stream:{RESET}  ws://localhost:8000/api/v1/stream/state
+{GREEN}[READY]{RESET} Backend API Server:     http://localhost:8000
+{GREEN}[READY]{RESET} Swagger API Docs:       http://localhost:8000/docs
+{GREEN}[READY]{RESET} Operations Dashboard:   http://localhost:5173
+{GREEN}[READY]{RESET} WebSocket Stream:       ws://localhost:8000/api/v1/stream/state
 ------------------------------------------------------------------------------
-{YELLOW}Tip:{RESET} Run {BOLD}python scripts/publish_stream.py{RESET} in another terminal to stream live telemetry!
-{YELLOW}Press Ctrl+C anytime to stop both services.{RESET}
+{YELLOW}Tip:{RESET} Press {BOLD}Ctrl+C{RESET} anytime in this terminal to stop both services.
 {CYAN}=============================================================================={RESET}
 """
     print(banner)
@@ -86,7 +85,7 @@ def wait_for_backend(host="127.0.0.1", port=8000, timeout=25.0):
     import urllib.request
     url = f"http://{host}:{port}/health"
     start_time = time.time()
-    print(f"{CYAN}[SYSTEM]{RESET} Waiting for FastAPI backend to prime database & initialize services...")
+    print(f"{CYAN}[SYSTEM]{RESET} Initializing backend database schema and telemetry engine...")
     while time.time() - start_time < timeout:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "DigitalTwin-HealthCheck"})
