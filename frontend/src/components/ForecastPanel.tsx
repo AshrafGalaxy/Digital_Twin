@@ -141,7 +141,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             <div style={{ textAlign: 'right' }}>
               <div className="forecast-label">80% Interval</div>
               <div className="forecast-interval-val">
-                [{trafficForecast.confidenceLower.toFixed(1)} – {trafficForecast.confidenceUpper.toFixed(1)}]
+                [{trafficForecast.confidenceLower.toFixed(1)} - {trafficForecast.confidenceUpper.toFixed(1)}]
                 <span className="forecast-unit"> km/h</span>
               </div>
             </div>
@@ -167,7 +167,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
               <span className="conformal-target">90% Coverage Guarantee</span>
             </div>
             <div className="conformal-range">
-              [{trafficForecast.conformalIntervals.interval90.lower.toFixed(1)} – {trafficForecast.conformalIntervals.interval90.upper.toFixed(1)} km/h]
+              [{trafficForecast.conformalIntervals.interval90.lower.toFixed(1)} - {trafficForecast.conformalIntervals.interval90.upper.toFixed(1)} km/h]
               <span className="conformal-margin"> (±{trafficForecast.conformalIntervals.interval90.margin} km/h, { (trafficForecast.conformalIntervals.interval90.empiricalTestCoverage * 100).toFixed(1) }% test coverage)</span>
             </div>
           </div>
@@ -270,7 +270,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             <div style={{ textAlign: 'right' }}>
               <div className="forecast-label">80% Confidence Interval</div>
               <div className="forecast-interval-val">
-                [{energyForecast.confidenceLower.toFixed(0)} – {energyForecast.confidenceUpper.toFixed(0)}]
+                [{energyForecast.confidenceLower.toFixed(0)} - {energyForecast.confidenceUpper.toFixed(0)}]
                 <span className="forecast-unit"> kW</span>
               </div>
             </div>
@@ -294,7 +294,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
               <span className="conformal-target">90% Coverage Guarantee</span>
             </div>
             <div className="conformal-range">
-              [{energyForecast.conformalIntervals.interval90.lower.toFixed(0)} – {energyForecast.conformalIntervals.interval90.upper.toFixed(0)} kW]
+              [{energyForecast.conformalIntervals.interval90.lower.toFixed(0)} - {energyForecast.conformalIntervals.interval90.upper.toFixed(0)} kW]
               <span className="conformal-margin"> (±{energyForecast.conformalIntervals.interval90.margin.toFixed(0)} kW, { (energyForecast.conformalIntervals.interval90.empiricalTestCoverage * 100).toFixed(1) }% test coverage)</span>
             </div>
           </div>

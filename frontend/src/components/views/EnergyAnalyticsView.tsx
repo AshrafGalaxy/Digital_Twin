@@ -319,7 +319,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
           <div className="diurnal-profile-list">
             <div className="diurnal-item">
               <div className="diurnal-item-header">
-                <span className="diurnal-title">Night Base Load (00:00 – 08:00)</span>
+                <span className="diurnal-title">Night Base Load (00:00 - 08:00)</span>
                 <span className="diurnal-val font-mono">{nightDemandKw.toLocaleString()} kW</span>
               </div>
               <p className="diurnal-desc">
@@ -332,7 +332,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
 
             <div className="diurnal-item">
               <div className="diurnal-item-header">
-                <span className="diurnal-title">Daytime Business Operations (08:00 – 16:00)</span>
+                <span className="diurnal-title">Daytime Business Operations (08:00 - 16:00)</span>
                 <span className="diurnal-val font-mono">{daytimeDemandKw.toLocaleString()} kW</span>
               </div>
               <p className="diurnal-desc">
@@ -345,7 +345,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
 
             <div className="diurnal-item">
               <div className="diurnal-item-header">
-                <span className="diurnal-title">Evening Peak Operations (16:00 – 22:00)</span>
+                <span className="diurnal-title">Evening Peak Operations (16:00 - 22:00)</span>
                 <span className="diurnal-val font-mono">{peakDemandKw.toLocaleString()} kW</span>
               </div>
               <p className="diurnal-desc">
@@ -378,7 +378,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
               </tr>
               <tr>
                 <td>Elevated Peak</td>
-                <td className="mono-cell font-mono">{normalThresholdKw.toLocaleString()} – {elevatedThresholdKw.toLocaleString()} kW</td>
+                <td className="mono-cell font-mono">{normalThresholdKw.toLocaleString()} - {elevatedThresholdKw.toLocaleString()} kW</td>
                 <td><span className="status-pill status-review" style={{ color: '#D29922', borderColor: 'rgba(210, 153, 34, 0.3)' }}>Warning</span></td>
                 <td>Advisory recommendation: Pre-cool zones, stagger chiller cycles</td>
               </tr>

@@ -39,7 +39,7 @@ export const MapLegend: React.FC<MapLegendProps> = ({
             </div>
             <div className="legend-item" title="Speed between 20 and 35 km/h (Moderate Delay)">
               <div className="legend-color-box" style={{ backgroundColor: '#D29922' }} />
-              <span>20–35 km/h (Moderate)</span>
+              <span>20-35 km/h (Moderate)</span>
             </div>
             <div className="legend-item" title="Speed under 20 km/h (Significant Congestion / Queueing)">
               <div className="legend-color-box" style={{ backgroundColor: '#F85149' }} />

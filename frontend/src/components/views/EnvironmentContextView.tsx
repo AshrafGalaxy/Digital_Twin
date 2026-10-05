@@ -308,26 +308,26 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
             <tbody>
               <tr className={aqi <= 50 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#10B981', color: '#fff' }}>Good</span></td>
-                <td>0 – 50</td>
-                <td>0 – 30</td>
+                <td>0 - 50</td>
+                <td>0 - 30</td>
                 <td>Minimal health impact</td>
               </tr>
               <tr className={aqi > 50 && aqi <= 100 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#84CC16', color: '#fff' }}>Satisfactory</span></td>
-                <td>51 – 100</td>
-                <td>31 – 60</td>
+                <td>51 - 100</td>
+                <td>31 - 60</td>
                 <td>Minor breathing discomfort to sensitive individuals</td>
               </tr>
               <tr className={aqi > 100 && aqi <= 200 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#F59E0B', color: '#fff' }}>Moderate</span></td>
-                <td>101 – 200</td>
-                <td>61 – 90</td>
+                <td>101 - 200</td>
+                <td>61 - 90</td>
                 <td>Breathing discomfort to people with lungs/asthma/heart disease</td>
               </tr>
               <tr className={aqi > 200 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#EF4444', color: '#fff' }}>Poor / Severe</span></td>
-                <td>201 – 500+</td>
-                <td>91 – 250+</td>
+                <td>201 - 500+</td>
+                <td>91 - 250+</td>
                 <td>Respiratory illness on prolonged exposure</td>
               </tr>
             </tbody>
