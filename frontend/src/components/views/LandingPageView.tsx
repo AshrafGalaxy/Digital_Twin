@@ -14,7 +14,8 @@ import {
   Lock,
   LogOut,
   Gauge,
-  MapPin
+  MapPin,
+  User
 } from 'lucide-react';
 import { TabId } from '../Header';
 import { AuthUser } from '../../types/twin';
@@ -29,24 +30,33 @@ import { KineticTaglineReveal } from '../landing/KineticTaglineReveal';
 import { CorridorCompareSlider } from '../landing/CorridorCompareSlider';
 import { AgencyCommandShowcase } from '../landing/AgencyCommandShowcase';
 import { GovernanceProtocolFlow } from '../landing/GovernanceProtocolFlow';
-import { ContactAccessModal } from '../landing/ContactAccessModal';
 import { NumberTicker } from '../common/NumberTicker';
 
 interface LandingPageViewProps {
   onLaunchConsole: (tab?: TabId) => void;
   onNavigateAuth?: (mode?: 'signin' | 'signup') => void;
+  onNavigateProvisioning?: () => void;
   authUser?: AuthUser | null;
   onSignOut?: () => void;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onLaunchConsole,
+  onNavigateAuth,
+  onNavigateProvisioning,
   authUser,
   onSignOut
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [isContactModalOpen, setIsContactModalOpen] = useState<boolean>(false);
+
+  const handleOpenProvisioning = () => {
+    if (onNavigateProvisioning) {
+      onNavigateProvisioning();
+    } else {
+      window.location.hash = 'provisioning';
+    }
+  };
 
   // Scroll Reveal Observer for Sections
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
@@ -103,7 +113,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     },
     {
       q: 'How do agencies and research partners obtain operational access?',
-      a: 'Access to the live operations console is provisioned per authorized agency. Prospective municipal authorities, transit agencies, and research partners can submit an access inquiry via the Request Access intake portal.'
+      a: 'Access to the live operations console is provisioned per authorized agency. Prospective municipal authorities, transit agencies, and research partners can submit an access inquiry via the Contact Us intake portal.'
     }
   ];
 
@@ -153,14 +163,25 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 </button>
               </>
             ) : (
-              <button
-                className="landing-btn-primary"
-                onClick={() => setIsContactModalOpen(true)}
-                title="Request agency access or consultation"
-              >
-                <span>Request Access</span>
-                <ArrowRight size={14} />
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="landing-btn-signin"
+                  onClick={() => onNavigateAuth ? onNavigateAuth('signin') : (window.location.hash = 'signin')}
+                  title="Officer Authentication & Role Gateway"
+                >
+                  <User size={13} style={{ marginRight: 6 }} />
+                  <span>Sign In</span>
+                </button>
+                <button
+                  className="landing-btn-primary"
+                  onClick={handleOpenProvisioning}
+                  title="Contact the Digital Twin team"
+                >
+                  <span>Contact Us</span>
+                  <ArrowRight size={14} />
+                </button>
+              </>
             )}
             <button
               className={`landing-mobile-toggle ${isMobileMenuOpen ? 'open' : ''}`}
@@ -194,15 +215,27 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 </button>
               </>
             ) : (
-              <button
-                className="landing-mobile-item highlight"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsContactModalOpen(true);
-                }}
-              >
-                Request Access <ArrowRight size={14} />
-              </button>
+              <>
+                <button
+                  className="landing-mobile-item"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onNavigateAuth) onNavigateAuth('signin');
+                    else window.location.hash = 'signin';
+                  }}
+                >
+                  Officer Sign In
+                </button>
+                <button
+                  className="landing-mobile-item highlight"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleOpenProvisioning();
+                  }}
+                >
+                  Contact Us <ArrowRight size={14} />
+                </button>
+              </>
             )}
           </div>
         )}
@@ -242,9 +275,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             ) : (
               <button
                 className="landing-btn-large-primary"
-                onClick={() => setIsContactModalOpen(true)}
+                onClick={handleOpenProvisioning}
               >
-                <span>Request Access</span>
+                <span>Contact Us</span>
                 <ArrowRight size={16} />
               </button>
             )}
@@ -931,7 +964,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <span>Agency & Municipal Access Intake</span>
           </div>
           <h2 className="final-cta-title">
-            Request Access to the Urban Digital Twin Platform
+            Connect with the Digital Twin Team
           </h2>
           <p className="final-cta-subtitle">
             Explore 2D and 3D geospatial views, time scrubber historical replay, microscopic scenario simulations, and commercial microgrid advisories with full provenance guarantees.
@@ -948,9 +981,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             ) : (
               <button
                 className="landing-btn-large-primary"
-                onClick={() => setIsContactModalOpen(true)}
+                onClick={handleOpenProvisioning}
               >
-                <span>Request Access</span>
+                <span>Contact Us</span>
                 <ArrowRight size={16} />
               </button>
             )}
@@ -1003,12 +1036,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
         </div>
       </footer>
-
-      {/* Enterprise Contact & Access Intake Modal */}
-      <ContactAccessModal
-        isOpen={isContactModalOpen}
-        onClose={() => setIsContactModalOpen(false)}
-      />
     </div>
   );
 };
