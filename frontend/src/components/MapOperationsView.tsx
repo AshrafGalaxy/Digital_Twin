@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Map, Globe, TableProperties, Satellite, Moon, Zap } from 'lucide-react';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
@@ -245,10 +246,11 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   onSelectCompareEntity
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
-  const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets' | 'dark'>('satellite');
+  const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets' | 'dark'>('dark');
+  const [styleRevision, setStyleRevision] = useState<number>(0);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [corridorGeoJson, setCorridorGeoJson] = useState<Corridor3DFeatureCollection | null>(null);
   const [internalTableView, setInternalTableView] = useState<boolean>(false);
@@ -275,83 +277,35 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       .catch(err => console.warn('Could not load corridor 3D GeoJSON for 2D map:', err));
   }, []);
 
-  // Initialize MapLibre GL Map with Premium Esri Satellite, Google-style Streets, and Dark Canvas (0 Watermarks)
+  // Mapbox Vector Styles Map
+  const MAPBOX_STYLES: Record<string, string> = {
+    dark: 'mapbox://styles/mapbox/dark-v11',
+    satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+    streets: 'mapbox://styles/mapbox/navigation-day-v1'
+  };
+
+  // Initialize Mapbox GL JS Vector Map with Dark, Satellite, and Streets vector styles
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    const newMap = new maplibregl.Map({
+    const token = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
+    mapboxgl.accessToken = token;
+
+    const initialStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
+
+    const newMap = new mapboxgl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'esri-satellite': {
-            type: 'raster',
-            tiles: [
-              'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-            ],
-            tileSize: 256,
-            maxzoom: 19,
-            attribution: '&copy; Esri, Maxar, Earthstar Geographics'
-          },
-          'osm-streets': {
-            type: 'raster',
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-            ],
-            tileSize: 256,
-            maxzoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-          }
-        },
-        layers: [
-          {
-            id: 'esri-satellite-layer',
-            type: 'raster',
-            source: 'esri-satellite',
-            minzoom: 0,
-            maxzoom: 22,
-            layout: {
-              visibility: 'visible'
-            }
-          },
-          {
-            id: 'osm-streets-layer',
-            type: 'raster',
-            source: 'osm-streets',
-            minzoom: 0,
-            maxzoom: 22,
-            layout: {
-              visibility: 'none'
-            }
-          },
-          {
-            id: 'osm-dark-layer',
-            type: 'raster',
-            source: 'osm-streets',
-            minzoom: 0,
-            maxzoom: 22,
-            layout: {
-              visibility: 'none'
-            },
-            paint: {
-              'raster-brightness-max': 0.38,
-              'raster-brightness-min': 0.05,
-              'raster-contrast': 0.40,
-              'raster-saturation': -0.95,
-              'raster-opacity': 0.95
-            }
-          }
-        ]
-      },
+      style: initialStyle,
       center: [73.9220, 18.5615], // Corridor midpoint
-      zoom: 14.8,
+      zoom: 15.0,
+      pitch: 36, // 36-degree cinematic 3D perspective
+      bearing: -10, // Alignment with Nagar Road arterial
       maxZoom: 20,
-      minZoom: 13.5,
+      minZoom: 13.0,
       maxBounds: [
-        [73.905, 18.550], // Southwest coordinates (locks camera to corridor)
-        [73.938, 18.572]  // Northeast coordinates
+        [73.890, 18.535], // Southwest coordinates (locks camera to corridor vicinity)
+        [73.955, 18.585]  // Northeast coordinates
       ],
-      pitch: 0,
       attributionControl: false
     });
 
@@ -359,8 +313,16 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       setMapLoaded(true);
     });
 
-    newMap.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
-    newMap.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+    newMap.on('error', (e) => {
+      // Graceful fallback if token is invalid or network issues occur
+      if (e?.error && (e.error as any).status === 401) {
+        console.warn('Mapbox authorization failed, falling back to open vector style:', e.error);
+        newMap.setStyle('https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
+      }
+    });
+
+    newMap.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right');
+    newMap.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
 
     map.current = newMap;
 
@@ -373,32 +335,17 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     };
   }, []);
 
-  // Dynamically update basemap layer visibility when switching between Satellite, Streets, and Dark Canvas
+  // Dynamically update Mapbox style when switching between Satellite, Streets, and Dark
   useEffect(() => {
     const currentMap = map.current;
     if (!currentMap || !mapLoaded) return;
 
-    if (currentMap.getLayer('esri-satellite-layer')) {
-      currentMap.setLayoutProperty(
-        'esri-satellite-layer',
-        'visibility',
-        basemapMode === 'satellite' ? 'visible' : 'none'
-      );
-    }
-    if (currentMap.getLayer('osm-streets-layer')) {
-      currentMap.setLayoutProperty(
-        'osm-streets-layer',
-        'visibility',
-        basemapMode === 'streets' ? 'visible' : 'none'
-      );
-    }
-    if (currentMap.getLayer('osm-dark-layer')) {
-      currentMap.setLayoutProperty(
-        'osm-dark-layer',
-        'visibility',
-        basemapMode === 'dark' ? 'visible' : 'none'
-      );
-    }
+    const targetStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
+    currentMap.setStyle(targetStyle);
+
+    currentMap.once('style.load', () => {
+      setStyleRevision(prev => prev + 1);
+    });
   }, [basemapMode, mapLoaded]);
 
   // Dynamically update map styling on theme toggle
@@ -481,7 +428,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           source: 'corridor-inverse-mask',
           paint: {
             'fill-color': '#050811',
-            'fill-opacity': 1.0 // 100% opaque: outside map completely vanishes!
+            'fill-opacity': 0.32 // Soft diorama focus: spotlighting corridor while keeping city context visible
           }
         });
 
@@ -496,6 +443,56 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             'line-opacity': 0.95
           }
         });
+      }
+
+      // 0B. Native Mapbox 3D Building Extrusions (from composite vector tiles)
+      if (!currentMap.getLayer('3d-buildings-vector') && currentMap.getSource('composite')) {
+        const layers = currentMap.getStyle()?.layers;
+        const labelLayerId = layers?.find(
+          (l: any) => l.type === 'symbol' && l.layout?.['text-field']
+        )?.id;
+
+        try {
+          currentMap.addLayer(
+            {
+              id: '3d-buildings-vector',
+              source: 'composite',
+              'source-layer': 'building',
+              filter: ['==', 'extrude', 'true'],
+              type: 'fill-extrusion',
+              minzoom: 14,
+              paint: {
+                'fill-extrusion-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['get', 'height'],
+                  0, '#111827',
+                  25, '#1E293B',
+                  50, '#334155',
+                  100, '#38BDF8'
+                ],
+                'fill-extrusion-height': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  14, 0,
+                  14.2, ['get', 'height']
+                ],
+                'fill-extrusion-base': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  14, 0,
+                  14.2, ['get', 'min_height']
+                ],
+                'fill-extrusion-opacity': 0.68
+              }
+            },
+            labelLayerId
+          );
+        } catch {
+          // If style doesn't have composite source (e.g. satellite), ignore cleanly
+        }
       }
 
       // 1. Add Study Area Boundary Source and Layers
@@ -561,7 +558,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               }
             });
           } else {
-            (currentMap.getSource('secondary-streets') as maplibregl.GeoJSONSource).setData({
+            (currentMap.getSource('secondary-streets') as mapboxgl.GeoJSONSource).setData({
               type: 'FeatureCollection',
               features: secFeatures
             } as any);
@@ -598,7 +595,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               }
             });
           } else {
-            (currentMap.getSource('urban-trees') as maplibregl.GeoJSONSource).setData({
+            (currentMap.getSource('urban-trees') as mapboxgl.GeoJSONSource).setData({
               type: 'FeatureCollection',
               features: treeFeatures
             } as any);
@@ -797,7 +794,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           }
         });
 
-        const handleRoadClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+        const handleRoadClick = (e: mapboxgl.MapLayerMouseEvent) => {
           if (!e.features || !e.features[0]) return;
           const clickedId = e.features[0].id;
           const found = roadSegments.find(s => s.id === clickedId);
@@ -821,7 +818,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           currentMap.getCanvas().style.cursor = '';
         });
       } else {
-        (currentMap.getSource('road-segments') as maplibregl.GeoJSONSource).setData(segmentsGeoJson as any);
+        (currentMap.getSource('road-segments') as mapboxgl.GeoJSONSource).setData(segmentsGeoJson as any);
       }
 
       // 3. Add Intersection Approach Stoplines (Navigation Grade)
@@ -1025,7 +1022,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           currentMap.getCanvas().style.cursor = '';
         });
       } else {
-        (currentMap.getSource('corridor-buildings-source') as maplibregl.GeoJSONSource).setData(buildingsGeoJson as any);
+        (currentMap.getSource('corridor-buildings-source') as mapboxgl.GeoJSONSource).setData(buildingsGeoJson as any);
         if (currentMap.getLayer('corridor-buildings-2d-fill')) {
           currentMap.setLayoutProperty('corridor-buildings-2d-fill', 'visibility', is3DMode ? 'none' : 'visible');
         }
@@ -1077,7 +1074,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           onSelectEntity(ix);
         });
 
-        const marker = new maplibregl.Marker({ element: el })
+        const marker = new mapboxgl.Marker({ element: el })
           .setLngLat(ix.coordinates)
           .addTo(currentMap);
         markersRef.current.push(marker);
@@ -1100,7 +1097,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       energyEl.style.cursor = 'pointer';
       energyEl.title = 'Phoenix Marketcity Commercial Energy Zone (Sanctioned: 8,500 kVA)';
       energyEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Phoenix Marketcity (Energy)</span>';
-      const energyMarker = new maplibregl.Marker({ element: energyEl })
+      const energyMarker = new mapboxgl.Marker({ element: energyEl })
         .setLngLat([73.9170, 18.5625])
         .addTo(currentMap);
       markersRef.current.push(energyMarker);
@@ -1122,7 +1119,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       envEl.style.cursor = 'pointer';
       envEl.title = 'Pune Airport / Lohegaon CAAQMS Air Quality Reference Station (NAAQS: Moderate)';
       envEl.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3FB950;box-shadow:0 0 6px #3FB950;"></span><span>Lohegaon CAAQMS</span>';
-      const envMarker = new maplibregl.Marker({ element: envEl })
+      const envMarker = new mapboxgl.Marker({ element: envEl })
         .setLngLat([73.9215, 18.5665])
         .addTo(currentMap);
       markersRef.current.push(envMarker);
@@ -1130,7 +1127,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
 
     if (!mapLoaded) return;
     onMapLoad();
-  }, [mapLoaded, studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme, corridorGeoJson]);
+  }, [mapLoaded, styleRevision, studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme, corridorGeoJson]);
 
   const toggle3DMode = () => {
     setIs3DMode(prev => {

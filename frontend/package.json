@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/mapbox-gl": "^3.4.1",
     "cesium": "^1.145.0",
     "framer-motion": "^14.0.0",
     "geist": "^1.7.2",
     "lucide-react": "^0.446.0",
+    "mapbox-gl": "^3.32.0",
     "maplibre-gl": "^4.7.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
