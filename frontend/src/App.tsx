@@ -15,6 +15,7 @@ import { RecommendationsView } from './components/views/RecommendationsView';
 import { SystemHealthView } from './components/views/SystemHealthView';
 import { PilotEvaluationView } from './components/views/PilotEvaluationView';
 import { LandingPageView } from './components/views/LandingPageView';
+import { ProvisioningView } from './components/views/ProvisioningView';
 import { TimeScrubber } from './components/TimeScrubber';
 import {
   EntityCurrentState,
@@ -49,11 +50,15 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const rawHash = window.location.hash.replace('#', '');
+    if (rawHash === 'provisioning' || rawHash === 'request-access') {
+      return 'provisioning';
+    }
     if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup' || rawHash === 'get-started') {
       return 'auth';
     }
     const validTabs: TabId[] = [
       'landing',
+      'provisioning',
       'auth',
       'operations',
       'traffic',
@@ -70,6 +75,7 @@ export const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('tab') || params.get('view');
     if (viewParam === 'landing') return 'landing';
+    if (viewParam === 'provisioning' || viewParam === 'request-access') return 'provisioning';
     if (viewParam === 'auth' || viewParam === 'signin' || viewParam === 'signup' || viewParam === 'get-started') return 'auth';
     if (viewParam && validTabs.includes(viewParam as TabId)) return viewParam as TabId;
     return 'landing';
@@ -82,6 +88,10 @@ export const App: React.FC = () => {
     }
     const handleHashChange = () => {
       const rawHash = window.location.hash.replace('#', '');
+      if (rawHash === 'provisioning' || rawHash === 'request-access') {
+        setActiveTab('provisioning');
+        return;
+      }
       if (rawHash === 'auth' || rawHash === 'signin') {
         setAuthInitialMode('signin');
         setActiveTab('auth');
@@ -94,6 +104,7 @@ export const App: React.FC = () => {
       }
       const validTabs: TabId[] = [
         'landing',
+        'provisioning',
         'auth',
         'operations',
         'traffic',
@@ -501,7 +512,7 @@ export const App: React.FC = () => {
   }, [activeTab]);
 
   return (
-    <div className={`app-layout ${activeTab === 'landing' ? 'landing-mode' : activeTab === 'auth' ? 'auth-mode' : ''}`}>
+    <div className={`app-layout ${activeTab === 'landing' ? 'landing-mode' : activeTab === 'auth' ? 'auth-mode' : activeTab === 'provisioning' ? 'provisioning-mode' : ''}`}>
       {/* Skip to Main Content Link for Keyboard Accessibility (WCAG 2.4.1 Bypass Blocks) */}
       <a href="#main-content" className="skip-link">
         Skip to main content
@@ -512,7 +523,7 @@ export const App: React.FC = () => {
         {liveAnnouncement}
       </div>
 
-      {activeTab !== 'landing' && activeTab !== 'auth' && (
+      {activeTab !== 'landing' && activeTab !== 'auth' && activeTab !== 'provisioning' && (
         <Header
           wsConnected={wsConnected}
           currentMode={effectiveMode}
@@ -529,7 +540,7 @@ export const App: React.FC = () => {
       <main
         id="main-content"
         tabIndex={-1}
-        className={activeTab === 'landing' ? 'landing-workspace' : activeTab === 'auth' ? 'auth-workspace' : 'workspace'}
+        className={activeTab === 'landing' ? 'landing-workspace' : activeTab === 'auth' ? 'auth-workspace' : activeTab === 'provisioning' ? 'provisioning-workspace' : 'workspace'}
         aria-label="Main Operational Workspace"
       >
         {/* VIEW 0: Landing Page & Corridor Platform Architecture */}
@@ -549,12 +560,26 @@ export const App: React.FC = () => {
               }
             }}
             onNavigateAuth={handleNavigateAuth}
+            onNavigateProvisioning={() => {
+              window.location.hash = 'provisioning';
+              setActiveTab('provisioning');
+            }}
             authUser={authUser}
             onSignOut={handleSignOut}
           />
         )}
 
-        {/* VIEW 0B: Dedicated Municipal Authentication & Role Gateway */}
+        {/* VIEW 0B: Dedicated Municipal Digital Twin Provisioning Intake Page */}
+        {activeTab === 'provisioning' && (
+          <ProvisioningView
+            onNavigateHome={() => {
+              window.location.hash = 'landing';
+              setActiveTab('landing');
+            }}
+          />
+        )}
+
+        {/* VIEW 0C: Dedicated Municipal Authentication & Role Gateway */}
         {activeTab === 'auth' && (
           <AuthPageView
             initialMode={authInitialMode}

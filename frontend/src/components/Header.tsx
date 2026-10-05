@@ -18,6 +18,7 @@ import { DigitalTwinLogo } from './common/DigitalTwinLogo';
 
 export type TabId =
   | 'landing'
+  | 'provisioning'
   | 'auth'
   | 'operations'
   | 'traffic'
@@ -29,11 +30,12 @@ export type TabId =
   | 'health';
 
 export const ROLE_ALLOWED_TABS: Record<MunicipalRole, TabId[]> = {
-  'Traffic Systems Engineer': ['landing', 'auth', 'operations', 'traffic', 'scenarios', 'recommendations'],
-  'Energy Grid Manager': ['landing', 'auth', 'operations', 'energy', 'environment', 'recommendations'],
-  'Executive Auditor': ['landing', 'auth', 'recommendations', 'evaluation', 'health'],
+  'Traffic Systems Engineer': ['landing', 'provisioning', 'auth', 'operations', 'traffic', 'scenarios', 'recommendations'],
+  'Energy Grid Manager': ['landing', 'provisioning', 'auth', 'operations', 'energy', 'environment', 'recommendations'],
+  'Executive Auditor': ['landing', 'provisioning', 'auth', 'recommendations', 'evaluation', 'health'],
   'Municipal Analyst': [
     'landing',
+    'provisioning',
     'auth',
     'operations',
     'traffic',
