@@ -5,27 +5,49 @@ import {
   CheckCircle2,
   Building2,
   Mail,
-  User,
+  UserCheck,
   MapPin,
   Layers,
   FileText,
   ShieldCheck,
-  ArrowRight,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  AlertCircle,
+  Copy,
+  Check
 } from 'lucide-react';
-
-import { TabId } from '../Header';
 
 interface ContactAccessModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLaunchConsole?: (tab?: TabId) => void;
 }
+
+const RESTRICTED_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'hotmail.com',
+  'outlook.com',
+  'live.com',
+  'icloud.com',
+  'aol.com',
+  'mail.com',
+  'zoho.com',
+  'proton.me',
+  'protonmail.com',
+  'gmx.com',
+  'yandex.com'
+];
+
+const JURISDICTION_PRESETS = [
+  'Central Arterial Corridor',
+  'Metropolitan Signal Grid',
+  'Airport Transit Zone',
+  'Smart Campus Substation Grid'
+];
 
 export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
   isOpen,
-  onClose,
-  onLaunchConsole
+  onClose
 }) => {
   const [organization, setOrganization] = useState<string>('');
   const [workEmail, setWorkEmail] = useState<string>('');
@@ -35,9 +57,15 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
   const [infrastructureScale, setInfrastructureScale] = useState<string>('1-10 Intersections / Corridors');
   const [message, setMessage] = useState<string>('');
 
+  const [emailValidation, setEmailValidation] = useState<{
+    status: 'idle' | 'valid' | 'restricted' | 'invalid';
+    message: string;
+  }>({ status: 'idle', message: '' });
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submittedInquiryId, setSubmittedInquiryId] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,6 +76,43 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Live Email Validation
+  const handleEmailChange = (val: string) => {
+    setWorkEmail(val);
+    const trimmed = val.trim();
+    if (!trimmed) {
+      setEmailValidation({ status: 'idle', message: '' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setEmailValidation({
+        status: 'invalid',
+        message: 'Please enter a valid official email address.'
+      });
+      return;
+    }
+    const domainPart = trimmed.split('@')[1]?.toLowerCase();
+    if (domainPart && RESTRICTED_DOMAINS.includes(domainPart)) {
+      setEmailValidation({
+        status: 'restricted',
+        message: 'Official agency, municipal, or institutional email required (.gov, .org, or enterprise domain). Personal providers are restricted for security authentication.'
+      });
+      return;
+    }
+    setEmailValidation({
+      status: 'valid',
+      message: 'Verified official domain format'
+    });
+  };
+
+  const handleCopyTrackingId = () => {
+    if (!submittedInquiryId) return;
+    navigator.clipboard.writeText(submittedInquiryId);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   if (!isOpen) return null;
 
@@ -60,23 +125,32 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
       setErrorMessage('Please enter your agency or organization name.');
       return;
     }
-    if (!workEmail.trim() || !workEmail.includes('@') || !workEmail.includes('.')) {
+    if (!jurisdiction.trim()) {
+      setErrorMessage('Please specify your target city, municipality, or corridor jurisdiction.');
+      return;
+    }
+    if (!contactName.trim() || contactName.trim().length < 3) {
+      setErrorMessage('Please provide the authorizing officer or lead engineer name and role.');
+      return;
+    }
+
+    const emailTrimmed = workEmail.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailTrimmed || !emailRegex.test(emailTrimmed)) {
       setErrorMessage('Please enter a valid official work email address.');
       return;
     }
-    if (!contactName.trim()) {
-      setErrorMessage('Please provide your name and title.');
-      return;
-    }
-    if (!jurisdiction.trim()) {
-      setErrorMessage('Please specify your target city, municipality, or campus jurisdiction.');
+
+    const domainPart = emailTrimmed.split('@')[1]?.toLowerCase();
+    if (domainPart && RESTRICTED_DOMAINS.includes(domainPart)) {
+      setErrorMessage('Please use an official agency, municipal, or enterprise email address (.gov, .org, or institutional domain). Personal email providers are restricted.');
       return;
     }
 
     setIsSubmitting(true);
     const payload = {
       organization: organization.trim(),
-      work_email: workEmail.trim(),
+      work_email: emailTrimmed,
       contact_name: contactName.trim(),
       jurisdiction: jurisdiction.trim(),
       domain,
@@ -121,6 +195,7 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
   const handleResetAndClose = () => {
     setSubmittedInquiryId(null);
     setErrorMessage(null);
+    setEmailValidation({ status: 'idle', message: '' });
     onClose();
   };
 
@@ -129,87 +204,24 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="contact-modal-title"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        background: 'rgba(3, 7, 18, 0.78)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px'
-      }}
+      className="provision-modal-backdrop"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '580px',
-          maxHeight: '90vh',
-          background: '#0D1117',
-          border: '1px solid #30363D',
-          borderRadius: '16px',
-          boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(56, 189, 248, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          animation: 'fadeInUp 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
-      >
+      <div className="provision-modal-dialog">
         {/* Modal Header */}
-        <div
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid #21262D',
-            background: 'linear-gradient(180deg, rgba(22, 27, 34, 0.8) 0%, rgba(13, 17, 23, 0.95) 100%)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start'
-          }}
-        >
+        <div className="provision-modal-header">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  background: 'rgba(56, 189, 248, 0.12)',
-                  color: '#38BDF8',
-                  border: '1px solid rgba(56, 189, 248, 0.25)'
-                }}
-              >
-                Municipal & Enterprise Access
-              </span>
+            <div className="provision-badge">
+              <span className="provision-pulse-dot" />
+              <span>Municipal & Enterprise Access</span>
             </div>
-            <h2
-              id="contact-modal-title"
-              style={{
-                fontSize: '18px',
-                fontWeight: 600,
-                color: '#F0F6FC',
-                margin: 0,
-                letterSpacing: '-0.01em'
-              }}
-            >
+            <h2 id="contact-modal-title" className="provision-modal-title">
               Request Digital Twin Provisioning
             </h2>
-            <p
-              style={{
-                fontSize: '13px',
-                color: '#8B949E',
-                margin: '4px 0 0 0',
-                lineHeight: 1.4
-              }}
-            >
-              Access is provisioned for verified transport departments, municipal authorities, and campus infrastructure operators.
+            <p className="provision-modal-subtitle">
+              Provision an authoritative multi-domain telemetry sandbox for verified transport departments, municipal authorities, and campus infrastructure operators.
             </p>
           </div>
 
@@ -217,33 +229,14 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#8B949E',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'color 0.15s, background 0.15s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#F0F6FC';
-              e.currentTarget.style.background = '#21262D';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#8B949E';
-              e.currentTarget.style.background = 'transparent';
-            }}
+            className="provision-close-btn"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+        <div className="provision-modal-body">
           {submittedInquiryId ? (
             /* Success State */
             <div style={{ textAlign: 'center', padding: '16px 8px' }}>
@@ -269,9 +262,11 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
 
               <div
                 style={{
-                  display: 'inline-block',
-                  background: '#161B22',
-                  border: '1px solid #30363D',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#07070A',
+                  border: '1px solid #1C1D24',
                   padding: '6px 14px',
                   borderRadius: '6px',
                   fontFamily: 'var(--font-mono)',
@@ -280,7 +275,23 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                   marginBottom: '16px'
                 }}
               >
-                Tracking ID: {submittedInquiryId}
+                <span>Tracking ID: {submittedInquiryId}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyTrackingId}
+                  title="Copy tracking ID"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: isCopied ? '#34D399' : '#8B949E',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '2px'
+                  }}
+                >
+                  {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                </button>
               </div>
 
               <p
@@ -288,30 +299,30 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                   fontSize: '13px',
                   color: '#8B949E',
                   lineHeight: 1.6,
-                  maxWidth: '440px',
+                  maxWidth: '460px',
                   margin: '0 auto 24px'
                 }}
               >
-                Thank you for your interest. Our technical team evaluates deployment requirements to configure appropriate study area boundaries, simulation environments, and credential access.
+                Thank you for your inquiry. Our engineering team reviews corridor scale, sensor topology, and data interfaces to provision your dedicated simulation and decision-support instance.
               </p>
 
               <div
                 style={{
-                  background: '#161B22',
+                  background: '#050507',
                   borderRadius: '8px',
-                  border: '1px solid #21262D',
+                  border: '1px solid #16171B',
                   padding: '14px 18px',
                   textAlign: 'left',
                   marginBottom: '24px'
                 }}
               >
-                <div style={{ fontSize: '11px', color: '#8B949E', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                  Next Steps
+                <div style={{ fontSize: '11px', color: '#8B949E', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
+                  Onboarding Timeline
                 </div>
-                <div style={{ fontSize: '12px', color: '#C9D1D9', lineHeight: 1.5 }}>
-                  1. Agency verification against public sector / enterprise registry.<br />
-                  2. Network topology onboarding and telemetry format mapping.<br />
-                  3. Dispatch of temporary sandbox credentials within 1 business day.
+                <div style={{ fontSize: '12px', color: '#C9D1D9', lineHeight: 1.6 }}>
+                  1. Agency verification against official public sector or enterprise register.<br />
+                  2. Network topology onboarding and sensor telemetry format mapping.<br />
+                  3. Issuance of isolated sandbox credentials and read-only decision support access within 1 business day.
                 </div>
               </div>
 
@@ -319,44 +330,11 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                 <button
                   type="button"
                   onClick={handleResetAndClose}
-                  style={{
-                    background: '#21262D',
-                    color: '#C9D1D9',
-                    border: '1px solid #30363D',
-                    padding: '9px 20px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    cursor: 'pointer'
-                  }}
+                  className="provision-submit-btn landing-btn-primary"
+                  style={{ height: '38px', padding: '0 24px', cursor: 'pointer' }}
                 >
-                  Return to Home
+                  Return to Public Portal
                 </button>
-                {onLaunchConsole && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleResetAndClose();
-                      onLaunchConsole('operations');
-                    }}
-                    style={{
-                      background: '#1F6FEB',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      padding: '9px 20px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <span>Inspect Public Preview</span>
-                    <ArrowRight size={14} />
-                  </button>
-                )}
               </div>
             </div>
           ) : (
@@ -371,21 +349,29 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                     padding: '10px 14px',
                     borderRadius: '8px',
                     fontSize: '13px',
-                    lineHeight: 1.4
+                    lineHeight: 1.4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
-                  {errorMessage}
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{errorMessage}</span>
                 </div>
               )}
 
-              {/* Organization & Jurisdiction Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-                <div>
-                  <label
-                    style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                  >
-                    <Building2 size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                    Agency / Organization *
+              {/* Section 1: Authority & Jurisdiction */}
+              <div className="provision-section-title">
+                01. Jurisdiction & Deployment Scope
+              </div>
+
+              <div className="provision-grid-2col">
+                <div className="provision-field-group">
+                  <label className="provision-label">
+                    <span className="provision-label-content">
+                      <Building2 size={13} color="#8B949E" />
+                      Agency or Municipal Authority *
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -393,249 +379,228 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
                     value={organization}
                     onChange={(e) => setOrganization(e.target.value)}
                     placeholder="e.g., Department of Transportation"
-                    style={{
-                      width: '100%',
-                      background: '#161B22',
-                      border: '1px solid #30363D',
-                      borderRadius: '8px',
-                      padding: '9px 12px',
-                      color: '#F0F6FC',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
+                    className="provision-input"
+                    autoComplete="organization"
                   />
                 </div>
 
-                <div>
-                  <label
-                    style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                  >
-                    <MapPin size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                    Jurisdiction / City / Campus *
+                <div className="provision-field-group">
+                  <label className="provision-label">
+                    <span className="provision-label-content">
+                      <MapPin size={13} color="#8B949E" />
+                      Municipal Jurisdiction / Study Corridor *
+                    </span>
                   </label>
                   <input
                     type="text"
                     required
                     value={jurisdiction}
                     onChange={(e) => setJurisdiction(e.target.value)}
-                    placeholder="e.g., Metropolitan District / Airport Corridor"
-                    style={{
-                      width: '100%',
-                      background: '#161B22',
-                      border: '1px solid #30363D',
-                      borderRadius: '8px',
-                      padding: '9px 12px',
-                      color: '#F0F6FC',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
+                    placeholder="e.g., Central Arterial Corridor"
+                    className="provision-input"
+                    autoComplete="off"
+                    spellCheck={false}
                   />
+                  {/* Quick Suggestion Chips */}
+                  <div className="provision-chips-wrap">
+                    <span className="provision-chips-label">Presets:</span>
+                    {JURISDICTION_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className="provision-chip-btn"
+                        onClick={() => setJurisdiction(preset)}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Name & Email Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-                <div>
-                  <label
-                    style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                  >
-                    <User size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                    Representative Name & Title *
+              {/* Section 2: Technical Authority & Verification */}
+              <div className="provision-section-title" style={{ marginTop: '4px' }}>
+                02. Authorizing Technical Lead & Verification
+              </div>
+
+              <div className="provision-grid-2col">
+                <div className="provision-field-group">
+                  <label className="provision-label">
+                    <span className="provision-label-content">
+                      <UserCheck size={13} color="#8B949E" />
+                      Lead Technical Authority / Representative Name & Role *
+                    </span>
                   </label>
                   <input
                     type="text"
                     required
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
-                    placeholder="e.g., Jane Doe, Systems Director"
-                    style={{
-                      width: '100%',
-                      background: '#161B22',
-                      border: '1px solid #30363D',
-                      borderRadius: '8px',
-                      padding: '9px 12px',
-                      color: '#F0F6FC',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
+                    placeholder="e.g., Dr. Sarah Chen, Director of Traffic Systems"
+                    className="provision-input"
+                    autoComplete="name"
                   />
                 </div>
 
-                <div>
-                  <label
-                    style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                  >
-                    <Mail size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                    Official Work Email *
+                <div className="provision-field-group">
+                  <label className="provision-label">
+                    <span className="provision-label-content">
+                      <Mail size={13} color="#8B949E" />
+                      Official Institutional or Agency Email *
+                    </span>
                   </label>
                   <input
                     type="email"
                     required
                     value={workEmail}
-                    onChange={(e) => setWorkEmail(e.target.value)}
-                    placeholder="name@agency.gov or name@domain.org"
-                    style={{
-                      width: '100%',
-                      background: '#161B22',
-                      border: '1px solid #30363D',
-                      borderRadius: '8px',
-                      padding: '9px 12px',
-                      color: '#F0F6FC',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder="e.g., s.chen@transportation.gov or lead@metrodistrict.org"
+                    className={`provision-input ${
+                      emailValidation.status === 'restricted' || emailValidation.status === 'invalid'
+                        ? 'has-error'
+                        : emailValidation.status === 'valid'
+                        ? 'has-success'
+                        : ''
+                    }`}
+                    autoComplete="email"
                   />
+                  {emailValidation.message && (
+                    <div
+                      className={`provision-input-feedback ${
+                        emailValidation.status === 'valid'
+                          ? 'success'
+                          : emailValidation.status === 'restricted'
+                          ? 'warning'
+                          : 'error'
+                      }`}
+                    >
+                      {emailValidation.status === 'valid' && <CheckCircle2 size={12} />}
+                      {emailValidation.status === 'restricted' && <AlertCircle size={12} />}
+                      {emailValidation.status === 'invalid' && <AlertCircle size={12} />}
+                      <span>{emailValidation.message}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Primary Domain Selection */}
-              <div>
-                <label
-                  style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                >
-                  <Layers size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                  Operational Domain of Interest *
-                </label>
-                <select
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: '#161B22',
-                    border: '1px solid #30363D',
-                    borderRadius: '8px',
-                    padding: '9px 12px',
-                    color: '#F0F6FC',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  <option value="Intelligent Traffic Mobility & Adaptive Control">Intelligent Traffic Mobility & Adaptive Control</option>
-                  <option value="Energy Management & Microgrid Optimization">Energy Management & Microgrid Optimization</option>
-                  <option value="Environmental Microclimate & Dispersion">Environmental Microclimate & Air Quality Tracking</option>
-                  <option value="Critical Infrastructure Structural Health">Critical Infrastructure Structural Health Monitoring</option>
-                  <option value="Integrated Multi-Domain Digital Twin">Integrated Multi-Domain Digital Twin Platform</option>
-                </select>
+              {/* Section 3: Telemetry Scope & Scale */}
+              <div className="provision-section-title" style={{ marginTop: '4px' }}>
+                03. Telemetry Scope & Environment
               </div>
 
-              {/* Deployment Scale */}
-              <div>
-                <label
-                  style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                >
-                  <Sparkles size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                  Target Network Scale
+              {/* Primary Domain Selection with Inset Chevron */}
+              <div className="provision-field-group">
+                <label className="provision-label">
+                  <span className="provision-label-content">
+                    <Layers size={13} color="#8B949E" />
+                    Operational Domain of Interest *
+                  </span>
                 </label>
-                <select
-                  value={infrastructureScale}
-                  onChange={(e) => setInfrastructureScale(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: '#161B22',
-                    border: '1px solid #30363D',
-                    borderRadius: '8px',
-                    padding: '9px 12px',
-                    color: '#F0F6FC',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  <option value="1-10 Intersections / Corridors">Pilot Corridor (1-10 Intersections / Feeder Buses)</option>
-                  <option value="10-50 Intersections">Arterial Network (10-50 Intersections / Campus Grid)</option>
-                  <option value="City-wide Arterial Grid">Metropolitan Grid (50+ Intersections / Multi-Building Facility)</option>
-                  <option value="Academic & Research Exploration">Academic Research & Simulation Modeling</option>
-                </select>
+                <div className="provision-select-wrap">
+                  <select
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    className="provision-select"
+                  >
+                    <option value="Intelligent Traffic Mobility & Adaptive Control">
+                      Intelligent Traffic Mobility & Adaptive Control
+                    </option>
+                    <option value="Energy Management & Microgrid Optimization">
+                      Energy Management & Microgrid Optimization
+                    </option>
+                    <option value="Environmental Microclimate & Dispersion">
+                      Environmental Microclimate & Air Quality Tracking
+                    </option>
+                    <option value="Critical Infrastructure Structural Health">
+                      Critical Infrastructure Structural Health Monitoring
+                    </option>
+                    <option value="Integrated Multi-Domain Digital Twin">
+                      Integrated Multi-Domain Digital Twin Platform
+                    </option>
+                  </select>
+                  <div className="provision-select-arrow">
+                    <ChevronDown size={15} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Deployment Scale with Inset Chevron */}
+              <div className="provision-field-group">
+                <label className="provision-label">
+                  <span className="provision-label-content">
+                    <Sparkles size={13} color="#8B949E" />
+                    Target Network Scale
+                  </span>
+                </label>
+                <div className="provision-select-wrap">
+                  <select
+                    value={infrastructureScale}
+                    onChange={(e) => setInfrastructureScale(e.target.value)}
+                    className="provision-select"
+                  >
+                    <option value="1-10 Intersections / Corridors">
+                      Pilot Corridor (1-10 Intersections / Feeder Buses)
+                    </option>
+                    <option value="10-50 Intersections">
+                      Arterial Network (10-50 Intersections / Campus Grid)
+                    </option>
+                    <option value="City-wide Arterial Grid">
+                      Metropolitan Grid (50+ Intersections / Multi-Building Facility)
+                    </option>
+                    <option value="Academic & Research Exploration">
+                      Academic Research & Simulation Modeling
+                    </option>
+                  </select>
+                  <div className="provision-select-arrow">
+                    <ChevronDown size={15} />
+                  </div>
+                </div>
               </div>
 
               {/* Operational Requirements Notes */}
-              <div>
-                <label
-                  style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#C9D1D9', marginBottom: '6px' }}
-                >
-                  <FileText size={13} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom', color: '#8B949E' }} />
-                  Operational Goals & Telemetry Context
+              <div className="provision-field-group">
+                <label className="provision-label">
+                  <span className="provision-label-content">
+                    <FileText size={13} color="#8B949E" />
+                    Operational Goals & Telemetry Context
+                  </span>
                 </label>
                 <textarea
                   rows={3}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Outline your corridor boundary, existing sensor feeds (e.g. loops, radars, smart meters), or what-if scenario goals..."
-                  style={{
-                    width: '100%',
-                    background: '#161B22',
-                    border: '1px solid #30363D',
-                    borderRadius: '8px',
-                    padding: '9px 12px',
-                    color: '#F0F6FC',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    resize: 'vertical'
-                  }}
+                  placeholder="Outline corridor geometry, sensor formats (radar, inductive loops, power meters), or scenario goals..."
+                  className="provision-textarea"
                 />
               </div>
 
               {/* Invariant Statement */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: 'rgba(56, 189, 248, 0.05)',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(56, 189, 248, 0.15)'
-                }}
-              >
-                <ShieldCheck size={14} color="#38BDF8" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', color: '#8B949E', lineHeight: 1.4 }}>
-                  All deployments operate under strict non-actuating decision support with verifiable provenance and zero commuter tracking.
+              <div className="provision-governance-banner">
+                <ShieldCheck size={16} color="#38BDF8" style={{ flexShrink: 0 }} />
+                <span className="provision-governance-text">
+                  Strict Non-Actuation Protocol: Digital twin instances deliver advisory-only decision support with immutable TimescaleDB logging and zero commuter surveillance.
                 </span>
               </div>
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', gap: '10px', marginTop: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <div className="provision-modal-actions">
                 <button
                   type="button"
                   onClick={onClose}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid #30363D',
-                    color: '#8B949E',
-                    padding: '9px 16px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
+                  className="provision-cancel-btn"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  style={{
-                    background: '#1F6FEB',
-                    border: 'none',
-                    color: '#FFFFFF',
-                    padding: '9px 20px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    opacity: isSubmitting ? 0.7 : 1
-                  }}
+                  disabled={isSubmitting || emailValidation.status === 'restricted'}
+                  className="provision-submit-btn landing-btn-primary"
                 >
                   {isSubmitting ? (
-                    <span>Registering...</span>
+                    <>
+                      <div className="provision-spinner" />
+                      <span>Provisioning...</span>
+                    </>
                   ) : (
                     <>
                       <span>Submit Request</span>
@@ -648,49 +613,8 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer with Discreet Operator Link */}
-        <div
-          style={{
-            padding: '12px 24px',
-            borderTop: '1px solid #21262D',
-            background: '#090D13',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '12px'
-          }}
-        >
-          <span style={{ color: '#8B949E' }}>
-            Looking for authorized operations access?
-          </span>
-          {onLaunchConsole && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onLaunchConsole('operations');
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#58A6FF',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                fontSize: '12px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
-            >
-              <span>Operator Console</span>
-              <ArrowRight size={12} />
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );
 };
+

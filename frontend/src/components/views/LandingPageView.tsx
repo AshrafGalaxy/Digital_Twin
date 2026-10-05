@@ -284,7 +284,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <span className="stage-status-text font-mono">LIVE TELEMETRY STREAM</span>
               </div>
               <span className="hero-stage-badge font-mono">
-                MULTIMODAL ARTERIAL / 1.8 KM
+                MULTIMODAL ARTERIAL CORRIDOR
               </span>
             </div>
 
@@ -603,10 +603,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 4. Core Capabilities (Interactive Animated Bento Grid) */}
       <section id="pillars" className="landing-section" ref={(el) => (revealRefs.current[0] = el)}>
         <div className="section-header">
-          <div className="landing-badge font-mono">
-            <Activity size={13} color="var(--color-primary)" />
-            <span>MULTI-DOMAIN URBAN TELEMETRY</span>
-          </div>
+          <span className="section-eyebrow font-mono">Platform Capabilities</span>
           <h2 className="section-title">High-Fidelity Urban Intelligence Architecture</h2>
           <p className="section-subtitle">
             Engineered with hydrodynamic traffic dynamics, building thermal microgrids, conformal uncertainty envelopes, and strict mathematical provenance.
@@ -713,7 +710,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 7. How It Works Section (3-Step Pipeline) */}
       <section id="how-it-works" className="landing-section dark-alt" ref={(el) => (revealRefs.current[1] = el)}>
         <div className="section-header">
-          <span className="section-eyebrow">Execution Pipeline</span>
+          <span className="section-eyebrow font-mono">Execution Pipeline</span>
           <h2 className="section-title">How the corridor twin functions</h2>
           <p className="section-subtitle">
             A three-stage data and simulation architecture enforcing mathematical reproducibility from edge ingestion to municipal decision delivery.
@@ -789,7 +786,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 10. Provenance & Data Honesty Showcase */}
       <section id="provenance" className="landing-section" ref={(el) => (revealRefs.current[2] = el)}>
         <div className="section-header">
-          <span className="section-eyebrow">Integrity Contract</span>
+          <span className="section-eyebrow font-mono">Integrity Contract</span>
           <h2 className="section-title">Strict provenance and data honesty standards</h2>
           <p className="section-subtitle">
             Every dynamic measurement, model output, and visualization badge across the platform is explicitly labeled with its authoritative source mode.
@@ -896,7 +893,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       {/* 8. Frequently Asked Questions */}
       <section id="faq" className="landing-section dark-alt" ref={(el) => (revealRefs.current[3] = el)}>
         <div className="section-header">
-          <span className="section-eyebrow">Common Questions</span>
+          <span className="section-eyebrow font-mono">Common Questions</span>
           <h2 className="section-title">Frequently asked questions</h2>
           <p className="section-subtitle">
             Direct, plain-language answers addressing municipal safety, predictive modeling, and system privacy.
@@ -1011,7 +1008,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <ContactAccessModal
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
-        onLaunchConsole={onLaunchConsole}
       />
     </div>
   );
