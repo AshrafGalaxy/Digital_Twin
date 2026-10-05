@@ -43,7 +43,7 @@ export const CorridorCompareSlider: React.FC = () => {
   return (
     <section id="transformation" className="landing-section compare-slider-section">
       <div className="section-header">
-        <span className="section-eyebrow">Operational Transformation</span>
+        <span className="section-eyebrow font-mono">Operational Transformation</span>
         <h2 className="section-title">Conventional operations versus synchronized digital twin</h2>
         <p className="section-subtitle">
           Drag the interactive slider to compare legacy uncoordinated municipal management with multi-domain digital twin synchronization.
@@ -90,7 +90,7 @@ export const CorridorCompareSlider: React.FC = () => {
         {/* Layer 1: Right Side (Digital Twin Synchronized View - Underneath) */}
         <div className="compare-layer layer-twin">
           <img
-            src="/assets/images/urban-mobility-flow-twilight.png"
+            src="/assets/images/smart-city-boulevard-dusk.png"
             alt="Synchronized digital twin corridor"
             className="compare-stage-image"
           />
@@ -131,7 +131,7 @@ export const CorridorCompareSlider: React.FC = () => {
           style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
         >
           <img
-            src="/assets/images/urban-mobility-flow-twilight.png"
+            src="/assets/images/rain-soaked-city-rush-hour.png"
             alt="Conventional legacy traffic operations"
             className="compare-stage-image legacy-filter"
           />
