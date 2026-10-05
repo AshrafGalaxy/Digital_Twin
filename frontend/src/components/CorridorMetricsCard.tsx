@@ -27,15 +27,15 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
 
   return (
     <div className="corridor-metrics-card">
-      <div className="card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-          <Activity size={13} color="var(--color-primary, #2F81F7)" style={{ flexShrink: 0 }} />
+      <div className="card-header corridor-metrics-header">
+        <div className="corridor-title-group">
+          <Activity size={13} color="var(--color-primary, #2F81F7)" className="corridor-title-icon" />
           {sourceMode === 'LIVE' && (
             <span className="live-dot-ping" title="Real-time live telemetry stream active" />
           )}
-          <span className="card-title">Corridor Telemetry</span>
+          <span className="card-title corridor-heading">Corridor Telemetry</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+        <div className="corridor-badges-group">
           <span
             className="corridor-state-pill"
             style={{
