@@ -1268,7 +1268,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               type="button"
               className={`toolbar-segmented-btn ${!is3DMode ? 'active' : ''}`}
               onClick={() => { if (is3DMode) toggle3DMode(); }}
-              title="2D MapLibre Plan View"
+              title="2D Mapbox Plan View"
             >
               <Map size={11} aria-hidden="true" />
               <span>2D Map</span>
@@ -1277,7 +1277,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               type="button"
               className={`toolbar-segmented-btn ${is3DMode ? 'active' : ''}`}
               onClick={() => { if (!is3DMode) toggle3DMode(); }}
-              title="3D Cesium Digital Twin"
+              title="3D Digital Twin View"
             >
               <Globe size={11} aria-hidden="true" />
               <span>3D Twin</span>

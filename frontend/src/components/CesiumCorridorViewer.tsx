@@ -377,44 +377,64 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     );
   }, [currentTheme]);
 
-  // 2.5 Dynamic 3D Basemap Swapping (Satellite, OpenStreetMap Streets, Dark Canvas Shaders)
-  const effectiveBasemap = basemapMode || 'satellite';
+  // 2.5 Dynamic 3D Basemap Swapping (Mapbox Dark v11, Satellite Streets, and Navigation Day Retina Tiles)
+  const effectiveBasemap = basemapMode || 'dark';
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
     const layers = viewer.imageryLayers;
     layers.removeAll();
 
+    const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
+
     let provider: Cesium.ImageryProvider;
-    let isDark = false;
-    if (effectiveBasemap === 'streets') {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors'
-      });
-    } else if (effectiveBasemap === 'dark') {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors'
-      });
-      isDark = true;
+    if (mapboxToken) {
+      if (effectiveBasemap === 'streets') {
+        provider = new Cesium.UrlTemplateImageryProvider({
+          url: `https://api.mapbox.com/styles/v1/mapbox/navigation-day-v1/tiles/512/{z}/{x}/{y}@2x?access_token=${mapboxToken}`,
+          maximumLevel: 19,
+          credit: 'Mapbox'
+        });
+      } else if (effectiveBasemap === 'satellite') {
+        provider = new Cesium.UrlTemplateImageryProvider({
+          url: `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=${mapboxToken}`,
+          maximumLevel: 19,
+          credit: 'Mapbox, Maxar'
+        });
+      } else {
+        // Default: Mapbox Dark v11 high-DPI 512px tiles
+        provider = new Cesium.UrlTemplateImageryProvider({
+          url: `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${mapboxToken}`,
+          maximumLevel: 19,
+          credit: 'Mapbox'
+        });
+      }
     } else {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        maximumLevel: 19,
-        credit: '© Esri, Maxar, Earthstar Geographics'
-      });
+      // Graceful fallback to Carto / open imagery if token is absent
+      if (effectiveBasemap === 'streets') {
+        provider = new Cesium.UrlTemplateImageryProvider({
+          url: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+          maximumLevel: 19,
+          credit: 'CARTO'
+        });
+      } else if (effectiveBasemap === 'satellite') {
+        provider = new Cesium.UrlTemplateImageryProvider({
+          url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          maximumLevel: 19,
+          credit: 'Esri, Maxar'
+        });
+      } else {
+        provider = new Cesium.UrlTemplateImageryProvider({
+          url: 'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+          maximumLevel: 19,
+          credit: 'CARTO'
+        });
+      }
     }
+
     const layer = layers.addImageryProvider(provider);
     layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR;
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
-    if (isDark) {
-      layer.brightness = 0.38;
-      layer.contrast = 1.35;
-      layer.saturation = 0.12;
-    }
   }, [effectiveBasemap]);
 
   // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
@@ -445,7 +465,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         hierarchy: new Cesium.PolygonHierarchy(outerDioramaRing, [
           new Cesium.PolygonHierarchy(innerCorridorHole)
         ]),
-        material: Cesium.Color.fromCssColorString('#070A11').withAlpha(0.88),
+        material: Cesium.Color.fromCssColorString('#070A11').withAlpha(0.35),
         height: 0,
         classificationType: Cesium.ClassificationType.BOTH
       }
