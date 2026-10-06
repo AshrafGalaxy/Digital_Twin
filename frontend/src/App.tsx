@@ -16,7 +16,6 @@ import { SystemHealthView } from './components/views/SystemHealthView';
 import { PilotEvaluationView } from './components/views/PilotEvaluationView';
 import { LandingPageView } from './components/views/LandingPageView';
 import { ProvisioningView } from './components/views/ProvisioningView';
-import { TimeScrubber } from './components/TimeScrubber';
 import {
   EntityCurrentState,
   IntersectionAsset,
@@ -28,7 +27,6 @@ import {
   AdvisorySummary,
   AuthUser
 } from './types/twin';
-
 import {
   fetchStudyArea,
   fetchIntersections,
@@ -36,8 +34,6 @@ import {
   fetchEnergyEntities,
   fetchCurrentEnvironment,
   fetchCurrentState,
-  fetchHistoricalSnapshot,
-  controlReplaySession,
   connectStateStream,
   fetchAdvisorySummary
 } from './services/api';
@@ -219,59 +215,8 @@ export const App: React.FC = () => {
     'Corridor decision-support platform initialized. Source mode: SIMULATION.'
   );
 
-  // Historical Time Scrubber State (P1-B)
-  const [scrubberMinutesAgo, setScrubberMinutesAgo] = useState<number>(0);
-  const [isScrubberPlaying, setIsScrubberPlaying] = useState<boolean>(false);
-  const [scrubberSpeed, setScrubberSpeed] = useState<number>(1);
   const [isOperationsTableView, setIsOperationsTableView] = useState<boolean>(false);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
-  const [historicalStates, setHistoricalStates] = useState<Record<string, EntityCurrentState>>({});
-
-  // Debounced historical snapshot fetching when scrubber position changes
-  useEffect(() => {
-    if (scrubberMinutesAgo > 0) {
-      const timer = setTimeout(() => {
-        fetchHistoricalSnapshot(scrubberMinutesAgo)
-          .then((snapshot) => {
-            if (snapshot && snapshot.length > 0) {
-              const map: Record<string, EntityCurrentState> = {};
-              snapshot.forEach(s => { map[s.entityId] = s; });
-              setHistoricalStates(map);
-            }
-          })
-          .catch(err => console.error('Historical snapshot fetch error:', err));
-      }, 120);
-      return () => clearTimeout(timer);
-    }
-  }, [scrubberMinutesAgo]);
-
-  const handleScrubChange = useCallback((valueOrUpdater: number | ((prev: number) => number)) => {
-    setScrubberMinutesAgo(prev => {
-      const next = typeof valueOrUpdater === 'function' ? valueOrUpdater(prev) : valueOrUpdater;
-      const clamped = Math.max(0, Math.min(720, next));
-      controlReplaySession({ action: 'seek', minutes_ago: clamped });
-      return clamped;
-    });
-  }, []);
-
-  const handleTogglePlay = useCallback(() => {
-    setIsScrubberPlaying(prev => {
-      const next = !prev;
-      controlReplaySession({ action: next ? 'play' : 'pause', minutes_ago: scrubberMinutesAgo });
-      return next;
-    });
-  }, [scrubberMinutesAgo]);
-
-  const handleSpeedChange = useCallback((spd: number) => {
-    setScrubberSpeed(spd);
-    controlReplaySession({ action: 'speed', speed: spd });
-  }, []);
-
-  const handleJumpToLive = useCallback(() => {
-    setScrubberMinutesAgo(0);
-    setIsScrubberPlaying(false);
-    controlReplaySession({ action: 'jump_to_live' });
-  }, []);
 
   // Load Initial Assets
   useEffect(() => {
@@ -374,13 +319,6 @@ export const App: React.FC = () => {
               freshnessSeconds: 1.0
             }
           }));
-        } else if (data.eventType === 'REPLAY_STATE_CHANGED') {
-          const payload = data.payload;
-          if (payload) {
-            setScrubberMinutesAgo(payload.minutesAgo);
-            setIsScrubberPlaying(payload.isPlaying);
-            if (payload.speed) setScrubberSpeed(payload.speed);
-          }
         }
       },
       (connected) => setWsConnected(connected)
@@ -392,8 +330,6 @@ export const App: React.FC = () => {
   // Real-Time Micro-Fluctuation Telemetry Heartbeat
   // Ensures telemetry values feel organically alive in LIVE mode even during network latency
   useEffect(() => {
-    if (scrubberMinutesAgo > 0) return;
-
     const interval = setInterval(() => {
       const timeSinceWs = Date.now() - lastWsMessageRef.current;
       // If WebSocket broadcast is quiet (> 2200ms), gently step telemetry values
@@ -431,19 +367,14 @@ export const App: React.FC = () => {
     }, 2400);
 
     return () => clearInterval(interval);
-  }, [scrubberMinutesAgo]);
+  }, []);
 
-  // Determine Effective State: Real-Time vs Historical Scrubber Snapshot
-  const isHistoricalMode = scrubberMinutesAgo > 0;
-  const effectiveStates = isHistoricalMode && Object.keys(historicalStates).length > 0
-    ? historicalStates
-    : liveStates;
-  const effectiveMode: SourceMode = isHistoricalMode ? 'REPLAY' : currentMode;
-  const effectiveUpdated = isHistoricalMode
-    ? new Date(Date.now() - scrubberMinutesAgo * 60 * 1000).toISOString()
-    : lastUpdated;
+  // Determine Effective State: Real-Time Live Telemetry
+  const effectiveStates = liveStates;
+  const effectiveMode: SourceMode = currentMode;
+  const effectiveUpdated = lastUpdated;
 
-  // Compute Corridor Telemetry Aggregates based on Effective States
+  // Compute Corridor Telemetry Aggregates based on Live States
   const aggregates = useMemo(() => {
     const segmentStates = roadSegments
       .map(seg => effectiveStates[seg.id]?.metrics)
@@ -459,42 +390,24 @@ export const App: React.FC = () => {
       congestionIndex = totalCongestion / segmentStates.length;
     }
 
-    if (isHistoricalMode) {
-      const targetTime = new Date(Date.now() - scrubberMinutesAgo * 60 * 1000);
-      const hour = targetTime.getHours() + targetTime.getMinutes() / 60;
-      // Phoenix Mall diurnal energy curve: peak commercial HVAC and retail lighting 11:00-21:00
-      const diurnalFactor = Math.max(0, Math.sin(((hour - 6) / 18) * Math.PI));
-      const baseKw = hour >= 6 && hour <= 23 ? 3100 + diurnalFactor * 2150 : 2100;
-      const jitter = ((scrubberMinutesAgo * 13) % 40) - 20;
-      const replayEnergy = Math.round(baseKw + jitter);
-
-      return {
-        avgSpeed: Math.round(avgSpeed * 10) / 10,
-        congestionIndex: Math.round(congestionIndex * 1000) / 1000,
-        energyDemandKw: replayEnergy,
-        activeSensors: 10
-      };
-    }
-
     return {
       avgSpeed: Math.round(avgSpeed * 10) / 10,
       congestionIndex: Math.round(congestionIndex * 1000) / 1000,
       energyDemandKw: liveEnergyKw,
       activeSensors: liveSensorsCount
     };
-  }, [roadSegments, effectiveStates, isHistoricalMode, scrubberMinutesAgo, liveEnergyKw, liveSensorsCount]);
+  }, [roadSegments, effectiveStates, liveEnergyKw, liveSensorsCount]);
 
   // Synchronize dynamic status message for screen readers (WCAG 4.1.3)
   useEffect(() => {
     if (effectiveUpdated) {
       const advisoryCount = advisorySummary?.totalActive || 0;
       const advisoryText = advisoryCount > 0 ? `${advisoryCount} active advisories.` : 'No critical advisories.';
-      const replayText = scrubberMinutesAgo > 0 ? `Historical replay active (${scrubberMinutesAgo}m ago).` : 'Live stream active.';
       setLiveAnnouncement(
-        `Corridor twin state updated at ${new Date(effectiveUpdated).toLocaleTimeString()}. ${replayText} Source mode: ${effectiveMode}. Speed: ${aggregates.avgSpeed.toFixed(1)} km/h. ${advisoryText}`
+        `Corridor twin state updated at ${new Date(effectiveUpdated).toLocaleTimeString()}. Live stream active. Source mode: ${effectiveMode}. Speed: ${aggregates.avgSpeed.toFixed(1)} km/h. ${advisoryText}`
       );
     }
-  }, [effectiveUpdated, effectiveMode, scrubberMinutesAgo, advisorySummary, aggregates.avgSpeed]);
+  }, [effectiveUpdated, effectiveMode, advisorySummary, aggregates.avgSpeed]);
 
   // Synchronize natural viewport scroll mode for landing and auth pages vs locked container for map console
   useEffect(() => {
@@ -643,19 +556,6 @@ export const App: React.FC = () => {
               }}
               onSelectCompareEntity={(comp) => setCompareEntity(comp)}
             />
-
-            {/* P1-B: Interactive Historical Time Scrubber */}
-            {!isOperationsTableView && (
-              <TimeScrubber
-                minutesAgo={scrubberMinutesAgo}
-                isPlaying={isScrubberPlaying}
-                playbackSpeed={scrubberSpeed}
-                onScrubChange={handleScrubChange}
-                onTogglePlay={handleTogglePlay}
-                onSpeedChange={handleSpeedChange}
-                onJumpToLive={handleJumpToLive}
-              />
-            )}
           </div>
         )}
 

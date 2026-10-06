@@ -967,7 +967,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             Connect with the Digital Twin Team
           </h2>
           <p className="final-cta-subtitle">
-            Explore 2D and 3D geospatial views, time scrubber historical replay, microscopic scenario simulations, and commercial microgrid advisories with full provenance guarantees.
+            Explore 2D and 3D geospatial views, microscopic scenario simulations, and commercial microgrid advisories with full provenance guarantees.
           </p>
           <div className="final-cta-actions">
             {authUser ? (
