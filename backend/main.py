@@ -138,12 +138,17 @@ async def ws_operations(websocket: WebSocket):
         }))
         while True:
             data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text(json.dumps({"eventType": "PONG", "channel": "operations"}))
+            clean_data = data.strip().lower()
+            if clean_data in ("ping", '{"type":"ping"}', '{"action":"ping"}'):
+                await websocket.send_text(json.dumps({
+                    "eventType": "PONG",
+                    "channel": "operations",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }))
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as exc:
-        logger.warning("WebSocket operations channel error: %s", exc)
+        logger.info("WebSocket operations client closed: %s", exc)
         manager.disconnect(websocket)
 
 @app.websocket("/ws/system")

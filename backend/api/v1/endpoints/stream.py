@@ -4,6 +4,7 @@ stream.py
 WebSocket connection manager and streaming endpoint for real-time state events.
 """
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timezone, timedelta
@@ -77,30 +78,51 @@ class ReplaySessionManager:
 replay_session = ReplaySessionManager()
 
 class ConnectionManager:
+    """
+    Manages active WebSocket connections with per-socket serialization locks
+    and non-blocking parallel broadcast to prevent ASGI write-race dropouts.
+    """
     def __init__(self):
         self.active_connections: List[WebSocket] = []
+        self._locks: Dict[WebSocket, asyncio.Lock] = {}
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+        self._locks[websocket] = asyncio.Lock()
         logger.info("New WebSocket client connected. Total active: %d", len(self.active_connections))
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
+            self._locks.pop(websocket, None)
             logger.info("WebSocket client disconnected. Total active: %d", len(self.active_connections))
 
+    async def _safe_send(self, websocket: WebSocket, message_json: str) -> bool:
+        lock = self._locks.get(websocket)
+        if lock is None:
+            return False
+        try:
+            async with lock:
+                await websocket.send_text(message_json)
+            return True
+        except (WebSocketDisconnect, RuntimeError):
+            return False
+        except Exception as exc:
+            logger.debug("Failed sending to client: %s", exc)
+            return False
+
     async def broadcast(self, message: Dict[str, Any]):
+        if not self.active_connections:
+            return
         message_json = json.dumps(message)
-        stale_connections = []
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message_json)
-            except Exception:
-                stale_connections.append(connection)
-                
-        for stale in stale_connections:
-            self.disconnect(stale)
+        current_conns = list(self.active_connections)
+        tasks = [self._safe_send(conn, message_json) for conn in current_conns]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for conn, success in zip(current_conns, results):
+            if success is not True:
+                self.disconnect(conn)
 
 manager = ConnectionManager()
 
@@ -169,11 +191,15 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Keep connection alive; clients can send heartbeat pings
             data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text(json.dumps({"eventType": "PONG"}))
+            clean_data = data.strip().lower()
+            if clean_data in ("ping", '{"type":"ping"}', '{"action":"ping"}'):
+                await websocket.send_text(json.dumps({
+                    "eventType": "PONG",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }))
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as exc:
-        logger.warning("WebSocket error: %s", exc)
+        logger.info("WebSocket client closed session: %s", exc)
         manager.disconnect(websocket)
 

@@ -127,7 +127,8 @@ def main():
     # 1. Start Backend Process
     backend_cmd = [
         PYTHON_BIN, "-m", "uvicorn", "backend.main:app",
-        "--host", "0.0.0.0", "--port", "8000", "--reload"
+        "--host", "0.0.0.0", "--port", "8000", "--reload",
+        "--reload-dir", "backend"
     ]
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"

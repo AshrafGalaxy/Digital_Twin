@@ -254,29 +254,101 @@ export async function fetchForecastModels(): Promise<any[]> {
   }
 }
 
+/**
+ * Establishes a resilient bidirectional WebSocket connection to the Digital Twin stream.
+ * Abides by RFC 6455 and enterprise operational standards:
+ * 1. Adaptive 30-second idle keep-alive: monitors traffic and only pings if silent for >= 25s.
+ * 2. Exponential backoff with jitter on reconnects (1s up to 10s max).
+ * 3. Ghost socket neutralization on unmount/reconnect to eliminate duplicate connection churn.
+ */
 export function connectStateStream(
   onUpdate: (data: any) => void,
   onConnectionChange?: (connected: boolean) => void
 ): () => void {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.hostname}:8000/api/v1/stream/state`;
+  const wsUrl = window.location.port === '5173'
+    ? `${protocol}//${window.location.hostname}:8000/api/v1/stream/state`
+    : `${protocol}//${window.location.host}/api/v1/stream/state`;
 
   let ws: WebSocket | null = null;
   let reconnectTimeout: any = null;
+  let watchdogInterval: any = null;
   let isUnmounted = false;
+  let retryCount = 0;
+  let lastTrafficTimestamp = Date.now();
+
+  function startWatchdog() {
+    stopWatchdog();
+    // Standard 30s keep-alive check: triggers a ping frame only if no data has arrived in 25 seconds
+    watchdogInterval = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const idleDurationMs = Date.now() - lastTrafficTimestamp;
+        if (idleDurationMs >= 25000) {
+          try {
+            ws.send('ping');
+          } catch {
+            // Write failure triggers onerror/onclose cycle
+          }
+        }
+      }
+    }, 15000);
+  }
+
+  function stopWatchdog() {
+    if (watchdogInterval) {
+      clearInterval(watchdogInterval);
+      watchdogInterval = null;
+    }
+  }
+
+  function scheduleReconnect() {
+    if (isUnmounted || reconnectTimeout) return;
+    // Standard exponential backoff: 1.0s, 1.5s, 2.25s up to 10s with random jitter
+    const delayMs = Math.min(10000, 1000 * Math.pow(1.5, retryCount)) + Math.random() * 400;
+    retryCount++;
+    reconnectTimeout = setTimeout(() => {
+      reconnectTimeout = null;
+      connect();
+    }, delayMs);
+  }
+
+  function cleanupSocket() {
+    if (ws) {
+      try {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onclose = null;
+        ws.onerror = null;
+        ws.close();
+      } catch {
+        // ignore stale socket close errors
+      }
+      ws = null;
+    }
+  }
 
   function connect() {
     if (isUnmounted) return;
+    cleanupSocket();
+
     try {
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
+        retryCount = 0;
+        lastTrafficTimestamp = Date.now();
+        startWatchdog();
         onConnectionChange?.(true);
       };
 
       ws.onmessage = (event) => {
+        lastTrafficTimestamp = Date.now();
         try {
           const payload = JSON.parse(event.data);
+          // If response is heartbeat pong confirmation, no state mutation required
+          if (payload.eventType === 'PONG') {
+            return;
+          }
           onUpdate(payload);
         } catch (e) {
           console.warn('Failed parsing WS payload', e);
@@ -284,18 +356,19 @@ export function connectStateStream(
       };
 
       ws.onclose = () => {
+        stopWatchdog();
         onConnectionChange?.(false);
-        if (!isUnmounted) {
-          reconnectTimeout = setTimeout(connect, 3000);
-        }
+        scheduleReconnect();
       };
 
       ws.onerror = () => {
-        ws?.close();
+        cleanupSocket();
+        onConnectionChange?.(false);
+        scheduleReconnect();
       };
     } catch {
       onConnectionChange?.(false);
-      reconnectTimeout = setTimeout(connect, 3000);
+      scheduleReconnect();
     }
   }
 
@@ -303,8 +376,12 @@ export function connectStateStream(
 
   return () => {
     isUnmounted = true;
-    clearTimeout(reconnectTimeout);
-    ws?.close();
+    stopWatchdog();
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
+    }
+    cleanupSocket();
   };
 }
 
