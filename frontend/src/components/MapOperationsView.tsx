@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Map, Globe, TableProperties, Satellite, Moon, Zap } from 'lucide-react';
+import { Map, Globe, TableProperties, Satellite, Moon, Compass, Zap } from 'lucide-react';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { CesiumCorridorViewer } from './CesiumCorridorViewer';
@@ -1129,17 +1129,28 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     onMapLoad();
   }, [mapLoaded, styleRevision, studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme, corridorGeoJson]);
 
-  const toggle3DMode = () => {
-    setIs3DMode(prev => {
-      const next = !prev;
-      on3DModeChange?.(next);
-      if (!next && map.current) {
-        setTimeout(() => {
-          map.current?.resize();
-        }, 60);
+  const setViewMode = (mode: '2d' | '3d' | 'table') => {
+    if (mode === 'table') {
+      handleToggleTableView(true);
+    } else if (mode === '3d') {
+      if (isTableView) handleToggleTableView(false);
+      if (!is3DMode) {
+        setIs3DMode(true);
+        on3DModeChange?.(true);
       }
-      return next;
-    });
+    } else {
+      // '2d'
+      if (isTableView) handleToggleTableView(false);
+      if (is3DMode) {
+        setIs3DMode(false);
+        on3DModeChange?.(false);
+        if (map.current) {
+          setTimeout(() => {
+            map.current?.resize();
+          }, 60);
+        }
+      }
+    }
   };
 
   return (
@@ -1220,84 +1231,102 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         />
       )}
 
-      {/* Unified Corridor Map & Presentation Controls (Hidden in Table View) */}
-      {!isTableView && (
-        <div className="map-operations-toolbar" role="toolbar" aria-label="Corridor Map & Presentation Controls">
-          {/* Basemap Selector (Clean Segmented Control) */}
-          <div className="toolbar-segmented-group" role="radiogroup" aria-label="Basemap Style">
-            <button
-              type="button"
-              className={`toolbar-segmented-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
-              onClick={() => setBasemapMode('satellite')}
-              title="Satellite Imagery"
-              role="radio"
-              aria-checked={basemapMode === 'satellite'}
-            >
-              <Satellite size={11} aria-hidden="true" />
-              <span>Satellite</span>
-            </button>
-            <button
-              type="button"
-              className={`toolbar-segmented-btn ${basemapMode === 'streets' ? 'active' : ''}`}
-              onClick={() => setBasemapMode('streets')}
-              title="Clean Street Map"
-              role="radio"
-              aria-checked={basemapMode === 'streets'}
-            >
-              <Map size={11} aria-hidden="true" />
-              <span>Streets</span>
-            </button>
-            <button
-              type="button"
-              className={`toolbar-segmented-btn ${basemapMode === 'dark' ? 'active' : ''}`}
-              onClick={() => setBasemapMode('dark')}
-              title="Dark Operations Canvas"
-              role="radio"
-              aria-checked={basemapMode === 'dark'}
-            >
-              <Moon size={11} aria-hidden="true" />
-              <span>Dark</span>
-            </button>
-          </div>
-
-          <div className="toolbar-divider" aria-hidden="true" />
-
-          {/* 2D / 3D Dimension Toggle (Clean Segmented Switch) */}
-          <div className="toolbar-segmented-group" role="group" aria-label="Map Dimension">
-            <button
-              type="button"
-              className={`toolbar-segmented-btn ${!is3DMode ? 'active' : ''}`}
-              onClick={() => { if (is3DMode) toggle3DMode(); }}
-              title="2D Mapbox Plan View"
-            >
-              <Map size={11} aria-hidden="true" />
-              <span>2D Map</span>
-            </button>
-            <button
-              type="button"
-              className={`toolbar-segmented-btn ${is3DMode ? 'active' : ''}`}
-              onClick={() => { if (!is3DMode) toggle3DMode(); }}
-              title="3D Digital Twin View"
-            >
-              <Globe size={11} aria-hidden="true" />
-              <span>3D Twin</span>
-            </button>
-          </div>
-
-          <div className="toolbar-divider" aria-hidden="true" />
-
-          {/* Accessible Table View Toggle */}
+      {/* Unified Corridor Presentation & Map Controls */}
+      <div
+        className={`map-operations-toolbar ${selectedEntity ? (compareEntity ? 'drawer-comparison-open' : 'drawer-open') : ''}`}
+        role="toolbar"
+        aria-label="Corridor Map and Presentation Controls"
+      >
+        {/* Primary View Mode (2D Map / 3D Twin / Table View) */}
+        <div className="toolbar-segmented-group" role="radiogroup" aria-label="Corridor View Mode">
           <button
             type="button"
-            className="toolbar-action-btn"
-            onClick={() => handleToggleTableView(true)}
-            title="Switch to Accessible Table View (WCAG 2.1 AA)"
+            className={`toolbar-segmented-btn ${!isTableView && !is3DMode ? 'active' : ''}`}
+            onClick={() => setViewMode('2d')}
+            title="2D Map View"
+            role="radio"
+            aria-checked={!isTableView && !is3DMode}
           >
-            <TableProperties size={11} aria-hidden="true" />
+            <Map size={12} aria-hidden="true" />
+            <span>2D Map</span>
+          </button>
+          <button
+            type="button"
+            className={`toolbar-segmented-btn ${!isTableView && is3DMode ? 'active' : ''}`}
+            onClick={() => setViewMode('3d')}
+            title="3D Digital Twin View"
+            role="radio"
+            aria-checked={!isTableView && is3DMode}
+          >
+            <Globe size={12} aria-hidden="true" />
+            <span>3D Twin</span>
+          </button>
+          <button
+            type="button"
+            className={`toolbar-segmented-btn ${isTableView ? 'active' : ''}`}
+            onClick={() => setViewMode('table')}
+            title="Accessible Table View (WCAG 2.1 AA)"
+            role="radio"
+            aria-checked={isTableView}
+          >
+            <TableProperties size={12} aria-hidden="true" />
             <span>Table</span>
           </button>
         </div>
-      )}
+
+        <div className="toolbar-divider" aria-hidden="true" />
+
+        {/* Basemap Style Selector */}
+        <div
+          className={`toolbar-segmented-group ${isTableView ? 'dimmed' : ''}`}
+          role="radiogroup"
+          aria-label="Basemap Style"
+          title={isTableView ? 'Basemap applies to visual 2D and 3D map views' : 'Basemap Style'}
+        >
+          <button
+            type="button"
+            className={`toolbar-segmented-btn ${basemapMode === 'satellite' ? 'active' : ''}`}
+            onClick={() => {
+              setBasemapMode('satellite');
+              if (isTableView) handleToggleTableView(false);
+            }}
+            title="Satellite Imagery"
+            role="radio"
+            aria-checked={basemapMode === 'satellite'}
+          >
+            <Satellite size={12} aria-hidden="true" />
+            <span>Satellite</span>
+          </button>
+          <button
+            type="button"
+            className={`toolbar-segmented-btn ${basemapMode === 'streets' ? 'active' : ''}`}
+            onClick={() => {
+              setBasemapMode('streets');
+              if (isTableView) handleToggleTableView(false);
+            }}
+            title="Clean Street Map"
+            role="radio"
+            aria-checked={basemapMode === 'streets'}
+          >
+            <Compass size={12} aria-hidden="true" />
+            <span>Streets</span>
+          </button>
+          <button
+            type="button"
+            className={`toolbar-segmented-btn ${basemapMode === 'dark' ? 'active' : ''}`}
+            onClick={() => {
+              setBasemapMode('dark');
+              if (isTableView) handleToggleTableView(false);
+            }}
+            title="Dark Operations Canvas"
+            role="radio"
+            aria-checked={basemapMode === 'dark'}
+          >
+            <Moon size={12} aria-hidden="true" />
+            <span>Dark</span>
+          </button>
+        </div>
+      </div>
 
       {/* Accessible Synchronized Table View */}
       {isTableView && (

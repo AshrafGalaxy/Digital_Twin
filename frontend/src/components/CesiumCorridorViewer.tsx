@@ -5,7 +5,7 @@ import { EntityCurrentState, RoadSegmentAsset, IntersectionAsset } from '../type
 import { fetchCorridor3DGeoJson } from '../services/spatialApi';
 import { Corridor3DFeatureCollection } from '../types/spatial';
 import { CesiumCameraControls, CORRIDOR_VIEWPOINTS, CameraViewpoint } from './CesiumCameraControls';
-import { Activity, AlertTriangle, Sunset, Sun, Moon, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, Zap } from 'lucide-react';
 import fallbackBuildingsJson from '../assets/corridor_buildings_3d.json';
 
 interface CesiumCorridorViewerProps {
@@ -137,7 +137,6 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const activeVehiclesRef = useRef<LiveKinematicVehicle[]>([]);
   const lastTimeRef = useRef<number>(performance.now());
   const [activeViewpointId, setActiveViewpointId] = useState<string>('corridor-overview');
-  const [solarTime, setSolarTime] = useState<'midday' | 'golden' | 'night'>('golden');
   const [hoveredBuilding3D, setHoveredBuilding3D] = useState<{
     name: string;
     category: string;
@@ -246,8 +245,8 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         viewer.shadowMap.darkness = 0.55; // Realistic ambient shadow level
       }
 
-      // Initial Golden Hour Sun Position (4:00 PM IST / 10:30 UTC over Pune)
-      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T10:30:00Z');
+      // Operational Midday Sun Position (12:00 PM IST / 06:30 UTC over Nagar Road)
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T06:30:00Z');
       viewer.clock.shouldAnimate = false;
 
       // Constrain Camera Zoom to Corridor Scale (Prevent zooming out into orbit / space)
@@ -997,25 +996,6 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     });
   }, [corridorGeoJson, currentTheme]);
 
-  // 3B. Dynamic Solar Position & Shadow Control Effect
-  useEffect(() => {
-    const viewer = viewerRef.current;
-    if (!viewer) return;
-
-    if (solarTime === 'midday') {
-      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T06:00:00Z'); // 11:30 AM IST
-      viewer.scene.globe.enableLighting = true;
-      viewer.shadows = true;
-    } else if (solarTime === 'golden') {
-      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T10:30:00Z'); // 4:00 PM IST (crisp dramatic architectural shadows)
-      viewer.scene.globe.enableLighting = true;
-      viewer.shadows = true;
-    } else if (solarTime === 'night') {
-      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-09-22T15:30:00Z'); // 9:00 PM IST
-      viewer.scene.globe.enableLighting = true;
-      viewer.shadows = false;
-    }
-  }, [solarTime]);
 
   // 4. Dynamic Live Vehicle Kinematics Engine (Continuous 60 FPS Sub-Second Motion)
   useEffect(() => {
@@ -1189,90 +1169,6 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         onFlyToViewpoint={handleFlyTo}
       />
 
-      {/* Dynamic Solar Time & Building Shadow Toolbar (Pune Local Time) */}
-      <div
-        className="cesium-solar-toolbar"
-        style={{
-          position: 'absolute',
-          top: '38px',
-          right: '12px',
-          zIndex: 10,
-          display: 'flex',
-          gap: '2px',
-          background: 'rgba(15, 23, 42, 0.84)',
-          backdropFilter: 'blur(16px)',
-          padding: '1px 2px',
-          borderRadius: '5px',
-          border: '1px solid var(--border-color, rgba(255, 255, 255, 0.12))',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
-        }}
-        role="toolbar"
-        aria-label="3D Solar Lighting & Shadow Preset"
-      >
-        <button
-          type="button"
-          className={`toolbar-segmented-btn ${solarTime === 'golden' ? 'active' : ''}`}
-          onClick={() => setSolarTime('golden')}
-          title="Golden Hour (4:00 PM IST) - Architectural Shadows across Nagar Road"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '2px 6px',
-            fontSize: '10.5px',
-            borderRadius: '3px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: solarTime === 'golden' ? 'rgba(217, 119, 6, 0.35)' : 'transparent',
-            color: solarTime === 'golden' ? '#FBBF24' : 'var(--text-muted, #94A3B8)'
-          }}
-        >
-          <Sunset size={10} aria-hidden="true" />
-          <span>Golden (4 PM)</span>
-        </button>
-        <button
-          type="button"
-          className={`toolbar-segmented-btn ${solarTime === 'midday' ? 'active' : ''}`}
-          onClick={() => setSolarTime('midday')}
-          title="Midday (11:30 AM IST) - Overhead Sun"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '2px 6px',
-            fontSize: '10.5px',
-            borderRadius: '3px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: solarTime === 'midday' ? 'rgba(37, 99, 235, 0.35)' : 'transparent',
-            color: solarTime === 'midday' ? '#60A5FA' : 'var(--text-muted, #94A3B8)'
-          }}
-        >
-          <Sun size={10} aria-hidden="true" />
-          <span>Day (11 AM)</span>
-        </button>
-        <button
-          type="button"
-          className={`toolbar-segmented-btn ${solarTime === 'night' ? 'active' : ''}`}
-          onClick={() => setSolarTime('night')}
-          title="Night Operations (9:00 PM IST)"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '2px 6px',
-            fontSize: '10.5px',
-            borderRadius: '3px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: solarTime === 'night' ? 'rgba(124, 58, 237, 0.35)' : 'transparent',
-            color: solarTime === 'night' ? '#A78BFA' : 'var(--text-muted, #94A3B8)'
-          }}
-        >
-          <Moon size={10} aria-hidden="true" />
-          <span>Night</span>
-        </button>
-      </div>
 
       {/* 3D Building Dynamic Hover Tooltip Card */}
       {hoveredBuilding3D && hoverPos3D && (
