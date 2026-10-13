@@ -445,56 +445,6 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         });
       }
 
-      // 0B. Native Mapbox 3D Building Extrusions (from composite vector tiles)
-      if (!currentMap.getLayer('3d-buildings-vector') && currentMap.getSource('composite')) {
-        const layers = currentMap.getStyle()?.layers;
-        const labelLayerId = layers?.find(
-          (l: any) => l.type === 'symbol' && l.layout?.['text-field']
-        )?.id;
-
-        try {
-          currentMap.addLayer(
-            {
-              id: '3d-buildings-vector',
-              source: 'composite',
-              'source-layer': 'building',
-              filter: ['==', 'extrude', 'true'],
-              type: 'fill-extrusion',
-              minzoom: 14,
-              paint: {
-                'fill-extrusion-color': [
-                  'interpolate',
-                  ['linear'],
-                  ['get', 'height'],
-                  0, '#111827',
-                  25, '#1E293B',
-                  50, '#334155',
-                  100, '#38BDF8'
-                ],
-                'fill-extrusion-height': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  14, 0,
-                  14.2, ['get', 'height']
-                ],
-                'fill-extrusion-base': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  14, 0,
-                  14.2, ['get', 'min_height']
-                ],
-                'fill-extrusion-opacity': 0.68
-              }
-            },
-            labelLayerId
-          );
-        } catch {
-          // If style doesn't have composite source (e.g. satellite), ignore cleanly
-        }
-      }
-
       // 1. Add Study Area Boundary Source and Layers
       if (studyAreaGeoJson && !currentMap.getSource('study-area')) {
         currentMap.addSource('study-area', {
@@ -880,8 +830,12 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         });
       }
 
-      // 4. Add 2D & 3D Building Layers (Category Color-Coded with Interactive Hover Tooltips)
-      const bldFeatures = corridorGeoJson?.features.filter(f => f.properties?.layer === 'buildings') || [];
+      // 4. Add 2D & 3D Building Layers (Authoritative Digital Twin Footprints Aligned with 3D CCM)
+      const bldFeatures = corridorGeoJson?.features.filter(f => {
+        if (f.properties?.layer !== 'buildings') return false;
+        if (f.id?.includes('BLD-METRO-') || f.properties?.category === 'TRANSIT_INFRASTRUCTURE') return false;
+        return true;
+      }) || [];
       const categoryColorMap: Record<string, { fill: string; border: string }> = {
         COMMERCIAL_RETAIL: { fill: '#0284C7', border: '#38BDF8' },
         COMMERCIAL_IT: { fill: '#2563EB', border: '#60A5FA' },
