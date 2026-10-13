@@ -4502,9 +4502,10 @@ body {
 
 .cesium-overlay-legend {
   position: absolute;
-  top: 184px;
+  bottom: 24px;
+  top: auto;
   left: var(--space-3, 12px);
-  width: 336px;
+  width: 320px;
   box-sizing: border-box;
   z-index: 10;
   display: flex;

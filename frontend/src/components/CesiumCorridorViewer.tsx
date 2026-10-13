@@ -149,6 +149,8 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
+  const activeSourceMode = Object.values(liveStates)[0]?.sourceMode || 'REPLAY';
+
   // Fresh mutable refs for click handlers to prevent stale closure bugs
   const roadSegmentsRef = useRef(roadSegments);
   roadSegmentsRef.current = roadSegments;
@@ -1182,7 +1184,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       <div className="cesium-overlay-legend">
         <div className="cesium-status-badge">
           <Activity size={13} className="text-emerald-400 animate-pulse" />
-          <span>3D Corridor Telemetry • Replay / Synthetic Kinematics (sourceMode: REPLAY)</span>
+          <span>3D Corridor Telemetry • {activeSourceMode} Kinematics</span>
         </div>
         <div className="cesium-legend-items">
           <span className="legend-chip">
