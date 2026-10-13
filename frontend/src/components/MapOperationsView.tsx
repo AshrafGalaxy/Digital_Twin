@@ -422,15 +422,6 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           data: CORRIDOR_INVERSE_MASK_GEOJSON as any
         });
 
-        currentMap.addLayer({
-          id: 'corridor-inverse-mask-fill',
-          type: 'fill',
-          source: 'corridor-inverse-mask',
-          paint: {
-            'fill-color': '#050811',
-            'fill-opacity': 0.32 // Soft diorama focus: spotlighting corridor while keeping city context visible
-          }
-        });
 
         currentMap.addLayer({
           id: 'corridor-perimeter-glow',
