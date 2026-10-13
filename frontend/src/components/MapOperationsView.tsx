@@ -270,7 +270,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     if (onToggleTableView) onToggleTableView(val);
   };
 
-  // Fetch Spatial Corridor 3D GeoJSON for secondary streets and urban vegetation
+  // Fetch Spatial Corridor 3D GeoJSON for secondary streets and spatial layers
   useEffect(() => {
     fetchCorridor3DGeoJson()
       .then(data => setCorridorGeoJson(data))
@@ -565,42 +565,6 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           }
         }
 
-        // 1.6 Add Urban Median Trees (Green canopy markers along Nagar Road)
-        const treeFeatures = corridorGeoJson.features.filter(f => f.properties?.layer === 'trees');
-        if (treeFeatures.length > 0) {
-          if (!currentMap.getSource('urban-trees')) {
-            currentMap.addSource('urban-trees', {
-              type: 'geojson',
-              data: {
-                type: 'FeatureCollection',
-                features: treeFeatures
-              } as any
-            });
-
-            currentMap.addLayer({
-              id: 'urban-trees-layer',
-              type: 'circle',
-              source: 'urban-trees',
-              paint: {
-                'circle-color': '#2D6A4F',
-                'circle-radius': [
-                  'interpolate', ['linear'], ['zoom'],
-                  12, 2.5,
-                  14, 4,
-                  16, 6
-                ],
-                'circle-stroke-color': '#52B788',
-                'circle-stroke-width': 1.5,
-                'circle-opacity': 0.9
-              }
-            });
-          } else {
-            (currentMap.getSource('urban-trees') as mapboxgl.GeoJSONSource).setData({
-              type: 'FeatureCollection',
-              features: treeFeatures
-            } as any);
-          }
-        }
       }
 
       // 2. Add Road Segments (Navigation-Grade Dual-Carriageway Ribbons)

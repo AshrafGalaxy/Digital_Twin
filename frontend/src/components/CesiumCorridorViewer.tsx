@@ -436,7 +436,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
   }, [effectiveBasemap]);
 
-  // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Trees, Secondary Streets)
+  // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Secondary Streets)
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || !corridorGeoJson) return;
@@ -567,48 +567,6 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         });
       }
 
-      // B. Realistic 3D Sidewalk Trees (Wood Trunk Cylinder + Organic Foliage Ellipsoid along sidewalks)
-      if (layer === 'trees' && feature.geometry.type === 'Point') {
-        const [lng, lat] = feature.geometry.coordinates;
-        const treeH = props.heightMeters || 7.5;
-        const trunkH = props.trunkHeightMeters || 2.6;
-        const canopyH = Math.max(2.4, treeH - trunkH);
-        const canopyR = (props.canopyDiameterMeters || 5.5) / 2;
-        const isFlowering = Boolean(props.isFlowering);
-
-        // 1. Natural Wood Trunk (Slender cylinder planted on sidewalk)
-        viewer.entities.add({
-          name: `${props.species || 'Street Tree'} Trunk`,
-          position: Cesium.Cartesian3.fromDegrees(lng, lat, trunkH / 2),
-          cylinder: {
-            length: trunkH,
-            topRadius: 0.22,
-            bottomRadius: 0.28,
-            material: Cesium.Color.fromCssColorString('#4A2E18'),
-            outline: false
-          }
-        });
-
-        // 2. Leafy / Flowering Organic Canopy (Ellipsoid sitting atop trunk)
-        viewer.entities.add({
-          id: feature.id,
-          name: props.species || 'Sidewalk Tree Canopy',
-          position: Cesium.Cartesian3.fromDegrees(lng, lat, trunkH + canopyH * 0.65),
-          ellipsoid: {
-            radii: new Cesium.Cartesian3(canopyR, canopyR, canopyH * 0.75),
-            material: isFlowering
-              ? Cesium.Color.fromCssColorString('#D9531E').withAlpha(0.92) // Gulmohar fiery bloom
-              : Cesium.Color.fromCssColorString('#2E7D32').withAlpha(0.92), // Lush Neem foliage
-            outline: true,
-            outlineColor: Cesium.Color.fromCssColorString(isFlowering ? '#EA580C' : '#15803D').withAlpha(0.6)
-          },
-          properties: {
-            entityId: feature.id,
-            entityType: 'UrbanTreeCanopy',
-            species: props.species
-          }
-        });
-      }
 
       // C. Secondary Connector Streets
       if (layer === 'secondary_streets' && feature.geometry.type === 'LineString') {
