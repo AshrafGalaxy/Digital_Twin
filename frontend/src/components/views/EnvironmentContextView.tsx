@@ -5,7 +5,8 @@ import {
   HelpCircle,
   Activity,
   MapPin,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 import { SourceMode, EnvironmentState } from '../../types/twin';
 import { fetchCurrentEnvironment } from '../../services/api';
@@ -42,25 +43,32 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
   );
   const [stationTelemetry, setStationTelemetry] = useState<EnvironmentState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const loadStationData = (stationId: string) => {
+    setIsLoading(true);
+    setFetchError(null);
+    fetchCurrentEnvironment(stationId)
+      .then((data) => {
+        setStationTelemetry(data);
+        setFetchError(null);
+      })
+      .catch(() => {
+        setFetchError('Station telemetry feed is currently unreachable. Displaying calibrated reference observations.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   // Fetch updated station telemetry when selection changes
   useEffect(() => {
-    let isSubscribed = true;
-    setIsLoading(true);
-    fetchCurrentEnvironment(selectedStationId)
-      .then((data) => {
-        if (isSubscribed) {
-          setStationTelemetry(data);
-          setIsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (isSubscribed) setIsLoading(false);
-      });
-    return () => {
-      isSubscribed = false;
-    };
+    loadStationData(selectedStationId);
   }, [selectedStationId]);
+
+  const handleRefresh = () => {
+    loadStationData(selectedStationId);
+  };
 
   // Prefer station-specific telemetry if fetched, fallback to broadcast environmentData, then calibrated defaults
   const activeData: EnvironmentState = stationTelemetry || environmentData || {
@@ -82,15 +90,15 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
     lastSynced: 'Just now'
   };
 
-  const aqi = activeData.aqi;
-  const aqiCategory = activeData.aqiCategory;
-  const pm25 = activeData.pm25;
-  const pm10 = activeData.pm10;
-  const no2 = activeData.no2;
-  const temperatureC = activeData.temperatureC;
-  const humidityPct = activeData.humidityPct;
-  const windSpeedKmh = activeData.windSpeedKmh;
-  const windDir = activeData.windDir;
+  const aqi = activeData.aqi ?? 135;
+  const aqiCategory = activeData.aqiCategory || 'Moderate';
+  const pm25 = activeData.pm25 ?? 48.5;
+  const pm10 = activeData.pm10 ?? 89.0;
+  const no2 = activeData.no2 ?? 34.8;
+  const temperatureC = activeData.temperatureC ?? 28.8;
+  const humidityPct = activeData.humidityPct ?? 56;
+  const windSpeedKmh = activeData.windSpeedKmh ?? 11.4;
+  const windDir = activeData.windDir || 'WSW (242°)';
   const effectiveSourceMode = activeData.sourceMode || sourceMode;
 
   // Statistical anomaly evaluation (Isolation Forest + dynamic Z-score against 45.0 baseline)
@@ -157,12 +165,35 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
         </div>
 
         <div className="analytics-meta-pill">
-          <Activity size={14} color={isLoading ? '#F59E0B' : '#10B981'} />
+          <Activity size={14} color={isLoading ? '#F59E0B' : fetchError ? '#F85149' : '#10B981'} />
           <span>
-            {isLoading ? 'Updating Atmospheric Telemetry...' : 'Continuous Monitoring Feed | Status: ONLINE'}
+            {isLoading
+              ? 'Updating Atmospheric Telemetry...'
+              : fetchError
+              ? 'Station Feed Offline | Reference Fallback'
+              : 'Continuous Monitoring Feed | Status: ONLINE'}
           </span>
         </div>
       </div>
+
+      {/* Dynamic Network / Fetch Error Notice */}
+      {fetchError && (
+        <div className="integrity-caveat-banner" style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)' }}>
+          <AlertTriangle size={18} color="#EF4444" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+            <span>{fetchError}</span>
+            <button
+              type="button"
+              className="btn-select-sm"
+              onClick={handleRefresh}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', height: '26px' }}
+            >
+              <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
+              <span>Retry</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Metric Cards: AQI & Weather */}
       <div className="quick-metrics-row-four">
