@@ -571,7 +571,8 @@ body {
   background-color: var(--bg-surface);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
-  z-index: 20;
+  z-index: 50;
+  position: relative;
 }
 
 .header-top-row {
@@ -4347,7 +4348,7 @@ body {
   position: absolute;
   inset: 0;
   background: var(--bg-app);
-  z-index: 35;
+  z-index: 30;
   overflow-y: auto;
   padding: var(--space-5);
   padding-top: 60px;
