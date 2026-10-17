@@ -123,9 +123,26 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
       }
     }
     return null;
-  }, [liveStates, activeFacility.id]);
+  }, [liveStates, activeFacility?.id]);
 
-  const contractLimitKw = activeFacility.electricalConnection?.contractDemandKW || 6800.0;
+  if (!activeFacility) {
+    return (
+      <div className="view-container energy-analytics-view">
+        <div className="view-header">
+          <h1 className="view-title">Corridor Energy Analytics & Commercial Load Forecasting</h1>
+        </div>
+        <div className="analytics-card" style={{ padding: '40px', textAlign: 'center' }}>
+          <Building size={36} className="text-muted" style={{ margin: '0 auto 12px' }} />
+          <h3>No Commercial Energy Facilities Configured</h3>
+          <p className="text-muted">No monitored building assets are registered in the current corridor digital twin.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const rawContractLimitKw = activeFacility.electricalConnection?.contractDemandKW;
+  const contractLimitKw = (rawContractLimitKw !== undefined && rawContractLimitKw > 0) ? rawContractLimitKw : 6800.0;
+  const safeContractLimitKw = Math.max(1, contractLimitKw);
   const sanctionedKva = activeFacility.electricalConnection?.sanctionedLoadKVA || Math.round(contractLimitKw * 1.25);
   const substationName = activeFacility.electricalConnection?.substation || '22kV Primary Substation Feeder';
   const powerFactor = activeTelemetry?.powerFactor ?? activeFacility.baselineMetrics?.powerFactor ?? 0.98;
@@ -148,7 +165,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   }, [activeTelemetry, activeFacility.baselineMetrics]);
 
   const headroomKw = Math.max(0, contractLimitKw - currentKw);
-  const loadFactor = Math.min(100, Math.max(0, (currentKw / contractLimitKw) * 100));
+  const loadFactor = Math.min(100, Math.max(0, (currentKw / safeContractLimitKw) * 100));
   const carbonRateKgPerKwh = 0.82; // Regional Grid average
   const currentCarbonHourlyKg = currentKw * carbonRateKgPerKwh;
 
@@ -156,13 +173,13 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   const normalThresholdKw = Math.round(contractLimitKw * 0.70);
   const elevatedThresholdKw = Math.round(contractLimitKw * 0.85);
 
-  const nightDemandKw = activeFacility.baselineMetrics?.nightBaseDemandKW || Math.round(contractLimitKw * 0.16);
-  const daytimeDemandKw = activeFacility.baselineMetrics?.averageDaytimeDemandKW || Math.round(contractLimitKw * 0.62);
-  const peakDemandKw = activeFacility.baselineMetrics?.peakEveningDemandKW || Math.round(contractLimitKw * 0.87);
+  const nightDemandKw = activeFacility.baselineMetrics?.nightBaseDemandKW ?? Math.round(contractLimitKw * 0.16);
+  const daytimeDemandKw = activeFacility.baselineMetrics?.averageDaytimeDemandKW ?? Math.round(contractLimitKw * 0.62);
+  const peakDemandKw = activeFacility.baselineMetrics?.peakEveningDemandKW ?? Math.round(contractLimitKw * 0.87);
 
-  const nightPct = Math.min(100, Math.round((nightDemandKw / contractLimitKw) * 100));
-  const daytimePct = Math.min(100, Math.round((daytimeDemandKw / contractLimitKw) * 100));
-  const peakPct = Math.min(100, Math.round((peakDemandKw / contractLimitKw) * 100));
+  const nightPct = Math.min(100, Math.round((nightDemandKw / safeContractLimitKw) * 100));
+  const daytimePct = Math.min(100, Math.round((daytimeDemandKw / safeContractLimitKw) * 100));
+  const peakPct = Math.min(100, Math.round((peakDemandKw / safeContractLimitKw) * 100));
 
   return (
     <div className="view-container energy-analytics-view">
@@ -207,7 +224,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
           >
             {facilities.map((fac) => (
               <option key={fac.id} value={fac.id}>
-                {fac.name} ({fac.grossFloorAreaSqMeters.toLocaleString()} m² GFA)
+                {fac.name} ({(fac.grossFloorAreaSqMeters || 0).toLocaleString()} m² GFA)
               </option>
             ))}
           </select>
@@ -269,7 +286,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             {substationName}
           </span>
           <span className="metric-box-sub">
-            Power Factor: {powerFactor.toFixed(2)} lag ({activeFacility.category.replace('_', ' ')})
+            Power Factor: {powerFactor.toFixed(2)} lag ({(activeFacility.category || 'COMMERCIAL').replace(/_/g, ' ')})
           </span>
         </div>
       </div>
@@ -312,7 +329,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
               <span className="card-title">Diurnal Load Profiles & Threshold Rules</span>
             </div>
             <span className="text-muted" style={{ fontSize: '12px' }}>
-              {activeFacility.category.replace('_', ' ')} Archetype
+              {(activeFacility.category || 'COMMERCIAL').replace(/_/g, ' ')} Archetype
             </span>
           </div>
 
