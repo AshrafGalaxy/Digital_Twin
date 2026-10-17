@@ -61,7 +61,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
         <div>
           <h1 className="view-title">Corridor Traffic Analytics & Mobility Forecasting</h1>
           <p className="view-subtitle">
-            Near-term speed forecasting, diurnal trend analysis, and segment congestion rankings on Nagar Road (SH-27).
+            Near-term speed forecasting, diurnal trend analysis, and segment congestion rankings across arterial corridor segments.
           </p>
         </div>
         <div className="view-header-badges">
@@ -164,6 +164,13 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                 </tr>
               </thead>
               <tbody>
+                {rankedSegments.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--color-text-muted)' }}>
+                      No corridor road segments available in current telemetry mode.
+                    </td>
+                  </tr>
+                )}
                 {rankedSegments.map(seg => (
                   <tr
                     key={seg.id}

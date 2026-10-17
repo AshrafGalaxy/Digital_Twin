@@ -1358,7 +1358,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                     <td>{ix.controlType}</td>
                     <td className="mono-cell">{ix.cycleTimeSec}s</td>
                     <td style={{ fontSize: '12px' }}>
-                      {ix.connectedSegments?.join(', ') || 'Nagar Road Arterial'}
+                      {ix.connectedSegments?.join(', ') || 'Corridor Arterial Network'}
                     </td>
                     <td>
                       <button
