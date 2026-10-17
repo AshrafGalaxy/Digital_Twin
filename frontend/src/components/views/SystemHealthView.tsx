@@ -11,6 +11,8 @@ import {
   FileText,
   AlertTriangle,
   ExternalLink,
+  RefreshCw,
+  WifiOff,
   X
 } from 'lucide-react';
 import { SourceMode } from '../../types/twin';
@@ -39,6 +41,9 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 }) => {
   const [healthData, setHealthData] = useState<any>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [streamerError, setStreamerError] = useState<string | null>(null);
+  const [manifestError, setManifestError] = useState<string | null>(null);
   const [catalogData, setCatalogData] = useState<DatasetCatalogResponse | null>(null);
   const [selectedManifest, setSelectedManifest] = useState<DetailedDatasetManifest | null>(null);
   const [loadingManifestId, setLoadingManifestId] = useState<string | null>(null);
@@ -52,15 +57,30 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
   const fetchHealth = async () => {
     try {
       setRefreshing(true);
+      setFetchError(null);
       const [healthRes, catalog, quarantine, streamer] = await Promise.all([
-        fetch('/api/v1/health'),
-        fetchDatasetManifests(),
-        fetchQuarantineQueue(),
-        fetchStreamerStatus()
+        fetch('/api/v1/health').catch((e) => {
+          console.warn('Health endpoint fetch failed', e);
+          return null;
+        }),
+        fetchDatasetManifests().catch((e) => {
+          console.warn('Manifests fetch failed', e);
+          return null;
+        }),
+        fetchQuarantineQueue().catch((e) => {
+          console.warn('Quarantine queue fetch failed', e);
+          return null;
+        }),
+        fetchStreamerStatus().catch((e) => {
+          console.warn('Streamer status fetch failed', e);
+          return null;
+        })
       ]);
-      if (healthRes.ok) {
+      if (healthRes && healthRes.ok) {
         const data = await healthRes.json();
         setHealthData(data);
+      } else if (!healthData) {
+        setFetchError('Health telemetry service currently unreachable. Subsystem status may be incomplete.');
       }
       if (catalog) {
         setCatalogData(catalog);
@@ -71,8 +91,9 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
       if (streamer) {
         setStreamerData(streamer);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch system health, manifests, quarantine, or streamer status', err);
+      setFetchError('Failed to fetch system health diagnostics and telemetry catalog. Please verify backend service availability.');
     } finally {
       setRefreshing(false);
     }
@@ -80,14 +101,16 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
   const handleStreamerAction = async (action: 'start' | 'stop' | 'pause' | 'resume' | 'tick_once') => {
     try {
+      setStreamerError(null);
       if (action === 'tick_once') setTickingStreamer(true);
       const res = await controlStreamer({ action });
       if (res) {
         setStreamerData(res);
         await fetchHealth();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to control streamer', err);
+      setStreamerError(err?.message || `Failed to execute streamer ${action} action. Verify streamer process state.`);
     } finally {
       setTickingStreamer(false);
     }
@@ -95,14 +118,16 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
 
   const handleInspectManifest = async (datasetId: string) => {
     try {
+      setManifestError(null);
       setLoadingManifestId(datasetId);
       const manifest = await fetchDatasetManifest(datasetId);
       if (manifest) {
         setSelectedManifest(manifest);
         setManifestModalOpen(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load dataset manifest', err);
+      setManifestError(err?.message || `Failed to load manifest for dataset ${datasetId}.`);
     } finally {
       setLoadingManifestId(null);
     }
@@ -148,9 +173,55 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         </div>
       </div>
 
+      {/* Network / Health Fetch Error Notice */}
+      {fetchError && (
+        <div
+          className="integrity-caveat-banner"
+          style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)', marginBottom: '16px' }}
+        >
+          <AlertTriangle size={18} color="#EF4444" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+            <span>{fetchError}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={fetchHealth}
+                style={{ height: '28px', padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                <span>Retry</span>
+              </button>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setFetchError(null)}
+                style={{ color: 'var(--color-text-secondary)', padding: '4px', cursor: 'pointer' }}
+                aria-label="Dismiss error notice"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live WebSocket Disconnection Notice */}
+      {!wsConnected && (
+        <div
+          className="integrity-caveat-banner"
+          style={{ borderColor: 'rgba(234, 179, 8, 0.4)', background: 'rgba(234, 179, 8, 0.08)', marginBottom: '16px' }}
+        >
+          <WifiOff size={18} color="#EAB308" style={{ flexShrink: 0 }} />
+          <div>
+            <strong>Live WebSocket Disconnected:</strong> Real-time browser telemetry stream is offline. Attempting automatic reconnection to corridor broadcaster in background.
+          </div>
+        </div>
+      )}
+
       {/* Subsystem Health Cards Grid */}
       <div className="quick-metrics-row-four" style={{ marginBottom: '20px' }}>
-        {/* Database Persistence Engine (P4-A) */}
+        {/* Database Persistence Engine */}
         <div className="metric-box">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="metric-box-label">
@@ -229,6 +300,28 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
               <span>Refresh</span>
             </button>
           </div>
+
+          {/* Streamer Command Error Alert */}
+          {streamerError && (
+            <div
+              className="integrity-caveat-banner"
+              style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)', margin: '8px 0 12px' }}
+            >
+              <AlertTriangle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', fontSize: '13px' }}>
+                <span>{streamerError}</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => setStreamerError(null)}
+                  style={{ color: 'var(--color-text-secondary)', padding: '2px', cursor: 'pointer' }}
+                  aria-label="Dismiss streamer error"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          )}
 
           <table className="analytics-table">
             <thead>
@@ -424,7 +517,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         </div>
       </div>
 
-      {/* Track 3 P3-A: Dataset Governance & Manifest Catalog */}
+      {/* Dataset Governance & Manifest Catalog */}
       <div className="analytics-card" style={{ marginTop: '20px' }}>
         <div className="analytics-card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -440,6 +533,28 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Manifest Inspection Error Notice */}
+        {manifestError && (
+          <div
+            className="integrity-caveat-banner"
+            style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)', margin: '8px 0 16px' }}
+          >
+            <AlertTriangle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', fontSize: '13px' }}>
+              <span>{manifestError}</span>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setManifestError(null)}
+                style={{ color: 'var(--color-text-secondary)', padding: '2px', cursor: 'pointer' }}
+                aria-label="Dismiss manifest error"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+        )}
 
         <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
           All forecasting models and simulation pipelines strictly consume approved datasets with verified provenance, explicit licensing, locality transparency, and bounded operational claims.
@@ -696,7 +811,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
         </div>
       )}
 
-      {/* Track 3 P3-B: Quarantine Dead-Letter Queue Inspection Modal */}
+      {/* Quarantine Dead-Letter Queue Inspection Modal */}
       {quarantineModalOpen && (
         <div
           style={{
@@ -801,7 +916,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
             </div>
 
             {/* Quarantined Records Table */}
-            {(!quarantineData || quarantineData.records.length === 0) ? (
+            {(!quarantineData || !quarantineData.records || quarantineData.records.length === 0) ? (
               <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-secondary, #8B949E)', background: 'rgba(22, 27, 34, 0.6)', borderRadius: '8px', border: '1px solid #30363D' }}>
                 <FileCheck size={32} color="#10B981" style={{ margin: '0 auto 8px' }} />
                 <div style={{ fontWeight: 600, fontSize: '14px', color: '#10B981' }}>Quarantine Queue is Clean</div>
@@ -820,13 +935,13 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {quarantineData.records
+                    {(quarantineData.records || [])
                       .filter(r => selectedQuarantineReason === 'ALL' || r.rejectionReason === selectedQuarantineReason)
                       .map((r) => (
                         <tr key={r.id}>
                           <td className="font-mono" style={{ fontWeight: 600, color: '#DC2626' }}>#{r.id}</td>
                           <td className="font-mono" style={{ fontSize: '12px' }}>
-                            {new Date(r.quarantinedAt).toLocaleTimeString()}
+                            {r.quarantinedAt ? new Date(r.quarantinedAt).toLocaleTimeString() : 'N/A'}
                           </td>
                           <td>
                             <div className="font-mono" style={{ fontSize: '12px', fontWeight: 600 }}>{r.entityId || 'N/A'}</div>
