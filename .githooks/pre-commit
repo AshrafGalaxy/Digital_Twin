@@ -1,0 +1,12 @@
+#!/bin/sh
+# Git pre-commit hook wrapper for Digital Twin platform
+if [ -f "./.venv/Scripts/python.exe" ]; then
+  PYTHON="./.venv/Scripts/python.exe"
+elif [ -f "./.venv/bin/python" ]; then
+  PYTHON="./.venv/bin/python"
+else
+  PYTHON="python"
+fi
+
+"$PYTHON" .githooks/check_pre_commit.py "$@"
+exit $?
