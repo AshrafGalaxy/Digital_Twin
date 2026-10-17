@@ -17,7 +17,8 @@ import {
   Check,
   MapPin,
   CheckCircle2,
-  ShieldAlert
+  ShieldAlert,
+  X
 } from 'lucide-react';
 import {
   fetchEvaluationBenchmarks,
@@ -32,6 +33,8 @@ export const PilotEvaluationView: React.FC = () => {
   const [markdownText, setMarkdownText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'benchmarks' | 'briefing' | 'provenance'>('benchmarks');
   const [briefingMode, setBriefingMode] = useState<'formatted' | 'raw'>('formatted');
   const [copied, setCopied] = useState<boolean>(false);
@@ -54,6 +57,7 @@ export const PilotEvaluationView: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     setError(null);
+    setExportError(null);
     try {
       const [benchData, reportData, mdData] = await Promise.all([
         fetchEvaluationBenchmarks(),
@@ -62,9 +66,9 @@ export const PilotEvaluationView: React.FC = () => {
       ]);
       setBenchmarks(benchData);
       setReport(reportData);
-      setMarkdownText(mdData);
+      setMarkdownText(mdData || '');
     } catch (err: any) {
-      setError(err.message || 'Failed to load evaluation briefing data');
+      setError(err?.message || 'Failed to load evaluation briefing data');
     } finally {
       setIsLoading(false);
     }
@@ -72,19 +76,27 @@ export const PilotEvaluationView: React.FC = () => {
 
   const handleDownloadMarkdown = () => {
     if (!markdownText) return;
-    const blob = new Blob([markdownText], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nagar_road_executive_briefing_${new Date().toISOString().slice(0, 10)}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      setExportError(null);
+      const blob = new Blob([markdownText], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `corridor_executive_briefing_${new Date().toISOString().slice(0, 10)}.md`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to download markdown briefing', err);
+      setExportError(err?.message || 'Failed to download executive briefing markdown file.');
+    }
   };
 
   const handleDownloadBundle = async () => {
     try {
+      setIsExporting(true);
+      setExportError(null);
       const bundle = await fetchCorridorBundle();
       const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -96,7 +108,10 @@ export const PilotEvaluationView: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(`Export failed: ${err.message}`);
+      console.error('Failed to export corridor bundle', err);
+      setExportError(err?.message || 'Export failed: Unable to fetch corridor evaluation bundle.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -158,15 +173,19 @@ export const PilotEvaluationView: React.FC = () => {
             className="preset-pill-btn"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(47, 129, 247, 0.1)', borderColor: 'rgba(47, 129, 247, 0.35)', color: 'var(--color-primary)' }}
             onClick={handleDownloadBundle}
+            disabled={isExporting}
+            title="Export full evaluation metrics and metadata as JSON"
           >
-            <Database size={13} />
-            <span>Export Bundle (.json)</span>
+            <Database size={13} className={isExporting ? 'btn-spinner' : ''} />
+            <span>{isExporting ? 'Exporting...' : 'Export Bundle (.json)'}</span>
           </button>
           <button
             type="button"
             className="run-scenario-btn"
-            style={{ margin: 0, padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ margin: 0, padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', opacity: !markdownText ? 0.6 : 1 }}
             onClick={handleDownloadMarkdown}
+            disabled={!markdownText}
+            title={!markdownText ? 'Briefing document not loaded yet' : 'Download Briefing (.md)'}
           >
             <Download size={13} />
             <span>Download Briefing (.md)</span>
@@ -174,10 +193,58 @@ export const PilotEvaluationView: React.FC = () => {
         </div>
       </div>
 
+      {/* Network / Fetch Error Notice */}
       {error && (
-        <div className="run-error-box" style={{ marginBottom: '16px' }}>
-          <AlertTriangle size={16} />
-          <span>{error}</span>
+        <div
+          className="integrity-caveat-banner"
+          style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)', marginBottom: '16px' }}
+        >
+          <AlertTriangle size={18} color="#EF4444" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+            <span>{error}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={loadData}
+                style={{ height: '28px', padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                <RefreshCw size={12} className={isLoading ? 'btn-spinner' : ''} />
+                <span>Retry</span>
+              </button>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setError(null)}
+                style={{ color: 'var(--color-text-secondary)', padding: '4px', cursor: 'pointer' }}
+                aria-label="Dismiss error notice"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Error Notice */}
+      {exportError && (
+        <div
+          className="integrity-caveat-banner"
+          style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)', marginBottom: '16px' }}
+        >
+          <AlertTriangle size={18} color="#EF4444" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+            <span>{exportError}</span>
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => setExportError(null)}
+              style={{ color: 'var(--color-text-secondary)', padding: '4px', cursor: 'pointer' }}
+              aria-label="Dismiss export error"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -328,7 +395,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <tr>
                   <td>
                     <div className="metric-row-name">15-Minute Horizon</div>
-                    <div className="metric-row-sub">Nagar Road EB Speed</div>
+                    <div className="metric-row-sub">Arterial EB Corridor Speed</div>
                   </td>
                   <td className="mono-cell">{h15?.persistenceMae ?? 3.25} km/h</td>
                   <td className="mono-cell" style={{ color: 'var(--color-primary)' }}>{h15?.modelMae ?? 2.45} km/h</td>
@@ -340,7 +407,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <tr>
                   <td>
                     <div className="metric-row-name">30-Minute Horizon</div>
-                    <div className="metric-row-sub">Nagar Road EB Speed</div>
+                    <div className="metric-row-sub">Arterial EB Corridor Speed</div>
                   </td>
                   <td className="mono-cell">{h30?.persistenceMae ?? 3.89} km/h</td>
                   <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.modelMae ?? 3.12} km/h</td>
@@ -352,7 +419,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <tr>
                   <td>
                     <div className="metric-row-name">60-Minute Horizon</div>
-                    <div className="metric-row-sub">Nagar Road EB Speed</div>
+                    <div className="metric-row-sub">Arterial EB Corridor Speed</div>
                   </td>
                   <td className="mono-cell">{h60?.persistenceMae ?? 4.60} km/h</td>
                   <td className="mono-cell" style={{ color: '#00D2D3' }}>{h60?.modelMae ?? 3.95} km/h</td>
@@ -490,9 +557,10 @@ export const PilotEvaluationView: React.FC = () => {
               <button
                 type="button"
                 className="preset-pill-btn"
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11.5px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11.5px', opacity: !markdownText ? 0.6 : 1 }}
                 onClick={handleCopyMarkdown}
-                title="Copy Markdown payload to clipboard"
+                disabled={!markdownText}
+                title={!markdownText ? 'Briefing markdown not loaded' : 'Copy Markdown payload to clipboard'}
               >
                 {copied ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
                 <span>{copied ? 'Copied!' : 'Copy'}</span>
@@ -500,8 +568,10 @@ export const PilotEvaluationView: React.FC = () => {
               <button
                 type="button"
                 className="preset-pill-btn"
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11.5px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11.5px', opacity: !markdownText ? 0.6 : 1 }}
                 onClick={handleDownloadMarkdown}
+                disabled={!markdownText}
+                title={!markdownText ? 'Briefing markdown not loaded' : 'Download Briefing Document (.md)'}
               >
                 <Download size={13} />
                 <span>Download .md</span>
@@ -622,7 +692,7 @@ export const PilotEvaluationView: React.FC = () => {
                   <tbody>
                     <tr>
                       <td style={{ fontWeight: 600 }}>15-Minute Horizon</td>
-                      <td>Nagar Road EB Speed</td>
+                      <td>Arterial EB Corridor Speed</td>
                       <td className="font-mono">{h15?.persistenceMae ?? 3.25} km/h</td>
                       <td className="font-mono" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
                         {h15?.modelMae ?? 2.45} km/h
@@ -635,7 +705,7 @@ export const PilotEvaluationView: React.FC = () => {
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>30-Minute Horizon</td>
-                      <td>Nagar Road EB Speed</td>
+                      <td>Arterial EB Corridor Speed</td>
                       <td className="font-mono">{h30?.persistenceMae ?? 3.89} km/h</td>
                       <td className="font-mono" style={{ color: '#34D399', fontWeight: 700 }}>
                         {h30?.modelMae ?? 3.12} km/h
@@ -648,7 +718,7 @@ export const PilotEvaluationView: React.FC = () => {
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>60-Minute Horizon</td>
-                      <td>Nagar Road EB Speed</td>
+                      <td>Arterial EB Corridor Speed</td>
                       <td className="font-mono">{h60?.persistenceMae ?? 4.60} km/h</td>
                       <td className="font-mono" style={{ color: '#00D2D3', fontWeight: 700 }}>
                         {h60?.modelMae ?? 3.95} km/h
@@ -758,13 +828,17 @@ export const PilotEvaluationView: React.FC = () => {
                               {adv.severity}
                             </span>
                           </td>
-                          <td className="font-mono" style={{ fontSize: '11px' }}>{adv.triggerRule}</td>
+                          <td className="font-mono" style={{ fontSize: '11px' }}>{adv.triggerRule || 'N/A'}</td>
                           <td className="font-mono">
-                            {adv.evidence?.observedOrPredictedValue?.toFixed?.(1) ?? adv.evidence?.observedOrPredictedValue} {adv.evidence?.unit} (Limit: {adv.evidence?.threshold?.toFixed?.(1) ?? adv.evidence?.threshold} {adv.evidence?.unit})
+                            {adv.evidence?.observedOrPredictedValue != null
+                              ? Number(adv.evidence.observedOrPredictedValue).toFixed(1)
+                              : '--'}{' '}
+                            {adv.evidence?.unit || ''}{' '}
+                            (Limit: {adv.evidence?.threshold != null ? Number(adv.evidence.threshold).toFixed(1) : '--'} {adv.evidence?.unit || ''})
                           </td>
                           <td>
                             <span className="advisory-status-pill status-active">
-                              {adv.status?.replace('_', ' ')}
+                              {(adv.status || 'ACTIVE').replace('_', ' ')}
                             </span>
                           </td>
                         </tr>
@@ -785,7 +859,7 @@ export const PilotEvaluationView: React.FC = () => {
                     Authorizing Body
                   </span>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#F0F6FC' }}>
-                    Pune Municipal Corporation (PMC) & Traffic Branch, Pune City Police
+                    Municipal Corporation & Traffic Branch, Urban Mobility Cell
                   </span>
                   <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
                     Reference Calibration Pilot · Arterial Corridor Demonstration Instance
@@ -802,9 +876,26 @@ export const PilotEvaluationView: React.FC = () => {
           ) : (
             /* Raw Markdown Source View */
             <div>
-              <pre className="briefing-raw-pre">
-                {markdownText || 'Loading executive briefing markdown source...'}
-              </pre>
+              {markdownText ? (
+                <pre className="briefing-raw-pre">
+                  {markdownText}
+                </pre>
+              ) : (
+                <div className="empty-results-box" style={{ padding: '36px' }}>
+                  <FileText size={32} color="var(--color-text-secondary)" />
+                  <p style={{ marginTop: '8px', fontWeight: 600 }}>Executive Briefing Document Unavailable</p>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', maxWidth: '420px', margin: '4px auto 16px' }}>
+                    The briefing text source could not be retrieved from the report generator service.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={loadData}
+                  >
+                    Retry Fetching Document
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
