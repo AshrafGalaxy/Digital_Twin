@@ -393,7 +393,7 @@ export const SystemHealthView: React.FC<SystemHealthViewProps> = ({
                 <span className="diurnal-val font-mono">10 Sensors / 10 Segments</span>
               </div>
               <p className="diurnal-desc">
-                Controlled microscopic vehicle simulation reflecting corridor geometry between Viman Nagar and Somnath Nagar.
+                Controlled microscopic vehicle simulation reflecting corridor geometry and signal timing.
               </p>
             </div>
 

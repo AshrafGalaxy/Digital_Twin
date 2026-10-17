@@ -253,7 +253,7 @@ export const ScenarioStudioView: React.FC = () => {
         <div>
           <h1 className="view-title">Scenario Studio: Microscopic Simulation Sandbox</h1>
           <p className="view-subtitle">
-            Controlled baseline vs. intervention simulation on Viman Nagar Chowk (VN-01) ↔ Somnath Nagar Chowk (SN-01) corridor using calibrated SUMO kinematics.
+            Controlled baseline vs. intervention simulation on arterial corridor intersections using calibrated SUMO kinematics.
           </p>
         </div>
         <div className="view-header-badges">
@@ -802,7 +802,7 @@ export const ScenarioStudioView: React.FC = () => {
           <div className="analytics-notice-box" style={{ marginTop: '16px' }}>
             <HelpCircle size={14} className="text-muted" />
             <span>
-              <strong>Scientific Notice:</strong> Simulated performance reflects microscopic car-following behavior within the specified Viman Nagar network model. Real-world commuter route diversion and driver non-compliance are not fully captured.
+              <strong>Scientific Notice:</strong> Simulated performance reflects microscopic car-following behavior within the calibrated corridor network model. Real-world commuter route diversion and driver non-compliance are not fully captured.
             </span>
           </div>
         </div>

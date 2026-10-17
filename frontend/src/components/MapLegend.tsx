@@ -51,7 +51,7 @@ export const MapLegend: React.FC<MapLegendProps> = ({
               <Radio size={10} aria-hidden="true" color="#38BDF8" /> Signalized Chowk
             </span>
             <span className="legend-asset-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Zap size={10} aria-hidden="true" color="#F0883E" /> Phoenix Energy
+              <Zap size={10} aria-hidden="true" color="#F0883E" /> Commercial Energy
             </span>
           </div>
         </div>

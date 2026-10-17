@@ -7,6 +7,7 @@ import { Corridor3DFeatureCollection } from '../types/spatial';
 import { CesiumCameraControls, CORRIDOR_VIEWPOINTS, CameraViewpoint } from './CesiumCameraControls';
 import { Activity, AlertTriangle, Zap } from 'lucide-react';
 import fallbackBuildingsJson from '../assets/corridor_buildings_3d.json';
+import { ACTIVE_CORRIDOR_CONFIG } from '../config/corridorConfig';
 
 interface CesiumCorridorViewerProps {
   roadSegments: RoadSegmentAsset[];
@@ -497,7 +498,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       name: 'Corridor Identity Badge',
       position: Cesium.Cartesian3.fromDegrees(73.9215, 18.5672, 28.0),
       label: {
-        text: 'NAGAR ROAD DIGITAL TWIN • VIMAN NAGAR ↔ SOMNATH NAGAR (1.8 KM)',
+        text: `${ACTIVE_CORRIDOR_CONFIG.name.toUpperCase()} • ${ACTIVE_CORRIDOR_CONFIG.subTitle.toUpperCase()} (${ACTIVE_CORRIDOR_CONFIG.lengthKm} KM)`,
         font: "bold 11px 'General Sans', -apple-system, sans-serif",
         fillColor: Cesium.Color.fromCssColorString('#38BDF8'),
         outlineColor: Cesium.Color.fromCssColorString('#090D16'),
@@ -816,10 +817,10 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       });
     });
 
-    // Elevated Circular Metro Station Badge (Zero Road Encroachment)
+    // Elevated Circular Rapid Transit Station Badge (Zero Road Encroachment)
     const STATION_MEDIAN_COORD = [73.919386, 18.561215];
     viewer.entities.add({
-      name: 'Pune Metro • Viman Nagar Station Indicator',
+      name: 'Rapid Transit Station Indicator',
       position: Cesium.Cartesian3.fromDegrees(STATION_MEDIAN_COORD[0], STATION_MEDIAN_COORD[1], 12.25),
       cylinder: {
         length: 5.5,
@@ -830,7 +831,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     });
 
     viewer.entities.add({
-      name: 'Pune Metro • Viman Nagar Station',
+      name: 'Rapid Transit Station',
       position: Cesium.Cartesian3.fromDegrees(STATION_MEDIAN_COORD[0], STATION_MEDIAN_COORD[1], 15.0),
       point: {
         pixelSize: 26,
@@ -840,7 +841,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
       label: {
-        text: 'Viman Nagar Metro Station',
+        text: 'Transit Line Station',
         font: "bold 12px 'General Sans', -apple-system, sans-serif",
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.fromCssColorString('#0F172A'),
@@ -852,10 +853,12 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     });
 
     // F. Chowk Pedestrian Zebra Crossings & Signal Gantries in 3D
-    const CHOWK_LOCATIONS = [
-      { id: 'VN-01', name: 'Viman Nagar Chowk', lng: 73.91825, lat: 18.56090 },
-      { id: 'SN-01', name: 'Somnath Nagar Chowk', lng: 73.92790, lat: 18.56283 }
-    ];
+    const CHOWK_LOCATIONS = intersections && intersections.length > 0
+      ? intersections.map(ix => ({ id: ix.id, name: ix.name, lng: ix.coordinates[0], lat: ix.coordinates[1] }))
+      : [
+          { id: 'INT-01', name: 'Primary Junction 01', lng: 73.91825, lat: 18.56090 },
+          { id: 'INT-02', name: 'Primary Junction 02', lng: 73.92790, lat: 18.56283 }
+        ];
 
     CHOWK_LOCATIONS.forEach(chowk => {
       // 3D Traffic Signal Mast & Gantry
@@ -918,7 +921,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     // Yellow Box Junctions in 3D
     const CHOWK_BOX_JUNCTIONS = [
       {
-        name: 'Viman Nagar Box Junction',
+        name: 'Westbound Chowk Box Junction',
         positions: [
           [73.91816, 18.56070],
           [73.91834, 18.56070],
@@ -928,7 +931,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         ]
       },
       {
-        name: 'Somnath Nagar Box Junction',
+        name: 'Eastbound Chowk Box Junction',
         positions: [
           [73.92778, 18.56260],
           [73.92802, 18.56260],

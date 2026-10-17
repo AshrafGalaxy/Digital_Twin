@@ -203,7 +203,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
                 <span className="provenance-badge badge-simulation">SIMULATION</span>
                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                  Corridor: Viman Nagar Chowk (VN-01) ↔ Somnath Nagar Chowk (SN-01)
+                  Corridor: Arterial Demonstration Corridor (1.8 km)
                 </span>
               </div>
             </div>

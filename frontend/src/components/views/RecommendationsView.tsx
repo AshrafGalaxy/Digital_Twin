@@ -180,7 +180,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
             <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
               {summary.byDomain['TRAFFIC'] || 0}
             </span>
-            <span className="metric-box-sub">Nagar Road corridor</span>
+            <span className="metric-box-sub">Arterial corridor</span>
           </div>
 
           <div className="metric-box">
@@ -188,7 +188,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
             <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
               {summary.byDomain['ENERGY'] || 0}
             </span>
-            <span className="metric-box-sub">Phoenix Marketcity zone</span>
+            <span className="metric-box-sub">Commercial zone</span>
           </div>
         </div>
       )}

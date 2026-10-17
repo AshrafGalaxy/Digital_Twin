@@ -50,7 +50,7 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
       bgSubtle: 'rgba(245, 158, 11, 0.12)',
       icon: <Car size={22} color="#F59E0B" />,
       clearance: 'Level 2 • Operational Kinematics & Signal Control',
-      scope: 'Supervise signal progression offsets, queue lengths, Level of Service (LOS), and SUMO microscopic scenario simulations on Viman Nagar (VN-01) ↔ Somnath Nagar (SN-01).',
+      scope: 'Supervise signal progression offsets, queue lengths, Level of Service (LOS), and SUMO microscopic scenario simulations on corridor intersections.',
       workspaces: ['Operations Map', 'Traffic Analytics', 'Scenario Studio', 'Traffic Recommendations']
     },
     {
@@ -61,7 +61,7 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
       bgSubtle: 'rgba(16, 185, 129, 0.12)',
       icon: <Zap size={22} color="#10B981" />,
       clearance: 'Level 2 • Substation Feeder & Peak Governance',
-      scope: 'Inspect commercial building demand, hourly carbon emissions, diurnal solar variations, and peak demand charge mitigation for Phoenix Marketcity zone.',
+      scope: 'Inspect commercial building demand, hourly carbon emissions, diurnal solar variations, and peak demand charge mitigation for corridor commercial facilities.',
       workspaces: ['Operations Map', 'Energy Analytics', 'Environment Context', 'Energy Recommendations']
     },
     {

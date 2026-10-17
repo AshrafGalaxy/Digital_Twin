@@ -26,8 +26,8 @@ export const CORRIDOR_VIEWPOINTS: CameraViewpoint[] = [
     rollDegrees: 0
   },
   {
-    id: 'viman-nagar-chowk',
-    name: 'Viman Nagar Chowk',
+    id: 'westbound-chowk',
+    name: 'Westbound Chowk',
     icon: 'viman',
     longitude: 73.91710,
     latitude: 18.56020,
@@ -37,8 +37,8 @@ export const CORRIDOR_VIEWPOINTS: CameraViewpoint[] = [
     rollDegrees: 0
   },
   {
-    id: 'phoenix-marketcity',
-    name: 'Phoenix Zone (3D)',
+    id: 'commercial-zone',
+    name: 'Commercial Zone (3D)',
     icon: 'phoenix',
     longitude: 73.91670,
     latitude: 18.56030,
@@ -48,8 +48,8 @@ export const CORRIDOR_VIEWPOINTS: CameraViewpoint[] = [
     rollDegrees: 0
   },
   {
-    id: 'somnath-nagar-chowk',
-    name: 'Somnath Nagar Chowk',
+    id: 'eastbound-chowk',
+    name: 'Eastbound Chowk',
     icon: 'somnath',
     longitude: 73.92910,
     latitude: 18.56340,

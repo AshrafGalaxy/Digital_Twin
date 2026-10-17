@@ -515,13 +515,13 @@ export const PilotEvaluationView: React.FC = () => {
               {/* Document Masthead */}
               <div className="briefing-masthead">
                 <span className="briefing-org-label">
-                  PUNE MUNICIPAL CORPORATION (PMC) · SMART CITY TWIN & URBAN MOBILITY CELL
+                  REFERENCE CALIBRATION PILOT · SMART CITY TWIN & URBAN MOBILITY CELL
                 </span>
                 <h1 className="briefing-doc-title">
                   Corridor Operations & Pilot Decision-Support Executive Briefing
                 </h1>
                 <p className="briefing-doc-subtitle">
-                  Arterial Nagar Road: Viman Nagar Chowk (INT-VN-01) ↔ Somnath Nagar Chowk (INT-SN-01), Pune, Maharashtra (1.8 km)
+                  Reference Demonstration Corridor: Viman Nagar Chowk (INT-VN-01) ↔ Somnath Nagar Chowk (INT-SN-01), Nagar Road (1.8 km)
                 </p>
                 <div className="briefing-meta-grid">
                   <div className="briefing-meta-item">
@@ -788,7 +788,7 @@ export const PilotEvaluationView: React.FC = () => {
                     Pune Municipal Corporation (PMC) & Traffic Branch, Pune City Police
                   </span>
                   <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-                    Digital Twin Decision-Support Pilot · Viman Nagar ↔ Somnath Nagar Corridor
+                    Reference Calibration Pilot · Arterial Corridor Demonstration Instance
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -863,7 +863,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <Database size={18} color="var(--color-primary, #2F81F7)" />
                 <span className="card-title">Physical Corridor Assets</span>
               </div>
-              <span className="text-muted" style={{ fontSize: '12px' }}>1.8 km Nagar Rd</span>
+              <span className="text-muted" style={{ fontSize: '12px' }}>Reference Pilot Corridor (1.8 km)</span>
             </div>
 
             <div style={{ padding: '12px 0' }}>

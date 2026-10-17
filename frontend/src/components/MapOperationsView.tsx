@@ -30,7 +30,7 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-vn-eb',
-      properties: { id: 'stopline-vn-eb', name: 'Viman Nagar EB Stopline' },
+      properties: { id: 'stopline-vn-eb', name: 'Westbound Chowk EB Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -42,7 +42,7 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-vn-wb',
-      properties: { id: 'stopline-vn-wb', name: 'Viman Nagar WB Stopline' },
+      properties: { id: 'stopline-vn-wb', name: 'Westbound Chowk WB Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -54,7 +54,7 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-vn-nb',
-      properties: { id: 'stopline-vn-nb', name: 'Sopan Nagar Road NB Approach Stopline' },
+      properties: { id: 'stopline-vn-nb', name: 'Westbound Approach Leg Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -66,7 +66,7 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-sn-eb',
-      properties: { id: 'stopline-sn-eb', name: 'Somnath Nagar EB Stopline' },
+      properties: { id: 'stopline-sn-eb', name: 'Eastbound Chowk EB Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -78,7 +78,7 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-sn-wb',
-      properties: { id: 'stopline-sn-wb', name: 'Somnath Nagar WB Stopline' },
+      properties: { id: 'stopline-sn-wb', name: 'Eastbound Chowk WB Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -90,7 +90,7 @@ const STOPLINES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'stopline-sn-nb',
-      properties: { id: 'stopline-sn-nb', name: 'Old Mundhwa Road NB Approach Stopline' },
+      properties: { id: 'stopline-sn-nb', name: 'Eastbound Approach Leg Stopline' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -109,7 +109,7 @@ const JUNCTION_BOXES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'box-vn',
-      properties: { id: 'box-vn', name: 'Viman Nagar Yellow Box Junction' },
+      properties: { id: 'box-vn', name: 'Westbound Chowk Yellow Box Junction' },
       geometry: {
         type: 'Polygon' as const,
         coordinates: [
@@ -126,7 +126,7 @@ const JUNCTION_BOXES_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'box-sn',
-      properties: { id: 'box-sn', name: 'Somnath Nagar Yellow Box Junction' },
+      properties: { id: 'box-sn', name: 'Eastbound Chowk Yellow Box Junction' },
       geometry: {
         type: 'Polygon' as const,
         coordinates: [
@@ -150,7 +150,7 @@ const ZEBRA_CROSSINGS_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'zebra-vn-w',
-      properties: { id: 'zebra-vn-w', name: 'Viman Nagar West Pedestrian Crossing' },
+      properties: { id: 'zebra-vn-w', name: 'Westbound Chowk West Pedestrian Crossing' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -162,7 +162,7 @@ const ZEBRA_CROSSINGS_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'zebra-vn-e',
-      properties: { id: 'zebra-vn-e', name: 'Viman Nagar East Pedestrian Crossing' },
+      properties: { id: 'zebra-vn-e', name: 'Westbound Chowk East Pedestrian Crossing' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -174,7 +174,7 @@ const ZEBRA_CROSSINGS_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'zebra-sn-w',
-      properties: { id: 'zebra-sn-w', name: 'Somnath Nagar West Pedestrian Crossing' },
+      properties: { id: 'zebra-sn-w', name: 'Eastbound Chowk West Pedestrian Crossing' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -186,7 +186,7 @@ const ZEBRA_CROSSINGS_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'zebra-sn-e',
-      properties: { id: 'zebra-sn-e', name: 'Somnath Nagar East Pedestrian Crossing' },
+      properties: { id: 'zebra-sn-e', name: 'Eastbound Chowk East Pedestrian Crossing' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -198,7 +198,7 @@ const ZEBRA_CROSSINGS_GEOJSON = {
     {
       type: 'Feature' as const,
       id: 'zebra-sn-s',
-      properties: { id: 'zebra-sn-s', name: 'Somnath Nagar South Pedestrian Crossing' },
+      properties: { id: 'zebra-sn-s', name: 'Eastbound Chowk South Pedestrian Crossing' },
       geometry: {
         type: 'LineString' as const,
         coordinates: [
@@ -989,7 +989,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         markersRef.current.push(marker);
       });
 
-      // 6. Add Energy Entity Marker (Phoenix Marketcity) per UI_UX_SPEC §7.3
+      // 6. Add Energy Entity Marker (Commercial Facility) per UI_UX_SPEC §7.3
       const energyEl = document.createElement('div');
       energyEl.className = 'energy-entity-marker';
       energyEl.style.display = 'flex';
@@ -1004,8 +1004,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       energyEl.style.fontWeight = '600';
       energyEl.style.color = '#F0883E';
       energyEl.style.cursor = 'pointer';
-      energyEl.title = 'Phoenix Marketcity Commercial Energy Zone (Sanctioned: 8,500 kVA)';
-      energyEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Phoenix Marketcity (Energy)</span>';
+      energyEl.title = 'Commercial Facility Energy Zone (Sanctioned: 8,500 kVA)';
+      energyEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Commercial Facility (Energy)</span>';
       const energyMarker = new mapboxgl.Marker({ element: energyEl })
         .setLngLat([73.9170, 18.5625])
         .addTo(currentMap);
