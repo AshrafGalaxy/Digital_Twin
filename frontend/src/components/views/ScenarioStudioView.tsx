@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Check,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  X
 } from 'lucide-react';
 import { ScenarioTemplate, ScenarioRunResult } from '../../types/twin';
 import {
@@ -115,17 +116,22 @@ export const ScenarioStudioView: React.FC = () => {
     setError(null);
     setAdvisorySuccess(null);
     try {
+      const safeGreen = Math.max(5, Math.min(45, greenExtension || 15));
+      const safeOffset = Math.max(5, Math.min(90, coordinationOffset || 35));
+      const safeDemand = Math.max(0.5, Math.min(2.0, demandMultiplier || 1.0));
+      const safeSeed = Math.max(1, Math.min(999999, parseInt(String(randomSeed), 10) || 42));
+
       const result = await runScenario({
         templateId: selectedTemplateId,
-        greenExtensionSec: greenExtension,
-        coordinationOffsetSec: coordinationOffset,
-        demandMultiplier: demandMultiplier,
-        randomSeed: Math.max(1, Math.min(999999, randomSeed || 42))
+        greenExtensionSec: safeGreen,
+        coordinationOffsetSec: safeOffset,
+        demandMultiplier: safeDemand,
+        randomSeed: safeSeed
       });
       setRunResult(result);
       fetchRecentScenarioRuns().then(setRecentRuns).catch(() => null);
     } catch (err: any) {
-      setError(err.message || 'Failed to complete simulation run');
+      setError(err.message || 'Failed to complete simulation run. Please verify SUMO server connection.');
     } finally {
       setIsRunning(false);
     }
@@ -290,11 +296,15 @@ export const ScenarioStudioView: React.FC = () => {
               value={selectedTemplateId}
               onChange={(e) => handleSelectTemplate(e.target.value)}
             >
-              {templates.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.id}: {t.name}
-                </option>
-              ))}
+              {templates.length > 0 ? (
+                templates.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.id}: {t.name}
+                  </option>
+                ))
+              ) : (
+                <option value="SCEN-INT-01">SCEN-INT-01: Arterial Green Wave Extension (Default)</option>
+              )}
             </select>
             {selectedTemplate && (
               <div className="template-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
@@ -307,7 +317,7 @@ export const ScenarioStudioView: React.FC = () => {
           {selectedTemplateId === 'SCEN-INT-01' ? (
             <div className="control-group" style={{ marginBottom: '16px' }}>
               <div className="slider-label-row">
-                <span className="control-label">Nagar Road EB Green Extension</span>
+                <span className="control-label">Arterial EB Green Extension</span>
                 <span className="slider-value font-mono">+{greenExtension}s ({35 + greenExtension}s Green Split)</span>
               </div>
               <input
@@ -350,7 +360,7 @@ export const ScenarioStudioView: React.FC = () => {
           ) : selectedTemplateId === 'SCEN-INT-02' ? (
             <div className="control-group" style={{ marginBottom: '16px' }}>
               <div className="slider-label-row">
-                <span className="control-label">Arterial Progression Offset (VN-01 ↔ SN-01)</span>
+                <span className="control-label">Arterial Progression Offset (Chowk 01 ↔ Chowk 02)</span>
                 <span className="slider-value font-mono">{coordinationOffset}s Offset</span>
               </div>
               <input
@@ -396,7 +406,7 @@ export const ScenarioStudioView: React.FC = () => {
                 Reference Baseline Control Plan
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                Calibrated 4-phase fixed-time control (120s cycle, 35s Nagar Road EB split). Evaluating nominal performance without dynamic signal intervention.
+                Calibrated 4-phase fixed-time control (120s cycle, 35s arterial split). Evaluating nominal performance without dynamic signal intervention.
               </div>
             </div>
           )}
@@ -501,9 +511,19 @@ export const ScenarioStudioView: React.FC = () => {
           </button>
 
           {error && (
-            <div className="run-error-box" style={{ marginTop: '12px' }}>
-              <AlertTriangle size={16} />
-              <span>{error}</span>
+            <div className="run-error-box" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={16} />
+                <span>{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                aria-label="Dismiss error notification"
+              >
+                <X size={14} />
+              </button>
             </div>
           )}
 
@@ -614,7 +634,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <tr>
                     <td>
                       <div className="metric-row-name">Arterial Travel Time</div>
-                      <div className="metric-row-sub">1.25 km Nagar Road EB Corridor</div>
+                      <div className="metric-row-sub">1.25 km Arterial EB Corridor</div>
                     </td>
                     <td className="mono-cell">
                       {runResult.baseline.kpis.average_travel_time_sec.toFixed(1)} s
@@ -648,7 +668,7 @@ export const ScenarioStudioView: React.FC = () => {
                   <tr>
                     <td>
                       <div className="metric-row-name">p95 Queue Length</div>
-                      <div className="metric-row-sub">Nagar Road EB Approach (SEG-NR-EB-01)</div>
+                      <div className="metric-row-sub">Arterial EB Approach (SEG-NR-EB-01)</div>
                     </td>
                     <td className="mono-cell">
                       {runResult.baseline.kpis.p95_queue_length_meters.toFixed(1)} m
@@ -683,15 +703,25 @@ export const ScenarioStudioView: React.FC = () => {
               {/* Advisory Proposal Flow */}
               <div style={{ marginTop: '20px' }}>
                 {advisorySuccess ? (
-                  <div className="advisory-success-banner">
-                    <Check size={18} color="#34D399" style={{ flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <strong>Intervention Advisory Registered: </strong>
-                      <span style={{ fontFamily: 'var(--font-mono)' }}>{advisorySuccess.recommendationId}</span>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        Logged to audit trail. Queued in Advisory Center for municipal officer authorization. Zero external actuation performed.
-                      </p>
+                  <div className="advisory-success-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1 }}>
+                      <Check size={18} color="#34D399" style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <strong>Intervention Advisory Registered: </strong>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{advisorySuccess.recommendationId}</span>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          Logged to audit trail. Queued in Advisory Center for municipal officer authorization. Zero external actuation performed.
+                        </p>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setAdvisorySuccess(null)}
+                      style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                      aria-label="Dismiss advisory confirmation"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
                 ) : !showProposeModal ? (
                   <button
