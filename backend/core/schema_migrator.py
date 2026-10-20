@@ -429,6 +429,30 @@ SQLITE_TABLE_DDL = [
         quality_score REAL NOT NULL DEFAULT 0.98,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 27. Signal Timing Recommendations (TASK-02)
+    """
+    CREATE TABLE IF NOT EXISTS timing_recommendations (
+        id TEXT PRIMARY KEY,
+        intersection_id TEXT NOT NULL,
+        generated_at TIMESTAMP NOT NULL,
+        target_cycle_sec INTEGER NOT NULL,
+        baseline_cycle_sec INTEGER NOT NULL,
+        total_lost_time_sec INTEGER NOT NULL,
+        critical_flow_ratio_y REAL NOT NULL,
+        phases_json TEXT NOT NULL,
+        baseline_delay_sec_veh REAL NOT NULL,
+        optimal_delay_sec_veh REAL NOT NULL,
+        estimated_delay_reduction_sec REAL NOT NULL,
+        estimated_delay_reduction_pct REAL NOT NULL,
+        max_saturation REAL NOT NULL,
+        pedestrian_invariant_verified INTEGER NOT NULL DEFAULT 1,
+        source_mode TEXT NOT NULL DEFAULT 'PREDICTED',
+        status TEXT NOT NULL DEFAULT 'REQUIRES_HUMAN_APPROVAL',
+        reviewed_by TEXT,
+        reviewed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -444,7 +468,8 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_spatial_road_sumo_edge ON spatial_road_segment_map(sumo_edge_id);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_inter_sumo_junc ON spatial_intersection_map(sumo_junction_id);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);",
-    "CREATE INDEX IF NOT EXISTS idx_segment_los_hist ON segment_los_history (segment_id, observed_at DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_segment_los_hist ON segment_los_history (segment_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_timing_rec_int ON timing_recommendations (intersection_id, generated_at DESC);"
 ]
 
 
