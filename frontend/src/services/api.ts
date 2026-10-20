@@ -687,5 +687,70 @@ export async function fetchEnvironmentStations(): Promise<AirQualityStationAsset
   return res.json();
 }
 
+export interface SegmentLOSRecord {
+  segmentId: string;
+  name: string;
+  direction: string;
+  speedKmh: number;
+  flowVehHr: number;
+  capacityVehHr: number;
+  freeFlowSpeedKmh: number;
+  volumeCapacityRatio: number;
+  densityVehKm: number;
+  congestionIndex: number;
+  speedRatio: number;
+  levelOfService: string;
+  operationalCondition: string;
+  policyStandard: string;
+  provenance: {
+    sourceMode: string;
+    observedAt: string;
+    qualityScore: number;
+  };
+}
+
+export interface CorridorLOSSummary {
+  corridorLevelOfService: string;
+  averageSpeedKmh: number;
+  averageVolumeCapacityRatio: number;
+  averageDensityVehKm: number;
+  averageCongestionIndex: number;
+  criticalSegmentId: string | null;
+  criticalSegmentCondition: string | null;
+  policyStandard: string;
+  totalSegmentsEvaluated: number;
+  evaluatedAt: string;
+}
+
+export interface CorridorLOSResponse {
+  corridorSummary: CorridorLOSSummary;
+  segments: SegmentLOSRecord[];
+}
+
+export interface PolicyStandardInfo {
+  id: string;
+  name: string;
+  description: string;
+  referenceStandard: string;
+  isDefault: boolean;
+}
+
+export async function fetchCorridorLOS(
+  policyStandard: string = 'INDO_HCM',
+  sourceMode: string = 'REPLAY'
+): Promise<CorridorLOSResponse> {
+  const res = await resilientFetch(
+    `${API_BASE}/traffic/corridor/los?policy_standard=${encodeURIComponent(policyStandard)}&source_mode=${encodeURIComponent(sourceMode)}`
+  );
+  if (!res.ok) throw new Error('Failed to fetch corridor LOS analysis');
+  return res.json();
+}
+
+export async function fetchTrafficPolicies(): Promise<PolicyStandardInfo[]> {
+  const res = await resilientFetch(`${API_BASE}/traffic/policies`);
+  if (!res.ok) throw new Error('Failed to fetch traffic policies');
+  return res.json();
+}
+
 
 

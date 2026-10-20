@@ -22,6 +22,7 @@ from .endpoints import (
     state,
     stream,
     study_area,
+    traffic,
 )
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -37,6 +38,7 @@ api_v1_router.include_router(spatial.router)
 api_v1_router.include_router(state.router)
 api_v1_router.include_router(stream.router)
 api_v1_router.include_router(analytics.router)
+api_v1_router.include_router(traffic.router)
 api_v1_router.include_router(scenarios.router)
 api_v1_router.include_router(forecasts.router)
 api_v1_router.include_router(recommendations.router)

@@ -412,6 +412,23 @@ SQLITE_TABLE_DDL = [
         junction_ids TEXT NOT NULL DEFAULT '[]',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 26. Segment Level of Service History (TASK-01)
+    """
+    CREATE TABLE IF NOT EXISTS segment_los_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        segment_id TEXT NOT NULL,
+        observed_at TIMESTAMP NOT NULL,
+        volume_capacity_ratio REAL NOT NULL,
+        density_veh_km REAL NOT NULL,
+        congestion_index REAL NOT NULL,
+        los_grade TEXT NOT NULL,
+        operational_condition TEXT NOT NULL,
+        policy_standard TEXT NOT NULL DEFAULT 'INDO_HCM',
+        source_mode TEXT NOT NULL DEFAULT 'REPLAY',
+        quality_score REAL NOT NULL DEFAULT 0.98,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -426,7 +443,8 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_road_sumo_edge ON spatial_road_segment_map(sumo_edge_id);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_inter_sumo_junc ON spatial_intersection_map(sumo_junction_id);",
-    "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);"
+    "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);",
+    "CREATE INDEX IF NOT EXISTS idx_segment_los_hist ON segment_los_history (segment_id, observed_at DESC);"
 ]
 
 

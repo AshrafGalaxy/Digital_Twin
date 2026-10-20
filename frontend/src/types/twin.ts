@@ -58,6 +58,8 @@ export interface RoadSegmentAsset {
   direction: string;
   lanes: number;
   speedLimitKmh: number;
+  capacityVehPerHour?: number;
+  freeFlowSpeedKmh?: number;
   coordinates: [number, number][];
 }
 

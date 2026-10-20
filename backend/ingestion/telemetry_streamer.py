@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core.config import settings
 from backend.core.database import AsyncSessionLocal
 from backend.schemas.canonical import SourceMode
+from backend.services.los_engine import los_engine
 
 logger = logging.getLogger("digital_twin.streamer")
 
@@ -191,13 +192,29 @@ class TelemetryStreamerWorker:
                         "congestion_index": round(cong, 3)
                     })
 
+                    # Compute Canonical Level of Service (TASK-01)
+                    los_data = los_engine.compute_segment_los(
+                        segment_id=seg_id,
+                        speed_kmh=speed,
+                        flow_vph=flow,
+                        capacity_vph=seg.get("capacity", 2400.0),
+                        free_flow_speed_kmh=seg.get("speedLimit", 50.0),
+                        source_mode=self.mode,
+                        observed_at=now_iso
+                    )
+
                     # Update entity current state
                     metrics = {
                         "averageSpeedKmh": round(speed, 1),
                         "vehicleFlowPerHour": round(flow, 0),
                         "occupancyPercent": round(occ, 1),
                         "queueLengthMeters": round(queue, 1),
-                        "congestionIndex": round(cong, 3)
+                        "congestionIndex": round(cong, 3),
+                        "volumeCapacityRatio": los_data["volumeCapacityRatio"],
+                        "densityVehKm": los_data["densityVehKm"],
+                        "levelOfService": los_data["levelOfService"],
+                        "operationalCondition": los_data["operationalCondition"],
+                        "policyStandard": los_data["policyStandard"]
                     }
                     upsert_state = text("""
                         INSERT INTO entity_current_state (
@@ -224,6 +241,34 @@ class TelemetryStreamerWorker:
                         "updated_at": now_iso,
                         "metrics": json.dumps(metrics)
                     })
+
+                    # Persist to segment_los_history table
+                    try:
+                        los_hist_stmt = text("""
+                            INSERT INTO segment_los_history (
+                                segment_id, observed_at, volume_capacity_ratio,
+                                density_veh_km, congestion_index, los_grade,
+                                operational_condition, policy_standard, source_mode, quality_score
+                            ) VALUES (
+                                :segment_id, :observed_at, :volume_capacity_ratio,
+                                :density_veh_km, :congestion_index, :los_grade,
+                                :operational_condition, :policy_standard, :source_mode, :quality_score
+                            )
+                        """)
+                        await session.execute(los_hist_stmt, {
+                            "segment_id": seg_id,
+                            "observed_at": now_iso,
+                            "volume_capacity_ratio": los_data["volumeCapacityRatio"],
+                            "density_veh_km": los_data["densityVehKm"],
+                            "congestion_index": los_data["congestionIndex"],
+                            "los_grade": los_data["levelOfService"],
+                            "operational_condition": los_data["operationalCondition"],
+                            "policy_standard": los_data["policyStandard"],
+                            "source_mode": self.mode,
+                            "quality_score": 0.98
+                        })
+                    except Exception as los_err:
+                        logger.debug("segment_los_history insert notice: %s", los_err)
 
                     segment_metrics_list.append({
                         "entityId": seg_id,
