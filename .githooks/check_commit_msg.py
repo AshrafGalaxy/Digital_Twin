@@ -93,6 +93,16 @@ def main() -> int:
         print("Example: refactor(core): update telemetry schema validation")
         return 1
 
+    # Rule 6: Strictly NO domain word 'road' in commit message
+    road_pattern = re.compile(r"(?i)\broads?\b")
+    full_message = "\n".join(lines)
+    match_road = road_pattern.search(full_message)
+    if match_road:
+        print(f"[GIT HOOK ERROR] Commit message contains forbidden domain word '{match_road.group(0)}':")
+        print("Per AGENTS.md Rule 8, 'road' is a physical domain noun and is strictly prohibited in commit messages.")
+        print("Use technical system terms instead: 'segment', 'edge', 'link', 'corridor', or 'arterial'.")
+        return 1
+
     return 0
 
 
