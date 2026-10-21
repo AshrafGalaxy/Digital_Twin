@@ -13,7 +13,10 @@ import {
   EnvironmentState,
   AirQualityStationAsset,
   SPaTState,
-  SPaTHistoryRecord
+  SPaTHistoryRecord,
+  EnergyTopologyTreeResponse,
+  EnergyAssetTelemetry,
+  MicrogridSummary
 } from '../types/twin';
 
 const API_BASE = '/api/v1';
@@ -810,6 +813,45 @@ export async function fetchSPaTHistory(
     return [];
   }
 }
+
+export async function fetchEnergyTopology(): Promise<EnergyTopologyTreeResponse> {
+  const res = await resilientFetch(`${API_BASE}/energy/topology`);
+  if (!res.ok) throw new Error('Failed to fetch electrical network topology');
+  return res.json();
+}
+
+export async function fetchLiveEnergyTelemetry(): Promise<EnergyAssetTelemetry[]> {
+  const res = await resilientFetch(`${API_BASE}/energy/telemetry/live`);
+  if (!res.ok) throw new Error('Failed to fetch live energy telemetry');
+  return res.json();
+}
+
+export async function fetchMicrogridSummary(): Promise<MicrogridSummary> {
+  const res = await resilientFetch(`${API_BASE}/energy/summary`);
+  if (!res.ok) throw new Error('Failed to fetch microgrid summary');
+  return res.json();
+}
+
+export async function fetchEnergyHistory(assetId: string, limit: number = 40): Promise<any[]> {
+  try {
+    const res = await resilientFetch(`${API_BASE}/energy/telemetry/history?asset_id=${encodeURIComponent(assetId)}&limit=${limit}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function triggerEnergyTick(): Promise<any[]> {
+  const res = await resilientFetch(`${API_BASE}/energy/telemetry/tick`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to trigger energy telemetry tick');
+  return res.json();
+}
+
+export async function advanceEnergyTelemetry(_stepSeconds: number = 60): Promise<any[]> {
+  return triggerEnergyTick();
+}
+
 
 
 

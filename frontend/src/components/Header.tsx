@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Sparkles,
   Compass,
-  KeyRound
+  KeyRound,
+  Clock
 } from 'lucide-react';
 import { SourceMode, MunicipalRole, AuthUser } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
@@ -82,6 +83,16 @@ export const Header: React.FC<HeaderProps> = ({
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Continuous Operational Digital Twin Clock (ticking every 1000ms)
+  const [digitalTwinClock, setDigitalTwinClock] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDigitalTwinClock(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Close profile dropdown on outside click or Escape key
   useEffect(() => {
@@ -198,11 +209,27 @@ export const Header: React.FC<HeaderProps> = ({
                 <ProvenanceBadge mode={currentMode} className="header-provenance-clean" />
               </div>
 
-              {/* Freshness Timestamp */}
-              <div className="status-pill">
-                <span className="text-muted">Updated:</span>
-                <span style={{ fontFamily: 'var(--font-mono)' }}>
-                  {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'Awaiting data'}
+              {/* Continuous Operational Digital Twin Clock */}
+              <div className="status-pill" title="Operational Digital Twin Continuous Synchronized Clock">
+                <Clock size={12} color="#58A6FF" style={{ flexShrink: 0 }} />
+                <span className="text-muted" style={{ fontSize: '11px' }}>Twin Clock:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#F0F6FC' }}>
+                  {digitalTwinClock.toLocaleTimeString()}
+                </span>
+              </div>
+
+              {/* Freshness & Telemetry Synchronization Status */}
+              <div
+                className="status-pill"
+                title={`Last upstream telemetry synchronization: ${lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Awaiting data'}`}
+              >
+                <span className="text-muted" style={{ fontSize: '11px' }}>Feed:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                  {lastUpdated ? (
+                    <span style={{ color: '#3FB950' }}>Synced ({new Date(lastUpdated).toLocaleTimeString()})</span>
+                  ) : (
+                    <span style={{ color: '#D29922' }}>Awaiting</span>
+                  )}
                 </span>
               </div>
 

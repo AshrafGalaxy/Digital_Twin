@@ -442,4 +442,73 @@ export interface SPaTHistoryRecord {
   qualityStatus: string;
 }
 
+export type EnergyNodeType =
+  | 'SUBSTATION'
+  | 'FEEDER'
+  | 'SOLAR_PV'
+  | 'BESS'
+  | 'BUILDING_LOAD'
+  | 'EV_HUB';
+
+export interface EnergyAssetTelemetry {
+  assetId: string;
+  name?: string;
+  nodeType?: EnergyNodeType;
+  nominalVoltageKv?: number;
+  ratedCapacityKva?: number;
+  ratedCurrentAmps?: number;
+  loadingPct?: number;
+  activePowerKw: number;
+  reactivePowerKvar: number;
+  apparentPowerKva: number;
+  powerFactor: number;
+  voltageV: number;
+  currentA: number;
+  frequencyHz: number;
+  voltageUnbalancePct: number;
+  currentUnbalancePct: number;
+  deviceMetrics?: Record<string, any>;
+  observedAt: string;
+  sourceMode: SourceMode;
+  qualityStatus: QualityStatus;
+}
+
+export interface EnergyNodeAsset {
+  nodeId: string;
+  name: string;
+  nodeType: EnergyNodeType;
+  parentNodeId?: string | null;
+  nominalVoltageKv: number;
+  ratedCapacityKva: number;
+  ratedCurrentAmps: number;
+  loadingPct: number;
+  coordinates?: [number, number];
+  properties?: Record<string, any>;
+  telemetry: EnergyAssetTelemetry;
+  children?: EnergyNodeAsset[];
+}
+
+export interface EnergyTopologyTreeResponse {
+  studyAreaId: string;
+  substation: EnergyNodeAsset | null;
+  totalNodes: number;
+  generatedAt: string;
+}
+
+export interface MicrogridSummary {
+  gridImportKw: number;
+  solarGenerationKw: number;
+  bessPowerKw: number;
+  bessStateOfChargePct: number;
+  evChargingLoadKw: number;
+  buildingLoadKw: number;
+  netPowerFactor: number;
+  renewableSelfConsumptionPct: number;
+  carbonOffsetKgPerHour: number;
+  sourceMode: SourceMode;
+  qualityStatus: QualityStatus;
+  observedAt: string;
+}
+
+
 
