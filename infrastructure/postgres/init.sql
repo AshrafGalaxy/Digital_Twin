@@ -490,3 +490,44 @@ CREATE TABLE IF NOT EXISTS advisory_audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_advisory_audit_rec ON advisory_audit_log (recommendation_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_advisory_audit_time ON advisory_audit_log (created_at DESC);
+
+-- 30. Canonical Electrical Network Nodes (Energy TASK-01)
+CREATE TABLE IF NOT EXISTS energy_network_nodes (
+    node_id VARCHAR(128) PRIMARY KEY,
+    study_area_id VARCHAR(128) REFERENCES study_areas(id),
+    name VARCHAR(255) NOT NULL,
+    node_type VARCHAR(64) NOT NULL,
+    parent_node_id VARCHAR(128) REFERENCES energy_network_nodes(node_id),
+    nominal_voltage_kv NUMERIC(6, 2) NOT NULL,
+    rated_capacity_kva NUMERIC(10, 2) NOT NULL,
+    rated_current_amps NUMERIC(8, 2) NOT NULL,
+    phase_count INTEGER NOT NULL DEFAULT 3,
+    coordinates JSONB,
+    properties JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_energy_nodes_parent ON energy_network_nodes (parent_node_id);
+CREATE INDEX IF NOT EXISTS idx_energy_nodes_type ON energy_network_nodes (node_type);
+
+-- 31. Multi-Asset Electrical Telemetry (Energy TASK-01)
+CREATE TABLE IF NOT EXISTS energy_asset_telemetry (
+    id BIGSERIAL PRIMARY KEY,
+    asset_id VARCHAR(128) NOT NULL REFERENCES energy_network_nodes(node_id),
+    observed_at TIMESTAMPTZ NOT NULL,
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'SIMULATION',
+    active_power_kw NUMERIC(10, 2) NOT NULL,
+    reactive_power_kvar NUMERIC(10, 2) NOT NULL,
+    apparent_power_kva NUMERIC(10, 2) NOT NULL,
+    power_factor NUMERIC(4, 3) NOT NULL,
+    voltage_v NUMERIC(8, 2) NOT NULL,
+    current_a NUMERIC(8, 2) NOT NULL,
+    frequency_hz NUMERIC(5, 2) NOT NULL DEFAULT 50.00,
+    voltage_unbalance_pct NUMERIC(5, 2) NOT NULL DEFAULT 0.50,
+    current_unbalance_pct NUMERIC(5, 2) NOT NULL DEFAULT 1.20,
+    device_metrics_json JSONB NOT NULL DEFAULT '{}',
+    quality_status VARCHAR(32) NOT NULL DEFAULT 'VALID',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_energy_telemetry_asset_time ON energy_asset_telemetry (asset_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_energy_telemetry_obs ON energy_asset_telemetry (observed_at DESC);
+

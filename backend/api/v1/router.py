@@ -11,6 +11,7 @@ from .endpoints import (
     auth,
     canonical_resources,
     datasets,
+    energy,
     evaluation,
     forecasts,
     health,
@@ -39,6 +40,7 @@ api_v1_router.include_router(state.router)
 api_v1_router.include_router(stream.router)
 api_v1_router.include_router(analytics.router)
 api_v1_router.include_router(traffic.router)
+api_v1_router.include_router(energy.router)
 api_v1_router.include_router(scenarios.router)
 api_v1_router.include_router(forecasts.router)
 api_v1_router.include_router(recommendations.router)

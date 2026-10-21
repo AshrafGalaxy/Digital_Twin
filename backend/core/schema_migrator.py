@@ -489,6 +489,44 @@ SQLITE_TABLE_DDL = [
         tamper_evident_hash TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 30. Canonical Electrical Network Nodes (Energy TASK-01)
+    """
+    CREATE TABLE IF NOT EXISTS energy_network_nodes (
+        node_id TEXT PRIMARY KEY,
+        study_area_id TEXT REFERENCES study_areas(id),
+        name TEXT NOT NULL,
+        node_type TEXT NOT NULL,
+        parent_node_id TEXT REFERENCES energy_network_nodes(node_id),
+        nominal_voltage_kv REAL NOT NULL,
+        rated_capacity_kva REAL NOT NULL,
+        rated_current_amps REAL NOT NULL,
+        phase_count INTEGER NOT NULL DEFAULT 3,
+        coordinates TEXT,
+        properties TEXT NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 31. Multi-Asset Electrical Telemetry (Energy TASK-01)
+    """
+    CREATE TABLE IF NOT EXISTS energy_asset_telemetry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        asset_id TEXT NOT NULL REFERENCES energy_network_nodes(node_id),
+        observed_at TIMESTAMP NOT NULL,
+        source_mode TEXT NOT NULL DEFAULT 'SIMULATION',
+        active_power_kw REAL NOT NULL,
+        reactive_power_kvar REAL NOT NULL,
+        apparent_power_kva REAL NOT NULL,
+        power_factor REAL NOT NULL,
+        voltage_v REAL NOT NULL,
+        current_a REAL NOT NULL,
+        frequency_hz REAL NOT NULL DEFAULT 50.00,
+        voltage_unbalance_pct REAL NOT NULL DEFAULT 0.50,
+        current_unbalance_pct REAL NOT NULL DEFAULT 1.20,
+        device_metrics_json TEXT NOT NULL DEFAULT '{}',
+        quality_status TEXT NOT NULL DEFAULT 'VALID',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -508,7 +546,11 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_timing_rec_int ON timing_recommendations (intersection_id, generated_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_signal_phase_hist ON signal_phase_history (intersection_id, start_time DESC);",
     "CREATE INDEX IF NOT EXISTS idx_advisory_audit_rec ON advisory_audit_log (recommendation_id, created_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_advisory_audit_time ON advisory_audit_log (created_at DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_advisory_audit_time ON advisory_audit_log (created_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_energy_nodes_parent ON energy_network_nodes (parent_node_id);",
+    "CREATE INDEX IF NOT EXISTS idx_energy_nodes_type ON energy_network_nodes (node_type);",
+    "CREATE INDEX IF NOT EXISTS idx_energy_telemetry_asset_time ON energy_asset_telemetry (asset_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_energy_telemetry_obs ON energy_asset_telemetry (observed_at DESC);"
 ]
 
 
@@ -535,10 +577,11 @@ async def _migrate_postgres(session: AsyncSession) -> int:
             if cleaned:
                 try:
                     await session.execute(text(cleaned + ";"))
+                    await session.commit()
                 except Exception as ex:
+                    await session.rollback()
                     logger.debug("PostgreSQL statement notice: %s", ex)
-        await session.commit()
-    return 29
+    return 31
 
 
 async def _seed_study_area(session: AsyncSession, is_pg: bool) -> bool:
@@ -1095,6 +1138,286 @@ async def _seed_spatial_registry(session: AsyncSession, is_pg: bool) -> Dict[str
     return counts
 
 
+CANONICAL_ENERGY_NETWORK_NODES = [
+    {
+        "node_id": "SUB-NR-22KV",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Nagar Road 22kV Primary Substation",
+        "node_type": "SUBSTATION",
+        "parent_node_id": None,
+        "nominal_voltage_kv": 22.0,
+        "rated_capacity_kva": 15000.0,
+        "rated_current_amps": 393.65,
+        "phase_count": 3,
+        "coordinates": [73.9150, 18.5580],
+        "properties": {
+            "utilityProvider": "MSEDCL",
+            "transformerConfiguration": "Delta-Wye Grounded",
+            "coolingType": "ONAN/ONAF",
+            "feederCount": 3
+        }
+    },
+    {
+        "node_id": "FDR-NR-RETAIL-11KV",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Feeder A: Retail & Commercial Distribution Feeder",
+        "node_type": "FEEDER",
+        "parent_node_id": "SUB-NR-22KV",
+        "nominal_voltage_kv": 11.0,
+        "rated_capacity_kva": 5000.0,
+        "rated_current_amps": 262.43,
+        "phase_count": 3,
+        "coordinates": [73.9165, 18.5590],
+        "properties": {
+            "cableType": "3C x 300 sq.mm XLPE Aluminum Underground",
+            "feederLengthKm": 1.45,
+            "automationStatus": "SCADA_MONITORED"
+        }
+    },
+    {
+        "node_id": "FDR-NR-ENTERPRISE-11KV",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Feeder B: IT Park & Enterprise Distribution Feeder",
+        "node_type": "FEEDER",
+        "parent_node_id": "SUB-NR-22KV",
+        "nominal_voltage_kv": 11.0,
+        "rated_capacity_kva": 5000.0,
+        "rated_current_amps": 262.43,
+        "phase_count": 3,
+        "coordinates": [73.9210, 18.5615],
+        "properties": {
+            "cableType": "3C x 300 sq.mm XLPE Aluminum Underground",
+            "feederLengthKm": 1.80,
+            "automationStatus": "SCADA_MONITORED"
+        }
+    },
+    {
+        "node_id": "FDR-NR-HOSPITALITY-11KV",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Feeder C: Hospitality & Corridor Mobility Feeder",
+        "node_type": "FEEDER",
+        "parent_node_id": "SUB-NR-22KV",
+        "nominal_voltage_kv": 11.0,
+        "rated_capacity_kva": 5000.0,
+        "rated_current_amps": 262.43,
+        "phase_count": 3,
+        "coordinates": [73.9260, 18.5640],
+        "properties": {
+            "cableType": "3C x 300 sq.mm XLPE Aluminum Underground",
+            "feederLengthKm": 1.60,
+            "automationStatus": "SCADA_MONITORED"
+        }
+    },
+    {
+        "node_id": "AST-PV-PHOENIX-01",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Rooftop Solar PV Array 1 (1.2 MWp)",
+        "node_type": "SOLAR_PV",
+        "parent_node_id": "FDR-NR-RETAIL-11KV",
+        "nominal_voltage_kv": 0.415,
+        "rated_capacity_kva": 1200.0,
+        "rated_current_amps": 1669.45,
+        "phase_count": 3,
+        "coordinates": [73.9172, 18.5595],
+        "properties": {
+            "peakCapacityKWp": 1200.0,
+            "inverterTechnology": "Multi-MPPT Smart Inverter (IEEE 1547)",
+            "panelTiltDegrees": 18.5,
+            "orientation": "SOUTH_FACING",
+            "efficiencyPct": 21.4
+        }
+    },
+    {
+        "node_id": "AST-BLD-PHOENIX-01",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Commercial Retail Zone Load (Phoenix)",
+        "node_type": "BUILDING_LOAD",
+        "parent_node_id": "FDR-NR-RETAIL-11KV",
+        "nominal_voltage_kv": 0.415,
+        "rated_capacity_kva": 3000.0,
+        "rated_current_amps": 4173.63,
+        "phase_count": 3,
+        "coordinates": [73.9168, 18.5592],
+        "properties": {
+            "buildingEntityId": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            "category": "COMMERCIAL_RETAIL",
+            "contractDemandKW": 2500.0,
+            "powerFactorTarget": 0.98
+        }
+    },
+    {
+        "node_id": "AST-BESS-SOLITAIRE-01",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Substation Support BESS 2 MWh / 1 MW",
+        "node_type": "BESS",
+        "parent_node_id": "FDR-NR-ENTERPRISE-11KV",
+        "nominal_voltage_kv": 0.415,
+        "rated_capacity_kva": 1250.0,
+        "rated_current_amps": 1739.01,
+        "phase_count": 3,
+        "coordinates": [73.9215, 18.5620],
+        "properties": {
+            "usableCapacityKWh": 2000.0,
+            "ratedPowerKW": 1000.0,
+            "batteryChemistry": "Lithium Iron Phosphate (LFP)",
+            "roundTripEfficiencyPct": 88.5,
+            "cRate": 0.5
+        }
+    },
+    {
+        "node_id": "AST-BLD-SOLITAIRE-01",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Commercial Enterprise Zone Load (Solitaire Business Hub)",
+        "node_type": "BUILDING_LOAD",
+        "parent_node_id": "FDR-NR-ENTERPRISE-11KV",
+        "nominal_voltage_kv": 0.415,
+        "rated_capacity_kva": 3500.0,
+        "rated_current_amps": 4869.24,
+        "phase_count": 3,
+        "coordinates": [73.9205, 18.5612],
+        "properties": {
+            "buildingEntityId": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
+            "category": "COMMERCIAL_OFFICE",
+            "contractDemandKW": 3000.0,
+            "powerFactorTarget": 0.99
+        }
+    },
+    {
+        "node_id": "AST-EV-HUB-01",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Corridor DC Fast-Charging Plaza (12 Plugs)",
+        "node_type": "EV_HUB",
+        "parent_node_id": "FDR-NR-HOSPITALITY-11KV",
+        "nominal_voltage_kv": 0.415,
+        "rated_capacity_kva": 720.0,
+        "rated_current_amps": 1001.67,
+        "phase_count": 3,
+        "coordinates": [73.9255, 18.5638],
+        "properties": {
+            "chargerCount": 12,
+            "maxPlugPowerKW": 60.0,
+            "protocol": "OCPP 2.0.1",
+            "smartChargingSupported": True
+        }
+    },
+    {
+        "node_id": "AST-BLD-HYATT-01",
+        "study_area_id": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+        "name": "Commercial Hospitality Zone Load (Hyatt Regency)",
+        "node_type": "BUILDING_LOAD",
+        "parent_node_id": "FDR-NR-HOSPITALITY-11KV",
+        "nominal_voltage_kv": 0.415,
+        "rated_capacity_kva": 2000.0,
+        "rated_current_amps": 2782.42,
+        "phase_count": 3,
+        "coordinates": [73.9265, 18.5645],
+        "properties": {
+            "buildingEntityId": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
+            "category": "COMMERCIAL_HOSPITALITY",
+            "contractDemandKW": 1600.0,
+            "powerFactorTarget": 0.97
+        }
+    }
+]
+
+
+async def _seed_energy_network_nodes(session: AsyncSession, is_pg: bool) -> int:
+    count = 0
+    for node in CANONICAL_ENERGY_NETWORK_NODES:
+        coords = json.dumps(node["coordinates"]) if node.get("coordinates") else None
+        props = json.dumps(node.get("properties", {}))
+        if is_pg:
+            stmt = text("""
+                INSERT INTO energy_network_nodes (
+                    node_id, study_area_id, name, node_type, parent_node_id,
+                    nominal_voltage_kv, rated_capacity_kva, rated_current_amps,
+                    phase_count, coordinates, properties
+                ) VALUES (
+                    :node_id, :study_area_id, :name, :node_type, :parent_node_id,
+                    :nominal_voltage_kv, :rated_capacity_kva, :rated_current_amps,
+                    :phase_count, :coordinates, :properties
+                ) ON CONFLICT (node_id) DO NOTHING;
+            """)
+        else:
+            stmt = text("""
+                INSERT OR IGNORE INTO energy_network_nodes (
+                    node_id, study_area_id, name, node_type, parent_node_id,
+                    nominal_voltage_kv, rated_capacity_kva, rated_current_amps,
+                    phase_count, coordinates, properties
+                ) VALUES (
+                    :node_id, :study_area_id, :name, :node_type, :parent_node_id,
+                    :nominal_voltage_kv, :rated_capacity_kva, :rated_current_amps,
+                    :phase_count, :coordinates, :properties
+                );
+            """)
+        await session.execute(stmt, {
+            "node_id": node["node_id"],
+            "study_area_id": node["study_area_id"],
+            "name": node["name"],
+            "node_type": node["node_type"],
+            "parent_node_id": node["parent_node_id"],
+            "nominal_voltage_kv": node["nominal_voltage_kv"],
+            "rated_capacity_kva": node["rated_capacity_kva"],
+            "rated_current_amps": node["rated_current_amps"],
+            "phase_count": node["phase_count"],
+            "coordinates": coords,
+            "properties": props
+        })
+        count += 1
+    return count
+
+
+async def _seed_initial_energy_telemetry(session: AsyncSession, is_pg: bool) -> int:
+    import math
+    now_utc = datetime.now(timezone.utc)
+    sample_records = [
+        {"asset_id": "SUB-NR-22KV", "p": 6250.0, "q": 1950.0, "v": 22000.0, "metrics": {"powerDirection": "IMPORT", "feederLoadingAvgPct": 56.4}},
+        {"asset_id": "FDR-NR-RETAIL-11KV", "p": 2180.0, "q": 680.0, "v": 11000.0, "metrics": {"feederLoadingPct": 45.6}},
+        {"asset_id": "FDR-NR-ENTERPRISE-11KV", "p": 2450.0, "q": 720.0, "v": 11000.0, "metrics": {"feederLoadingPct": 51.1}},
+        {"asset_id": "FDR-NR-HOSPITALITY-11KV", "p": 1620.0, "q": 550.0, "v": 11000.0, "metrics": {"feederLoadingPct": 34.2}},
+        {"asset_id": "AST-PV-PHOENIX-01", "p": 780.0, "q": 40.0, "v": 415.0, "metrics": {"irradianceWm2": 720.0, "inverterEfficiencyPct": 98.2}},
+        {"asset_id": "AST-BLD-PHOENIX-01", "p": 1400.0, "q": 450.0, "v": 415.0, "metrics": {"hvacLoadKW": 720.0, "lightingLoadKW": 280.0}},
+        {"asset_id": "AST-BESS-SOLITAIRE-01", "p": -250.0, "q": 10.0, "v": 415.0, "metrics": {"stateOfChargePct": 78.5, "operatingMode": "SOLAR_ABSORPTION"}},
+        {"asset_id": "AST-BLD-SOLITAIRE-01", "p": 2200.0, "q": 710.0, "v": 415.0, "metrics": {"dataCenterLoadKW": 850.0, "tenantLoadKW": 1350.0}},
+        {"asset_id": "AST-EV-HUB-01", "p": 360.0, "q": 85.0, "v": 415.0, "metrics": {"activePlugs": 6, "totalPlugs": 12, "avgSessionKW": 60.0}},
+        {"asset_id": "AST-BLD-HYATT-01", "p": 1260.0, "q": 465.0, "v": 415.0, "metrics": {"guestRoomsLoadKW": 520.0, "banquetKitchenKW": 740.0}},
+    ]
+    count = 0
+    for r in sample_records:
+        p = r["p"]
+        q = r["q"]
+        v = r["v"]
+        s = math.sqrt(p * p + q * q)
+        pf = abs(p / s) if s > 0 else 1.0
+        i = (s * 1000.0) / (math.sqrt(3.0) * v) if v > 0 else 0.0
+        obs_time = now_utc if is_pg else now_utc.isoformat()
+        metrics_json = json.dumps(r.get("metrics", {}))
+        stmt = text("""
+            INSERT INTO energy_asset_telemetry (
+                asset_id, observed_at, source_mode, active_power_kw,
+                reactive_power_kvar, apparent_power_kva, power_factor,
+                voltage_v, current_a, frequency_hz, voltage_unbalance_pct,
+                current_unbalance_pct, device_metrics_json, quality_status
+            ) VALUES (
+                :asset_id, :observed_at, 'SIMULATION', :p, :q, :s, :pf,
+                :v, :i, 50.02, 0.45, 1.15, :metrics_json, 'VALID'
+            );
+        """)
+        await session.execute(stmt, {
+            "asset_id": r["asset_id"],
+            "observed_at": obs_time,
+            "p": round(p, 2),
+            "q": round(q, 2),
+            "s": round(s, 2),
+            "pf": round(pf, 3),
+            "v": round(v, 2),
+            "i": round(i, 2),
+            "metrics_json": metrics_json
+        })
+        count += 1
+    return count
+
+
 async def init_db_schema() -> Dict[str, Any]:
     """
     Primary entrypoint called on FastAPI startup lifespan.
@@ -1137,6 +1460,16 @@ async def init_db_schema() -> Dict[str, Any]:
                 seeded_assets["spatial"] = await _seed_spatial_registry(session, is_pg)
                 await session.commit()
                 logger.info("Spatial registry seeded successfully: %s", seeded_assets.get("spatial"))
+
+            # Check if canonical energy network topology needs seeding
+            check_energy_nodes = await session.execute(text("SELECT COUNT(*) FROM energy_network_nodes"))
+            energy_nodes_count = check_energy_nodes.scalar() or 0
+            if energy_nodes_count == 0:
+                logger.info("Seeding canonical electrical network topology nodes...")
+                seeded_assets["energyNodes"] = await _seed_energy_network_nodes(session, is_pg)
+                seeded_assets["energyTelemetry"] = await _seed_initial_energy_telemetry(session, is_pg)
+                await session.commit()
+                logger.info("Canonical energy network seeded (%s nodes).", seeded_assets.get("energyNodes"))
 
             # Ensure continuous aggregates are seeded if empty
             try:

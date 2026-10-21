@@ -485,6 +485,14 @@ class TelemetryStreamerWorker:
                     except Exception as spat_err:
                         logger.debug("Virtual SPaT tick notice: %s", spat_err)
 
+                # 3c. Advance Canonical Multi-Asset Microgrid Telemetry (Energy TASK-01)
+                energy_telemetry_records = []
+                try:
+                    from backend.services.energy_topology_service import energy_topology_service
+                    energy_telemetry_records = await energy_topology_service.generate_telemetry_tick(session=session)
+                except Exception as energy_err:
+                    logger.debug("Microgrid telemetry tick notice: %s", energy_err)
+
                 await session.commit()
 
                 # Update Internal Telemetry State
@@ -577,6 +585,19 @@ class TelemetryStreamerWorker:
                             await self.broadcast_callback(spat_msg)
                         else:
                             self.broadcast_callback(spat_msg)
+
+                    # Broadcast real-time canonical microgrid telemetry (Energy TASK-01)
+                    if energy_telemetry_records:
+                        microgrid_msg = {
+                            "eventType": "MICROGRID_TELEMETRY_UPDATED",
+                            "observedAt": now_iso,
+                            "sourceMode": self.mode,
+                            "records": energy_telemetry_records
+                        }
+                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                            await self.broadcast_callback(microgrid_msg)
+                        else:
+                            self.broadcast_callback(microgrid_msg)
 
                 return {
                     "status": "TICK_SUCCESS",
