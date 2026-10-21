@@ -32,7 +32,7 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
   onClose,
   onAuthorized
 }) => {
-  const [badgeId, setBadgeId] = useState<string>('PUNE-TP-4091');
+  const [badgeId, setBadgeId] = useState<string>('MCC-OPS-4091');
   const [shiftId, setShiftId] = useState<string>('SHIFT-EVENING-B');
   const [reviewer, setReviewer] = useState<string>(initialReviewerName);
   const [decision, setDecision] = useState<RecommendationStatus>('ACKNOWLEDGED');
@@ -205,7 +205,7 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
                     className="form-input"
                     value={badgeId}
                     onChange={(e) => setBadgeId(e.target.value)}
-                    placeholder="e.g. PUNE-TP-4091"
+                    placeholder="e.g. MCC-OPS-4091"
                     style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
                   />
                 </div>
