@@ -28,26 +28,26 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
 }) => {
   if (!selectedNode) {
     return (
-      <div className="bg-slate-900/50 backdrop-blur-md rounded-xl border border-slate-800 p-8 flex flex-col items-center justify-center text-center text-slate-400 h-full">
-        <Zap className="w-8 h-8 text-slate-600 mb-2" />
-        <h3 className="text-sm font-semibold text-slate-300">No Asset Selected</h3>
-        <p className="text-xs text-slate-500 max-w-sm mt-1">
-          Select any node in the electrical hierarchy tree on the left to inspect live 3-phase AC power physics, frequency stability, and physical asset parameters.
+      <div className="analytics-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px' }}>
+        <Zap size={32} className="text-muted" style={{ margin: '0 auto 12px' }} />
+        <h3 className="card-title" style={{ fontSize: '15px' }}>No Asset Selected</h3>
+        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', maxWidth: '360px', marginTop: '6px', lineHeight: 1.5 }}>
+          Select any node in the electrical hierarchy tree on the left to inspect real-time 3-phase AC power physics, frequency stability, and physical asset parameters.
         </p>
       </div>
     );
   }
 
   const telem = telemetry || selectedNode.telemetry;
-  const p = telem?.activePowerKw || 0;
-  const q = telem?.reactivePowerKvar || 0;
-  const s = telem?.apparentPowerKva || 0;
+  const p = telem?.activePowerKw ?? 0;
+  const q = telem?.reactivePowerKvar ?? 0;
+  const s = telem?.apparentPowerKva ?? 0;
   const pf = telem?.powerFactor ?? 1.0;
-  const v = telem?.voltageV || selectedNode.nominalVoltageKv * 1000;
-  const i = telem?.currentA || 0;
-  const freq = telem?.frequencyHz || 50.00;
-  const vUnbalance = telem?.voltageUnbalancePct || 0.45;
-  const iUnbalance = telem?.currentUnbalancePct || 1.15;
+  const v = telem?.voltageV ?? selectedNode.nominalVoltageKv * 1000;
+  const i = telem?.currentA ?? 0;
+  const freq = telem?.frequencyHz ?? 50.00;
+  const vUnbalance = telem?.voltageUnbalancePct ?? 0.45;
+  const iUnbalance = telem?.currentUnbalancePct ?? 1.15;
   const devMetrics = telem?.deviceMetrics || selectedNode.properties || {};
 
   const isSolar = selectedNode.nodeType === 'SOLAR_PV';
@@ -61,145 +61,186 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
   const freqStatus = Math.abs(freq - 50.0) <= 0.1 ? 'Normal' : 'Perturbed';
 
   return (
-    <div className="bg-slate-900/50 backdrop-blur-md rounded-xl border border-slate-800 p-5 flex flex-col gap-5 h-full">
+    <div className="analytics-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Header Info */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="analytics-card-header" style={{ marginBottom: 0 }}>
         <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-cyan-950 border border-cyan-800/40 text-cyan-400">
-              <Zap className="w-4 h-4" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                padding: '6px',
+                borderRadius: 'var(--radius-sm, 6px)',
+                background: 'rgba(47, 129, 247, 0.14)',
+                border: '1px solid rgba(47, 129, 247, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Zap size={16} color="var(--color-primary-hover, #58A6FF)" />
             </span>
-            <h2 className="text-base font-bold text-slate-100">{selectedNode.name}</h2>
+            <h2 className="card-title" style={{ fontSize: '16px', margin: 0 }}>
+              {selectedNode.name}
+            </h2>
           </div>
-          <span className="text-[11px] font-mono text-slate-400 mt-1 block">
+          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>
             URN: {selectedNode.nodeId}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {isLive && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="provenance-badge badge-live" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="dot dot-live" style={{ width: '6px', height: '6px' }} />
               LIVE TELEMETRY
             </span>
           )}
-          <span className="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-xs font-mono text-slate-300">
+          <span className="analytics-meta-pill" style={{ fontFamily: 'var(--font-mono)' }}>
             {selectedNode.nominalVoltageKv} kV / {selectedNode.ratedCapacityKva.toLocaleString()} kVA
           </span>
         </div>
       </div>
 
       {/* Primary 3-Phase AC Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col">
-          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
-            Active Power (P)
-            <Activity className="w-3.5 h-3.5 text-cyan-400" />
+      <div className="quick-metrics-row-four">
+        <div className="metric-box">
+          <span className="metric-box-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Active Power (P)</span>
+            <Activity size={13} color="var(--color-primary, #2F81F7)" />
           </span>
-          <div className="flex items-baseline gap-1.5 mt-2">
-            <span className={`text-xl font-bold font-mono ${p < 0 ? 'text-indigo-400' : isSolar ? 'text-emerald-400' : 'text-slate-100'}`}>
-              {p.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">kW</span>
-          </div>
-          <span className="text-[10px] text-slate-400 mt-1">
+          <span
+            className="metric-box-val font-mono"
+            style={{
+              color: p < 0 ? '#818CF8' : isSolar ? 'var(--color-success, #3FB950)' : 'var(--color-text, #F0F6FC)'
+            }}
+          >
+            {p.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <small>kW</small>
+          </span>
+          <span className="metric-box-sub">
             {isSolar ? 'Renewable Generation' : isBess && p < 0 ? 'Charging Grid Energy' : 'Physical Active Draw'}
           </span>
         </div>
 
-        <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col">
-          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
-            Reactive Power (Q)
-            <Activity className="w-3.5 h-3.5 text-amber-400" />
+        <div className="metric-box">
+          <span className="metric-box-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Reactive Power (Q)</span>
+            <Activity size={13} color="var(--color-warning, #D29922)" />
           </span>
-          <div className="flex items-baseline gap-1.5 mt-2">
-            <span className="text-xl font-bold font-mono text-amber-300">
-              {q.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">kVAR</span>
-          </div>
-          <span className="text-[10px] text-slate-400 mt-1">
+          <span className="metric-box-val font-mono" style={{ color: 'var(--color-warning, #D29922)' }}>
+            {q.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <small>kVAR</small>
+          </span>
+          <span className="metric-box-sub">
             Magnetizing / Inverter VARs
           </span>
         </div>
 
-        <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col">
-          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
-            Apparent Power (S)
-            <Gauge className="w-3.5 h-3.5 text-purple-400" />
+        <div className="metric-box">
+          <span className="metric-box-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Apparent Power (S)</span>
+            <Gauge size={13} color="#BC8CFF" />
           </span>
-          <div className="flex items-baseline gap-1.5 mt-2">
-            <span className="text-xl font-bold font-mono text-purple-300">
-              {s.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-            </span>
-            <span className="text-xs text-slate-400 font-mono">kVA</span>
-          </div>
-          <span className="text-[10px] text-slate-400 mt-1">
+          <span className="metric-box-val font-mono" style={{ color: '#BC8CFF' }}>
+            {s.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <small>kVA</small>
+          </span>
+          <span className="metric-box-sub">
             Vector Sum: sqrt(P^2 + Q^2)
           </span>
         </div>
 
-        <div className="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800/80 flex flex-col">
-          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
-            Power Factor (PF)
-            <Percent className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="metric-box">
+          <span className="metric-box-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Power Factor (PF)</span>
+            <Percent size={13} color="var(--color-success, #3FB950)" />
           </span>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className={`text-xl font-bold font-mono ${pf >= 0.95 ? 'text-emerald-400' : pf >= 0.90 ? 'text-amber-400' : 'text-rose-400'}`}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span
+              className="metric-box-val font-mono"
+              style={{
+                color: pf >= 0.95 ? 'var(--color-success, #3FB950)' : pf >= 0.90 ? 'var(--color-warning, #D29922)' : 'var(--color-danger, #F85149)'
+              }}
+            >
               {pf.toFixed(3)}
             </span>
-            <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+            <span
+              style={{
+                fontSize: '11px',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: 'var(--bg-surface-elevated)',
+                color: 'var(--color-text-secondary)',
+                fontFamily: 'var(--font-mono)'
+              }}
+            >
               {pfLabel}
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1">
+          <span className="metric-box-sub">
             Target: &gt;0.95 (IEEE 519)
           </span>
         </div>
       </div>
 
       {/* Secondary Physical Parameters */}
-      <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex flex-col gap-3">
-        <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <Radio className="w-3.5 h-3.5 text-cyan-400" />
-          Physical 3-Phase Line & Grid Parameters
-        </h3>
+      <div
+        style={{
+          background: 'var(--bg-surface-elevated, rgba(15, 15, 18, 0.7))',
+          border: '1px solid var(--color-border, #16171B)',
+          borderRadius: 'var(--radius-sm, 6px)',
+          padding: '12px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Radio size={14} color="var(--color-primary, #2F81F7)" />
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Physical 3-Phase Line & Grid Parameters
+          </span>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-1 text-xs">
-          <div className="flex flex-col">
-            <span className="text-slate-400 text-[11px]">Line Voltage (V_L)</span>
-            <span className="font-mono font-semibold text-slate-200 mt-0.5">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+            gap: '12px',
+            fontSize: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Line Voltage (V_L)</span>
+            <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
               {v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} V
             </span>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-slate-400 text-[11px]">Phase Current (I_L)</span>
-            <span className="font-mono font-semibold text-slate-200 mt-0.5">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Phase Current (I_L)</span>
+            <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
               {i.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} A
             </span>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-slate-400 text-[11px]">Grid Frequency (f)</span>
-            <span className="font-mono font-semibold text-emerald-400 mt-0.5 flex items-center gap-1.5">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Grid Frequency (f)</span>
+            <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-success, #3FB950)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {freq.toFixed(2)} Hz
-              <span className="text-[10px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-300">
+              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(63, 185, 80, 0.15)', color: '#3FB950' }}>
                 {freqStatus}
               </span>
             </span>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-slate-400 text-[11px]">Voltage Unbalance</span>
-            <span className="font-mono font-semibold text-slate-200 mt-0.5">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Voltage Unbalance</span>
+            <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
               {vUnbalance.toFixed(2)}%
             </span>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-slate-400 text-[11px]">Current Unbalance</span>
-            <span className="font-mono font-semibold text-slate-200 mt-0.5">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Current Unbalance</span>
+            <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
               {iUnbalance.toFixed(2)}%
             </span>
           </div>
@@ -207,40 +248,59 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
       </div>
 
       {/* Asset-Specific Domain Drawer */}
-      <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex flex-col gap-3">
-        <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          {isSolar && <Sun className="w-3.5 h-3.5 text-emerald-400" />}
-          {isBess && <BatteryCharging className="w-3.5 h-3.5 text-indigo-400" />}
-          {isEv && <Car className="w-3.5 h-3.5 text-purple-400" />}
-          {isBuilding && <Building2 className="w-3.5 h-3.5 text-blue-400" />}
-          {(isFeeder || isSubstation) && <GitFork className="w-3.5 h-3.5 text-amber-400" />}
-          Asset Domain Telemetry & Specification
-        </h3>
+      <div
+        style={{
+          background: 'var(--bg-surface-elevated, rgba(15, 15, 18, 0.7))',
+          border: '1px solid var(--color-border, #16171B)',
+          borderRadius: 'var(--radius-sm, 6px)',
+          padding: '12px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {isSolar && <Sun size={14} color="#3FB950" />}
+          {isBess && <BatteryCharging size={14} color="#BC8CFF" />}
+          {isEv && <Car size={14} color="#E879F9" />}
+          {isBuilding && <Building2 size={14} color="#38BDF8" />}
+          {(isFeeder || isSubstation) && <GitFork size={14} color="#FCD34D" />}
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Asset Domain Telemetry & Specification
+          </span>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: '12px',
+            fontSize: '12px'
+          }}
+        >
           {isSolar && (
             <>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Global Solar Irradiance</span>
-                <span className="font-mono font-semibold text-emerald-300 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Global Solar Irradiance</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: '#3FB950', marginTop: '2px' }}>
                   {devMetrics.irradianceWm2 ?? 720.0} W/m²
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Smart Inverter Efficiency</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Smart Inverter Efficiency</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.inverterEfficiencyPct ?? 98.2}%
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Panel Orientation</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Panel Orientation</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.orientation || 'SOUTH_FACING (18.5° Tilt)'}
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Grid Code Standard</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Grid Code Standard</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   IEEE 1547-2018 Compliant
                 </span>
               </div>
@@ -249,27 +309,27 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
 
           {isBess && (
             <>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">State of Charge (SOC)</span>
-                <span className="font-mono font-semibold text-indigo-300 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>State of Charge (SOC)</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: '#BC8CFF', marginTop: '2px' }}>
                   {devMetrics.stateOfChargePct ?? 78.5}%
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Operational Mode</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Operational Mode</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.operatingMode || 'SOLAR_ABSORPTION'}
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Usable Energy Capacity</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Usable Energy Capacity</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   2,000 kWh (LFP Chemistry)
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Round-Trip Efficiency</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Round-Trip Efficiency</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   88.5%
                 </span>
               </div>
@@ -278,27 +338,27 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
 
           {isEv && (
             <>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Active Charging Plugs</span>
-                <span className="font-mono font-semibold text-purple-300 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Active Charging Plugs</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: '#E879F9', marginTop: '2px' }}>
                   {devMetrics.activePlugs ?? 6} / {devMetrics.totalPlugs ?? 12} Plugs
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Plaza Utilization</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Plaza Utilization</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.utilizationRatePct ?? 50.0}%
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Charger Protocol</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Charger Protocol</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   OCPP 2.0.1 Smart Charging
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Smart Curtailment Flag</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Smart Curtailment Flag</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.smartThrottlingActive ? 'ACTIVE (THROTTLED)' : 'INACTIVE (FULL CHARGE)'}
                 </span>
               </div>
@@ -307,27 +367,27 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
 
           {isBuilding && (
             <>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">HVAC Chiller Load</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>HVAC Chiller Load</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {(devMetrics.hvacLoadKw ?? (p * 0.52)).toFixed(1)} kW
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Lighting & Ventilation</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Lighting & Ventilation</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {(devMetrics.lightingLoadKw ?? (p * 0.23)).toFixed(1)} kW
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Building Category</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Building Category</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.category || 'COMMERCIAL'}
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Contract Demand</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Contract Demand</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {devMetrics.contractDemandKW ?? 2500.0} kW
                 </span>
               </div>
@@ -336,27 +396,27 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
 
           {(isFeeder || isSubstation) && (
             <>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Feeder Rated Capacity</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Feeder Rated Capacity</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {selectedNode.ratedCapacityKva.toLocaleString()} kVA
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Rated Maximum Current</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Rated Maximum Current</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   {selectedNode.ratedCurrentAmps.toFixed(1)} A
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">Cable Specification</span>
-                <span className="font-mono font-semibold text-slate-200 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>Cable Specification</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text, #F0F6FC)', marginTop: '2px' }}>
                   3C x 300 mm² XLPE AL
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-slate-400 text-[11px]">SCADA Telemetry Status</span>
-                <span className="font-mono font-semibold text-emerald-400 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>SCADA Telemetry Status</span>
+                <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-success, #3FB950)', marginTop: '2px' }}>
                   ONLINE (IEC 60870-5-104)
                 </span>
               </div>
@@ -366,18 +426,31 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
       </div>
 
       {/* Provenance & Data Honesty Footer */}
-      <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400 font-mono">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+      <div
+        style={{
+          paddingTop: '10px',
+          borderTop: '1px solid var(--color-border, #16171B)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          fontSize: '11px',
+          color: 'var(--color-text-muted)',
+          fontFamily: 'var(--font-mono)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <ShieldCheck size={13} color="var(--color-primary, #2F81F7)" />
             Mode: {telem?.sourceMode || 'SIMULATION'}
           </span>
           <span>•</span>
           <span>Status: {telem?.qualityStatus || 'VALID'}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <Clock className="w-3 h-3 text-slate-400" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Clock size={12} color="var(--color-text-muted)" />
           <span>Observed: {telem?.observedAt ? new Date(telem.observedAt).toLocaleTimeString() : 'Just now'}</span>
         </div>
       </div>

@@ -332,9 +332,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
       {/* Corridor Microgrid Power Flow & Balance Summary Banner */}
       <div className="quick-metrics-row-four" style={{ marginBottom: '16px' }}>
         <div className="metric-box">
-          <span className="metric-box-label flex items-center justify-between">
-            Net Grid Import
-            <GitFork size={13} className="text-amber-400" />
+          <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Net Grid Import</span>
+            <GitFork size={13} color="#FCD34D" />
           </span>
           <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
             {summaryGridImportKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
@@ -345,9 +345,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         </div>
 
         <div className="metric-box">
-          <span className="metric-box-label flex items-center justify-between">
-            Rooftop Solar PV
-            <Sun size={13} className="text-emerald-400" />
+          <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Rooftop Solar PV</span>
+            <Sun size={13} color="#3FB950" />
           </span>
           <span className="metric-box-val font-mono" style={{ color: '#3FB950' }}>
             +{summaryGenKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
@@ -358,9 +358,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         </div>
 
         <div className="metric-box">
-          <span className="metric-box-label flex items-center justify-between">
-            BESS Storage
-            <BatteryCharging size={13} className="text-indigo-400" />
+          <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>BESS Storage</span>
+            <BatteryCharging size={13} color="#BC8CFF" />
           </span>
           <span
             className="metric-box-val font-mono"
@@ -374,9 +374,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         </div>
 
         <div className="metric-box">
-          <span className="metric-box-label flex items-center justify-between">
-            EV Charging Plaza
-            <Car size={13} className="text-purple-400" />
+          <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>EV Charging Plaza</span>
+            <Car size={13} color="#E879F9" />
           </span>
           <span className="metric-box-val font-mono" style={{ color: '#C084FC' }}>
             {summaryEvLoadKw.toFixed(0)} <small>kW</small>
@@ -396,42 +396,42 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
           justifyContent: 'space-between',
           gap: '12px',
           padding: '10px 16px',
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid rgba(51, 65, 85, 0.5)',
-          borderRadius: '8px',
+          background: 'var(--color-surface, rgba(9, 9, 11, 0.94))',
+          border: '1px solid var(--color-border, #16171B)',
+          borderRadius: 'var(--radius-md, 8px)',
           marginBottom: '16px',
           fontSize: '12px'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Activity size={14} className="text-cyan-400" />
+            <Activity size={14} color="#38BDF8" />
             <span className="text-muted">Total Load:</span>
-            <span className="font-mono font-semibold" style={{ color: '#F0F6FC' }}>
+            <span className="font-mono" style={{ fontWeight: 600, color: '#F0F6FC' }}>
               {summaryLoadKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} kW
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Gauge size={14} className="text-emerald-400" />
+            <Gauge size={14} color="#3FB950" />
             <span className="text-muted">Corridor Power Factor:</span>
-            <span className="font-mono font-semibold" style={{ color: '#3FB950' }}>
+            <span className="font-mono" style={{ fontWeight: 600, color: '#3FB950' }}>
               {summaryPf.toFixed(3)} Lag
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Radio size={14} className="text-blue-400" />
+            <Radio size={14} color="#58A6FF" />
             <span className="text-muted">Grid Frequency:</span>
-            <span className="font-mono font-semibold" style={{ color: '#38BDF8' }}>
+            <span className="font-mono" style={{ fontWeight: 600, color: '#38BDF8' }}>
               {summaryFreq.toFixed(2)} Hz
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Sun size={14} className="text-amber-400" />
+            <Sun size={14} color="#FCD34D" />
             <span className="text-muted">Carbon Offset:</span>
-            <span className="font-mono font-semibold" style={{ color: '#FCD34D' }}>
+            <span className="font-mono" style={{ fontWeight: 600, color: '#FCD34D' }}>
               {summaryCarbonOffset.toFixed(1)} kg CO₂e/h
             </span>
           </div>
@@ -473,7 +473,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
       </div>
 
       {/* Sub-Navigation Switcher */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--color-border, #16171B)', marginBottom: '16px', paddingBottom: '8px' }}>
         <button
           type="button"
           className={`preset-pill-btn ${activeSubTab === 'TOPOLOGY' ? 'active' : ''}`}

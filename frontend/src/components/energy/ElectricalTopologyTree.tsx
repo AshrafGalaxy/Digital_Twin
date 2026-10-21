@@ -23,43 +23,85 @@ interface ElectricalTopologyTreeProps {
 const getNodeIcon = (type: EnergyNodeType) => {
   switch (type) {
     case 'SUBSTATION':
-      return <Zap className="w-4 h-4 text-amber-400" />;
+      return <Zap size={14} color="#FCD34D" />;
     case 'FEEDER':
-      return <GitFork className="w-4 h-4 text-cyan-400" />;
+      return <GitFork size={14} color="#58A6FF" />;
     case 'SOLAR_PV':
-      return <Sun className="w-4 h-4 text-emerald-400" />;
+      return <Sun size={14} color="#3FB950" />;
     case 'BESS':
-      return <BatteryCharging className="w-4 h-4 text-indigo-400" />;
+      return <BatteryCharging size={14} color="#BC8CFF" />;
     case 'BUILDING_LOAD':
-      return <Building2 className="w-4 h-4 text-blue-400" />;
+      return <Building2 size={14} color="#38BDF8" />;
     case 'EV_HUB':
-      return <Car className="w-4 h-4 text-purple-400" />;
+      return <Car size={14} color="#E879F9" />;
     default:
-      return <Layers className="w-4 h-4 text-slate-400" />;
+      return <Layers size={14} color="var(--color-text-muted)" />;
   }
 };
 
 const getNodeTypeBadge = (type: EnergyNodeType) => {
-  const styles: Record<EnergyNodeType, string> = {
-    SUBSTATION: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-    FEEDER: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
-    SOLAR_PV: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-    BESS: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30',
-    BUILDING_LOAD: 'bg-blue-500/10 text-blue-300 border-blue-500/30',
-    EV_HUB: 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+  const badgeColors: Record<EnergyNodeType, { bg: string; border: string; text: string; label: string }> = {
+    SUBSTATION: {
+      bg: 'rgba(245, 158, 11, 0.14)',
+      border: 'rgba(245, 158, 11, 0.35)',
+      text: '#FCD34D',
+      label: 'Substation'
+    },
+    FEEDER: {
+      bg: 'rgba(47, 129, 247, 0.14)',
+      border: 'rgba(47, 129, 247, 0.35)',
+      text: '#58A6FF',
+      label: '11kV Feeder'
+    },
+    SOLAR_PV: {
+      bg: 'rgba(63, 185, 80, 0.14)',
+      border: 'rgba(63, 185, 80, 0.35)',
+      text: '#3FB950',
+      label: 'Solar PV'
+    },
+    BESS: {
+      bg: 'rgba(188, 140, 255, 0.14)',
+      border: 'rgba(188, 140, 255, 0.35)',
+      text: '#BC8CFF',
+      label: 'BESS'
+    },
+    BUILDING_LOAD: {
+      bg: 'rgba(56, 189, 248, 0.14)',
+      border: 'rgba(56, 189, 248, 0.35)',
+      text: '#38BDF8',
+      label: 'Facility Load'
+    },
+    EV_HUB: {
+      bg: 'rgba(217, 70, 239, 0.14)',
+      border: 'rgba(217, 70, 239, 0.35)',
+      text: '#E879F9',
+      label: 'EV Plaza'
+    }
   };
-  const labels: Record<EnergyNodeType, string> = {
-    SUBSTATION: 'Substation',
-    FEEDER: '11kV Feeder',
-    SOLAR_PV: 'Solar PV',
-    BESS: 'BESS',
-    BUILDING_LOAD: 'Facility Load',
-    EV_HUB: 'EV Plaza'
+
+  const style = badgeColors[type] || {
+    bg: 'rgba(139, 148, 158, 0.14)',
+    border: 'rgba(139, 148, 158, 0.35)',
+    text: 'var(--color-text-muted)',
+    label: type
   };
 
   return (
-    <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border ${styles[type] || 'bg-slate-500/10 text-slate-300 border-slate-500/30'}`}>
-      {labels[type] || type}
+    <span
+      style={{
+        fontSize: '10px',
+        fontFamily: 'var(--font-mono)',
+        textTransform: 'uppercase',
+        padding: '2px 8px',
+        borderRadius: '9999px',
+        backgroundColor: style.bg,
+        border: `1px solid ${style.border}`,
+        color: style.text,
+        fontWeight: 600,
+        letterSpacing: '0.04em'
+      }}
+    >
+      {style.label}
     </span>
   );
 };
@@ -78,71 +120,121 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   onSelectNode
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
-  const hasChildren = node.children && node.children.length > 0;
+  const hasChildren = Boolean(node.children && node.children.length > 0);
   const isSelected = selectedNodeId === node.nodeId;
 
   const loadingPct = node.loadingPct || 0;
   const loadingColor =
     loadingPct > 80
-      ? 'bg-rose-500'
+      ? 'var(--color-danger, #F85149)'
       : loadingPct > 60
-      ? 'bg-amber-500'
-      : 'bg-emerald-500';
+      ? 'var(--color-warning, #D29922)'
+      : 'var(--color-success, #3FB950)';
 
   const activeKw = node.telemetry?.activePowerKw || 0;
   const isGeneration = node.nodeType === 'SOLAR_PV' || (node.nodeType === 'BESS' && activeKw > 0);
 
   return (
-    <div className="flex flex-col">
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <div
         onClick={() => onSelectNode(node)}
-        className={`group flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none mb-1.5 ${
-          isSelected
-            ? 'bg-cyan-950/40 border-cyan-500/60 shadow-sm shadow-cyan-500/10'
-            : 'bg-slate-900/60 hover:bg-slate-800/80 border-slate-800 hover:border-slate-700'
-        }`}
-        style={{ marginLeft: `${level * 16}px` }}
+        role="button"
+        tabIndex={0}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-sm, 6px)',
+          border: isSelected
+            ? '1px solid var(--color-primary, #2F81F7)'
+            : '1px solid var(--color-border, #16171B)',
+          backgroundColor: isSelected
+            ? 'rgba(47, 129, 247, 0.12)'
+            : 'var(--bg-surface-elevated, rgba(15, 15, 18, 0.6))',
+          boxShadow: isSelected ? '0 0 10px rgba(47, 129, 247, 0.18)' : 'none',
+          cursor: 'pointer',
+          marginBottom: '6px',
+          marginLeft: `${level * 16}px`,
+          transition: 'all var(--transition-fast)'
+        }}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
           {hasChildren ? (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
-              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 transition-colors"
-              title={isExpanded ? 'Collapse' : 'Expand'}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={isExpanded ? 'Collapse branch' : 'Expand branch'}
             >
-              {isExpanded ? (
-                <ChevronDown className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronRight className="w-3.5 h-3.5" />
-              )}
+              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
           ) : (
-            <div className="w-5" />
+            <div style={{ width: '18px' }} />
           )}
 
-          <div className="p-1.5 rounded-md bg-slate-950/80 border border-slate-800 flex-shrink-0">
+          <div
+            style={{
+              padding: '5px',
+              borderRadius: 'var(--radius-sm, 4px)',
+              backgroundColor: 'var(--bg-app, #000000)',
+              border: '1px solid var(--color-border, #16171B)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
             {getNodeIcon(node.nodeType)}
           </div>
 
-          <div className="min-w-0 flex-1 pr-2">
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-200' : 'text-slate-200'}`}>
+          <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: isSelected ? 'var(--color-primary-hover, #58A6FF)' : 'var(--color-text, #F0F6FC)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 {node.name}
               </span>
               {getNodeTypeBadge(node.nodeType)}
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '11px',
+                color: 'var(--color-text-muted)',
+                fontFamily: 'var(--font-mono)',
+                marginTop: '2px'
+              }}
+            >
               <span>{node.nominalVoltageKv} kV</span>
               <span>•</span>
               <span>{node.ratedCapacityKva.toLocaleString()} kVA</span>
               {node.nodeType === 'FEEDER' && (
                 <>
                   <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Activity className="w-3 h-3 text-cyan-400" />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Activity size={11} color="var(--color-primary)" />
                     Load: {loadingPct.toFixed(1)}%
                   </span>
                 </>
@@ -151,25 +243,31 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
           <span
-            className={`text-xs font-mono font-medium ${
-              isGeneration
-                ? 'text-emerald-400'
+            className="font-mono"
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: isGeneration
+                ? 'var(--color-success, #3FB950)'
                 : activeKw < 0
-                ? 'text-indigo-400'
-                : 'text-amber-400'
-            }`}
+                ? '#818CF8'
+                : 'var(--color-warning, #D29922)'
+            }}
           >
             {activeKw > 0 && !isGeneration ? '+' : ''}
             {activeKw.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW
           </span>
 
           {node.nodeType === 'FEEDER' && (
-            <div className="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700/50">
+            <div className="progress-bar-bg" style={{ width: '70px', height: '5px' }}>
               <div
-                className={`h-full transition-all duration-500 ${loadingColor}`}
-                style={{ width: `${Math.min(100, Math.max(2, loadingPct))}%` }}
+                className="progress-bar-fill"
+                style={{
+                  width: `${Math.min(100, Math.max(2, loadingPct))}%`,
+                  backgroundColor: loadingColor
+                }}
               />
             </div>
           )}
@@ -177,7 +275,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       </div>
 
       {hasChildren && isExpanded && (
-        <div className="flex flex-col">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {node.children!.map((child) => (
             <TreeNodeItem
               key={child.nodeId}
@@ -201,36 +299,39 @@ export const ElectricalTopologyTree: React.FC<ElectricalTopologyTreeProps> = ({
 }) => {
   if (isLoading && !topology) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center text-center space-y-3 bg-slate-900/40 rounded-xl border border-slate-800">
-        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs text-slate-400">Loading electrical network topology...</span>
+      <div className="analytics-card" style={{ padding: '40px', textAlign: 'center', height: '100%', justifyContent: 'center' }}>
+        <Activity size={24} className="animate-spin text-muted" style={{ margin: '0 auto 10px' }} />
+        <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+          Loading electrical network topology...
+        </span>
       </div>
     );
   }
 
   if (!topology || !topology.substation) {
     return (
-      <div className="p-6 text-center text-xs text-slate-400 bg-slate-900/40 rounded-xl border border-slate-800">
-        No electrical distribution topology available.
+      <div className="analytics-card" style={{ padding: '30px', textAlign: 'center', height: '100%', justifyContent: 'center' }}>
+        <Zap size={24} className="text-muted" style={{ margin: '0 auto 10px' }} />
+        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+          No electrical distribution topology available.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-900/50 backdrop-blur-md rounded-xl border border-slate-800 p-4 flex flex-col h-full">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-        <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">
-            Electrical Single-Line Hierarchy
-          </h3>
+    <div className="analytics-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="analytics-card-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Layers size={16} color="var(--color-primary, #2F81F7)" />
+          <span className="card-title">Electrical Single-Line Hierarchy</span>
         </div>
-        <span className="text-[11px] font-mono text-slate-400">
+        <span className="analytics-meta-pill" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', padding: '2px 8px' }}>
           {topology.totalNodes} Monitored Assets
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
         <TreeNodeItem
           node={topology.substation}
           level={0}
@@ -239,16 +340,30 @@ export const ElectricalTopologyTree: React.FC<ElectricalTopologyTreeProps> = ({
         />
       </div>
 
-      <div className="pt-3 border-t border-slate-800/80 mt-2 flex items-center justify-between text-[11px] text-slate-400">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" /> &lt;60% Normal
+      <div
+        style={{
+          paddingTop: '10px',
+          borderTop: '1px solid var(--color-border, #16171B)',
+          marginTop: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: '11px',
+          color: 'var(--color-text-muted)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-success, #3FB950)' }} />
+            &lt;60% Normal
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-500" /> 60-80% Elevated
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-warning, #D29922)' }} />
+            60-80% Elevated
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-rose-500" /> &gt;80% Critical
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-danger, #F85149)' }} />
+            &gt;80% Critical
           </span>
         </div>
       </div>
