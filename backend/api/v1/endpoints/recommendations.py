@@ -199,6 +199,13 @@ async def authorize_advisory(
             "issuedAt": dispatch_order.issuedAt.isoformat(),
             "notes": dispatch_order.notes
         }
+        prev_status_val = (
+            updated_rec.auditTrail[-1].previousStatus.value
+            if updated_rec.auditTrail and hasattr(updated_rec.auditTrail[-1].previousStatus, "value")
+            else str(updated_rec.auditTrail[-1].previousStatus)
+            if updated_rec.auditTrail
+            else "ACTIVE"
+        )
         await session.execute(
             text("""
                 INSERT INTO advisory_audit_log (
@@ -218,7 +225,7 @@ async def authorize_advisory(
                 "recommendation_id": rec_id,
                 "target_entity_id": updated_rec.targetEntityId,
                 "action_type": "MUNICIPAL_DISPATCH_AUTHORIZATION",
-                "previous_status": "ACTIVE",
+                "previous_status": prev_status_val,
                 "new_status": request.decision.value if hasattr(request.decision, "value") else str(request.decision),
                 "authorized_by": request.reviewer,
                 "badge_id": request.badgeId,

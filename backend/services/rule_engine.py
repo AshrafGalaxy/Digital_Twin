@@ -527,6 +527,9 @@ class AdvisoryRuleEngine:
                 )
             )
 
+            # Capture previous status before mutation to preserve audit fidelity
+            previous_status = rec.status
+
             # Update recommendation state
             rec.status = request.decision
             rec.dispatchOrderId = dispatch_order_id
@@ -536,7 +539,7 @@ class AdvisoryRuleEngine:
             # Append audit trail entry
             audit_entry = AuditLogEntry(
                 timestamp=now,
-                previousStatus=RecommendationStatus.ACTIVE,
+                previousStatus=previous_status,
                 newStatus=request.decision,
                 reviewer=f"{request.reviewer} (Badge: {request.badgeId}, Shift: {request.shiftId})",
                 notes=request.notes or f"Official municipal dispatch order generated: {dispatch_order_id}."

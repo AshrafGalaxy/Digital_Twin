@@ -261,3 +261,37 @@ def test_api_audit_logs_endpoint():
         assert "recommendationId" in entry
         assert "tamperEvidentHash" in entry
         assert "dispatchOrderId" in entry
+
+
+@pytest.mark.asyncio
+async def test_authorize_preserves_under_review_previous_status():
+    """Verifies Bug 12.3 fix: previous status is faithfully recorded as UNDER_REVIEW in audit trail."""
+    engine = AdvisoryRuleEngine()
+    rec_id = "REC-TRF-20260920-001"
+
+    # 1. First review moves status to UNDER_REVIEW
+    reviewed = engine.review_recommendation(
+        rec_id=rec_id,
+        new_status=RecommendationStatus.UNDER_REVIEW,
+        reviewer="Traffic Cell Senior Inspector",
+        notes="Reviewing simulation queue dynamics."
+    )
+    assert reviewed is not None
+    assert reviewed.status == RecommendationStatus.UNDER_REVIEW
+
+    # 2. Authorize moves status to ACKNOWLEDGED
+    auth_req = AuthorizeAdvisoryRequest(
+        badgeId="MCC-OPS-4091",
+        shiftId="SHIFT-A",
+        reviewer="Inspector",
+        decision=RecommendationStatus.ACKNOWLEDGED,
+        notes="Authorized after field confirmation."
+    )
+    auth_result = engine.authorize_advisory(rec_id, auth_req)
+    assert auth_result is not None
+    updated_rec, dispatch_order = auth_result
+
+    # Latest audit log must capture UNDER_REVIEW as previousStatus, not ACTIVE
+    latest_audit = updated_rec.auditTrail[-1]
+    assert latest_audit.previousStatus == RecommendationStatus.UNDER_REVIEW
+    assert latest_audit.newStatus == RecommendationStatus.ACKNOWLEDGED
