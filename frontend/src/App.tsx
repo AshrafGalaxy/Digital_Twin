@@ -35,8 +35,10 @@ import {
   fetchCurrentEnvironment,
   fetchCurrentState,
   connectStateStream,
-  fetchAdvisorySummary
+  fetchAdvisorySummary,
+  redeemMagicLink
 } from './services/api';
+import { AdminProvisioningModal } from './components/admin/AdminProvisioningModal';
 
 export const App: React.FC = () => {
   const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup'>(() => {
@@ -118,6 +120,34 @@ export const App: React.FC = () => {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [activeTab]);
+  const [currentTheme, setCurrentTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('digital_twin_platform_preferences');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.theme === 'light' || parsed.theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', parsed.theme);
+          return parsed.theme;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    document.documentElement.setAttribute('data-theme', 'dark');
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme: 'dark' | 'light' }>;
+      if (customEvent.detail?.theme) {
+        setCurrentTheme(customEvent.detail.theme);
+      }
+    };
+    window.addEventListener('platform-theme-change', handleThemeChange);
+    return () => window.removeEventListener('platform-theme-change', handleThemeChange);
+  }, []);
+
   const [studyAreaGeoJson, setStudyAreaGeoJson] = useState<any>(null);
   const [roadSegments, setRoadSegments] = useState<RoadSegmentAsset[]>([]);
   const [intersections, setIntersections] = useState<IntersectionAsset[]>([]);
@@ -136,6 +166,7 @@ export const App: React.FC = () => {
   // Dynamic Real-Time Corridor Telemetry State
   const [liveEnergyKw, setLiveEnergyKw] = useState<number>(4862.0);
   const [liveSensorsCount, setLiveSensorsCount] = useState<number>(10);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
   const lastWsMessageRef = useRef<number>(Date.now());
 
   // Municipal Authentication & Session State with localStorage persistence & cryptographic JWT validation
@@ -203,12 +234,42 @@ export const App: React.FC = () => {
     setActiveTab('landing');
   }, []);
 
-
-  // Enforce Dark Theme (Operations Console) exclusively
+  // Synchronize visual theme dynamically
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-  }, []);
+    document.documentElement.setAttribute('data-theme', currentTheme);
+  }, [currentTheme]);
+
+  // Automatic single-use Magic Access Link redemption on URL detection
+  useEffect(() => {
+    const rawSearch = window.location.search;
+    const rawHash = window.location.hash;
+    let candidateToken: string | null = null;
+
+    if (rawSearch.includes('token=')) {
+      const params = new URLSearchParams(rawSearch);
+      candidateToken = params.get('token');
+    } else if (rawHash.includes('access-token=')) {
+      const match = rawHash.match(/access-token=([^&]+)/);
+      if (match) candidateToken = match[1];
+    } else if (rawHash.includes('token=')) {
+      const match = rawHash.match(/token=([^&]+)/);
+      if (match) candidateToken = match[1];
+    }
+
+    if (candidateToken) {
+      redeemMagicLink(candidateToken)
+        .then((user) => {
+          handleAuthSuccess(user);
+          window.history.replaceState(null, '', window.location.pathname + '#operations');
+          setActiveTab('operations');
+        })
+        .catch((err) => {
+          console.warn('Magic access link redemption notice:', err);
+          window.history.replaceState(null, '', window.location.pathname + '#auth');
+          handleNavigateAuth('signin');
+        });
+    }
+  }, [handleAuthSuccess, handleNavigateAuth]);
 
   // Screen Reader Live Announcement per WCAG 2.1 AA (Criteria 4.1.3 Status Messages)
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>(
@@ -447,6 +508,7 @@ export const App: React.FC = () => {
           userRole={userRole}
           authUser={authUser}
           onSignOut={handleSignOut}
+          onOpenAdminConsole={() => setIsAdminModalOpen(true)}
         />
       )}
 
@@ -524,7 +586,7 @@ export const App: React.FC = () => {
               liveStates={effectiveStates}
               selectedEntity={selectedEntity}
               compareEntity={compareEntity}
-              currentTheme="dark"
+              currentTheme={currentTheme}
               isTableView={isOperationsTableView}
               onToggleTableView={setIsOperationsTableView}
               on3DModeChange={setIs3DMode}
@@ -642,6 +704,11 @@ export const App: React.FC = () => {
             setIsAdvisoryCenterOpen(false);
             setActiveTab('scenarios');
           }}
+        />
+
+        <AdminProvisioningModal
+          isOpen={isAdminModalOpen}
+          onClose={() => setIsAdminModalOpen(false)}
         />
 
       </main>

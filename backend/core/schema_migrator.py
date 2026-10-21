@@ -527,6 +527,40 @@ SQLITE_TABLE_DDL = [
         quality_status TEXT NOT NULL DEFAULT 'VALID',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 32. Access Inquiries
+    """
+    CREATE TABLE IF NOT EXISTS access_inquiries (
+        id TEXT PRIMARY KEY,
+        organization TEXT NOT NULL,
+        work_email TEXT NOT NULL,
+        contact_name TEXT NOT NULL,
+        jurisdiction TEXT NOT NULL,
+        domain TEXT NOT NULL DEFAULT 'Integrated Multi-Domain Digital Twin',
+        infrastructure_scale TEXT DEFAULT '1-10 Intersections / Corridors',
+        message TEXT DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        assigned_role TEXT DEFAULT 'Municipal Analyst',
+        reviewed_by TEXT,
+        reviewed_at TIMESTAMP,
+        rejection_reason TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 33. Magic Access Tokens
+    """
+    CREATE TABLE IF NOT EXISTS magic_access_tokens (
+        token TEXT PRIMARY KEY,
+        inquiry_id TEXT REFERENCES access_inquiries(id),
+        email TEXT NOT NULL,
+        contact_name TEXT NOT NULL,
+        assigned_role TEXT NOT NULL DEFAULT 'Municipal Analyst',
+        department TEXT NOT NULL DEFAULT 'Agency Operations',
+        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        expires_at TIMESTAMP NOT NULL,
+        redeemed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -550,7 +584,11 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_energy_nodes_parent ON energy_network_nodes (parent_node_id);",
     "CREATE INDEX IF NOT EXISTS idx_energy_nodes_type ON energy_network_nodes (node_type);",
     "CREATE INDEX IF NOT EXISTS idx_energy_telemetry_asset_time ON energy_asset_telemetry (asset_id, observed_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_energy_telemetry_obs ON energy_asset_telemetry (observed_at DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_energy_telemetry_obs ON energy_asset_telemetry (observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_inquiries_status ON access_inquiries (status, created_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_inquiries_email ON access_inquiries (work_email);",
+    "CREATE INDEX IF NOT EXISTS idx_magic_tokens_status ON magic_access_tokens (status, expires_at);",
+    "CREATE INDEX IF NOT EXISTS idx_magic_tokens_email ON magic_access_tokens (email);"
 ]
 
 

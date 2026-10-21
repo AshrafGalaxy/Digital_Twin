@@ -348,18 +348,24 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     });
   }, [basemapMode, mapLoaded]);
 
-  // Dynamically update map styling on theme toggle
+  // Dynamically synchronize basemap with current visual theme
   useEffect(() => {
+    if (currentTheme === 'light' && basemapMode === 'dark') {
+      setBasemapMode('streets');
+    } else if (currentTheme === 'dark' && basemapMode === 'streets') {
+      setBasemapMode('dark');
+    }
+
     const currentMap = map.current;
     if (!currentMap) return;
 
     const applyTheme = () => {
       if (currentMap.getLayer('study-area-line')) {
-        currentMap.setPaintProperty('study-area-line', 'line-color', '#388BFD');
+        currentMap.setPaintProperty('study-area-line', 'line-color', currentTheme === 'light' ? '#006B6F' : '#388BFD');
       }
       if (currentMap.getLayer('study-area-fill')) {
-        currentMap.setPaintProperty('study-area-fill', 'fill-color', '#1F6FEB');
-        currentMap.setPaintProperty('study-area-fill', 'fill-opacity', 0.04);
+        currentMap.setPaintProperty('study-area-fill', 'fill-color', currentTheme === 'light' ? '#006B6F' : '#1F6FEB');
+        currentMap.setPaintProperty('study-area-fill', 'fill-opacity', currentTheme === 'light' ? 0.08 : 0.04);
       }
     };
 

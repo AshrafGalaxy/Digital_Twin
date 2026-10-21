@@ -864,6 +864,122 @@ export async function advanceEnergyTelemetry(_stepSeconds: number = 60): Promise
   return triggerEnergyTick();
 }
 
+export interface AccessInquiryPayload {
+  organization: string;
+  work_email: string;
+  contact_name: string;
+  jurisdiction: string;
+  domain?: string;
+  infrastructure_scale?: string;
+  message?: string;
+}
+
+export interface AccessInquiryResponse {
+  inquiry_id: string;
+  status: string;
+  received_at: string;
+  message: string;
+}
+
+export interface AccessInquiryRecord {
+  id: string;
+  organization: string;
+  work_email: string;
+  contact_name: string;
+  jurisdiction: string;
+  domain: string;
+  infrastructure_scale?: string;
+  message?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  assigned_role?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+}
+
+export interface ApproveInquiryResponse {
+  inquiry_id: string;
+  status: string;
+  assigned_role: string;
+  magic_token: string;
+  magic_link: string;
+  expires_at: string;
+  email_payload: {
+    to: string;
+    subject: string;
+    body: string;
+  };
+}
+
+export async function submitAccessInquiry(payload: AccessInquiryPayload): Promise<AccessInquiryResponse> {
+  const res = await fetch(`${API_BASE}/inquiries/request-access`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to submit access inquiry.');
+  }
+  return res.json();
+}
+
+export async function fetchAccessInquiries(statusFilter?: string): Promise<AccessInquiryRecord[]> {
+  const url = statusFilter
+    ? `${API_BASE}/inquiries?status_filter=${encodeURIComponent(statusFilter)}`
+    : `${API_BASE}/inquiries`;
+  const res = await resilientFetch(url);
+  if (!res.ok) throw new Error('Failed to fetch access inquiries');
+  return res.json();
+}
+
+export async function approveAccessInquiry(
+  inquiryId: string,
+  payload: { assigned_role: string; expiry_days?: number; reviewer_notes?: string }
+): Promise<ApproveInquiryResponse> {
+  const res = await fetch(`${API_BASE}/inquiries/${encodeURIComponent(inquiryId)}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to approve inquiry.');
+  }
+  return res.json();
+}
+
+export async function rejectAccessInquiry(
+  inquiryId: string,
+  rejectionReason: string
+): Promise<{ inquiry_id: string; status: string; rejection_reason: string }> {
+  const res = await fetch(`${API_BASE}/inquiries/${encodeURIComponent(inquiryId)}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rejection_reason: rejectionReason })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to reject inquiry.');
+  }
+  return res.json();
+}
+
+export async function redeemMagicLink(token: string): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/magic-link`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Magic link is invalid or expired.');
+  }
+  return res.json();
+}
+
+
 
 
 

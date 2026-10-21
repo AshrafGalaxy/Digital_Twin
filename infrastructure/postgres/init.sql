@@ -531,3 +531,40 @@ CREATE TABLE IF NOT EXISTS energy_asset_telemetry (
 CREATE INDEX IF NOT EXISTS idx_energy_telemetry_asset_time ON energy_asset_telemetry (asset_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_energy_telemetry_obs ON energy_asset_telemetry (observed_at DESC);
 
+-- 32. Access Inquiries
+CREATE TABLE IF NOT EXISTS access_inquiries (
+    id VARCHAR(128) PRIMARY KEY,
+    organization VARCHAR(255) NOT NULL,
+    work_email VARCHAR(255) NOT NULL,
+    contact_name VARCHAR(150) NOT NULL,
+    jurisdiction VARCHAR(200) NOT NULL,
+    domain VARCHAR(150) NOT NULL DEFAULT 'Integrated Multi-Domain Digital Twin',
+    infrastructure_scale VARCHAR(100) DEFAULT '1-10 Intersections / Corridors',
+    message TEXT DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    assigned_role VARCHAR(64) DEFAULT 'Municipal Analyst',
+    reviewed_by VARCHAR(128),
+    reviewed_at TIMESTAMPTZ,
+    rejection_reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_inquiries_status ON access_inquiries (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_inquiries_email ON access_inquiries (work_email);
+
+-- 33. Magic Access Tokens
+CREATE TABLE IF NOT EXISTS magic_access_tokens (
+    token VARCHAR(128) PRIMARY KEY,
+    inquiry_id VARCHAR(128) REFERENCES access_inquiries(id),
+    email VARCHAR(255) NOT NULL,
+    contact_name VARCHAR(150) NOT NULL,
+    assigned_role VARCHAR(64) NOT NULL DEFAULT 'Municipal Analyst',
+    department VARCHAR(150) NOT NULL DEFAULT 'Agency Operations',
+    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+    expires_at TIMESTAMPTZ NOT NULL,
+    redeemed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_magic_tokens_status ON magic_access_tokens (status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_magic_tokens_email ON magic_access_tokens (email);
+
+

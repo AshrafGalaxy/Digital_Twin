@@ -45,13 +45,13 @@
   --radius-lg: 12px;
   --radius-full: 9999px;
 
-  /* True AMOLED Obsidian Black Surfaces */
-  --color-bg: #000000;
-  --color-surface: rgba(9, 9, 11, 0.94);
-  --color-surface-raised: rgba(15, 15, 18, 0.96);
-  --color-surface-subtle: rgba(5, 5, 7, 0.92);
-  --color-surface-selected: rgba(47, 129, 247, 0.16);
-  --color-overlay: rgba(0, 0, 0, 0.92);
+  /* Elevated Contrast Obsidian & Midnight Surfaces */
+  --color-bg: #0B0D13;
+  --color-surface: #111520;
+  --color-surface-raised: #181E2E;
+  --color-surface-subtle: #0E121B;
+  --color-surface-selected: rgba(47, 129, 247, 0.18);
+  --color-overlay: rgba(5, 7, 11, 0.92);
 
   /* Vibrant High-Contrast Text */
   --color-text: #F0F6FC;
@@ -60,10 +60,10 @@
   --color-text-faint: #6E7681;
   --color-text-inverse: #000000;
 
-  /* Crisp Defined Borders */
-  --color-border: #16171B;
-  --color-border-strong: #222329;
-  --color-divider: rgba(255, 255, 255, 0.06);
+  /* Crisp Defined Visible Boundaries */
+  --color-border: #242C3F;
+  --color-border-strong: #38445E;
+  --color-divider: rgba(255, 255, 255, 0.08);
 
   /* Royal Blue Primary & Linear Accents */
   --color-primary: #2F81F7;
@@ -111,7 +111,7 @@
   --shadow-sm: 0 1px 3px rgba(1, 4, 9, 0.4);
   --shadow-md: 0 6px 20px rgba(1, 4, 9, 0.5);
   --shadow-lg: 0 14px 38px rgba(1, 4, 9, 0.65);
-  --shadow-card: 0 4px 16px rgba(1, 4, 9, 0.45), 0 0 0 1px #30363D;
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --shadow-drawer: -8px 0 32px rgba(1, 4, 9, 0.7);
   --glow-primary: 0 0 16px rgba(47, 129, 247, 0.35);
   --glow-indigo: 0 0 16px rgba(47, 129, 247, 0.35);
@@ -161,6 +161,7 @@
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   /* Light Theme Surfaces per DESIGN_SYSTEM.md §5.2 */
   --color-bg: #F6F7F8;
   --color-surface: #FFFFFF;
@@ -812,6 +813,29 @@ body {
   background-color: rgba(33, 38, 45, 0.95);
   border-color: rgba(56, 139, 253, 0.5);
   box-shadow: 0 0 12px rgba(47, 129, 247, 0.2);
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-main);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 10px rgba(47, 129, 247, 0.2);
 }
 
 .corner-avatar-gem {
@@ -4193,6 +4217,11 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.analytics-card:hover {
+  border-color: var(--color-border-strong);
 }
 
 .analytics-card-header {
@@ -4201,7 +4230,7 @@ body {
   align-items: center;
   margin-bottom: var(--space-3);
   padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .card-title {

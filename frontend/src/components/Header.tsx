@@ -17,12 +17,14 @@ import {
   Sparkles,
   Compass,
   KeyRound,
-  Clock
+  Clock,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { SourceMode, MunicipalRole, AuthUser } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { DigitalTwinLogo } from './common/DigitalTwinLogo';
-import { SettingsModal } from './SettingsModal';
+import { SettingsModal, applyTheme, STORAGE_KEY } from './SettingsModal';
 
 export type TabId =
   | 'landing'
@@ -67,6 +69,7 @@ interface HeaderProps {
   authUser?: AuthUser | null;
   onSignOut?: () => void;
   onOpenAuthModal?: () => void;
+  onOpenAdminConsole?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -78,7 +81,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeAdvisoriesCount,
   userRole = 'Municipal Analyst',
   authUser,
-  onSignOut
+  onSignOut,
+  onOpenAdminConsole
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -93,6 +97,37 @@ export const Header: React.FC<HeaderProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Synchronized Visual Theme State
+  const [currentTheme, setCurrentTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.theme === 'light' || parsed.theme === 'dark') return parsed.theme;
+      }
+    } catch {
+      // Fallback
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme: 'dark' | 'light' }>;
+      if (customEvent.detail?.theme) {
+        setCurrentTheme(customEvent.detail.theme);
+      }
+    };
+    window.addEventListener('platform-theme-change', handleThemeChange);
+    return () => window.removeEventListener('platform-theme-change', handleThemeChange);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = currentTheme === 'dark' ? 'light' : 'dark';
+    setCurrentTheme(next);
+    applyTheme(next);
+  };
 
   // Close profile dropdown on outside click or Escape key
   useEffect(() => {
@@ -242,6 +277,21 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div className="header-actions-divider" />
 
+            {/* Quick 1-Click Theme Switcher */}
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              title={`Switch to ${currentTheme === 'dark' ? 'Light (Civic Cartography)' : 'Dark (Operations Console)'} theme`}
+              aria-label="Toggle visual theme"
+            >
+              {currentTheme === 'dark' ? (
+                <Sun size={15} color="#F59E0B" />
+              ) : (
+                <Moon size={15} color="#58A6FF" />
+              )}
+            </button>
+
             {/* Corner Profile Menu Button & Dropdown */}
             <div className="corner-profile-container" ref={profileDropdownRef}>
               <button
@@ -362,6 +412,46 @@ export const Header: React.FC<HeaderProps> = ({
                       <div className="dropdown-item-text">
                         <span className="dropdown-item-title">Settings & Preferences</span>
                         <span className="dropdown-item-desc">Telemetry cadence, units, and alerts</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="dropdown-menu-item"
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        if (onOpenAdminConsole) onOpenAdminConsole();
+                      }}
+                      role="menuitem"
+                    >
+                      <ShieldCheck size={14} className="dropdown-item-icon" color="#2F81F7" />
+                      <div className="dropdown-item-text">
+                        <span className="dropdown-item-title">Admin Inquiries Console</span>
+                        <span className="dropdown-item-desc">Review requests & issue magic access links</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="dropdown-menu-item"
+                      onClick={() => {
+                        toggleTheme();
+                        setIsProfileOpen(false);
+                      }}
+                      role="menuitem"
+                    >
+                      {currentTheme === 'dark' ? (
+                        <Sun size={14} className="dropdown-item-icon" color="#F59E0B" />
+                      ) : (
+                        <Moon size={14} className="dropdown-item-icon" color="#58A6FF" />
+                      )}
+                      <div className="dropdown-item-text">
+                        <span className="dropdown-item-title">
+                          {currentTheme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                        </span>
+                        <span className="dropdown-item-desc">
+                          {currentTheme === 'dark' ? 'Civic Cartography presentation' : 'Operations Console high contrast'}
+                        </span>
                       </div>
                     </button>
 

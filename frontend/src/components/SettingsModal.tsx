@@ -7,7 +7,9 @@ import {
   Activity,
   Check,
   RotateCcw,
-  ShieldCheck
+  ShieldCheck,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -16,6 +18,7 @@ interface SettingsModalProps {
 }
 
 export interface PlatformPreferences {
+  theme: 'dark' | 'light';
   telemetryIntervalSeconds: number;
   enableAlertChimes: boolean;
   speedUnit: 'kmh' | 'mph';
@@ -23,7 +26,8 @@ export interface PlatformPreferences {
   strictProvenancePills: boolean;
 }
 
-const DEFAULT_PREFERENCES: PlatformPreferences = {
+export const DEFAULT_PREFERENCES: PlatformPreferences = {
+  theme: 'dark',
   telemetryIntervalSeconds: 2,
   enableAlertChimes: true,
   speedUnit: 'kmh',
@@ -31,7 +35,20 @@ const DEFAULT_PREFERENCES: PlatformPreferences = {
   strictProvenancePills: true
 };
 
-const STORAGE_KEY = 'digital_twin_platform_preferences';
+export const STORAGE_KEY = 'digital_twin_platform_preferences';
+
+export const applyTheme = (theme: 'dark' | 'light') => {
+  document.documentElement.setAttribute('data-theme', theme);
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : DEFAULT_PREFERENCES;
+    parsed.theme = theme;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Fallback ignore
+  }
+  window.dispatchEvent(new CustomEvent('platform-theme-change', { detail: { theme } }));
+};
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [preferences, setPreferences] = useState<PlatformPreferences>(() => {
@@ -62,6 +79,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const handleSave = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    applyTheme(preferences.theme);
     setSavedFeedback(true);
     setTimeout(() => {
       setSavedFeedback(false);
@@ -72,6 +90,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const handleReset = () => {
     setPreferences(DEFAULT_PREFERENCES);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PREFERENCES));
+    applyTheme(DEFAULT_PREFERENCES.theme);
   };
 
   return (
@@ -112,6 +131,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
         {/* Body */}
         <div className="settings-modal-body">
+          {/* Section 0: Theme & Cartographic Appearance */}
+          <div className="settings-section">
+            <div className="settings-section-header">
+              {preferences.theme === 'light' ? (
+                <Sun size={15} color="#F59E0B" />
+              ) : (
+                <Moon size={15} color="#58A6FF" />
+              )}
+              <span>Theme & Cartographic Appearance</span>
+            </div>
+            <div className="settings-control-row">
+              <div className="settings-control-info">
+                <label className="settings-control-label">Workspace Color Theme</label>
+                <span className="settings-control-help">
+                  Toggle between Dark (Operations Console) and Light (Civic Cartography).
+                </span>
+              </div>
+              <div className="settings-segmented-group">
+                <button
+                  type="button"
+                  className={`settings-segmented-btn ${preferences.theme === 'dark' ? 'active' : ''}`}
+                  onClick={() => {
+                    const next = { ...preferences, theme: 'dark' as const };
+                    setPreferences(next);
+                    applyTheme('dark');
+                  }}
+                >
+                  <Moon size={12} style={{ marginRight: '4px' }} />
+                  Dark Console
+                </button>
+                <button
+                  type="button"
+                  className={`settings-segmented-btn ${preferences.theme === 'light' ? 'active' : ''}`}
+                  onClick={() => {
+                    const next = { ...preferences, theme: 'light' as const };
+                    setPreferences(next);
+                    applyTheme('light');
+                  }}
+                >
+                  <Sun size={12} style={{ marginRight: '4px' }} />
+                  Light Civic
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Section 1: Telemetry & Streaming */}
           <div className="settings-section">
             <div className="settings-section-header">

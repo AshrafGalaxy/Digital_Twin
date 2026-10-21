@@ -17,6 +17,8 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { DigitalTwinLogo } from '../common/DigitalTwinLogo';
+import { submitAccessInquiry } from '../../services/api';
+import { AdminProvisioningModal } from '../admin/AdminProvisioningModal';
 
 interface ProvisioningViewProps {
   onNavigateHome: () => void;
@@ -75,6 +77,7 @@ export const ProvisioningView: React.FC<ProvisioningViewProps> = ({ onNavigateHo
   const [referenceId, setReferenceId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
   // Email validation check
   const getEmailFeedback = () => {
@@ -140,14 +143,25 @@ export const ProvisioningView: React.FC<ProvisioningViewProps> = ({ onNavigateHo
       return;
     }
 
-    // Trigger airplane dispatch animation sequence
+    // Submit access inquiry to authoritative backend database
     setSubmitState('transmitting');
-
-    setTimeout(() => {
-      const generatedId = `INQ-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-      setReferenceId(generatedId);
-      setSubmitState('success');
-    }, 1150);
+    submitAccessInquiry({
+      organization: organization.trim(),
+      work_email: workEmail.trim(),
+      contact_name: contactName.trim(),
+      jurisdiction: `${jurisdictionLevel}: ${corridorScope.trim()}`,
+      domain,
+      infrastructure_scale: infrastructureScale,
+      message: message.trim()
+    })
+      .then((res) => {
+        setReferenceId(res.inquiry_id);
+        setSubmitState('success');
+      })
+      .catch((err) => {
+        setSubmitState('idle');
+        setErrorMessage(err.message || 'Failed to submit inquiry. Please try again.');
+      });
   };
 
   return (
@@ -159,15 +173,27 @@ export const ProvisioningView: React.FC<ProvisioningViewProps> = ({ onNavigateHo
             <DigitalTwinLogo size={24} />
             <span className="brand-name">Digital Twin</span>
           </div>
-          <button
-            type="button"
-            onClick={onNavigateHome}
-            className="provisioning-back-btn font-mono"
-            aria-label="Back to Public Portal"
-          >
-            <ArrowLeft size={14} />
-            <span>Return to Portal</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setIsAdminModalOpen(true)}
+              className="provisioning-back-btn font-mono"
+              style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+              title="Open Platform Administrator & Maker Console"
+            >
+              <ShieldCheck size={14} />
+              <span>Admin Console</span>
+            </button>
+            <button
+              type="button"
+              onClick={onNavigateHome}
+              className="provisioning-back-btn font-mono"
+              aria-label="Back to Public Portal"
+            >
+              <ArrowLeft size={14} />
+              <span>Return to Portal</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -568,6 +594,12 @@ export const ProvisioningView: React.FC<ProvisioningViewProps> = ({ onNavigateHo
           </div>
         </div>
       )}
+
+      {/* Platform Maker & Administration Console Modal */}
+      <AdminProvisioningModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+      />
     </div>
   );
 };

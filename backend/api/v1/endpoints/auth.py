@@ -15,8 +15,11 @@ import hashlib
 import secrets
 import os
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Header, status
+from fastapi import APIRouter, HTTPException, Header, status, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from backend.core.database import get_db_session
 
 router = APIRouter()
 
@@ -339,3 +342,103 @@ def get_roles():
         "roles": VALID_MUNICIPAL_ROLES,
         "metadata": ROLE_METADATA
     }
+
+
+class MagicLinkRedeemRequest(BaseModel):
+    token: str = Field(..., min_length=10, max_length=128, description="Cryptographic single-use magic access token")
+
+
+@router.post("/magic-link", response_model=AuthUserResponse)
+async def redeem_magic_link(
+    payload: MagicLinkRedeemRequest,
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Validates single-use cryptographic magic access token, marks it redeemed,
+    and returns authenticated session credentials and authorized workspaces.
+    """
+    now_utc = datetime.now(timezone.utc)
+    now_iso = now_utc.isoformat()
+
+    query = text("""
+        SELECT token, inquiry_id, email, contact_name, assigned_role, department, status, expires_at
+        FROM magic_access_tokens
+        WHERE token = :token
+    """)
+    res = await session.execute(query, {"token": payload.token.strip()})
+    row = res.mappings().first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Magic access token is unrecognized or invalid."
+        )
+
+    if row["status"] == "REDEEMED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This magic access link has already been used and redeemed."
+        )
+
+    if row["status"] != "ACTIVE":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"This magic access link is {row['status'].lower()}."
+        )
+
+    # Check expiration
+    expires_at = row["expires_at"]
+    if isinstance(expires_at, str):
+        try:
+            expires_at = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        except Exception:
+            expires_at = now_utc + timedelta(days=1)
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if expires_at and expires_at < now_utc:
+        await session.execute(
+            text("UPDATE magic_access_tokens SET status = 'EXPIRED' WHERE token = :token"),
+            {"token": payload.token.strip()}
+        )
+        await session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This magic access link has expired. Please submit a new provisioning inquiry."
+        )
+
+    # Mark token redeemed
+    await session.execute(
+        text("UPDATE magic_access_tokens SET status = 'REDEEMED', redeemed_at = :redeemed_at WHERE token = :token"),
+        {"token": payload.token.strip(), "redeemed_at": now_utc}
+    )
+    await session.commit()
+
+    role = row["assigned_role"]
+    meta = ROLE_METADATA.get(role, ROLE_METADATA["Municipal Analyst"])
+    user_id = f"usr-magic-{secrets.token_hex(4)}"
+    jwt_payload = {
+        "sub": user_id,
+        "email": row["email"],
+        "name": row["contact_name"],
+        "role": role,
+        "department": row["department"],
+        "clearance": meta["clearance"],
+        "iat": int(now_utc.timestamp()),
+        "exp": int((now_utc + timedelta(hours=8)).timestamp()),
+        "iss": "pune-digital-twin-auth"
+    }
+    token = _create_jwt_token(jwt_payload)
+
+    return AuthUserResponse(
+        id=user_id,
+        name=row["contact_name"],
+        email=row["email"],
+        role=role,
+        department=row["department"],
+        token=token,
+        authenticatedAt=now_iso,
+        clearance=meta["clearance"],
+        workspaces=meta["workspaces"]
+    )
+
