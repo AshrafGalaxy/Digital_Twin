@@ -324,7 +324,13 @@ class WebsterSignalOptimizer:
                 "saturationCapSatisfied": bool(max_observed_sat <= cfg.max_saturation_cap + 0.05),
                 "pedestrianInvariantVerified": ped_invariants_met,
                 "minGreenSatisfied": True,
-                "cycleBounded": bool(cfg.min_cycle_sec <= actual_cycle <= cfg.max_cycle_sec)
+                "cycleBounded": bool(cfg.min_cycle_sec <= actual_cycle <= cfg.max_cycle_sec),
+                "oversaturatedRegime": bool(y_sum >= 0.85),
+                "advisoryNote": (
+                    "Intersection operating near/above capacity; queue storage mitigation recommended."
+                    if y_sum >= 0.85
+                    else "Standard flow regime; optimal Webster timing applied."
+                )
             },
             provenance={
                 "sourceMode": "PREDICTED",

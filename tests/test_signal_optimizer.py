@@ -110,7 +110,20 @@ def test_saturation_cap_under_heavy_congestion():
     # Max saturation should be kept within safe operating bounds (allowing discrete integer second tolerance)
     assert plan.safety_validation["maxSaturation"] <= 0.88
     assert plan.safety_validation["saturationCapSatisfied"] is True
+    assert plan.safety_validation["oversaturatedRegime"] is False  # y_sum = (900+850+400+350)/3600 = 2500/3600 = 0.694
     assert plan.optimal_delay_sec_veh < 120.0
+
+    # Test extreme oversaturation (y_sum >= 0.85)
+    heavy_approaches = [
+        ApproachDemand("APP-1", "Phase 1", 1600.0, lanes=2, saturation_flow_vph_lane=1800.0),
+        ApproachDemand("APP-2", "Phase 2", 1550.0, lanes=2, saturation_flow_vph_lane=1800.0),
+    ]
+    heavy_plan = optimizer.compute_optimal_timing(
+        intersection_id="INT-EXTREME-01",
+        approaches=heavy_approaches
+    )
+    assert heavy_plan.safety_validation["oversaturatedRegime"] is True
+    assert "queue storage mitigation recommended" in heavy_plan.safety_validation["advisoryNote"]
 
 
 def test_delay_reduction_positive():
