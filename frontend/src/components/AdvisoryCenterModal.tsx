@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lightbulb, Scale } from 'lucide-react';
+import { Scale, RefreshCw } from 'lucide-react';
 import {
   AdvisoryRecommendation,
-  AdvisorySummary,
-  RecommendationStatus,
-  RecommendationSeverity
+  AdvisorySummary
 } from '../types/twin';
 import {
   fetchRecommendations,
   fetchAdvisorySummary,
-  reviewRecommendation,
   triggerRuleEvaluation
 } from '../services/api';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { AdvisoryCard } from './advisory/AdvisoryCard';
 
 interface AdvisoryCenterModalProps {
   isOpen: boolean;
@@ -37,12 +35,6 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(false);
   const [evaluating, setEvaluating] = useState<boolean>(false);
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
-  const [reviewerName, setReviewerName] = useState<string>('Municipal Traffic Cell Officer');
-  const [newStatus, setNewStatus] = useState<RecommendationStatus>('UNDER_REVIEW');
-  const [reviewNotes, setReviewNotes] = useState<string>('');
-  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
-  const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -80,47 +72,6 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
       console.error('Failed to evaluate rules', err);
     } finally {
       setEvaluating(false);
-    }
-  };
-
-  const handleExecuteReview = async (recId: string) => {
-    try {
-      setSubmittingReview(true);
-      await reviewRecommendation(recId, newStatus, reviewerName, reviewNotes);
-      setReviewingId(null);
-      setReviewNotes('');
-      await loadData();
-    } catch (err) {
-      console.error('Failed to execute advisory review', err);
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
-
-  const getSeverityBadgeClass = (severity: RecommendationSeverity) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return 'badge-critical';
-      case 'WARNING':
-        return 'badge-warning';
-      case 'INFO':
-      default:
-        return 'badge-info';
-    }
-  };
-
-  const getStatusBadgeClass = (status: RecommendationStatus) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'status-active';
-      case 'UNDER_REVIEW':
-        return 'status-review';
-      case 'ACKNOWLEDGED':
-        return 'status-acknowledged';
-      case 'DISMISSED':
-        return 'status-dismissed';
-      default:
-        return '';
     }
   };
 
@@ -186,8 +137,10 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
               onClick={handleTriggerEvaluate}
               disabled={evaluating}
               title="Evaluate active twin state and forecasts against deterministic rules"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              {evaluating ? 'Evaluating...' : '↻ Refresh Rules'}
+              <RefreshCw size={13} className={evaluating ? 'animate-spin' : ''} />
+              <span>{evaluating ? 'Evaluating...' : 'Refresh Rules'}</span>
             </button>
           </div>
         )}
@@ -235,199 +188,24 @@ export const AdvisoryCenterModal: React.FC<AdvisoryCenterModalProps> = ({
             </div>
           ) : (
             recommendations.map((rec) => (
-              <div key={rec.recommendationId} className="advisory-card">
-                <div className="advisory-card-header">
-                  <div className="advisory-badges-left">
-                    <span className={`domain-pill domain-${rec.domain.toLowerCase()}`}>{rec.domain}</span>
-                    <span className={`severity-pill ${getSeverityBadgeClass(rec.severity)}`}>
-                      {rec.severity}
-                    </span>
-                    <span className={`advisory-status-pill ${getStatusBadgeClass(rec.status)}`}>
-                      {rec.status.replace('_', ' ')}
-                    </span>
-                    <span className="rec-id-tag font-mono">{rec.recommendationId}</span>
-                  </div>
-                  <span className="rec-timestamp">
-                    {new Date(rec.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-
-                <h3 className="advisory-card-title">{rec.title}</h3>
-                <p className="advisory-card-desc">{rec.description}</p>
-
-                {/* Evidence Drill-Down Box */}
-                <div className="advisory-evidence-box">
-                  <div className="evidence-header">
-                    <span className="evidence-title">Traceable Evidence</span>
-                    <span className={`provenance-tag prov-${rec.evidence.sourceMode.toLowerCase()}`}>
-                      {rec.evidence.sourceMode}
-                    </span>
-                  </div>
-                  <div className="evidence-grid">
-                    <div className="evidence-item">
-                      <span className="ev-label">Target Entity:</span>
-                      <span className="ev-val font-mono">{rec.targetEntityId.split(':').pop()}</span>
-                    </div>
-                    <div className="evidence-item">
-                      <span className="ev-label">Trigger Rule:</span>
-                      <span className="ev-val font-mono">{rec.triggerRule}</span>
-                    </div>
-                    <div className="evidence-item">
-                      <span className="ev-label">Trigger Value:</span>
-                      <span className="ev-val font-bold">
-                        {rec.evidence.observedOrPredictedValue.toFixed(1)} {rec.evidence.unit} (Threshold: {rec.evidence.threshold.toFixed(1)} {rec.evidence.unit})
-                      </span>
-                    </div>
-                    {rec.evidence.horizonMinutes && (
-                      <div className="evidence-item">
-                        <span className="ev-label">Forecast Horizon:</span>
-                        <span className="ev-val">+{rec.evidence.horizonMinutes} minutes</span>
-                      </div>
-                    )}
-                    {rec.evidence.modelVersion && (
-                      <div className="evidence-item">
-                        <span className="ev-label">Model Version:</span>
-                        <span className="ev-val font-mono">{rec.evidence.modelVersion}</span>
-                      </div>
-                    )}
-                    {rec.evidence.confidenceScore && (
-                      <div className="evidence-item">
-                        <span className="ev-label">Input Confidence:</span>
-                        <span className="ev-val">{(rec.evidence.confidenceScore * 100).toFixed(0)}%</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Suggested Action Callout */}
-                <div className="suggested-action-callout">
-                  <div className="action-icon"><Lightbulb size={16} color="var(--color-primary)" /></div>
-                  <div className="action-content">
-                    <span className="action-heading">Suggested Advisory Action:</span>
-                    <p className="action-text">{rec.suggestedAction}</p>
-                  </div>
-                </div>
-
-                {/* Interactive Action Buttons */}
-                <div className="advisory-actions-bar">
-                  <div className="action-btns-left">
-                    {onSelectEntity && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => {
-                          onSelectEntity(rec.targetEntityId);
-                          onClose();
-                        }}
-                      >
-                        Inspect on Map
-                      </button>
-                    )}
-                    {rec.domain === 'TRAFFIC' && onOpenScenarioStudio && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => {
-                          onOpenScenarioStudio();
-                          onClose();
-                        }}
-                      >
-                        Test in Scenario Studio
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="action-btns-right">
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() =>
-                        setExpandedAuditId(expandedAuditId === rec.recommendationId ? null : rec.recommendationId)
-                      }
-                    >
-                      Audit Trail ({rec.auditTrail.length})
-                    </button>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => setReviewingId(reviewingId === rec.recommendationId ? null : rec.recommendationId)}
-                    >
-                      {reviewingId === rec.recommendationId ? 'Cancel Review' : 'Review / Update Status'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Inline Review Workflow Form */}
-                {reviewingId === rec.recommendationId && (
-                  <div className="review-workflow-panel">
-                    <h4 className="review-title">Human Governance Review Form</h4>
-                    <div className="review-inputs-grid">
-                      <div className="form-group">
-                        <label className="form-label">Reviewer Identity:</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={reviewerName}
-                          onChange={(e) => setReviewerName(e.target.value)}
-                          placeholder="e.g. Traffic Cell Officer"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Target Review Status:</label>
-                        <select
-                          className="form-select"
-                          value={newStatus}
-                          onChange={(e) => setNewStatus(e.target.value as RecommendationStatus)}
-                        >
-                          <option value="UNDER_REVIEW">UNDER_REVIEW (Assessing field validity)</option>
-                          <option value="ACKNOWLEDGED">ACKNOWLEDGED (Accepted / Action queued outside platform)</option>
-                          <option value="DISMISSED">DISMISSED (Not applicable / False positive)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Review Justification / Decision Notes:</label>
-                      <textarea
-                        className="form-textarea"
-                        rows={2}
-                        value={reviewNotes}
-                        onChange={(e) => setReviewNotes(e.target.value)}
-                        placeholder="State operational reasoning, field verification observations, or dispatch notes..."
-                      />
-                    </div>
-                    <div className="review-submit-row">
-                      <button
-                        className="btn btn-primary btn-sm"
-                        disabled={submittingReview || !reviewerName.trim()}
-                        onClick={() => handleExecuteReview(rec.recommendationId)}
-                      >
-                        {submittingReview ? 'Recording Audit...' : 'Submit Governance Decision'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Chronological Audit Trail Drawer */}
-                {expandedAuditId === rec.recommendationId && (
-                  <div className="audit-trail-panel">
-                    <h4 className="audit-title">Chronological Audit Log</h4>
-                    <div className="audit-timeline">
-                      {rec.auditTrail.map((entry, idx) => (
-                        <div key={idx} className="audit-entry">
-                          <div className="audit-meta">
-                            <span className="audit-time">
-                              {new Date(entry.timestamp).toLocaleString()}
-                            </span>
-                            <span className="audit-reviewer">Reviewed by: {entry.reviewer}</span>
-                          </div>
-                          <div className="audit-transition">
-                            <span className="status-badge-sm">{entry.previousStatus}</span>
-                            <span className="arrow">→</span>
-                            <span className="status-badge-sm">{entry.newStatus}</span>
-                          </div>
-                          {entry.notes && <p className="audit-notes">"{entry.notes}"</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <AdvisoryCard
+                key={rec.recommendationId}
+                advisory={rec}
+                initialReviewerName="Municipal Traffic Cell Officer"
+                onNavigateToEntity={(entityId) => {
+                  if (onSelectEntity) {
+                    onSelectEntity(entityId);
+                    onClose();
+                  }
+                }}
+                onNavigateToScenarios={() => {
+                  if (onOpenScenarioStudio) {
+                    onOpenScenarioStudio();
+                    onClose();
+                  }
+                }}
+                onAdvisoryUpdated={loadData}
+              />
             ))
           )}
         </div>
