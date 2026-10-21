@@ -146,6 +146,18 @@
   --provenance-predicted: var(--color-predicted);
   --provenance-stale: var(--color-stale);
   --provenance-invalid: var(--color-invalid);
+
+  /* Typography & Sizing Aliases */
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+
+  /* Color Aliases */
+  --color-text-main: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-primary: var(--color-primary);
 }
 
 [data-theme="light"] {
@@ -243,6 +255,11 @@
   --provenance-predicted: var(--color-predicted);
   --provenance-stale: var(--color-stale);
   --provenance-invalid: var(--color-invalid);
+
+  /* Color Aliases */
+  --color-text-main: var(--color-text);
+  --text-secondary: var(--color-text-secondary);
+  --text-primary: var(--color-primary);
 }
 
 @media (prefers-color-scheme: light) {
@@ -380,6 +397,82 @@
 .font-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* Typography & State Utilities */
+.font-bold {
+  font-weight: 700 !important;
+}
+
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  padding: 0;
+  text-decoration: underline;
+  transition: color var(--transition-fast);
+}
+
+.btn-link:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Pulsing Status Dot */
+.live-dot-ping {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-live);
+  box-shadow: 0 0 8px var(--color-live);
+}
+
+/* Diurnal Energy & Environment Progress Bars */
+.progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--color-surface-raised, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--color-border, #16171B);
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full, 9999px);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Unified Modal Overlay & Container */
+.modal-backdrop,
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay, rgba(0, 0, 0, 0.85));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
 }
 
 
@@ -2684,10 +2777,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+  margin-top: 8px;
 }
 
 .forecast-header {

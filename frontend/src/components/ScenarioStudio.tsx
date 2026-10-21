@@ -254,7 +254,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
             {selectedTemplateId === 'SCEN-INT-01' ? (
               <div className="control-group">
                 <div className="slider-label-row">
-                  <span className="control-label">Nagar Road EB Green Extension</span>
+                  <span className="control-label">Eastbound Arterial Green Extension</span>
                   <span className="slider-value">+{greenExtension}s ({35 + greenExtension}s Green Split)</span>
                 </div>
                 <input
@@ -268,7 +268,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                   style={{
                     background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
                   }}
-                  aria-label="Nagar Road EB Green Extension"
+                  aria-label="Eastbound Arterial Green Extension"
                 />
                 <div className="slider-hints">
                   <span>+5s (Moderate)</span>
@@ -307,7 +307,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                   Reference Baseline Control Plan
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
-                  Fixed-time control (120s cycle, 35s Nagar Road EB split). Evaluating nominal performance without dynamic signal intervention.
+                  Fixed-time control (120s cycle, 35s Eastbound Arterial split). Evaluating nominal performance without dynamic signal intervention.
                 </div>
               </div>
             )}
@@ -465,7 +465,7 @@ export const ScenarioStudio: React.FC<ScenarioStudioProps> = ({ isOpen, onClose 
                     <tr>
                       <td>
                         <div className="metric-row-name">p95 Queue Length</div>
-                        <div className="metric-row-sub">Nagar Road EB Approach (SEG-NR-EB-01)</div>
+                        <div className="metric-row-sub">Eastbound Arterial Approach (SEG-NR-EB-01)</div>
                       </td>
                       <td className="mono-cell">
                         {runResult.baseline.kpis.p95_queue_length_meters.toFixed(1)} m

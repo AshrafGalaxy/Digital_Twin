@@ -431,7 +431,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <tr>
                   <td>
                     <div className="metric-row-name">60-Minute Commercial Load</div>
-                    <div className="metric-row-sub">{be?.facilityName || 'Phoenix Marketcity'} ({be?.unit || 'kW'})</div>
+                    <div className="metric-row-sub">{be?.facilityName || 'Commercial Facility BLD-01'} ({be?.unit || 'kW'})</div>
                   </td>
                   <td className="mono-cell">{be?.persistenceMae ?? 218.0} {be?.unit || 'kW'}</td>
                   <td className="mono-cell" style={{ color: '#F59E0B' }}>{be?.modelMae ?? 142.6} {be?.unit || 'kW'}</td>
@@ -731,7 +731,7 @@ export const PilotEvaluationView: React.FC = () => {
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>60-Minute Horizon</td>
-                      <td>{be?.facilityName || 'Phoenix Commercial Load'}</td>
+                      <td>{be?.facilityName || 'Commercial Facility Load'}</td>
                       <td className="font-mono">{be?.persistenceMae ?? 218.0} {be?.unit || 'kW'}</td>
                       <td className="font-mono" style={{ color: '#10B981', fontWeight: 700 }}>
                         {be?.modelMae ?? 142.6} {be?.unit || 'kW'}

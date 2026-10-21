@@ -331,7 +331,7 @@ export const ScenarioStudioView: React.FC = () => {
                 style={{
                   background: `linear-gradient(to right, #2F81F7 0%, #2F81F7 ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) ${((greenExtension - 5) / 20) * 100}%, rgba(255, 255, 255, 0.12) 100%)`
                 }}
-                aria-label="Nagar Road EB Green Extension"
+                aria-label="Eastbound Arterial Green Extension"
               />
               <div className="preset-pills-row">
                 <button

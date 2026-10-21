@@ -12,14 +12,15 @@ import {
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
-import { RoadSegmentAsset, EntityCurrentState, SourceMode, SPaTState } from '../../types/twin';
+import { RoadSegmentAsset, EntityCurrentState, SourceMode, SPaTState, IntersectionAsset } from '../../types/twin';
 import { ForecastPanel } from '../ForecastPanel';
 import { WebsterTimingModal } from '../traffic/WebsterTimingModal';
 import {
   fetchCorridorLOS,
   CorridorLOSResponse,
   SegmentLOSRecord,
-  fetchIntersectionSPaT
+  fetchIntersectionSPaT,
+  fetchIntersections
 } from '../../services/api';
 
 interface TrafficAnalyticsViewProps {
@@ -33,6 +34,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   liveStates,
   sourceMode
 }) => {
+  const [intersections, setIntersections] = useState<IntersectionAsset[]>([]);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>(
     roadSegments[0]?.id || 'urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01'
   );
@@ -45,6 +47,24 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   const [policyStandard, setPolicyStandard] = useState<'INDO_HCM' | 'US_HCM_6TH'>('INDO_HCM');
   const [corridorLosData, setCorridorLosData] = useState<CorridorLOSResponse | null>(null);
   const [loadingLos, setLoadingLos] = useState<boolean>(false);
+
+  // Load available intersections dynamically
+  useEffect(() => {
+    let isMounted = true;
+    fetchIntersections()
+      .then((data) => {
+        if (isMounted && data && data.length > 0) {
+          setIntersections(data);
+          if (!selectedIntersectionId) {
+            setSelectedIntersectionId(data[0].id);
+          }
+        }
+      })
+      .catch((err) => console.debug('Failed to load intersections for selector:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Poll real-time Signal Phase and Timing (SPaT) telemetry
   useEffect(() => {
@@ -269,7 +289,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
                 <span className={`los-badge los-${corridorLosData.corridorSummary.corridorLevelOfService.toLowerCase()}`}>
                   LOS {corridorLosData.corridorSummary.corridorLevelOfService}
                 </span>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text)' }}>
                   Avg Speed: {corridorLosData.corridorSummary.averageSpeedKmh} km/h
                 </span>
                 <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
@@ -303,7 +323,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               style={{
                 background: 'var(--bg-surface-elevated)',
                 border: '1px solid var(--border-color)',
-                color: 'var(--color-text-main)',
+                color: 'var(--color-text)',
                 fontSize: '11px',
                 padding: '4px 8px',
                 borderRadius: '4px'
@@ -311,8 +331,18 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               value={selectedIntersectionId}
               onChange={(e) => setSelectedIntersectionId(e.target.value)}
             >
-              <option value="urn:ngsi-ld:Intersection:PUNE:INT-VN-01">Viman Nagar Chowk (INT-VN-01)</option>
-              <option value="urn:ngsi-ld:Intersection:PUNE:INT-SN-01">Somnath Nagar Chowk (INT-SN-01)</option>
+              {intersections.length > 0 ? (
+                intersections.map((int) => (
+                  <option key={int.id} value={int.id}>
+                    {int.name} ({int.id.split(':').pop()})
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="urn:ngsi-ld:Intersection:PUNE:INT-VN-01">Intersection 01 (INT-VN-01)</option>
+                  <option value="urn:ngsi-ld:Intersection:PUNE:INT-SN-01">Intersection 02 (INT-SN-01)</option>
+                </>
+              )}
             </select>
 
             <button
@@ -462,7 +492,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
                 Controlled Movement
               </div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', marginTop: '2px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text)', marginTop: '2px' }}>
                 {spatData.activePhaseName}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
@@ -581,7 +611,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
             borderLeft: `3px solid ${activeLosGrade === 'F' || activeLosGrade === 'E' ? '#EF4444' : activeLosGrade === 'D' || activeLosGrade === 'C' ? '#F59E0B' : '#10B981'}`,
             marginBottom: '12px'
           }}>
-            <strong style={{ color: 'var(--color-text-main)' }}>Operational State:</strong> {activeCondition}
+            <strong style={{ color: 'var(--color-text)' }}>Operational State:</strong> {activeCondition}
           </div>
 
           {/* Integrated 15-Minute Forecast with Conformal & TreeSHAP */}

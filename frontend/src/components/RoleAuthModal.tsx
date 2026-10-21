@@ -140,7 +140,7 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
                   color: 'var(--text-muted)'
                 }}
               >
-                PUNE MUNICIPAL CORPORATION • URBAN DIGITAL TWIN
+                CITY OPERATIONS CENTER
               </span>
             </div>
             <h2
@@ -148,7 +148,7 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
               style={{
                 fontSize: '20px',
                 fontWeight: 700,
-                color: '#F0F6FC',
+                color: 'var(--color-text)',
                 margin: 0,
                 letterSpacing: '-0.02em'
               }}
@@ -366,8 +366,8 @@ export const RoleAuthModal: React.FC<RoleAuthModalProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ShieldCheck size={16} color="#10B981" />
-            <span style={{ fontSize: '12px', color: '#8B949E' }}>
-              Authenticated for Nagar Road Arterial Corridor
+            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Authenticated for Active Corridor Operations
             </span>
           </div>
 

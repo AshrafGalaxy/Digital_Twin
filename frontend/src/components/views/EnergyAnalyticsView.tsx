@@ -336,7 +336,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <span>Net Grid Import</span>
             <GitFork size={13} color="#FCD34D" />
           </span>
-          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+          <span className="metric-box-val font-mono" style={{ color: 'var(--color-text)' }}>
             {summaryGridImportKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
           </span>
           <span className="metric-box-sub">
@@ -407,7 +407,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Activity size={14} color="#38BDF8" />
             <span className="text-muted">Total Load:</span>
-            <span className="font-mono" style={{ fontWeight: 600, color: '#F0F6FC' }}>
+            <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text)' }}>
               {summaryLoadKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} kW
             </span>
           </div>
@@ -592,7 +592,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
 
             <div className="metric-box">
               <span className="metric-box-label">Hourly Carbon Footprint</span>
-              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+              <span className="metric-box-val font-mono" style={{ color: 'var(--color-text)' }}>
                 {(currentCarbonHourlyKg / 1000).toFixed(2)} <small>t CO₂e/h</small>
               </span>
               <span className="metric-box-sub">
@@ -602,7 +602,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
 
             <div className="metric-box">
               <span className="metric-box-label">Substation Feeder</span>
-              <span className="metric-box-val font-mono" style={{ fontSize: '15px', color: '#F0F6FC' }}>
+              <span className="metric-box-val font-mono" style={{ fontSize: '15px', color: 'var(--color-text)' }}>
                 {substationName}
               </span>
               <span className="metric-box-sub">
