@@ -377,8 +377,16 @@ class EnergyTopologyService:
                 if not node_obj.get("parentNodeId"):
                     root_nodes.append(node_obj)
 
+            # Resolve active study area ID dynamically from spatial registry
+            study_area_id = "urn:ngsi-ld:StudyArea:CORRIDOR"
+            try:
+                from backend.services.spatial_registry_service import spatial_registry_service
+                study_area_id = spatial_registry_service.catalog.studyAreaId
+            except Exception as e:
+                logger.debug("Spatial registry study area resolution fallback: %s", e)
+
             return {
-                "studyAreaId": "urn:ngsi-ld:StudyArea:PUNE:VN-SN-CORRIDOR",
+                "studyAreaId": study_area_id,
                 "substation": root_nodes[0] if root_nodes else None,
                 "totalNodes": len(raw_nodes),
                 "generatedAt": datetime.now(timezone.utc).isoformat()
