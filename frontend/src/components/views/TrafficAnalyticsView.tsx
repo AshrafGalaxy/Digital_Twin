@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { RoadSegmentAsset, EntityCurrentState, SourceMode, SPaTState } from '../../types/twin';
 import { ForecastPanel } from '../ForecastPanel';
+import { WebsterTimingModal } from '../traffic/WebsterTimingModal';
 import {
   fetchCorridorLOS,
   CorridorLOSResponse,
@@ -38,6 +39,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   const [selectedIntersectionId, setSelectedIntersectionId] = useState<string>(
     'urn:ngsi-ld:Intersection:PUNE:INT-VN-01'
   );
+  const [showWebsterModal, setShowWebsterModal] = useState<boolean>(false);
   const [spatData, setSpatData] = useState<SPaTState | null>(null);
   const [loadingSpat, setLoadingSpat] = useState<boolean>(false);
   const [policyStandard, setPolicyStandard] = useState<'INDO_HCM' | 'US_HCM_6TH'>('INDO_HCM');
@@ -312,6 +314,28 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               <option value="urn:ngsi-ld:Intersection:PUNE:INT-VN-01">Viman Nagar Chowk (INT-VN-01)</option>
               <option value="urn:ngsi-ld:Intersection:PUNE:INT-SN-01">Somnath Nagar Chowk (INT-SN-01)</option>
             </select>
+
+            <button
+              type="button"
+              onClick={() => setShowWebsterModal(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'rgba(59, 130, 246, 0.15)',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                color: '#60A5FA',
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '4px 8px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+              title="Inspect Webster optimal cycle time and green splits"
+            >
+              <Sliders size={12} />
+              Webster Plan
+            </button>
 
             {/* Freshness SLA Badge */}
             {spatData && (
@@ -664,6 +688,13 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Webster Delay-Minimizing Timing Plan Modal */}
+      <WebsterTimingModal
+        isOpen={showWebsterModal}
+        intersectionId={selectedIntersectionId}
+        onClose={() => setShowWebsterModal(false)}
+      />
     </div>
   );
 };

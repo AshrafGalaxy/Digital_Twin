@@ -510,5 +510,48 @@ export interface MicrogridSummary {
   observedAt: string;
 }
 
+export interface WebsterPhaseResult {
+  phaseId: number;
+  approachId: string;
+  description: string;
+  greenSec: number;
+  splitRatio: number;
+  flowRatioY: number;
+  saturationX: number;
+  delaySecVeh: number;
+  pedClearanceSec: number;
+}
+
+export interface WebsterTimingPlan {
+  recommendationId: string;
+  intersectionId: string;
+  generatedAt: string;
+  targetCycleSec: number;
+  baselineCycleSec: number;
+  totalLostTimeSec: number;
+  criticalFlowRatioY: number;
+  phases: WebsterPhaseResult[];
+  baselineDelaySecVeh: number;
+  optimalDelaySecVeh: number;
+  estimatedDelayReductionSec: number;
+  estimatedDelayReductionPct: number;
+  safetyValidation: {
+    maxSaturation: number;
+    saturationCapSatisfied: boolean;
+    pedestrianInvariantVerified: boolean;
+    minGreenSatisfied: boolean;
+    cycleBounded: boolean;
+    oversaturatedRegime?: boolean;
+    advisoryNote?: string;
+  };
+  provenance: {
+    sourceMode: string;
+    optimizerVersion: string;
+    formula: string;
+  };
+  status: string;
+}
+
+
 
 

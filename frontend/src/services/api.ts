@@ -16,7 +16,8 @@ import {
   SPaTHistoryRecord,
   EnergyTopologyTreeResponse,
   EnergyAssetTelemetry,
-  MicrogridSummary
+  MicrogridSummary,
+  WebsterTimingPlan
 } from '../types/twin';
 
 const API_BASE = '/api/v1';
@@ -812,6 +813,17 @@ export async function fetchSPaTHistory(
   } catch {
     return [];
   }
+}
+
+export async function fetchIntersectionOptimalTiming(
+  intersectionId: string,
+  baselineCycleSec: number = 90
+): Promise<WebsterTimingPlan> {
+  const res = await resilientFetch(
+    `${API_BASE}/traffic/intersection/${encodeURIComponent(intersectionId)}/optimal-timing?baseline_cycle_sec=${baselineCycleSec}`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch optimal timing for ${intersectionId}: ${res.status}`);
+  return res.json();
 }
 
 export async function fetchEnergyTopology(): Promise<EnergyTopologyTreeResponse> {
