@@ -232,6 +232,18 @@ def test_api_get_intersection_optimal_timing():
     plan = res.json()
 
     assert "INT-VN-01" in plan["intersectionId"]
-    assert len(plan["phases"]) == 4
+    assert len(plan["phases"]) >= 2
     assert plan["targetCycleSec"] >= 60
     assert plan["safetyValidation"]["minGreenSatisfied"] is True
+
+
+def test_api_get_intersection_optimal_timing_custom_intersection():
+    """Verifies GET /api/v1/traffic/intersection/{id}/optimal-timing generates valid plan for non-hardcoded ID."""
+    res = client.get("/api/v1/traffic/intersection/INT-ANYCITY-99/optimal-timing")
+    assert res.status_code == 200
+    plan = res.json()
+
+    assert "INT-ANYCITY-99" in plan["intersectionId"]
+    assert len(plan["phases"]) == 4
+    assert 60 <= plan["targetCycleSec"] <= 150
+    assert plan["safetyValidation"]["pedestrianInvariantVerified"] is True

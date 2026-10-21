@@ -469,14 +469,49 @@ async def get_intersection_optimal_timing(
     Retrieves or calculates the Webster optimal signal timing plan for a signalized intersection.
     Resolves approach flows from connected corridor road segments or canonical defaults.
     """
-    # 1. Look up approaches from defaults or database
-    approaches = DEFAULT_INTERSECTION_APPROACHES.get(intersection_id)
+    # 1. Dynamically resolve approaches from connected road segments in database
+    approaches: List[ApproachDemandInput] = []
+    try:
+        query = text("""
+            SELECT s.id, s.name, s.direction, s.lane_count, s.capacity_veh_per_hour,
+                   s.properties, ecs.metrics
+            FROM road_segments s
+            LEFT JOIN entity_current_state ecs ON ecs.entity_id = s.id
+            WHERE s.to_intersection = :iid OR s.from_intersection = :iid
+               OR :iid LIKE '%' || s.to_intersection || '%'
+            ORDER BY s.direction ASC, s.id ASC
+        """)
+        res = await session.execute(query, {"iid": intersection_id})
+        rows = res.fetchall()
+        for r in rows:
+            seg_id, seg_name, direction, lane_count, capacity, props_raw, metrics_raw = r
+            props = json.loads(props_raw) if isinstance(props_raw, str) else (props_raw or {})
+            metrics = json.loads(metrics_raw) if isinstance(metrics_raw, str) else (metrics_raw or {})
+
+            flow = float(metrics.get("vehicle_flow_per_hour") or metrics.get("vehicleFlowPerHour") or metrics.get("flow_veh_hr") or ((capacity or 2400) * 0.45))
+            lanes = int(lane_count or 2)
+            crosswalk_w = float(props.get("crosswalkWidthMeters", 14.0))
+            min_green = float(props.get("minGreenSec", 15.0 if lanes <= 2 else 20.0))
+
+            approaches.append(ApproachDemandInput(
+                approachId=f"APP-{seg_id}",
+                description=f"{seg_name} ({direction})",
+                flowVehHr=flow,
+                lanes=lanes,
+                minGreenSec=min_green,
+                crosswalkWidthMeters=crosswalk_w
+            ))
+    except Exception as db_err:
+        logger.debug("Could not resolve road segments for %s from database: %s", intersection_id, db_err)
+
     if not approaches:
-        # Match by suffix
-        for k, v in DEFAULT_INTERSECTION_APPROACHES.items():
-            if k.endswith(intersection_id) or intersection_id in k:
-                approaches = v
-                break
+        # Fallback to configured defaults or generic approaches
+        approaches = DEFAULT_INTERSECTION_APPROACHES.get(intersection_id)
+        if not approaches:
+            for k, v in DEFAULT_INTERSECTION_APPROACHES.items():
+                if k.endswith(intersection_id) or intersection_id in k:
+                    approaches = v
+                    break
 
     if not approaches:
         # Generic 4-phase fallback approach set
