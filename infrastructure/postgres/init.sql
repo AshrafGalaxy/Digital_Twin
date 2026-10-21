@@ -277,3 +277,20 @@ CREATE TABLE IF NOT EXISTS quarantine_observations (
 CREATE INDEX IF NOT EXISTS idx_quarantine_rejection_reason ON quarantine_observations(rejection_reason);
 CREATE INDEX IF NOT EXISTS idx_quarantine_quarantined_at ON quarantine_observations(quarantined_at DESC);
 CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(entity_id);
+
+-- 28. Signal Phase History (TASK-08 / SPaT Controller Ingestion)
+CREATE TABLE IF NOT EXISTS signal_phase_history (
+    id BIGSERIAL PRIMARY KEY,
+    intersection_id VARCHAR(128) NOT NULL,
+    phase_id INTEGER NOT NULL,
+    phase_name VARCHAR(128) NOT NULL,
+    color VARCHAR(32) NOT NULL,
+    duration_sec NUMERIC(8, 2) NOT NULL,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'REPLAY',
+    quality_status VARCHAR(32) NOT NULL DEFAULT 'VALID',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_signal_phase_hist ON signal_phase_history (intersection_id, start_time DESC);

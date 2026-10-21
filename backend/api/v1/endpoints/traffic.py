@@ -21,6 +21,7 @@ from backend.services.signal_optimizer import (
     SignalConstraints,
     webster_optimizer
 )
+from backend.services.spat_adapter import spat_adapter, SignalColor, ControllerMode
 
 logger = logging.getLogger("digital_twin.endpoints.traffic")
 
@@ -492,4 +493,166 @@ async def get_intersection_optimal_timing(
         baselineCycleSec=baseline_cycle_sec
     )
     return await optimize_signal_timing(req, session)
+
+
+class SPaTResponse(BaseModel):
+    intersectionId: str
+    intersectionName: str
+    activePhase: int
+    activePhaseName: str
+    phaseColor: str
+    timeToNextPhaseSec: float
+    cycleLengthSec: int
+    elapsedCycleSec: float
+    controllerMode: str
+    freshnessStatus: str
+    freshnessSeconds: float
+    observedAt: str
+    sourceMode: str
+    provenance: Dict[str, Any]
+
+
+class SPaTIngestRequest(BaseModel):
+    intersectionId: str = Field(..., description="Target intersection identifier or URN")
+    timestamp: str = Field(..., description="Observation timestamp in ISO-8601 format")
+    cycleLengthSec: int = Field(90, ge=40, le=240, description="Cycle time in seconds")
+    elapsedCycleSec: float = Field(0.0, ge=0.0, description="Elapsed seconds within cycle")
+    activePhase: int = Field(..., ge=1, le=8, description="Active signal phase ring (1-8)")
+    activePhaseName: str = Field(..., description="Semantic approach name")
+    phaseColor: str = Field(..., description="Active aspect color (GREEN, YELLOW, RED, FLASHING_YELLOW)")
+    timeToNextPhaseSec: float = Field(..., ge=0.0, description="Remaining seconds in stage")
+    preemptStatus: str = Field("NONE", description="Emergency preemption status")
+    controllerMode: str = Field("ACTUATED", description="Operating mode")
+    provenance: Optional[Dict[str, Any]] = None
+
+
+class SPaTHistoryItem(BaseModel):
+    id: int
+    intersectionId: str
+    phaseId: int
+    phaseName: str
+    color: str
+    durationSec: float
+    startTime: str
+    endTime: str
+    sourceMode: str
+    qualityStatus: str
+
+
+@router.get("/signals/{intersection_id}/spat", response_model=SPaTResponse)
+async def get_intersection_spat(intersection_id: str):
+    """
+    Retrieves real-time Signal Phase and Timing (SPaT) state for an intersection.
+    Evaluates sub-second freshness SLA (VALID, STALE, DISCONNECTED).
+    """
+    state = spat_adapter.get_current_spat(intersection_id)
+    return SPaTResponse(**state.to_dict())
+
+
+@router.post("/signals/spat/ingest", response_model=SPaTResponse)
+async def ingest_spat_frame(
+    payload: SPaTIngestRequest,
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Ingests an inbound NTCIP 1202 / SAE J2735 high-frequency SPaT frame (1 to 10 Hz).
+    Normalizes state, detects phase transitions, archives to signal_phase_history,
+    updates entity_current_state, and broadcasts to WebSocket subscribers.
+    """
+    try:
+        # Build raw dict for adapter
+        raw_dict = {
+            "intersection_id": payload.intersectionId,
+            "timestamp": payload.timestamp,
+            "cycle_length_sec": payload.cycleLengthSec,
+            "elapsed_cycle_sec": payload.elapsedCycleSec,
+            "active_phase": payload.activePhase,
+            "active_phase_name": payload.activePhaseName,
+            "phase_color": SignalColor(payload.phaseColor.upper()),
+            "time_to_next_phase_sec": payload.timeToNextPhaseSec,
+            "preempt_status": payload.preemptStatus,
+            "controller_mode": ControllerMode(payload.controllerMode.upper()),
+            "provenance": payload.provenance or {
+                "sourceMode": "LIVE",
+                "protocol": "SAE_J2735_SPAT"
+            }
+        }
+        updated_state = await spat_adapter.ingest_packet(raw_dict, session=session)
+        state_dict = updated_state.to_dict()
+
+        # Broadcast real-time SPaT event via WebSocket manager
+        try:
+            from backend.api.v1.endpoints.stream import manager
+            await manager.broadcast({
+                "eventType": "SPAT_PHASE_CHANGED",
+                "intersectionId": payload.intersectionId,
+                "activePhase": state_dict["activePhase"],
+                "activePhaseName": state_dict["activePhaseName"],
+                "phaseColor": state_dict["phaseColor"],
+                "timeToNextPhaseSec": state_dict["timeToNextPhaseSec"],
+                "cycleLengthSec": state_dict["cycleLengthSec"],
+                "elapsedCycleSec": state_dict["elapsedCycleSec"],
+                "freshnessStatus": state_dict["freshnessStatus"],
+                "sourceMode": state_dict["sourceMode"],
+                "timestamp": state_dict["observedAt"]
+            })
+        except Exception as ws_err:
+            logger.debug("WebSocket SPaT broadcast notice: %s", ws_err)
+
+        return SPaTResponse(**state_dict)
+
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"SPaT packet validation error: {val_err}"
+        )
+    except Exception as exc:
+        logger.error("Error processing SPaT frame: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"SPaT ingestion failure: {str(exc)}"
+        )
+
+
+@router.get("/signals/{intersection_id}/spat/history", response_model=List[SPaTHistoryItem])
+async def get_spat_history(
+    intersection_id: str,
+    limit: int = Query(50, ge=1, le=200, description="Max transition records to return"),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Returns historical signal phase transitions recorded for an intersection.
+    """
+    query = text("""
+        SELECT id, intersection_id, phase_id, phase_name, color,
+               duration_sec, start_time, end_time, source_mode, quality_status
+        FROM signal_phase_history
+        WHERE intersection_id = :int_id
+           OR intersection_id LIKE :int_pattern
+        ORDER BY start_time DESC
+        LIMIT :limit
+    """)
+    res = await session.execute(query, {
+        "int_id": intersection_id,
+        "int_pattern": f"%{intersection_id}%",
+        "limit": limit
+    })
+    rows = res.fetchall()
+
+    return [
+        SPaTHistoryItem(
+            id=r[0],
+            intersectionId=r[1],
+            phaseId=r[2],
+            phaseName=r[3],
+            color=r[4],
+            durationSec=float(r[5]),
+            startTime=str(r[6]),
+            endTime=str(r[7]),
+            sourceMode=r[8],
+            qualityStatus=r[9]
+        )
+        for r in rows
+    ]
+
 

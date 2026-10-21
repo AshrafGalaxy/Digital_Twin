@@ -453,6 +453,22 @@ SQLITE_TABLE_DDL = [
         reviewed_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 28. Signal Phase History (TASK-08 / SPaT Controller Ingestion)
+    """
+    CREATE TABLE IF NOT EXISTS signal_phase_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        intersection_id TEXT NOT NULL,
+        phase_id INTEGER NOT NULL,
+        phase_name TEXT NOT NULL,
+        color TEXT NOT NULL,
+        duration_sec REAL NOT NULL,
+        start_time TIMESTAMP NOT NULL,
+        end_time TIMESTAMP NOT NULL,
+        source_mode TEXT NOT NULL DEFAULT 'REPLAY',
+        quality_status TEXT NOT NULL DEFAULT 'VALID',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -469,7 +485,8 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_spatial_inter_sumo_junc ON spatial_intersection_map(sumo_junction_id);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);",
     "CREATE INDEX IF NOT EXISTS idx_segment_los_hist ON segment_los_history (segment_id, observed_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_timing_rec_int ON timing_recommendations (intersection_id, generated_at DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_timing_rec_int ON timing_recommendations (intersection_id, generated_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_signal_phase_hist ON signal_phase_history (intersection_id, start_time DESC);"
 ]
 
 

@@ -21,8 +21,14 @@ from backend.core.config import settings
 from backend.core.database import AsyncSessionLocal
 from backend.schemas.canonical import SourceMode
 from backend.services.los_engine import los_engine
+from backend.services.spat_adapter import spat_adapter
 
 logger = logging.getLogger("digital_twin.streamer")
+
+CORRIDOR_INTERSECTIONS = [
+    "urn:ngsi-ld:Intersection:PUNE:INT-VN-01",
+    "urn:ngsi-ld:Intersection:PUNE:INT-SN-01"
+]
 
 # Corridor Segment Topology
 CORRIDOR_SEGMENTS = [
@@ -446,6 +452,39 @@ class TelemetryStreamerWorker:
                         "freshness_seconds": 0.0
                     })
 
+                # 3b. Advance Virtual SPaT Signal Controllers (TASK-08)
+                spat_states_list = []
+                for int_id in CORRIDOR_INTERSECTIONS:
+                    try:
+                        spat_state = spat_adapter.generate_synthetic_tick(
+                            intersection_id=int_id,
+                            elapsed_delta_sec=float(self.tick_interval_seconds),
+                            source_mode=self.mode
+                        )
+                        spat_dict = spat_state.to_dict()
+                        spat_states_list.append(spat_dict)
+
+                        spat_metrics = {
+                            "activePhase": spat_dict["activePhase"],
+                            "activePhaseName": spat_dict["activePhaseName"],
+                            "phaseColor": spat_dict["phaseColor"],
+                            "timeToNextPhaseSec": spat_dict["timeToNextPhaseSec"],
+                            "cycleLengthSec": spat_dict["cycleLengthSec"],
+                            "controllerMode": spat_dict["controllerMode"]
+                        }
+                        await session.execute(upsert_state, {
+                            "entity_id": int_id,
+                            "entity_type": "TrafficSignal",
+                            "source_mode": self.mode,
+                            "observed_at": now_iso,
+                            "updated_at": now_iso,
+                            "metrics": json.dumps(spat_metrics),
+                            "quality_status": "VALID",
+                            "freshness_seconds": 0.0
+                        })
+                    except Exception as spat_err:
+                        logger.debug("Virtual SPaT tick notice: %s", spat_err)
+
                 await session.commit()
 
                 # Update Internal Telemetry State
@@ -518,6 +557,26 @@ class TelemetryStreamerWorker:
                                 await self.broadcast_callback(energy_msg)
                             else:
                                 self.broadcast_callback(energy_msg)
+
+                    # Also broadcast real-time SPaT signal phase states
+                    for spat_item in spat_states_list:
+                        spat_msg = {
+                            "eventType": "SPAT_PHASE_CHANGED",
+                            "intersectionId": spat_item["intersectionId"],
+                            "activePhase": spat_item["activePhase"],
+                            "activePhaseName": spat_item["activePhaseName"],
+                            "phaseColor": spat_item["phaseColor"],
+                            "timeToNextPhaseSec": spat_item["timeToNextPhaseSec"],
+                            "cycleLengthSec": spat_item["cycleLengthSec"],
+                            "elapsedCycleSec": spat_item["elapsedCycleSec"],
+                            "freshnessStatus": spat_item["freshnessStatus"],
+                            "sourceMode": spat_item["sourceMode"],
+                            "timestamp": now_iso
+                        }
+                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                            await self.broadcast_callback(spat_msg)
+                        else:
+                            self.broadcast_callback(spat_msg)
 
                 return {
                     "status": "TICK_SUCCESS",

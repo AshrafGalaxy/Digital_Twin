@@ -8,7 +8,9 @@ import {
   AdvisorySummary,
   AuthUser,
   EnvironmentState,
-  AirQualityStationAsset
+  AirQualityStationAsset,
+  SPaTState,
+  SPaTHistoryRecord
 } from '../types/twin';
 
 const API_BASE = '/api/v1';
@@ -751,6 +753,28 @@ export async function fetchTrafficPolicies(): Promise<PolicyStandardInfo[]> {
   if (!res.ok) throw new Error('Failed to fetch traffic policies');
   return res.json();
 }
+
+export async function fetchIntersectionSPaT(intersectionId: string): Promise<SPaTState> {
+  const res = await resilientFetch(`${API_BASE}/traffic/signals/${encodeURIComponent(intersectionId)}/spat`);
+  if (!res.ok) throw new Error(`Failed to fetch SPaT for ${intersectionId}: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchSPaTHistory(
+  intersectionId: string,
+  limit: number = 20
+): Promise<SPaTHistoryRecord[]> {
+  try {
+    const res = await resilientFetch(
+      `${API_BASE}/traffic/signals/${encodeURIComponent(intersectionId)}/spat/history?limit=${limit}`
+    );
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 
 
 

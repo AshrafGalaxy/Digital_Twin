@@ -6,14 +6,19 @@ import {
   Layers,
   HelpCircle,
   Sliders,
-  Activity
+  Activity,
+  Radio,
+  Clock,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
-import { RoadSegmentAsset, EntityCurrentState, SourceMode } from '../../types/twin';
+import { RoadSegmentAsset, EntityCurrentState, SourceMode, SPaTState } from '../../types/twin';
 import { ForecastPanel } from '../ForecastPanel';
 import {
   fetchCorridorLOS,
   CorridorLOSResponse,
-  SegmentLOSRecord
+  SegmentLOSRecord,
+  fetchIntersectionSPaT
 } from '../../services/api';
 
 interface TrafficAnalyticsViewProps {
@@ -30,9 +35,39 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>(
     roadSegments[0]?.id || 'urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01'
   );
+  const [selectedIntersectionId, setSelectedIntersectionId] = useState<string>(
+    'urn:ngsi-ld:Intersection:PUNE:INT-VN-01'
+  );
+  const [spatData, setSpatData] = useState<SPaTState | null>(null);
+  const [loadingSpat, setLoadingSpat] = useState<boolean>(false);
   const [policyStandard, setPolicyStandard] = useState<'INDO_HCM' | 'US_HCM_6TH'>('INDO_HCM');
   const [corridorLosData, setCorridorLosData] = useState<CorridorLOSResponse | null>(null);
   const [loadingLos, setLoadingLos] = useState<boolean>(false);
+
+  // Poll real-time Signal Phase and Timing (SPaT) telemetry
+  useEffect(() => {
+    let isMounted = true;
+    const loadSPaT = async () => {
+      try {
+        setLoadingSpat(true);
+        const data = await fetchIntersectionSPaT(selectedIntersectionId);
+        if (isMounted) {
+          setSpatData(data);
+        }
+      } catch (err) {
+        console.debug('SPaT fetch notice:', err);
+      } finally {
+        if (isMounted) setLoadingSpat(false);
+      }
+    };
+
+    loadSPaT();
+    const interval = setInterval(loadSPaT, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [selectedIntersectionId]);
 
   // Fetch canonical corridor LOS from backend engine
   useEffect(() => {
@@ -252,6 +287,220 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           )}
         </div>
       )}
+
+      {/* Real-Time Signal Phase and Timing (SPaT) Controller Monitor */}
+      <div className="analytics-card" style={{ marginTop: '12px' }}>
+        <div className="analytics-card-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Radio size={18} color="#10B981" />
+            <span className="card-title">Real-Time Signal Phase and Timing (SPaT) Controller Monitor</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Intersection Selector */}
+            <select
+              style={{
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--color-text-main)',
+                fontSize: '11px',
+                padding: '4px 8px',
+                borderRadius: '4px'
+              }}
+              value={selectedIntersectionId}
+              onChange={(e) => setSelectedIntersectionId(e.target.value)}
+            >
+              <option value="urn:ngsi-ld:Intersection:PUNE:INT-VN-01">Viman Nagar Chowk (INT-VN-01)</option>
+              <option value="urn:ngsi-ld:Intersection:PUNE:INT-SN-01">Somnath Nagar Chowk (INT-SN-01)</option>
+            </select>
+
+            {/* Freshness SLA Badge */}
+            {spatData && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '3px 8px',
+                  borderRadius: '12px',
+                  border: `1px solid ${
+                    spatData.freshnessStatus === 'VALID'
+                      ? 'rgba(16, 185, 129, 0.4)'
+                      : spatData.freshnessStatus === 'STALE'
+                      ? 'rgba(245, 158, 11, 0.4)'
+                      : 'rgba(239, 68, 68, 0.4)'
+                  }`,
+                  background:
+                    spatData.freshnessStatus === 'VALID'
+                      ? 'rgba(16, 185, 129, 0.1)'
+                      : spatData.freshnessStatus === 'STALE'
+                      ? 'rgba(245, 158, 11, 0.1)'
+                      : 'rgba(239, 68, 68, 0.1)',
+                  color:
+                    spatData.freshnessStatus === 'VALID'
+                      ? '#10B981'
+                      : spatData.freshnessStatus === 'STALE'
+                      ? '#F59E0B'
+                      : '#EF4444'
+                }}
+              >
+                {spatData.freshnessStatus === 'VALID' ? (
+                  <CheckCircle2 size={12} />
+                ) : (
+                  <AlertTriangle size={12} />
+                )}
+                SLA: {spatData.freshnessStatus} ({spatData.freshnessSeconds.toFixed(1)}s)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {spatData ? (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '12px',
+            alignItems: 'center',
+            padding: '8px 0'
+          }}>
+            {/* Visual Signal Aspect */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '10px 14px',
+              background: 'var(--bg-surface-elevated)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)'
+            }}>
+              {/* 3 Aspect Signal Head */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
+                background: '#0F172A',
+                padding: '6px',
+                borderRadius: '12px',
+                border: '2px solid #334155'
+              }}>
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: spatData.phaseColor === 'RED' ? '#EF4444' : '#475569',
+                  boxShadow: spatData.phaseColor === 'RED' ? '0 0 8px #EF4444' : 'none',
+                  transition: 'background 0.2s ease'
+                }} />
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: spatData.phaseColor === 'YELLOW' || spatData.phaseColor === 'FLASHING_YELLOW' ? '#F59E0B' : '#475569',
+                  boxShadow: spatData.phaseColor === 'YELLOW' ? '0 0 8px #F59E0B' : 'none',
+                  transition: 'background 0.2s ease'
+                }} />
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: spatData.phaseColor === 'GREEN' ? '#10B981' : '#475569',
+                  boxShadow: spatData.phaseColor === 'GREEN' ? '0 0 8px #10B981' : 'none',
+                  transition: 'background 0.2s ease'
+                }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                  Active Aspect
+                </div>
+                <div style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: spatData.phaseColor === 'GREEN' ? '#10B981' : spatData.phaseColor === 'YELLOW' ? '#F59E0B' : '#EF4444',
+                  marginTop: '2px'
+                }}>
+                  {spatData.phaseColor}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                  Phase {spatData.activePhase}
+                </div>
+              </div>
+            </div>
+
+            {/* Active Stage Name */}
+            <div style={{
+              padding: '10px 14px',
+              background: 'var(--bg-surface-elevated)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)'
+            }}>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                Controlled Movement
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-main)', marginTop: '2px' }}>
+                {spatData.activePhaseName}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                Controller: {spatData.controllerMode}
+              </div>
+            </div>
+
+            {/* Countdown Timer */}
+            <div style={{
+              padding: '10px 14px',
+              background: 'var(--bg-surface-elevated)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <Clock size={20} color="#2DD4BF" />
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                  Stage Countdown
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#2DD4BF', marginTop: '1px' }}>
+                  {spatData.timeToNextPhaseSec.toFixed(1)} <small style={{ fontSize: '12px', fontWeight: 400 }}>sec</small>
+                </div>
+              </div>
+            </div>
+
+            {/* Cycle Progress */}
+            <div style={{
+              padding: '10px 14px',
+              background: 'var(--bg-surface-elevated)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                <span>CYCLE ELAPSED</span>
+                <span>{spatData.elapsedCycleSec.toFixed(0)}s / {spatData.cycleLengthSec}s</span>
+              </div>
+              <div style={{
+                width: '100%',
+                height: '6px',
+                background: '#334155',
+                borderRadius: '3px',
+                marginTop: '6px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${Math.min(100, Math.max(0, (spatData.elapsedCycleSec / spatData.cycleLengthSec) * 100))}%`,
+                  height: '100%',
+                  background: '#2DD4BF',
+                  transition: 'width 0.5s ease'
+                }} />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '12px' }}>
+            {loadingSpat ? 'Connecting to controller SPaT feed...' : 'No active SPaT controller telemetry available.'}
+          </div>
+        )}
+      </div>
 
       {/* Main Grid: Forecast & Overview */}
       <div className="analytics-grid-two-col" style={{ marginTop: '12px' }}>

@@ -329,4 +329,42 @@ export interface EnvironmentState {
   dataHonestyCaveat?: string;
 }
 
+export type SignalColor = 'GREEN' | 'YELLOW' | 'RED' | 'FLASHING_YELLOW';
+
+export interface SPaTState {
+  intersectionId: string;
+  intersectionName: string;
+  activePhase: number;
+  activePhaseName: string;
+  phaseColor: SignalColor;
+  timeToNextPhaseSec: number;
+  cycleLengthSec: number;
+  elapsedCycleSec: number;
+  controllerMode: string;
+  freshnessStatus: 'VALID' | 'STALE' | 'DISCONNECTED';
+  freshnessSeconds: number;
+  observedAt: string;
+  sourceMode: SourceMode;
+  provenance?: {
+    sourceMode: SourceMode;
+    protocol: string;
+    qualityStatus: string;
+    freshnessThresholdSec: number;
+    disconnectThresholdSec: number;
+  };
+}
+
+export interface SPaTHistoryRecord {
+  id: number;
+  intersectionId: string;
+  phaseId: number;
+  phaseName: string;
+  color: SignalColor;
+  durationSec: number;
+  startTime: string;
+  endTime: string;
+  sourceMode: string;
+  qualityStatus: string;
+}
+
 
