@@ -35,9 +35,10 @@ def test_rule_engine_initial_seeding_and_invariants():
     recs = rule_engine.list_recommendations()
     assert len(recs) >= 3
 
-    # Traffic advisory verification
-    trf_rec = next((r for r in recs if r.domain == RecommendationDomain.TRAFFIC), None)
+    # Traffic advisory verification (hermetic check on seeded advisory)
+    trf_rec = next((r for r in recs if r.recommendationId == "REC-TRF-20260920-001"), None)
     assert trf_rec is not None
+    assert trf_rec.domain == RecommendationDomain.TRAFFIC
     assert trf_rec.humanApprovalRequired is True
     assert "human verification" in trf_rec.governanceNotice.lower()
     assert trf_rec.evidence.sourceMode == "PREDICTED"

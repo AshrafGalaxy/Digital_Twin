@@ -6,6 +6,9 @@ import {
   BuildingAsset,
   AdvisoryRecommendation,
   AdvisorySummary,
+  AuthorizeAdvisoryPayload,
+  DispatchWorkOrder,
+  AdvisoryAuditLogRecord,
   AuthUser,
   EnvironmentState,
   AirQualityStationAsset,
@@ -430,6 +433,39 @@ export async function triggerRuleEvaluation(): Promise<AdvisoryRecommendation[]>
   });
   if (!res.ok) throw new Error('Failed to trigger rule evaluation');
   return res.json();
+}
+
+export async function authorizeAdvisory(
+  recId: string,
+  payload: AuthorizeAdvisoryPayload
+): Promise<DispatchWorkOrder> {
+  const res = await fetch(`${API_BASE}/recommendations/${encodeURIComponent(recId)}/authorize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData?.detail || `Failed to authorize recommendation ${recId}`);
+  }
+  return res.json();
+}
+
+export async function fetchDispatchOrder(recId: string): Promise<DispatchWorkOrder> {
+  const res = await resilientFetch(`${API_BASE}/recommendations/${encodeURIComponent(recId)}/dispatch-order`);
+  if (!res.ok) throw new Error(`Failed to fetch dispatch order for recommendation ${recId}`);
+  return res.json();
+}
+
+export async function fetchAdvisoryAuditLogs(limit: number = 50): Promise<AdvisoryAuditLogRecord[]> {
+  try {
+    const res = await resilientFetch(`${API_BASE}/recommendations/audit/logs?limit=${limit}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch (err) {
+    console.error('Failed to fetch advisory audit logs', err);
+    return [];
+  }
 }
 
 export interface DatasetManifestSummary {

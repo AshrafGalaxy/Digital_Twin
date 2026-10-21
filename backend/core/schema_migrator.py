@@ -469,6 +469,26 @@ SQLITE_TABLE_DDL = [
         quality_status TEXT NOT NULL DEFAULT 'VALID',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 29. Advisory Audit Log (TASK-10 / Human-in-the-Loop Operator Authorization)
+    """
+    CREATE TABLE IF NOT EXISTS advisory_audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        audit_id TEXT UNIQUE NOT NULL,
+        recommendation_id TEXT NOT NULL,
+        target_entity_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        previous_status TEXT NOT NULL,
+        new_status TEXT NOT NULL,
+        authorized_by TEXT NOT NULL,
+        badge_id TEXT,
+        shift_id TEXT,
+        justification_notes TEXT,
+        dispatch_order_id TEXT,
+        dispatch_payload_json TEXT NOT NULL,
+        tamper_evident_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -486,7 +506,9 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);",
     "CREATE INDEX IF NOT EXISTS idx_segment_los_hist ON segment_los_history (segment_id, observed_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_timing_rec_int ON timing_recommendations (intersection_id, generated_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_signal_phase_hist ON signal_phase_history (intersection_id, start_time DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_signal_phase_hist ON signal_phase_history (intersection_id, start_time DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_advisory_audit_rec ON advisory_audit_log (recommendation_id, created_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_advisory_audit_time ON advisory_audit_log (created_at DESC);"
 ]
 
 

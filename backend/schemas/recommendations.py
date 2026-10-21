@@ -53,6 +53,32 @@ class AuditLogEntry(BaseModel):
     notes: Optional[str] = Field(None, description="Review justification or action plan notes")
 
 
+class ProposedParameterChange(BaseModel):
+    phaseId: Optional[int] = Field(None, description="Signal phase ID being adjusted")
+    parameter: str = Field(..., description="Parameter name: greenSplitSec, offsetSec, or cycleLengthSec")
+    currentValue: float = Field(..., description="Active operational baseline value")
+    recommendedValue: float = Field(..., description="Optimizer recommended value")
+    unit: str = Field(default="s", description="Unit of measurement")
+
+
+class ConformalPredictedImpact(BaseModel):
+    delayDeltaPct: float = Field(..., description="Predicted percentage change in corridor delay")
+    delayDeltaCI: List[float] = Field(..., description="Conformal 90% confidence interval [lower, upper]")
+    queueDeltaMeters: float = Field(..., description="Expected queue reduction in meters")
+    fuelSavedLitersPerHr: float = Field(..., description="Estimated fuel burn savings in L/hr")
+
+
+class SafetyConstraintChecklist(BaseModel):
+    pedestrianPhaseSafe: bool = Field(default=True, description="Statutory walk phase preserved (>= 14s)")
+    maxWaitThresholdSafe: bool = Field(default=True, description="Cross-street waiting time bounded (< 90s)")
+    emergencyPreemptionClear: bool = Field(default=True, description="No conflicting emergency vehicle preemption")
+
+
+class FeatureAttribution(BaseModel):
+    feature: str = Field(..., description="Feature name driving the recommendation")
+    impact: float = Field(..., description="TreeSHAP impact attribution percentage")
+
+
 class AdvisoryRecommendation(BaseModel):
     recommendationId: str = Field(..., description="Unique identifier (e.g. REC-TRF-20260920-001)")
     domain: RecommendationDomain
@@ -64,6 +90,12 @@ class AdvisoryRecommendation(BaseModel):
     triggerRule: str = Field(..., description="Deterministic rule identifier (e.g. RULE-TRF-CONGESTION-PREDICTED)")
     evidence: RecommendationEvidence
     suggestedAction: str = Field(..., description="Concrete advisory operational recommendation")
+    proposedChange: Optional[ProposedParameterChange] = None
+    predictedImpact: Optional[ConformalPredictedImpact] = None
+    safetyChecklist: Optional[SafetyConstraintChecklist] = None
+    topFeatures: List[FeatureAttribution] = Field(default_factory=list)
+    dispatchOrderId: Optional[str] = None
+    tamperEvidentHash: Optional[str] = None
     humanApprovalRequired: bool = Field(default=True, description="Strict invariant: platform cannot actuate external systems")
     governanceNotice: str = Field(
         default="Advisory only. Requires human verification and municipal authorization before any physical intervention.",
@@ -78,6 +110,51 @@ class ReviewRecommendationRequest(BaseModel):
     newStatus: RecommendationStatus = Field(..., description="Target status: UNDER_REVIEW, ACKNOWLEDGED, or DISMISSED")
     reviewer: str = Field(default="Municipal Traffic Cell Officer", min_length=2, description="Reviewer name or identifier")
     notes: Optional[str] = Field(None, max_length=500, description="Contextual justification for review action")
+
+
+class AuthorizeAdvisoryRequest(BaseModel):
+    badgeId: str = Field(..., min_length=2, max_length=64, description="Dispatcher municipal badge ID")
+    shiftId: str = Field(default="SHIFT-A", min_length=2, max_length=64, description="Operating shift identifier")
+    reviewer: str = Field(default="Municipal Traffic Officer", min_length=2, description="Authorized reviewer name")
+    decision: RecommendationStatus = Field(default=RecommendationStatus.ACKNOWLEDGED, description="Authorization status")
+    notes: Optional[str] = Field(None, max_length=1000, description="Operational justification and dispatch notes")
+
+
+class DispatchWorkOrder(BaseModel):
+    dispatchOrderId: str = Field(..., description="Unique municipal dispatch identifier (MDO-YYYYMMDD-XXXX)")
+    recommendationId: str = Field(..., description="Target recommendation ID")
+    targetEntityId: str = Field(..., description="Physical corridor entity target")
+    authorizedBy: str = Field(..., description="Authorizing dispatcher")
+    badgeId: str = Field(..., description="Dispatcher badge number")
+    shiftId: str = Field(..., description="Duty shift identifier")
+    issuedAt: datetime = Field(..., description="Authorization timestamp")
+    decision: RecommendationStatus = Field(..., description="Authorization status decision")
+    proposedChange: Optional[ProposedParameterChange] = None
+    predictedImpact: Optional[ConformalPredictedImpact] = None
+    safetyChecklist: Optional[SafetyConstraintChecklist] = None
+    notes: Optional[str] = None
+    tamperEvidentHash: str = Field(..., description="Cryptographic SHA-256 hash")
+    governanceDisclaimer: str = Field(
+        default="Advisory decision support only. Requires physical dispatch confirmation by field maintenance personnel."
+    )
+
+
+class AdvisoryAuditLogRecord(BaseModel):
+    id: Optional[int] = None
+    auditId: str
+    recommendationId: str
+    targetEntityId: str
+    actionType: str
+    previousStatus: str
+    newStatus: str
+    authorizedBy: str
+    badgeId: Optional[str] = None
+    shiftId: Optional[str] = None
+    justificationNotes: Optional[str] = None
+    dispatchOrderId: Optional[str] = None
+    dispatchPayloadJson: Dict[str, Any]
+    tamperEvidentHash: str
+    createdAt: datetime
 
 
 class AdvisorySummary(BaseModel):

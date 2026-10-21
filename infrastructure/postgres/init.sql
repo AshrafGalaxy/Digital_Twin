@@ -294,3 +294,25 @@ CREATE TABLE IF NOT EXISTS signal_phase_history (
 );
 
 CREATE INDEX IF NOT EXISTS idx_signal_phase_hist ON signal_phase_history (intersection_id, start_time DESC);
+
+-- 29. Advisory Audit Log (TASK-10 / Human-in-the-Loop Operator Authorization)
+CREATE TABLE IF NOT EXISTS advisory_audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    audit_id VARCHAR(128) UNIQUE NOT NULL,
+    recommendation_id VARCHAR(128) NOT NULL,
+    target_entity_id VARCHAR(255) NOT NULL,
+    action_type VARCHAR(64) NOT NULL,
+    previous_status VARCHAR(32) NOT NULL,
+    new_status VARCHAR(32) NOT NULL,
+    authorized_by VARCHAR(128) NOT NULL,
+    badge_id VARCHAR(64),
+    shift_id VARCHAR(64),
+    justification_notes TEXT,
+    dispatch_order_id VARCHAR(64),
+    dispatch_payload_json JSONB NOT NULL,
+    tamper_evident_hash VARCHAR(128) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_advisory_audit_rec ON advisory_audit_log (recommendation_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_advisory_audit_time ON advisory_audit_log (created_at DESC);

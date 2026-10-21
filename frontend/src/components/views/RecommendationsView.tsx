@@ -3,28 +3,25 @@ import {
   ShieldCheck,
   CheckCircle2,
   RotateCcw,
-  Lightbulb,
-  MapPin,
-  FlaskConical,
   History,
-  UserCheck,
   X,
   AlertTriangle,
   RefreshCw,
-  Filter
+  Filter,
+  Hash
 } from 'lucide-react';
 import {
+  AdvisoryAuditLogRecord,
   AdvisoryRecommendation,
-  AdvisorySummary,
-  RecommendationStatus,
-  RecommendationSeverity
+  AdvisorySummary
 } from '../../types/twin';
 import {
   fetchRecommendations,
   fetchAdvisorySummary,
-  reviewRecommendation,
+  fetchAdvisoryAuditLogs,
   triggerRuleEvaluation
 } from '../../services/api';
+import { AdvisoryCard } from '../advisory/AdvisoryCard';
 
 interface RecommendationsViewProps {
   onNavigateToEntity?: (entityId: string) => void;
@@ -37,13 +34,15 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   onNavigateToScenarios,
   userRole
 }) => {
+  const [activeTabMode, setActiveTabMode] = useState<'DOSSIERS' | 'AUDIT_LOG'>('DOSSIERS');
   const [recommendations, setRecommendations] = useState<AdvisoryRecommendation[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AdvisoryAuditLogRecord[]>([]);
   const [summary, setSummary] = useState<AdvisorySummary | null>(null);
   const [domainFilter, setDomainFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingAudit, setLoadingAudit] = useState<boolean>(false);
   const [evaluating, setEvaluating] = useState<boolean>(false);
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewerName, setReviewerName] = useState<string>(() => {
     return userRole || localStorage.getItem('municipal_role') || 'Municipal Analyst';
   });
@@ -54,14 +53,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     }
   }, [userRole]);
 
-  const [newStatus, setNewStatus] = useState<RecommendationStatus>('UNDER_REVIEW');
-  const [reviewNotes, setReviewNotes] = useState<string>('');
-  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
-  const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
-
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [evalError, setEvalError] = useState<string | null>(null);
-  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -84,9 +77,24 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     }
   };
 
+  const loadAuditLogs = async () => {
+    try {
+      setLoadingAudit(true);
+      const logs = await fetchAdvisoryAuditLogs(50);
+      setAuditLogs(logs);
+    } catch (err) {
+      console.error('Failed to load advisory audit logs', err);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
-  }, [domainFilter, statusFilter]);
+    if (activeTabMode === 'AUDIT_LOG') {
+      loadAuditLogs();
+    }
+  }, [domainFilter, statusFilter, activeTabMode]);
 
   const handleTriggerEvaluate = async () => {
     try {
@@ -99,49 +107,6 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       setEvalError('Rule re-evaluation failed. Please verify that the twin inference service is operational.');
     } finally {
       setEvaluating(false);
-    }
-  };
-
-  const handleExecuteReview = async (recId: string) => {
-    try {
-      setSubmittingReview(true);
-      setReviewError(null);
-      await reviewRecommendation(recId, newStatus, reviewerName, reviewNotes);
-      setReviewingId(null);
-      setReviewNotes('');
-      await loadData();
-    } catch (err: any) {
-      console.error('Failed to execute advisory review', err);
-      setReviewError(err?.message || 'Failed to submit human authorization review. Please verify input and retry.');
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
-
-  const getSeverityBadgeClass = (severity: RecommendationSeverity) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return 'badge-critical';
-      case 'WARNING':
-        return 'badge-warning';
-      case 'INFO':
-      default:
-        return 'badge-info';
-    }
-  };
-
-  const getStatusBadgeClass = (status: RecommendationStatus) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'status-active';
-      case 'UNDER_REVIEW':
-        return 'status-review';
-      case 'ACKNOWLEDGED':
-        return 'status-acknowledged';
-      case 'DISMISSED':
-        return 'status-dismissed';
-      default:
-        return '';
     }
   };
 
@@ -261,324 +226,266 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         </div>
       )}
 
-      {/* Filter Chips Bar */}
-      <div className="analytics-filter-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-              Domain:
-            </span>
-            <div className="filter-chips">
-              {['ALL', 'TRAFFIC', 'ENERGY', 'ENVIRONMENT'].map((dom) => (
-                <button
-                  key={dom}
-                  className={`chip-btn ${domainFilter === dom ? 'active' : ''}`}
-                  onClick={() => setDomainFilter(dom)}
-                >
-                  {dom}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-              Status:
-            </span>
-            <div className="filter-chips">
-              {['ALL', 'ACTIVE', 'UNDER_REVIEW', 'ACKNOWLEDGED', 'DISMISSED'].map((st) => (
-                <button
-                  key={st}
-                  className={`chip-btn ${statusFilter === st ? 'active' : ''}`}
-                  onClick={() => setStatusFilter(st)}
-                >
-                  {st.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Main View Mode Selector Tabs */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid var(--color-border, #16171B)',
+        marginBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            className={`tab-btn ${activeTabMode === 'DOSSIERS' ? 'active' : ''}`}
+            onClick={() => setActiveTabMode('DOSSIERS')}
+            style={{
+              padding: '10px 18px',
+              fontSize: '13px',
+              fontWeight: 600,
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTabMode === 'DOSSIERS' ? '2px solid var(--color-primary, #2F81F7)' : '2px solid transparent',
+              color: activeTabMode === 'DOSSIERS' ? '#F0F6FC' : 'var(--color-text-secondary)',
+              cursor: 'pointer'
+            }}
+          >
+            Active Advisory Dossiers ({recommendations.length})
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTabMode === 'AUDIT_LOG' ? 'active' : ''}`}
+            onClick={() => setActiveTabMode('AUDIT_LOG')}
+            style={{
+              padding: '10px 18px',
+              fontSize: '13px',
+              fontWeight: 600,
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTabMode === 'AUDIT_LOG' ? '2px solid var(--color-primary, #2F81F7)' : '2px solid transparent',
+              color: activeTabMode === 'AUDIT_LOG' ? '#F0F6FC' : 'var(--color-text-secondary)',
+              cursor: 'pointer'
+            }}
+          >
+            Municipal Dispatch Orders & Audit Trail ({auditLogs.length})
+          </button>
         </div>
 
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={handleTriggerEvaluate}
-          disabled={evaluating}
-        >
-          <RotateCcw size={14} className={evaluating ? 'animate-spin' : ''} />
-          <span>{evaluating ? 'Evaluating...' : 'Re-Evaluate Rules'}</span>
-        </button>
+        {activeTabMode === 'DOSSIERS' && (
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={handleTriggerEvaluate}
+            disabled={evaluating}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+          >
+            <RotateCcw size={13} className={evaluating ? 'animate-spin' : ''} />
+            <span>{evaluating ? 'Evaluating...' : 'Re-Evaluate Rules'}</span>
+          </button>
+        )}
       </div>
 
-      {/* Recommendations Feed List */}
-      <div className="advisory-full-list" style={{ marginTop: '16px' }}>
-        {loading ? (
-          <div className="empty-results-box" style={{ padding: '36px' }}>
-            <span className="btn-spinner" />
-            <span style={{ marginTop: '8px' }}>Loading advisory records...</span>
+      {activeTabMode === 'DOSSIERS' ? (
+        <>
+          {/* Filter Chips Bar */}
+          <div className="analytics-filter-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                  Domain:
+                </span>
+                <div className="filter-chips">
+                  {['ALL', 'TRAFFIC', 'ENERGY', 'ENVIRONMENT'].map((dom) => (
+                    <button
+                      key={dom}
+                      className={`chip-btn ${domainFilter === dom ? 'active' : ''}`}
+                      onClick={() => setDomainFilter(dom)}
+                    >
+                      {dom}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                  Status:
+                </span>
+                <div className="filter-chips">
+                  {['ALL', 'ACTIVE', 'UNDER_REVIEW', 'ACKNOWLEDGED', 'DISMISSED'].map((st) => (
+                    <button
+                      key={st}
+                      className={`chip-btn ${statusFilter === st ? 'active' : ''}`}
+                      onClick={() => setStatusFilter(st)}
+                    >
+                      {st.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        ) : recommendations.length === 0 ? (
-          domainFilter !== 'ALL' || statusFilter !== 'ALL' ? (
-            <div className="empty-results-box" style={{ padding: '36px' }}>
-              <Filter size={32} color="var(--color-text-secondary)" />
-              <p style={{ marginTop: '8px', fontWeight: 600 }}>No Advisories Matching Selected Filters</p>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', maxWidth: '420px', margin: '4px auto 16px' }}>
-                No records match domain '{domainFilter}' with status '{statusFilter.replace('_', ' ')}'. Reset filters to view all recommendations.
-              </p>
+
+          {/* Recommendations Feed List */}
+          <div className="advisory-full-list" style={{ marginTop: '16px' }}>
+            {loading ? (
+              <div className="empty-results-box" style={{ padding: '36px' }}>
+                <span className="btn-spinner" />
+                <span style={{ marginTop: '8px' }}>Loading advisory dossiers...</span>
+              </div>
+            ) : recommendations.length === 0 ? (
+              domainFilter !== 'ALL' || statusFilter !== 'ALL' ? (
+                <div className="empty-results-box" style={{ padding: '36px' }}>
+                  <Filter size={32} color="var(--color-text-secondary)" />
+                  <p style={{ marginTop: '8px', fontWeight: 600 }}>No Advisories Matching Selected Filters</p>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', maxWidth: '420px', margin: '4px auto 16px' }}>
+                    No records match domain '{domainFilter}' with status '{statusFilter.replace('_', ' ')}'. Reset filters to view all recommendations.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setDomainFilter('ALL');
+                      setStatusFilter('ALL');
+                    }}
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
+              ) : (
+                <div className="empty-results-box" style={{ padding: '36px' }}>
+                  <CheckCircle2 size={32} color="#10B981" />
+                  <p style={{ marginTop: '8px', fontWeight: 600 }}>All Clear: No Active Advisories</p>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    All telemetry metrics are currently operating within nominal baseline safety envelopes.
+                  </p>
+                </div>
+              )
+            ) : (
+              recommendations.map((rec) => (
+                <AdvisoryCard
+                  key={rec.recommendationId}
+                  advisory={rec}
+                  initialReviewerName={reviewerName}
+                  onNavigateToEntity={onNavigateToEntity}
+                  onNavigateToScenarios={onNavigateToScenarios}
+                  onAdvisoryUpdated={loadData}
+                />
+              ))
+            )}
+          </div>
+        </>
+      ) : (
+        /* Municipal Dispatch Orders & Audit Trail View */
+        <div className="audit-log-view" style={{ marginTop: '16px' }}>
+          <div style={{
+            background: 'var(--color-surface, #09090B)',
+            border: '1px solid var(--color-border, #16171B)',
+            borderRadius: 'var(--radius-lg, 12px)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--color-border, #16171B)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(15, 15, 18, 0.7)'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--color-text, #F0F6FC)' }}>
+                  Immutable Municipal Dispatch Audit Log
+                </h3>
+                <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  Cryptographically verified records with SHA-256 tamper-evident integrity hashes
+                </span>
+              </div>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  setDomainFilter('ALL');
-                  setStatusFilter('ALL');
-                }}
+                onClick={loadAuditLogs}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               >
-                Reset All Filters
+                <RefreshCw size={12} className={loadingAudit ? 'animate-spin' : ''} />
+                <span>Refresh Log</span>
               </button>
             </div>
-          ) : (
-            <div className="empty-results-box" style={{ padding: '36px' }}>
-              <CheckCircle2 size={32} color="#10B981" />
-              <p style={{ marginTop: '8px', fontWeight: 600 }}>All Clear: No Active Advisories</p>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                All telemetry metrics are currently operating within nominal baseline safety envelopes.
-              </p>
-            </div>
-          )
-        ) : (
-          recommendations.map((rec) => (
-            <div key={rec.recommendationId} className="advisory-card" style={{ marginBottom: '16px' }}>
-              <div className="advisory-card-header">
-                <div className="advisory-badges-left">
-                  <span className={`domain-pill domain-${(rec.domain || 'traffic').toLowerCase()}`}>{rec.domain}</span>
-                  <span className={`severity-pill ${getSeverityBadgeClass(rec.severity)}`}>
-                    {rec.severity}
-                  </span>
-                  <span className={`advisory-status-pill ${getStatusBadgeClass(rec.status)}`}>
-                    {(rec.status || 'ACTIVE').replace('_', ' ')}
-                  </span>
-                  <span className="rec-id-tag font-mono">{rec.recommendationId}</span>
-                </div>
-                <span className="rec-timestamp">
-                  Generated: {new Date(rec.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+
+            {loadingAudit ? (
+              <div className="empty-results-box" style={{ padding: '36px' }}>
+                <span className="btn-spinner" />
+                <span style={{ marginTop: '8px' }}>Querying advisory_audit_log table...</span>
               </div>
-
-              <h3 className="advisory-card-title">{rec.title}</h3>
-              <p className="advisory-card-desc">{rec.description}</p>
-
-              {/* Evidence Drill-Down Box */}
-              <div className="advisory-evidence-box">
-                <div className="evidence-header">
-                  <span className="evidence-title">Traceable Rule Evidence</span>
-                  <span className={`provenance-tag prov-${(rec.evidence?.sourceMode || 'LIVE').toLowerCase()}`}>
-                    {rec.evidence?.sourceMode || 'LIVE'}
-                  </span>
-                </div>
-                <div className="evidence-grid">
-                  <div className="evidence-item">
-                    <span className="ev-label">Target Entity:</span>
-                    <span className="ev-val font-mono">{(rec.targetEntityId || '').split(':').pop() || rec.targetEntityId || 'N/A'}</span>
-                  </div>
-                  <div className="evidence-item">
-                    <span className="ev-label">Trigger Rule:</span>
-                    <span className="ev-val font-mono">{rec.triggerRule || 'N/A'}</span>
-                  </div>
-                  <div className="evidence-item">
-                    <span className="ev-label">Trigger Value:</span>
-                    <span className="ev-val font-bold">
-                      {rec.evidence?.observedOrPredictedValue != null
-                        ? Number(rec.evidence.observedOrPredictedValue).toFixed(1)
-                        : '--'}{' '}
-                      {rec.evidence?.unit || ''}{' '}
-                      {rec.evidence?.threshold != null && (
-                        <>(Threshold: {Number(rec.evidence.threshold).toFixed(1)} {rec.evidence.unit || ''})</>
-                      )}
-                    </span>
-                  </div>
-                  {rec.evidence?.horizonMinutes != null && (
-                    <div className="evidence-item">
-                      <span className="ev-label">Forecast Horizon:</span>
-                      <span className="ev-val">+{rec.evidence.horizonMinutes} minutes</span>
-                    </div>
-                  )}
-                  {rec.evidence?.modelVersion && (
-                    <div className="evidence-item">
-                      <span className="ev-label">Model Version:</span>
-                      <span className="ev-val font-mono">{rec.evidence.modelVersion}</span>
-                    </div>
-                  )}
-                  {rec.evidence?.confidenceScore != null && (
-                    <div className="evidence-item">
-                      <span className="ev-label">Input Confidence:</span>
-                      <span className="ev-val">{(Number(rec.evidence.confidenceScore) * 100).toFixed(0)}%</span>
-                    </div>
-                  )}
-                </div>
+            ) : auditLogs.length === 0 ? (
+              <div className="empty-results-box" style={{ padding: '36px' }}>
+                <History size={32} color="var(--color-text-secondary)" />
+                <p style={{ marginTop: '8px', fontWeight: 600 }}>No Municipal Dispatch Orders Generated Yet</p>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', maxWidth: '420px', margin: '4px auto 0' }}>
+                  Authorizing an active advisory in the queue generates an immutable dispatch work order and records it in this audit table.
+                </p>
               </div>
-
-              {/* Suggested Action Callout */}
-              <div className="suggested-action-callout">
-                <div className="action-icon"><Lightbulb size={16} color="var(--color-primary)" /></div>
-                <div className="action-content">
-                  <span className="action-heading">Suggested Advisory Intervention:</span>
-                  <p className="action-text">{rec.suggestedAction}</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="advisory-actions-bar">
-                <div className="action-btns-left">
-                  {onNavigateToEntity && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => onNavigateToEntity(rec.targetEntityId)}
-                    >
-                      <MapPin size={14} />
-                      <span>Inspect on Map</span>
-                    </button>
-                  )}
-                  {rec.domain === 'TRAFFIC' && onNavigateToScenarios && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={onNavigateToScenarios}
-                    >
-                      <FlaskConical size={14} />
-                      <span>Test in Scenario Studio</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="action-btns-right">
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() =>
-                      setExpandedAuditId(expandedAuditId === rec.recommendationId ? null : rec.recommendationId)
-                    }
-                  >
-                    <History size={14} />
-                    <span>Audit Log ({(rec.auditTrail || []).length})</span>
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => {
-                      setReviewError(null);
-                      setReviewingId(reviewingId === rec.recommendationId ? null : rec.recommendationId);
-                    }}
-                  >
-                    {reviewingId === rec.recommendationId ? (
-                      <>
-                        <X size={14} />
-                        <span>Cancel Review</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck size={14} />
-                        <span>Authorize / Update Status</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Inline Human Review Form */}
-              {reviewingId === rec.recommendationId && (
-                <div className="review-workflow-panel">
-                  <h4 className="review-title">Human Governance Authorization Form</h4>
-                  {reviewError && (
-                    <div
-                      className="integrity-caveat-banner"
-                      style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.08)', margin: '8px 0 12px' }}
-                    >
-                      <AlertTriangle size={16} color="#EF4444" style={{ flexShrink: 0 }} />
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', fontSize: '13px' }}>
-                        <span>{reviewError}</span>
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => setReviewError(null)}
-                          style={{ color: 'var(--color-text-secondary)', padding: '2px', cursor: 'pointer' }}
-                          aria-label="Dismiss review error"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className="review-inputs-grid">
-                    <div className="form-group">
-                      <label className="form-label">Reviewer Role & Designation:</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={reviewerName}
-                        onChange={(e) => setReviewerName(e.target.value)}
-                        placeholder="e.g. Traffic Cell Officer"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Authorization Decision:</label>
-                      <select
-                        className="form-select"
-                        value={newStatus}
-                        onChange={(e) => setNewStatus(e.target.value as RecommendationStatus)}
-                      >
-                        <option value="UNDER_REVIEW">UNDER_REVIEW (Assessing field validity)</option>
-                        <option value="ACKNOWLEDGED">ACKNOWLEDGED (Accepted / Action queued outside platform)</option>
-                        <option value="DISMISSED">DISMISSED (Not applicable / False positive)</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Operational Notes & Justification:</label>
-                    <textarea
-                      className="form-textarea"
-                      rows={2}
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      placeholder="State operational reasoning, field verification observations, or dispatch notes..."
-                    />
-                  </div>
-                  <div className="review-submit-row">
-                    <button
-                      className="btn btn-primary btn-sm"
-                      disabled={submittingReview || !reviewerName.trim()}
-                      onClick={() => handleExecuteReview(rec.recommendationId)}
-                    >
-                      <ShieldCheck size={14} />
-                      <span>{submittingReview ? 'Recording Audit...' : 'Submit Human Authorization'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Audit Trail Drawer */}
-              {expandedAuditId === rec.recommendationId && (
-                <div className="audit-trail-panel">
-                  <h4 className="audit-title">Chronological Audit Log</h4>
-                  <div className="audit-timeline">
-                    {(rec.auditTrail || []).map((entry, idx) => (
-                      <div key={idx} className="audit-entry">
-                        <div className="audit-meta">
-                          <span className="audit-time font-mono">
-                            {new Date(entry.timestamp).toLocaleString()}
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--color-border, #16171B)', color: 'var(--color-text-muted)' }}>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Timestamp</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Dispatch Order ID</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Target Asset</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Authorized By</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Decision</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Cryptographic Hash</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogs.map((log) => (
+                      <tr key={log.auditId} style={{ borderBottom: '1px solid var(--color-border, #16171B)' }}>
+                        <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>
+                          {new Date(log.createdAt).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#3FB950' }}>
+                          {log.dispatchOrderId || 'N/A'}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)' }}>
+                          {(log.targetEntityId || '').split(':').pop()}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ color: '#F0F6FC' }}>{log.authorizedBy}</span>
+                          {log.badgeId && (
+                            <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                              Badge: {log.badgeId} | {log.shiftId}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span className="status-badge-sm" style={{
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(63, 185, 80, 0.15)',
+                            color: '#3FB950',
+                            fontWeight: 600
+                          }}>
+                            {log.newStatus}
                           </span>
-                          <span className="audit-reviewer">Authorized by: {entry.reviewer}</span>
-                        </div>
-                        <div className="audit-transition">
-                          <span className="status-badge-sm">{entry.previousStatus}</span>
-                          <span className="arrow">→</span>
-                          <span className="status-badge-sm">{entry.newStatus}</span>
-                        </div>
-                        {entry.notes && <p className="audit-notes">"{entry.notes}"</p>}
-                      </div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#58A6FF' }}>
+                            <Hash size={11} />
+                            <span>{log.tamperEvidentHash.substring(0, 10)}...</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: 'var(--color-text-secondary)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {log.justificationNotes || '-'}
+                        </td>
+                      </tr>
                     ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

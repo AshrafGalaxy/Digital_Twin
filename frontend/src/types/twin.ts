@@ -266,6 +266,32 @@ export interface AuditLogEntry {
   notes?: string;
 }
 
+export interface ProposedParameterChange {
+  phaseId?: number;
+  parameter: string;
+  currentValue: number;
+  recommendedValue: number;
+  unit: string;
+}
+
+export interface ConformalPredictedImpact {
+  delayDeltaPct: number;
+  delayDeltaCI: [number, number];
+  queueDeltaMeters: number;
+  fuelSavedLitersPerHr: number;
+}
+
+export interface SafetyConstraintChecklist {
+  pedestrianPhaseSafe: boolean;
+  maxWaitThresholdSafe: boolean;
+  emergencyPreemptionClear: boolean;
+}
+
+export interface FeatureAttribution {
+  feature: string;
+  impact: number;
+}
+
 export interface AdvisoryRecommendation {
   recommendationId: string;
   domain: RecommendationDomain;
@@ -277,11 +303,60 @@ export interface AdvisoryRecommendation {
   triggerRule: string;
   evidence: RecommendationEvidence;
   suggestedAction: string;
+  proposedChange?: ProposedParameterChange;
+  predictedImpact?: ConformalPredictedImpact;
+  safetyChecklist?: SafetyConstraintChecklist;
+  topFeatures?: FeatureAttribution[];
+  dispatchOrderId?: string;
+  tamperEvidentHash?: string;
   humanApprovalRequired: boolean;
   governanceNotice: string;
   auditTrail: AuditLogEntry[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AuthorizeAdvisoryPayload {
+  badgeId: string;
+  shiftId: string;
+  reviewer: string;
+  decision: RecommendationStatus;
+  notes?: string;
+}
+
+export interface DispatchWorkOrder {
+  dispatchOrderId: string;
+  recommendationId: string;
+  targetEntityId: string;
+  authorizedBy: string;
+  badgeId: string;
+  shiftId: string;
+  issuedAt: string;
+  decision: RecommendationStatus;
+  proposedChange?: ProposedParameterChange;
+  predictedImpact?: ConformalPredictedImpact;
+  safetyChecklist?: SafetyConstraintChecklist;
+  notes?: string;
+  tamperEvidentHash: string;
+  governanceDisclaimer: string;
+}
+
+export interface AdvisoryAuditLogRecord {
+  id?: number;
+  auditId: string;
+  recommendationId: string;
+  targetEntityId: string;
+  actionType: string;
+  previousStatus: string;
+  newStatus: string;
+  authorizedBy: string;
+  badgeId?: string;
+  shiftId?: string;
+  justificationNotes?: string;
+  dispatchOrderId?: string;
+  dispatchPayloadJson: Record<string, any>;
+  tamperEvidentHash: string;
+  createdAt: string;
 }
 
 export interface AdvisorySummary {
