@@ -43,9 +43,13 @@ class PersistenceAdapterManager:
     def _probe_postgres(self) -> bool:
         """Quickly probes if primary PostgreSQL instance is reachable and authenticates."""
         try:
+            sync_url = settings.sync_database_url
+            connect_args = {"connect_timeout": int(max(1, settings.DB_CONNECT_TIMEOUT_SEC))}
+            if "supabase.co" in sync_url or "pooler.supabase.com" in sync_url:
+                connect_args["sslmode"] = "require"
             probe_engine = create_engine(
-                settings.sync_database_url,
-                connect_args={"connect_timeout": int(max(1, settings.DB_CONNECT_TIMEOUT_SEC))},
+                sync_url,
+                connect_args=connect_args,
                 pool_pre_ping=True
             )
             with probe_engine.connect() as conn:
@@ -74,18 +78,18 @@ class PersistenceAdapterManager:
 
         if use_postgres:
             self._active_backend = "postgresql"
-            logger.info(
-                "Initializing primary PostgreSQL + TimescaleDB engine at %s:%s/%s",
-                settings.POSTGRES_HOST,
-                settings.POSTGRES_PORT,
-                settings.POSTGRES_DB
-            )
+            async_url = settings.async_database_url
+            async_args = {}
+            if "supabase.co" in async_url or "pooler.supabase.com" in async_url:
+                async_args["ssl"] = "require"
+            logger.info("Initializing primary PostgreSQL persistence engine.")
             self._engine = create_async_engine(
-                settings.async_database_url,
+                async_url,
                 echo=False,
                 pool_size=10,
                 max_overflow=20,
-                pool_pre_ping=True
+                pool_pre_ping=True,
+                connect_args=async_args
             )
         else:
             self._active_backend = "sqlite"

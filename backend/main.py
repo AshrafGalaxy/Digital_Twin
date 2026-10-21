@@ -29,6 +29,7 @@ try:
     from backend.api.v1.endpoints.stream import manager
     from backend.ingestion.mqtt_consumer import MQTTConsumer
     from backend.ingestion.telemetry_streamer import telemetry_streamer
+    from backend.services.keepalive_service import keepalive_service
 except ImportError:
     from core.config import settings
     from core.database import check_db_health, get_active_backend, get_persistence_info
@@ -37,6 +38,7 @@ except ImportError:
     from api.v1.endpoints.stream import manager
     from ingestion.mqtt_consumer import MQTTConsumer
     from ingestion.telemetry_streamer import telemetry_streamer
+    from services.keepalive_service import keepalive_service
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
@@ -58,7 +60,7 @@ async def lifespan(app: FastAPI):
         logger.info(
             "Database persistence ready [%s]: %s tables verified, corridor assets primed.",
             "PostgreSQL (Primary)" if backend_name == "postgresql" else "SQLite (Resilient Local Engine)",
-            migration_res.get("tablesCount", 18)
+            migration_res.get("tablesCount", 29)
         )
     else:
         logger.warning("Database schema initialization notice: %s", migration_res)
@@ -70,10 +72,15 @@ async def lifespan(app: FastAPI):
     if settings.TELEMETRY_STREAMER_ENABLED:
         logger.info("Starting autonomous corridor telemetry streamer worker...")
         telemetry_streamer.start(broadcast_callback=manager.broadcast)
+
+    # 4. Anti-Dormancy Database Keep-Alive Service
+    keepalive_service.start()
     
     yield
 
     # Shutdown sequence
+    logger.info("Stopping keep-alive anti-dormancy service...")
+    await keepalive_service.stop()
     if settings.TELEMETRY_STREAMER_ENABLED:
         logger.info("Stopping telemetry streamer worker...")
         await telemetry_streamer.stop_async()

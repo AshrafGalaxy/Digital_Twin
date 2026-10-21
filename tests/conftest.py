@@ -1,5 +1,9 @@
+import os
 import sys
 from pathlib import Path
+
+# Enforce hermetic SQLite database backend for all automated test runs (Invariant #6)
+os.environ["DATABASE_BACKEND"] = "sqlite"
 
 # Add project root to sys.path so tests can import backend and simulation modules
 ROOT_DIR = Path(__file__).resolve().parent.parent

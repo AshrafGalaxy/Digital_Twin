@@ -538,7 +538,7 @@ async def _migrate_postgres(session: AsyncSession) -> int:
                 except Exception as ex:
                     logger.debug("PostgreSQL statement notice: %s", ex)
         await session.commit()
-    return 18
+    return 29
 
 
 async def _seed_study_area(session: AsyncSession, is_pg: bool) -> bool:

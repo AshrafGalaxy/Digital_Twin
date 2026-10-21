@@ -20,6 +20,11 @@ dist/
 .env.*
 !.env.example
 
+# Supabase CLI temporary caches and runtime artifacts
+supabase/.temp/
+supabase/.branches/
+.supabase/
+
 # OS & IDE artifacts
 .DS_Store
 Thumbs.db

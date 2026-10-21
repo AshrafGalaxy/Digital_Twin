@@ -5,7 +5,7 @@ Application configuration loaded from environment variables.
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     # Multi-Storage Persistence (P4-A)
     DATABASE_BACKEND: str = "auto"  # Options: "auto", "postgres", "sqlite"
+    DATABASE_URL: Optional[str] = None  # Full PostgreSQL connection string override
     SQLITE_DB_PATH: str = "data/digital_twin.db"
     DB_CONNECT_TIMEOUT_SEC: float = 1.5
 
@@ -24,6 +25,11 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "digital_twin"
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
+
+    # Supabase Client Configuration
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
 
     # MQTT Broker
     MQTT_BROKER_HOST: str = "127.0.0.1"
@@ -70,10 +76,20 @@ class Settings(BaseSettings):
 
     @property
     def sync_database_url(self) -> str:
+        if self.DATABASE_URL:
+            url = self.DATABASE_URL
+            if "postgresql+asyncpg://" in url:
+                url = url.replace("postgresql+asyncpg://", "postgresql://")
+            return url
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     @property
     def async_database_url(self) -> str:
+        if self.DATABASE_URL:
+            url = self.DATABASE_URL
+            if url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return url
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

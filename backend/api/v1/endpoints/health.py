@@ -30,7 +30,7 @@ class SubsystemHealth(BaseModel):
     database: bool
     databaseBackend: str = "sqlite"
     databaseMode: str = "RESILIENT_SQLITE"
-    databaseTablesCount: int = 19
+    databaseTablesCount: int = 29
     mlTrafficModel: bool
     mlEnergyModel: bool
     simulationEngine: bool
@@ -115,7 +115,7 @@ async def get_health():
             database=db_ok,
             databaseBackend=backend_name,
             databaseMode=db_mode,
-            databaseTablesCount=19,
+            databaseTablesCount=29,
             mlTrafficModel=ml_traffic_ok,
             mlEnergyModel=ml_energy_ok,
             simulationEngine=sim_ok,
