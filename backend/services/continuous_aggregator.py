@@ -180,13 +180,20 @@ class ContinuousAggregatorService:
         Seeds synthetic 6-hour historical 15m aggregates if the table has no recent data,
         ensuring immediate visualization data in Traffic Analytics charts.
         """
+        from backend.core.database import get_active_backend
+        is_pg = get_active_backend() == "postgresql"
+
         start_24h_dt = datetime.now(timezone.utc) - timedelta(hours=24)
-        start_24h_iso = start_24h_dt.isoformat()
-        start_24h_std = start_24h_dt.strftime('%Y-%m-%d %H:%M:%S')
-        check = await session.execute(
-            text("SELECT COUNT(*) FROM traffic_15m_aggregates WHERE bucket_15m >= :start_24h_iso OR bucket_15m >= :start_24h_std"),
-            {"start_24h_iso": start_24h_iso, "start_24h_std": start_24h_std}
-        )
+        if is_pg:
+            check = await session.execute(
+                text("SELECT COUNT(*) FROM traffic_15m_aggregates WHERE bucket_15m >= :start_dt"),
+                {"start_dt": start_24h_dt}
+            )
+        else:
+            check = await session.execute(
+                text("SELECT COUNT(*) FROM traffic_15m_aggregates WHERE bucket_15m >= :start_dt"),
+                {"start_dt": start_24h_dt.isoformat()}
+            )
         if (check.scalar() or 0) > 0:
             return 0
 
@@ -200,13 +207,38 @@ class ContinuousAggregatorService:
         now_utc = datetime.now(timezone.utc)
         count = 0
 
+        if is_pg:
+            insert_stmt = text("""
+                INSERT INTO traffic_15m_aggregates (
+                    bucket_15m, segment_id, sample_count, avg_speed_kmh,
+                    p85_speed_kmh, total_flow_veh, avg_occupancy_percent,
+                    avg_queue_length_meters, max_queue_length_meters, avg_congestion_index
+                ) VALUES (
+                    :bucket_15m, :segment_id, 15, :avg_speed_kmh,
+                    :p85_speed_kmh, :total_flow_veh, :avg_occupancy_percent,
+                    :avg_queue_length_meters, :max_queue_length_meters, :avg_congestion_index
+                ) ON CONFLICT (bucket_15m, segment_id) DO NOTHING;
+            """)
+        else:
+            insert_stmt = text("""
+                INSERT OR IGNORE INTO traffic_15m_aggregates (
+                    bucket_15m, segment_id, sample_count, avg_speed_kmh,
+                    p85_speed_kmh, total_flow_veh, avg_occupancy_percent,
+                    avg_queue_length_meters, max_queue_length_meters, avg_congestion_index
+                ) VALUES (
+                    :bucket_15m, :segment_id, 15, :avg_speed_kmh,
+                    :p85_speed_kmh, :total_flow_veh, :avg_occupancy_percent,
+                    :avg_queue_length_meters, :max_queue_length_meters, :avg_congestion_index
+                );
+            """)
+
         # Generate 24 fifteen-minute buckets (6 hours)
         for i in range(24):
             bucket_time = now_utc - timedelta(minutes=i * 15)
             # Align to 15-minute boundary
             minute = (bucket_time.minute // 15) * 15
             aligned_dt = bucket_time.replace(minute=minute, second=0, microsecond=0)
-            aligned_iso = aligned_dt.isoformat()
+            bucket_val = aligned_dt if is_pg else aligned_dt.isoformat()
 
             # Time of day speed variation
             hour = aligned_dt.hour
@@ -215,20 +247,9 @@ class ContinuousAggregatorService:
             base_flow = 2200.0 if is_rush else 1250.0
 
             for seg_id in segments:
-                insert_stmt = text("""
-                    INSERT OR IGNORE INTO traffic_15m_aggregates (
-                        bucket_15m, segment_id, sample_count, avg_speed_kmh,
-                        p85_speed_kmh, total_flow_veh, avg_occupancy_percent,
-                        avg_queue_length_meters, max_queue_length_meters, avg_congestion_index
-                    ) VALUES (
-                        :bucket_15m, :segment_id, 15, :avg_speed_kmh,
-                        :p85_speed_kmh, :total_flow_veh, :avg_occupancy_percent,
-                        :avg_queue_length_meters, :max_queue_length_meters, :avg_congestion_index
-                    );
-                """)
                 speed = base_speed + (hash(seg_id + str(i)) % 7) - 3.5
                 await session.execute(insert_stmt, {
-                    "bucket_15m": aligned_iso,
+                    "bucket_15m": bucket_val,
                     "segment_id": seg_id,
                     "avg_speed_kmh": round(speed, 2),
                     "p85_speed_kmh": round(speed * 1.12, 2),

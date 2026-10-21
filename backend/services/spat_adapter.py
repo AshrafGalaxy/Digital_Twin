@@ -265,8 +265,11 @@ class SPaTAdapter:
                 )
                 self._states[packet.intersection_id] = current_state
 
-            # Detect phase transition
-            phase_transitioned = (
+            is_first_packet = not getattr(current_state, "_packet_received", False)
+            current_state._packet_received = True
+
+            # Detect phase transition only after initial packet calibration
+            phase_transitioned = not is_first_packet and (
                 current_state.active_phase != packet.active_phase or
                 current_state.phase_color != packet.phase_color
             )
@@ -288,7 +291,7 @@ class SPaTAdapter:
             current_state.observed_at = packet.timestamp
             current_state.last_heartbeat = now_dt
 
-            if phase_transitioned:
+            if phase_transitioned or is_first_packet:
                 current_state.current_phase_start_time = parsed_obs_dt
 
         # If phase transitioned and DB session provided, log transition to signal_phase_history
