@@ -567,4 +567,24 @@ CREATE TABLE IF NOT EXISTS magic_access_tokens (
 CREATE INDEX IF NOT EXISTS idx_magic_tokens_status ON magic_access_tokens (status, expires_at);
 CREATE INDEX IF NOT EXISTS idx_magic_tokens_email ON magic_access_tokens (email);
 
-
+-- 34. Energy Power Balance History (Energy TASK-02)
+CREATE TABLE IF NOT EXISTS energy_power_balance_history (
+    id SERIAL PRIMARY KEY,
+    observed_at TIMESTAMPTZ NOT NULL,
+    substation_id VARCHAR(128) NOT NULL,
+    grid_import_kw DOUBLE PRECISION NOT NULL,
+    solar_generation_kw DOUBLE PRECISION NOT NULL,
+    bess_net_power_kw DOUBLE PRECISION NOT NULL,
+    facility_total_load_kw DOUBLE PRECISION NOT NULL,
+    technical_losses_kw DOUBLE PRECISION NOT NULL,
+    power_balance_residual_kw DOUBLE PRECISION NOT NULL,
+    feeder_metrics_json JSONB NOT NULL DEFAULT '[]',
+    max_feeder_loading_ratio DOUBLE PRECISION NOT NULL,
+    critical_feeder_id VARCHAR(128),
+    thermal_alert_status VARCHAR(64) NOT NULL DEFAULT 'NOMINAL',
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'SIMULATION',
+    quality_status VARCHAR(32) NOT NULL DEFAULT 'VALID',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_power_balance_sub_time ON energy_power_balance_history (substation_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_power_balance_alert ON energy_power_balance_history (thermal_alert_status, observed_at DESC);

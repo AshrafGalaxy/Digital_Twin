@@ -16,10 +16,46 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database import get_db
 from backend.services.energy_topology_service import energy_topology_service
+from backend.services.power_balance_service import power_balance_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/energy", tags=["Energy Analytics"])
+
+
+class FeederThermalMarginModel(BaseModel):
+    feederId: str
+    name: str
+    voltageKv: float
+    currentAmps: float
+    ratedCurrentAmps: float
+    thermalLoadingRatio: float
+    thermalLoadingPct: float
+    status: str
+    availableHeadroomKw: float
+    activePowerKw: float
+    reactivePowerKvar: float
+    apparentPowerKva: float
+    powerFactor: float
+    cableLengthMeters: float
+    conductorResistanceOhm: float
+    branchLossKw: float
+
+
+class PowerBalanceResponseModel(BaseModel):
+    substationId: str
+    timestamp: str
+    pccGridImportKw: float
+    solarGenerationKw: float
+    bessNetPowerKw: float
+    facilityTotalLoadKw: float
+    technicalLossesKw: float
+    powerBalanceResidualKw: float
+    maxFeederLoadingRatio: float
+    criticalFeederId: Optional[str] = None
+    thermalAlertStatus: str
+    feeders: List[FeederThermalMarginModel]
+    provenance: Dict[str, Any]
 
 
 class EnergyTelemetryModel(BaseModel):
@@ -173,3 +209,92 @@ async def trigger_telemetry_tick(session: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate telemetry tick: {str(e)}"
         )
+
+
+@router.get("/power-balance", response_model=PowerBalanceResponseModel)
+async def get_power_balance(
+    substation_id: Optional[str] = Query(None, description="Substation / PCC node identifier"),
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Computes live electrical bus active and reactive power conservation and branch thermal margins:
+    P_grid + P_pv + P_bess = P_loads + P_losses + residual.
+    """
+    try:
+        return await power_balance_service.calculate_power_balance(
+            substation_id=substation_id,
+            session=session
+        )
+    except Exception as e:
+        logger.error("Failed to compute electrical bus power balance: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to calculate power balance: {str(e)}"
+        )
+
+
+@router.post("/power-balance/snapshot", response_model=PowerBalanceResponseModel)
+async def create_power_balance_snapshot(
+    substation_id: Optional[str] = Query(None, description="Substation / PCC node identifier"),
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Calculates power balance and persists an authoritative snapshot to Table 34 (energy_power_balance_history).
+    """
+    try:
+        return await power_balance_service.record_power_balance_snapshot(
+            substation_id=substation_id,
+            session=session
+        )
+    except Exception as e:
+        logger.error("Failed to record power balance snapshot: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to record power balance snapshot: {str(e)}"
+        )
+
+
+@router.get("/feeders/thermal-margins", response_model=List[FeederThermalMarginModel])
+async def get_feeder_thermal_margins(
+    substation_id: Optional[str] = Query(None, description="Substation / PCC node identifier"),
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Retrieves distribution branch thermal ampacity loading margins, available kW headroom,
+    and thermal alert statuses (NOMINAL, WARNING, CRITICAL_OVERLOAD_RISK).
+    """
+    try:
+        return await power_balance_service.get_feeder_thermal_margins(
+            substation_id=substation_id,
+            session=session
+        )
+    except Exception as e:
+        logger.error("Failed to retrieve feeder thermal margins: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to query feeder thermal margins: {str(e)}"
+        )
+
+
+@router.get("/power-balance/history", response_model=List[Dict[str, Any]])
+async def get_power_balance_history(
+    substation_id: Optional[str] = Query(None, description="Substation / PCC node identifier"),
+    limit: int = Query(50, ge=1, le=500, description="Max historical points to return"),
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Retrieves historical power balance snapshots and feeder loading metrics from Table 34.
+    """
+    try:
+        return await power_balance_service.get_power_balance_history(
+            substation_id=substation_id,
+            limit=limit,
+            session=session
+        )
+    except Exception as e:
+        logger.error("Failed to retrieve power balance history: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to query power balance history: {str(e)}"
+        )
+

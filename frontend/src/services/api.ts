@@ -864,6 +864,76 @@ export async function advanceEnergyTelemetry(_stepSeconds: number = 60): Promise
   return triggerEnergyTick();
 }
 
+export interface FeederThermalMargin {
+  feederId: string;
+  name: string;
+  voltageKv: number;
+  currentAmps: number;
+  ratedCurrentAmps: number;
+  thermalLoadingRatio: number;
+  thermalLoadingPct: number;
+  status: 'NOMINAL' | 'WARNING' | 'CRITICAL_OVERLOAD_RISK';
+  availableHeadroomKw: number;
+  activePowerKw: number;
+  reactivePowerKvar: number;
+  apparentPowerKva: number;
+  powerFactor: number;
+  cableLengthMeters: number;
+  conductorResistanceOhm: number;
+  branchLossKw: number;
+}
+
+export interface PowerBalanceResponse {
+  substationId: string;
+  timestamp: string;
+  pccGridImportKw: number;
+  solarGenerationKw: number;
+  bessNetPowerKw: number;
+  facilityTotalLoadKw: number;
+  technicalLossesKw: number;
+  powerBalanceResidualKw: number;
+  maxFeederLoadingRatio: number;
+  criticalFeederId?: string;
+  thermalAlertStatus: 'NOMINAL' | 'WARNING' | 'CRITICAL_OVERLOAD_RISK';
+  feeders: FeederThermalMargin[];
+  provenance: {
+    sourceMode: string;
+    solverMethod: string;
+    qualityStatus: string;
+  };
+}
+
+export async function fetchPowerBalance(substationId?: string): Promise<PowerBalanceResponse> {
+  const url = substationId
+    ? `${API_BASE}/energy/power-balance?substation_id=${encodeURIComponent(substationId)}`
+    : `${API_BASE}/energy/power-balance`;
+  const res = await resilientFetch(url);
+  if (!res.ok) throw new Error('Failed to fetch electrical power balance');
+  return res.json();
+}
+
+export async function fetchFeederThermalMargins(substationId?: string): Promise<FeederThermalMargin[]> {
+  const url = substationId
+    ? `${API_BASE}/energy/feeders/thermal-margins?substation_id=${encodeURIComponent(substationId)}`
+    : `${API_BASE}/energy/feeders/thermal-margins`;
+  const res = await resilientFetch(url);
+  if (!res.ok) throw new Error('Failed to fetch feeder thermal margins');
+  return res.json();
+}
+
+export async function fetchPowerBalanceHistory(substationId?: string, limit: number = 30): Promise<any[]> {
+  try {
+    const url = substationId
+      ? `${API_BASE}/energy/power-balance/history?substation_id=${encodeURIComponent(substationId)}&limit=${limit}`
+      : `${API_BASE}/energy/power-balance/history?limit=${limit}`;
+    const res = await resilientFetch(url);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export interface AccessInquiryPayload {
   organization: string;
   work_email: string;

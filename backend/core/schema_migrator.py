@@ -561,6 +561,27 @@ SQLITE_TABLE_DDL = [
         redeemed_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 34. Energy Power Balance History (Energy TASK-02)
+    """
+    CREATE TABLE IF NOT EXISTS energy_power_balance_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        observed_at TIMESTAMP NOT NULL,
+        substation_id TEXT NOT NULL,
+        grid_import_kw REAL NOT NULL,
+        solar_generation_kw REAL NOT NULL,
+        bess_net_power_kw REAL NOT NULL,
+        facility_total_load_kw REAL NOT NULL,
+        technical_losses_kw REAL NOT NULL,
+        power_balance_residual_kw REAL NOT NULL,
+        feeder_metrics_json TEXT NOT NULL DEFAULT '[]',
+        max_feeder_loading_ratio REAL NOT NULL,
+        critical_feeder_id TEXT,
+        thermal_alert_status TEXT NOT NULL DEFAULT 'NOMINAL',
+        source_mode TEXT NOT NULL DEFAULT 'SIMULATION',
+        quality_status TEXT NOT NULL DEFAULT 'VALID',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -588,7 +609,9 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_inquiries_status ON access_inquiries (status, created_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_inquiries_email ON access_inquiries (work_email);",
     "CREATE INDEX IF NOT EXISTS idx_magic_tokens_status ON magic_access_tokens (status, expires_at);",
-    "CREATE INDEX IF NOT EXISTS idx_magic_tokens_email ON magic_access_tokens (email);"
+    "CREATE INDEX IF NOT EXISTS idx_magic_tokens_email ON magic_access_tokens (email);",
+    "CREATE INDEX IF NOT EXISTS idx_power_balance_sub_time ON energy_power_balance_history (substation_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_power_balance_alert ON energy_power_balance_history (thermal_alert_status, observed_at DESC);"
 ]
 
 

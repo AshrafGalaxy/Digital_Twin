@@ -29,6 +29,7 @@ import {
 import { ForecastPanel } from '../ForecastPanel';
 import { ElectricalTopologyTree } from '../energy/ElectricalTopologyTree';
 import { ThreePhaseTelemetryCard } from '../energy/ThreePhaseTelemetryCard';
+import { FeederThermalLoadingCard } from '../energy/FeederThermalLoadingCard';
 import {
   fetchEnergyTopology,
   fetchLiveEnergyTelemetry,
@@ -133,6 +134,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   const [isTopologyLoading, setIsTopologyLoading] = useState<boolean>(true);
   const [isAdvancing, setIsAdvancing] = useState<boolean>(false);
   const [autoAdvance, setAutoAdvance] = useState<boolean>(false);
+  const [refreshTick, setRefreshTick] = useState<number>(0);
 
   // Facility Forecasting State
   const facilities = useMemo(() => {
@@ -195,6 +197,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         }
       }).catch(() => {});
       fetchMicrogridSummary().then(setMicrogridSummary).catch(() => {});
+      setRefreshTick((t) => t + 1);
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -206,6 +209,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
       try {
         await advanceEnergyTelemetry(60);
         await loadNetworkData();
+        setRefreshTick((t) => t + 1);
       } catch {
         // Silently handle
       }
@@ -219,6 +223,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
     try {
       await advanceEnergyTelemetry(60);
       await loadNetworkData();
+      setRefreshTick((t) => t + 1);
     } catch {
       // Resilient
     } finally {
@@ -497,32 +502,40 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
 
       {/* TAB 1: Network Topology & 3-Phase Telemetry */}
       {activeSubTab === 'TOPOLOGY' && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(320px, 38%) 1fr',
-            gap: '16px',
-            alignItems: 'stretch'
-          }}
-        >
-          {/* Left Column: Electrical Single-Line Hierarchy Tree */}
-          <div style={{ minHeight: '620px' }}>
-            <ElectricalTopologyTree
-              topology={topology}
-              selectedNodeId={selectedNode?.nodeId || null}
-              onSelectNode={(node) => setSelectedNode(node)}
-              isLoading={isTopologyLoading}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(320px, 38%) 1fr',
+              gap: '16px',
+              alignItems: 'stretch'
+            }}
+          >
+            {/* Left Column: Electrical Single-Line Hierarchy Tree */}
+            <div style={{ minHeight: '620px' }}>
+              <ElectricalTopologyTree
+                topology={topology}
+                selectedNodeId={selectedNode?.nodeId || null}
+                onSelectNode={(node) => setSelectedNode(node)}
+                isLoading={isTopologyLoading}
+              />
+            </div>
+
+            {/* Right Column: 3-Phase AC Telemetry & Physical Parameters Card */}
+            <div style={{ minHeight: '620px' }}>
+              <ThreePhaseTelemetryCard
+                selectedNode={selectedNode}
+                telemetry={selectedNode ? (liveTelemetryMap[selectedNode.nodeId] || selectedNode.telemetry || null) : null}
+                isLive={true}
+              />
+            </div>
           </div>
 
-          {/* Right Column: 3-Phase AC Telemetry & Physical Parameters Card */}
-          <div style={{ minHeight: '620px' }}>
-            <ThreePhaseTelemetryCard
-              selectedNode={selectedNode}
-              telemetry={selectedNode ? (liveTelemetryMap[selectedNode.nodeId] || selectedNode.telemetry || null) : null}
-              isLive={true}
-            />
-          </div>
+          {/* Feeder Thermal Loading & Ampacity Margins Panel (Energy TASK-02) */}
+          <FeederThermalLoadingCard
+            substationId={selectedNode?.nodeType === 'SUBSTATION' ? selectedNode.nodeId : undefined}
+            refreshTrigger={refreshTick}
+          />
         </div>
       )}
 
