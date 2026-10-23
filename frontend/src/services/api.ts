@@ -17,7 +17,10 @@ import {
   EnergyTopologyTreeResponse,
   EnergyAssetTelemetry,
   MicrogridSummary,
-  WebsterTimingPlan
+  WebsterTimingPlan,
+  EnergyAdvisoryDossier,
+  AuthorizeEnergyAdvisoryPayload,
+  EnergyDispatchWorkOrder
 } from '../types/twin';
 
 const API_BASE = '/api/v1';
@@ -1049,8 +1052,37 @@ export async function redeemMagicLink(token: string): Promise<AuthUser> {
   return res.json();
 }
 
+export async function fetchEnergyAdvisories(status?: string): Promise<EnergyAdvisoryDossier[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await resilientFetch(`${API_BASE}/energy/advisories${query}`);
+  if (!res.ok) throw new Error('Failed to fetch energy demand-response advisories');
+  return res.json();
+}
 
+export async function fetchEnergyAdvisoryDetail(advisoryId: string): Promise<EnergyAdvisoryDossier> {
+  const res = await resilientFetch(`${API_BASE}/energy/advisories/${encodeURIComponent(advisoryId)}`);
+  if (!res.ok) throw new Error(`Failed to fetch energy advisory ${advisoryId}`);
+  return res.json();
+}
 
+export async function authorizeEnergyAdvisory(
+  advisoryId: string,
+  payload: AuthorizeEnergyAdvisoryPayload
+): Promise<EnergyDispatchWorkOrder> {
+  const res = await fetch(`${API_BASE}/energy/advisories/${encodeURIComponent(advisoryId)}/authorize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to authorize energy advisory ${advisoryId}`);
+  }
+  return res.json();
+}
 
-
-
+export async function fetchEnergyDispatchTicket(advisoryId: string): Promise<EnergyDispatchWorkOrder> {
+  const res = await resilientFetch(`${API_BASE}/energy/advisories/${encodeURIComponent(advisoryId)}/dispatch-ticket`);
+  if (!res.ok) throw new Error(`Failed to fetch dispatch ticket for advisory ${advisoryId}`);
+  return res.json();
+}

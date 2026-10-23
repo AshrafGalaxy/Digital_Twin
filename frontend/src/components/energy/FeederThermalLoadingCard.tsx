@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Flame,
-  RefreshCw
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import {
   fetchPowerBalance,
@@ -11,11 +12,13 @@ import {
 interface FeederThermalLoadingCardProps {
   substationId?: string;
   refreshTrigger?: number;
+  onOpenDemandResponse?: () => void;
 }
 
 export const FeederThermalLoadingCard: React.FC<FeederThermalLoadingCardProps> = ({
   substationId,
-  refreshTrigger
+  refreshTrigger,
+  onOpenDemandResponse
 }) => {
   const [data, setData] = useState<PowerBalanceResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -108,8 +111,31 @@ export const FeederThermalLoadingCard: React.FC<FeederThermalLoadingCardProps> =
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {data && getStatusBadge(data.thermalAlertStatus)}
+          {onOpenDemandResponse && (
+            <button
+              type="button"
+              onClick={onOpenDemandResponse}
+              style={{
+                background: 'rgba(235, 169, 0, 0.12)',
+                border: '1px solid rgba(235, 169, 0, 0.4)',
+                borderRadius: '4px',
+                padding: '4px 10px',
+                color: 'var(--color-warning, #EBA900)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11px',
+                fontWeight: 600
+              }}
+              title="Review Demand-Response Advisory Dossier and Dispatch Work Order"
+            >
+              <Zap size={12} />
+              <span>Demand-Response Dossier</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={loadData}

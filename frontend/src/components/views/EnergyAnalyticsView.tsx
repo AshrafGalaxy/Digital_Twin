@@ -24,17 +24,20 @@ import {
   EnergyTopologyTreeResponse,
   EnergyNodeAsset,
   EnergyAssetTelemetry,
-  MicrogridSummary
+  MicrogridSummary,
+  EnergyAdvisoryDossier
 } from '../../types/twin';
 import { ForecastPanel } from '../ForecastPanel';
 import { ElectricalTopologyTree } from '../energy/ElectricalTopologyTree';
 import { ThreePhaseTelemetryCard } from '../energy/ThreePhaseTelemetryCard';
 import { FeederThermalLoadingCard } from '../energy/FeederThermalLoadingCard';
+import { DemandResponseDossierModal } from '../energy/DemandResponseDossierModal';
 import {
   fetchEnergyTopology,
   fetchLiveEnergyTelemetry,
   fetchMicrogridSummary,
-  advanceEnergyTelemetry
+  advanceEnergyTelemetry,
+  fetchEnergyAdvisories
 } from '../../services/api';
 
 interface EnergyAnalyticsViewProps {
@@ -135,6 +138,22 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   const [isAdvancing, setIsAdvancing] = useState<boolean>(false);
   const [autoAdvance, setAutoAdvance] = useState<boolean>(false);
   const [refreshTick, setRefreshTick] = useState<number>(0);
+
+  // Demand Response Advisory State
+  const [selectedAdvisory, setSelectedAdvisory] = useState<EnergyAdvisoryDossier | null>(null);
+  const [showDossierModal, setShowDossierModal] = useState<boolean>(false);
+
+  const handleOpenDemandResponse = useCallback(async () => {
+    try {
+      const list = await fetchEnergyAdvisories();
+      if (list && list.length > 0) {
+        setSelectedAdvisory(list[0]);
+        setShowDossierModal(true);
+      }
+    } catch (err) {
+      console.error('Failed to load energy demand response advisory', err);
+    }
+  }, []);
 
   // Facility Forecasting State
   const facilities = useMemo(() => {
@@ -446,6 +465,25 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
+            onClick={handleOpenDemandResponse}
+            className="preset-pill-btn"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '11px',
+              padding: '4px 10px',
+              borderColor: 'rgba(235, 169, 0, 0.4)',
+              color: 'var(--color-warning, #EBA900)'
+            }}
+            title="Review active demand-response dispatch proposal and safety interlocks"
+          >
+            <Zap size={12} />
+            <span>Demand-Response Dossier</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleAdvanceStep}
             disabled={isAdvancing}
             className="preset-pill-btn"
@@ -535,6 +573,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
           <FeederThermalLoadingCard
             substationId={selectedNode?.nodeType === 'SUBSTATION' ? selectedNode.nodeId : undefined}
             refreshTrigger={refreshTick}
+            onOpenDemandResponse={handleOpenDemandResponse}
           />
         </div>
       )}
@@ -750,6 +789,25 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             </div>
           </div>
         </>
+      )}
+
+      {showDossierModal && selectedAdvisory && (
+        <DemandResponseDossierModal
+          advisory={selectedAdvisory}
+          onClose={() => setShowDossierModal(false)}
+          onAuthorized={(ticket) => {
+            setSelectedAdvisory((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: ticket.decision,
+                    dispatchOrderId: ticket.dispatchOrderId,
+                    auditHash: ticket.tamperEvidentHash
+                  }
+                : null
+            );
+          }}
+        />
       )}
     </div>
   );

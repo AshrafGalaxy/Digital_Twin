@@ -552,6 +552,74 @@ export interface WebsterTimingPlan {
   status: string;
 }
 
+export type EnergyAdvisoryStatus = 'PENDING_REVIEW' | 'AUTHORIZED' | 'REJECTED' | 'EXPIRED';
 
+export interface SafetyInterlocks {
+  voltageCompliant: boolean;
+  voltageValueV: number;
+  rampRateCompliant: boolean;
+  rampRatePctPerMin: number;
+  socBounded: boolean;
+  currentSocPct: number;
+  comfortPreserved: boolean;
+  projectedIndoorTempC: number;
+}
 
+export interface DispatchScheduleSlot {
+  timeSlot: string;
+  bessAction: 'CHARGE' | 'DISCHARGE' | 'IDLE';
+  bessKw: number;
+  hvacSetbackDeltaC: number;
+}
 
+export interface EnergyAdvisoryDossier {
+  advisoryId: string;
+  facilityId: string;
+  facilityName: string;
+  feederId?: string;
+  generatedAt: string;
+  status: EnergyAdvisoryStatus;
+  recommendedAction: string;
+  projectedSavingsInr: number;
+  peakReductionKw: number;
+  batteryWearCycles: number;
+  avoidedCarbonKg: number;
+  safetyChecks: SafetyInterlocks;
+  schedule: DispatchScheduleSlot[];
+  auditHash?: string;
+  dispatchOrderId?: string;
+  authorizedBy?: string;
+  badgeId?: string;
+  shiftId?: string;
+  notes?: string;
+  governanceNotice: string;
+}
+
+export interface AuthorizeEnergyAdvisoryPayload {
+  reviewer: string;
+  badgeId: string;
+  shiftId: string;
+  decision: EnergyAdvisoryStatus;
+  notes?: string;
+}
+
+export interface EnergyDispatchWorkOrder {
+  dispatchOrderId: string;
+  advisoryId: string;
+  facilityId: string;
+  facilityName: string;
+  authorizedBy: string;
+  badgeId: string;
+  shiftId: string;
+  issuedAt: string;
+  decision: EnergyAdvisoryStatus;
+  schedule: DispatchScheduleSlot[];
+  safetyChecks: SafetyInterlocks;
+  projectedSavingsInr: number;
+  peakReductionKw: number;
+  avoidedCarbonKg: number;
+  tamperEvidentHash: string;
+  openAdrPayload: Record<string, any>;
+  modbusRegisters: Record<string, number>;
+  governanceDisclaimer: string;
+}

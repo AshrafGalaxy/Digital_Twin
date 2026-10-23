@@ -15,6 +15,13 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database import get_db
+from backend.schemas.energy_advisory import (
+    AdvisoryStatus,
+    AuthorizeEnergyAdvisoryRequest,
+    EnergyAdvisoryDossier,
+    EnergyDispatchWorkOrder
+)
+from backend.services.energy_advisory_service import energy_advisory_service
 from backend.services.energy_topology_service import energy_topology_service
 from backend.services.power_balance_service import power_balance_service
 
@@ -297,4 +304,67 @@ async def get_power_balance_history(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to query power balance history: {str(e)}"
         )
+
+
+@router.get("/advisories", response_model=List[EnergyAdvisoryDossier])
+async def list_energy_advisories(
+    status_filter: Optional[AdvisoryStatus] = Query(None, alias="status", description="Filter by advisory status")
+):
+    """
+    Returns active or historical energy demand-response advisory dossiers.
+    """
+    return energy_advisory_service.list_advisories(status=status_filter)
+
+
+@router.get("/advisories/{advisory_id}", response_model=EnergyAdvisoryDossier)
+async def get_energy_advisory_detail(advisory_id: str):
+    """
+    Retrieves complete demand-response advisory dossier with schedule and physical interlocks.
+    """
+    dossier = energy_advisory_service.get_advisory(advisory_id)
+    if not dossier:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Energy advisory dossier '{advisory_id}' not found."
+        )
+    return dossier
+
+
+@router.post("/advisories/{advisory_id}/authorize", response_model=EnergyDispatchWorkOrder)
+async def authorize_energy_advisory(
+    advisory_id: str,
+    request: AuthorizeEnergyAdvisoryRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Authorizes an energy demand-response advisory via dual-key operator sign-off.
+    Generates a cryptographic SHA-256 tamper-evident hash, creates an official
+    OpenADR 2.0b / Modbus dispatch ticket, and writes an immutable audit record
+    to Table 29 (advisory_audit_log).
+    """
+    work_order = await energy_advisory_service.authorize_advisory(
+        advisory_id=advisory_id,
+        request=request,
+        session=session
+    )
+    if not work_order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Energy advisory dossier '{advisory_id}' not found."
+        )
+    return work_order
+
+
+@router.get("/advisories/{advisory_id}/dispatch-ticket", response_model=EnergyDispatchWorkOrder)
+async def get_energy_dispatch_ticket(advisory_id: str):
+    """
+    Retrieves the generated OpenADR 2.0b / Modbus municipal dispatch ticket for an advisory.
+    """
+    ticket = energy_advisory_service.get_dispatch_ticket(advisory_id)
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No dispatch ticket issued for energy advisory '{advisory_id}'."
+        )
+    return ticket
 
