@@ -16,6 +16,7 @@ import { SystemHealthView } from './components/views/SystemHealthView';
 import { PilotEvaluationView } from './components/views/PilotEvaluationView';
 import { LandingPageView } from './components/views/LandingPageView';
 import { ProvisioningView } from './components/views/ProvisioningView';
+import { DesktopViewportGuard } from './components/common/DesktopViewportGuard';
 import {
   EntityCurrentState,
   IntersectionAsset,
@@ -711,6 +712,7 @@ export const App: React.FC = () => {
           onClose={() => setIsAdminModalOpen(false)}
         />
 
+        <DesktopViewportGuard />
       </main>
     </div>
   );
