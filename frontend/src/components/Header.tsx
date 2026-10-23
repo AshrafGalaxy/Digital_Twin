@@ -302,8 +302,8 @@ export const Header: React.FC<HeaderProps> = ({
                 aria-expanded={isProfileOpen}
                 title={authUser ? `Officer Profile: ${authUser.name} (${userRole})` : 'Officer Profile & Navigation'}
               >
-                <div className="corner-avatar-gem">
-                  <User size={13} color={authUser ? '#F0F6FC' : '#8B949E'} />
+                <div className="corner-avatar-gem" style={{ width: '22px', height: '22px' }}>
+                  <User size={13} color={authUser ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
                   <span
                     className="corner-role-dot"
                     style={{
@@ -312,15 +312,7 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                   />
                 </div>
-                <div className="corner-profile-meta">
-                  <span className="corner-profile-name">
-                    {authUser?.name ? authUser.name.split(' ')[0] : 'Sign In'}
-                  </span>
-                  <span className="corner-profile-role">
-                    {userRole.split(' ')[0]}
-                  </span>
-                </div>
-                <ChevronDown size={12} className={`corner-chevron ${isProfileOpen ? 'rotated' : ''}`} />
+                <ChevronDown size={11} className={`corner-chevron ${isProfileOpen ? 'rotated' : ''}`} />
               </button>
 
               {/* Popover Dropdown Menu */}
@@ -431,29 +423,6 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                     </button>
 
-                    <button
-                      type="button"
-                      className="dropdown-menu-item"
-                      onClick={() => {
-                        toggleTheme();
-                        setIsProfileOpen(false);
-                      }}
-                      role="menuitem"
-                    >
-                      {currentTheme === 'dark' ? (
-                        <Sun size={14} className="dropdown-item-icon" color="#F59E0B" />
-                      ) : (
-                        <Moon size={14} className="dropdown-item-icon" color="#58A6FF" />
-                      )}
-                      <div className="dropdown-item-text">
-                        <span className="dropdown-item-title">
-                          {currentTheme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-                        </span>
-                        <span className="dropdown-item-desc">
-                          {currentTheme === 'dark' ? 'Civic Cartography presentation' : 'Operations Console high contrast'}
-                        </span>
-                      </div>
-                    </button>
 
                     <button
                       type="button"
