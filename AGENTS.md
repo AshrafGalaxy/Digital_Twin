@@ -32,6 +32,12 @@
    - **Verification:** Exact automated test command and passing test count.
    - **Tracking:** GitHub issue closure reference (`Closes #<id>`).
 9. **Plain-Text Mathematical Presentation:** In chat communications, mathematical expressions and formulas must strictly use readable plain-text arithmetic notation (e.g. `C_0 = (1.5 * L + 5) / (1 - Y)`, `q = k * v`). Strictly prohibit raw LaTeX delimiters (`$...$`, `$$...$$`) and LaTeX formatting commands in chat dialogue.
+10. **Issue Tracking & Comprehensive Closure Dossier Contract:** Every task completed must map to its verified GitHub issue identifier. When closing any issue, a comprehensive solution dossier must be documented and posted to the issue record containing:
+    - **Header & Scope:** Exact Task ID and verified GitHub Issue Number (`#<id>`).
+    - **Architectural Solution:** Technical root-cause resolution, physical/mathematical equations applied, and invariants preserved.
+    - **Implementation Details:** Direct list of files created or modified with their technical purpose.
+    - **Verification Evidence:** Exact test suite execution commands, passing test counts, and production build verification status.
+    - **Operational Summary:** Concrete decision-support and operator-facing capabilities delivered.
 
 ---
 
@@ -93,3 +99,4 @@ A contribution is complete only when:
 - [ ] Contains zero em dashes in UI copy, technical documentation, or code comments.
 - [ ] It contains zero hardcoded secrets or unlicensed data.
 - [ ] Commit messages strictly adhere to the structured technical format (<60 char header with technical architectural scope, direct bullets of file changes, invariants adherence, test verification pass count, and tracking issue reference). Strictly prohibit domain names (`traffic`, `energy`), physical domain nouns (never use 'road' or 'roads'; use 'segment', 'edge', 'link', or 'corridor' instead), geographic identifiers, phase tags, or informal milestone prefixes.
+- [ ] Issue tracking verified, with a comprehensive solution dossier (architectural resolution, implementation files, verification counts, and operational summary) documented for the closed issue.
