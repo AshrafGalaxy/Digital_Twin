@@ -17,6 +17,7 @@ import { PilotEvaluationView } from './components/views/PilotEvaluationView';
 import { LandingPageView } from './components/views/LandingPageView';
 import { ProvisioningView } from './components/views/ProvisioningView';
 import { DesktopViewportGuard } from './components/common/DesktopViewportGuard';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import {
   EntityCurrentState,
   IntersectionAsset,
@@ -352,9 +353,9 @@ export const App: React.FC = () => {
               observedAt: data.observedAt,
               updatedAt: new Date().toISOString(),
               metrics: {
-                averageSpeedKmh: data.metrics.averageSpeedKmh,
-                congestionIndex: data.metrics.congestionIndex,
-                queueLengthMeters: data.metrics.queueLengthMeters
+                averageSpeedKmh: data.metrics?.averageSpeedKmh,
+                congestionIndex: data.metrics?.congestionIndex,
+                queueLengthMeters: data.metrics?.queueLengthMeters
               },
               qualityStatus: 'VALID',
               freshnessSeconds: 1.0
@@ -372,10 +373,10 @@ export const App: React.FC = () => {
               observedAt: data.observedAt,
               updatedAt: new Date().toISOString(),
               metrics: {
-                activePowerKw: data.metrics.activePowerKw,
-                reactivePowerKvar: data.metrics.reactivePowerKvar,
-                powerFactor: data.metrics.powerFactor,
-                energyConsumptionKwh: data.metrics.energyConsumptionKwh
+                activePowerKw: data.metrics?.activePowerKw,
+                reactivePowerKvar: data.metrics?.reactivePowerKvar,
+                powerFactor: data.metrics?.powerFactor,
+                energyConsumptionKwh: data.metrics?.energyConsumptionKwh
               },
               qualityStatus: 'VALID',
               freshnessSeconds: 1.0
@@ -580,25 +581,27 @@ export const App: React.FC = () => {
               />
             )}
 
-            <MapOperationsView
-              studyAreaGeoJson={studyAreaGeoJson}
-              roadSegments={roadSegments}
-              intersections={intersections}
-              liveStates={effectiveStates}
-              selectedEntity={selectedEntity}
-              compareEntity={compareEntity}
-              currentTheme={currentTheme}
-              isTableView={isOperationsTableView}
-              onToggleTableView={setIsOperationsTableView}
-              on3DModeChange={setIs3DMode}
-              onSelectEntity={(entity) => {
-                setSelectedEntity(entity);
-                if (compareEntity && compareEntity.id === entity.id) {
-                  setCompareEntity(null);
-                }
-              }}
-              onSelectCompareEntity={(comp) => setCompareEntity(comp)}
-            />
+            <ErrorBoundary componentName="Corridor Map Operations View">
+              <MapOperationsView
+                studyAreaGeoJson={studyAreaGeoJson}
+                roadSegments={roadSegments}
+                intersections={intersections}
+                liveStates={effectiveStates}
+                selectedEntity={selectedEntity}
+                compareEntity={compareEntity}
+                currentTheme={currentTheme}
+                isTableView={isOperationsTableView}
+                onToggleTableView={setIsOperationsTableView}
+                on3DModeChange={setIs3DMode}
+                onSelectEntity={(entity) => {
+                  setSelectedEntity(entity);
+                  if (compareEntity && compareEntity.id === entity.id) {
+                    setCompareEntity(null);
+                  }
+                }}
+                onSelectCompareEntity={(comp) => setCompareEntity(comp)}
+              />
+            </ErrorBoundary>
 
             {!isOperationsTableView && (
               <MapLegend
@@ -608,17 +611,25 @@ export const App: React.FC = () => {
               />
             )}
 
-            <EntityDetailDrawer
-              entity={selectedEntity}
-              compareEntity={compareEntity}
-              availableSegments={roadSegments}
-              liveStates={effectiveStates}
-              onClose={() => {
+            <ErrorBoundary
+              componentName="Entity Details Drawer"
+              onReset={() => {
                 setSelectedEntity(null);
                 setCompareEntity(null);
               }}
-              onSelectCompareEntity={(comp) => setCompareEntity(comp)}
-            />
+            >
+              <EntityDetailDrawer
+                entity={selectedEntity}
+                compareEntity={compareEntity}
+                availableSegments={roadSegments}
+                liveStates={effectiveStates}
+                onClose={() => {
+                  setSelectedEntity(null);
+                  setCompareEntity(null);
+                }}
+                onSelectCompareEntity={(comp) => setCompareEntity(comp)}
+              />
+            </ErrorBoundary>
           </div>
         )}
 

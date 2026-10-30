@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { EntityCurrentState, RoadSegmentAsset, IntersectionAsset } from '../types/twin';
 import { ForecastPanel } from './ForecastPanel';
+import { ErrorBoundary } from './common/ErrorBoundary';
 import { fetchSegmentComparison, SegmentComparisonResult } from '../services/api';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
@@ -47,17 +48,17 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
   const isComparing = isSegment && !!compareEntity;
 
   const liveStateA = liveStates[entity.id] || null;
-  const speedA = liveStateA?.metrics.averageSpeedKmh;
-  const flowA = liveStateA?.metrics.vehicleFlowPerHour;
-  const queueA = liveStateA?.metrics.queueLengthMeters;
-  const congestionA = liveStateA?.metrics.congestionIndex;
+  const speedA = liveStateA?.metrics?.averageSpeedKmh;
+  const flowA = liveStateA?.metrics?.vehicleFlowPerHour;
+  const queueA = liveStateA?.metrics?.queueLengthMeters;
+  const congestionA = liveStateA?.metrics?.congestionIndex;
   const sourceModeA = liveStateA?.sourceMode || 'SIMULATION';
 
   const liveStateB = compareEntity ? liveStates[compareEntity.id] || null : null;
-  const speedB = liveStateB?.metrics.averageSpeedKmh;
-  const flowB = liveStateB?.metrics.vehicleFlowPerHour;
-  const queueB = liveStateB?.metrics.queueLengthMeters;
-  const congestionB = liveStateB?.metrics.congestionIndex;
+  const speedB = liveStateB?.metrics?.averageSpeedKmh;
+  const flowB = liveStateB?.metrics?.vehicleFlowPerHour;
+  const queueB = liveStateB?.metrics?.queueLengthMeters;
+  const congestionB = liveStateB?.metrics?.congestionIndex;
 
   // Fetch backend comparison whenever compareEntity changes
   useEffect(() => {
@@ -314,7 +315,7 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
             <div className="drawer-section" style={{ background: 'var(--bg-surface-elevated)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
               <span className="drawer-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Layers size={13} />
-                <span>Directional Variance Deltas (A − B)</span>
+                <span>Directional Variance Deltas (A - B)</span>
               </span>
 
               <div className="deltas-table" style={{ marginTop: 8 }}>
@@ -345,20 +346,24 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
             {/* Dual 15-Minute ML Near-Term Forecasts */}
             <div className="drawer-section">
               <span className="drawer-section-title">Segment A 15-Min Forecast ({entity.name})</span>
-              <ForecastPanel
-                entityType="RoadSegment"
-                entityId={entity.id}
-                currentValue={speedA}
-              />
+              <ErrorBoundary componentName="Segment A Forecast">
+                <ForecastPanel
+                  entityType="RoadSegment"
+                  entityId={entity.id}
+                  currentValue={speedA}
+                />
+              </ErrorBoundary>
             </div>
 
             <div className="drawer-section" style={{ marginTop: 'var(--space-3)' }}>
               <span className="drawer-section-title">Segment B 15-Min Forecast ({compareEntity.name})</span>
-              <ForecastPanel
-                entityType="RoadSegment"
-                entityId={compareEntity.id}
-                currentValue={speedB}
-              />
+              <ErrorBoundary componentName="Segment B Forecast">
+                <ForecastPanel
+                  entityType="RoadSegment"
+                  entityId={compareEntity.id}
+                  currentValue={speedB}
+                />
+              </ErrorBoundary>
             </div>
           </>
         ) : (
@@ -425,11 +430,13 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
 
                 {/* 15-Minute ML Forecast Component */}
                 <div style={{ marginTop: 'var(--space-3)' }}>
-                  <ForecastPanel
-                    entityType="RoadSegment"
-                    entityId={entity.id}
-                    currentValue={speedA}
-                  />
+                  <ErrorBoundary componentName="Segment Near-Term Forecast">
+                    <ForecastPanel
+                      entityType="RoadSegment"
+                      entityId={entity.id}
+                      currentValue={speedA}
+                    />
+                  </ErrorBoundary>
                 </div>
               </div>
             )}
@@ -463,19 +470,35 @@ export const EntityDetailDrawer: React.FC<EntityDetailDrawerProps> = ({
                       <span className="text-muted">Cycle Time:</span>
                       <span style={{ fontWeight: 600 }}>{(entity as IntersectionAsset).cycleTimeSec} seconds</span>
                     </div>
-                    {(entity as IntersectionAsset).connectedSegments && (
-                      <div style={{ marginTop: 4 }}>
-                        <span className="text-muted">Connected Segments:</span>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
-                          {(entity as IntersectionAsset).connectedSegments?.map((segId: string) => (
-                            <div key={segId} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-main)', fontSize: 12 }}>
-                              <ChevronRight size={12} color="#22D3EE" />
-                              <code>{segId}</code>
-                            </div>
-                          ))}
+                    {(() => {
+                      const rawSegs = (entity as IntersectionAsset).connectedSegments;
+                      const segs = Array.isArray(rawSegs)
+                        ? rawSegs
+                        : typeof rawSegs === 'string'
+                        ? (() => {
+                            try {
+                              const parsed = JSON.parse(rawSegs);
+                              return Array.isArray(parsed) ? parsed : [];
+                            } catch {
+                              return [];
+                            }
+                          })()
+                        : [];
+                      if (segs.length === 0) return null;
+                      return (
+                        <div style={{ marginTop: 4 }}>
+                          <span className="text-muted">Connected Segments:</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
+                            {segs.map((segId: string) => (
+                              <div key={segId} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-main)', fontSize: 12 }}>
+                                <ChevronRight size={12} color="#22D3EE" />
+                                <code>{segId}</code>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </>
                 )}
               </div>

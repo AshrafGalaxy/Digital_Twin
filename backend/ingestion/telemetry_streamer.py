@@ -187,7 +187,7 @@ class TelemetryStreamerWorker:
                     """)
                     sensor_id = next((s["sensorId"] for s in SENSOR_STATIONS if s["segmentId"] == seg_id), "urn:ngsi-ld:TrafficSensor:PUNE:GEN-01")
                     await session.execute(obs_stmt, {
-                        "observed_at": now_iso,
+                        "observed_at": now_dt,
                         "sensor_id": sensor_id,
                         "segment_id": seg_id,
                         "source_mode": self.mode,
@@ -243,8 +243,8 @@ class TelemetryStreamerWorker:
                         "entity_id": seg_id,
                         "entity_type": "RoadSegment",
                         "source_mode": self.mode,
-                        "observed_at": now_iso,
-                        "updated_at": now_iso,
+                        "observed_at": now_dt,
+                        "updated_at": now_dt,
                         "metrics": json.dumps(metrics)
                     })
 
@@ -263,7 +263,7 @@ class TelemetryStreamerWorker:
                         """)
                         await session.execute(los_hist_stmt, {
                             "segment_id": seg_id,
-                            "observed_at": now_iso,
+                            "observed_at": now_dt,
                             "volume_capacity_ratio": los_data["volumeCapacityRatio"],
                             "density_veh_km": los_data["densityVehKm"],
                             "congestion_index": los_data["congestionIndex"],
@@ -339,7 +339,7 @@ class TelemetryStreamerWorker:
                     all_ids = [fac["id"]] + [a for a in fac["aliases"] if a != fac["id"]]
                     for b_id in all_ids:
                         await session.execute(energy_stmt, {
-                            "observed_at": now_iso,
+                            "observed_at": now_dt,
                             "building_id": b_id,
                             "source_mode": self.mode,
                             "active_power_kw": round(fac_load_kw, 2),
@@ -365,8 +365,8 @@ class TelemetryStreamerWorker:
                             "entity_id": b_id,
                             "entity_type": "Building",
                             "source_mode": self.mode,
-                            "observed_at": now_iso,
-                            "updated_at": now_iso,
+                            "observed_at": now_dt,
+                            "updated_at": now_dt,
                             "metrics": json.dumps(bld_metrics),
                             "quality_status": "VALID",
                             "freshness_seconds": 0.0
@@ -376,8 +376,8 @@ class TelemetryStreamerWorker:
                             "entity_id": a_id,
                             "entity_type": "BuildingZone",
                             "source_mode": self.mode,
-                            "observed_at": now_iso,
-                            "updated_at": now_iso,
+                            "observed_at": now_dt,
+                            "updated_at": now_dt,
                             "metrics": json.dumps(bld_metrics),
                             "quality_status": "VALID",
                             "freshness_seconds": 0.0
@@ -416,7 +416,7 @@ class TelemetryStreamerWorker:
 
                 for st_id in (primary_station_id, corridor_station_id):
                     await session.execute(env_stmt, {
-                        "observed_at": now_iso,
+                        "observed_at": now_dt,
                         "station_id": st_id,
                         "source_mode": weather_mode,
                         "aqi_value": aqi,
@@ -445,8 +445,8 @@ class TelemetryStreamerWorker:
                         "entity_id": st_id,
                         "entity_type": "AirQualityStation",
                         "source_mode": weather_mode,
-                        "observed_at": now_iso,
-                        "updated_at": now_iso,
+                        "observed_at": now_dt,
+                        "updated_at": now_dt,
                         "metrics": json.dumps(env_metrics),
                         "quality_status": "VALID",
                         "freshness_seconds": 0.0
@@ -476,8 +476,8 @@ class TelemetryStreamerWorker:
                             "entity_id": int_id,
                             "entity_type": "TrafficSignal",
                             "source_mode": self.mode,
-                            "observed_at": now_iso,
-                            "updated_at": now_iso,
+                            "observed_at": now_dt,
+                            "updated_at": now_dt,
                             "metrics": json.dumps(spat_metrics),
                             "quality_status": "VALID",
                             "freshness_seconds": 0.0

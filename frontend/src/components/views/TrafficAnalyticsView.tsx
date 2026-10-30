@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { RoadSegmentAsset, EntityCurrentState, SourceMode, SPaTState, IntersectionAsset } from '../../types/twin';
 import { ForecastPanel } from '../ForecastPanel';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { WebsterTimingModal } from '../traffic/WebsterTimingModal';
 import {
   fetchCorridorLOS,
@@ -616,11 +617,13 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
 
           {/* Integrated 15-Minute Forecast with Conformal & TreeSHAP */}
           {selectedSegment && (
-            <ForecastPanel
-              entityType="RoadSegment"
-              entityId={selectedSegment.id}
-              currentValue={currentSpeed}
-            />
+            <ErrorBoundary componentName="Traffic Analytics Forecast">
+              <ForecastPanel
+                entityType="RoadSegment"
+                entityId={selectedSegment.id}
+                currentValue={currentSpeed}
+              />
+            </ErrorBoundary>
           )}
         </div>
 

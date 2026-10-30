@@ -519,7 +519,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         type: 'FeatureCollection',
         features: roadSegments.map(seg => {
           const state = liveStates[seg.id];
-          const speed = state?.metrics.averageSpeedKmh ?? 45.0;
+          const speed = state?.metrics?.averageSpeedKmh ?? 45.0;
           let color = '#3FB950'; // Green: Normal (>35 km/h)
           if (speed < 20) color = '#F85149'; // Red: Congested (<20 km/h)
           else if (speed < 35) color = '#D29922'; // Amber: Moderate (20-35 km/h)
@@ -1290,7 +1290,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               <tbody>
                 {roadSegments.map(seg => {
                   const state = liveStates[seg.id];
-                  const speed = state?.metrics.averageSpeedKmh ?? 45.0;
+                  const speed = state?.metrics?.averageSpeedKmh ?? 45.0;
                   const los = speed >= 42 ? 'A' : speed >= 38 ? 'B' : speed >= 32 ? 'C' : speed >= 25 ? 'D' : speed >= 18 ? 'E' : 'F';
                   const mode = state?.sourceMode || 'SIMULATION';
                   return (
@@ -1364,7 +1364,11 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                     <td>{ix.controlType}</td>
                     <td className="mono-cell">{ix.cycleTimeSec}s</td>
                     <td style={{ fontSize: '12px' }}>
-                      {ix.connectedSegments?.join(', ') || 'Corridor Arterial Network'}
+                      {Array.isArray(ix.connectedSegments)
+                        ? ix.connectedSegments.join(', ')
+                        : typeof ix.connectedSegments === 'string'
+                        ? ix.connectedSegments
+                        : 'Corridor Arterial Network'}
                     </td>
                     <td>
                       <button
