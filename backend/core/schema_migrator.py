@@ -582,6 +582,29 @@ SQLITE_TABLE_DDL = [
         quality_status TEXT NOT NULL DEFAULT 'VALID',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 35. Structural Health Monitoring (SHM) Telemetry (Traffic TASK-07)
+    """
+    CREATE TABLE IF NOT EXISTS shm_telemetry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        structure_id TEXT NOT NULL,
+        structure_name TEXT,
+        span_id TEXT NOT NULL,
+        sensor_id TEXT NOT NULL,
+        observed_at TIMESTAMP NOT NULL,
+        vibration_ppv_mms REAL NOT NULL,
+        strain_microstrain REAL NOT NULL,
+        resonant_freq_hz REAL NOT NULL,
+        resonant_baseline_hz REAL NOT NULL,
+        resonant_drift_pct REAL NOT NULL,
+        temperature_celsius REAL NOT NULL,
+        hcv_axle_load_tonnes REAL,
+        integrity_status TEXT NOT NULL DEFAULT 'NOMINAL',
+        source_mode TEXT NOT NULL DEFAULT 'LIVE',
+        quality_score REAL NOT NULL DEFAULT 1.0,
+        provenance_metadata TEXT NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -611,7 +634,10 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_magic_tokens_status ON magic_access_tokens (status, expires_at);",
     "CREATE INDEX IF NOT EXISTS idx_magic_tokens_email ON magic_access_tokens (email);",
     "CREATE INDEX IF NOT EXISTS idx_power_balance_sub_time ON energy_power_balance_history (substation_id, observed_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_power_balance_alert ON energy_power_balance_history (thermal_alert_status, observed_at DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_power_balance_alert ON energy_power_balance_history (thermal_alert_status, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_shm_struct_time ON shm_telemetry (structure_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_shm_status ON shm_telemetry (integrity_status, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_shm_span_time ON shm_telemetry (span_id, observed_at DESC);"
 ]
 
 

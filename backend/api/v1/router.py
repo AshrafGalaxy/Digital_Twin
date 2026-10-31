@@ -19,6 +19,7 @@ from .endpoints import (
     interop,
     recommendations,
     scenarios,
+    shm,
     spatial,
     state,
     stream,
@@ -40,6 +41,7 @@ api_v1_router.include_router(state.router)
 api_v1_router.include_router(stream.router)
 api_v1_router.include_router(analytics.router)
 api_v1_router.include_router(traffic.router)
+api_v1_router.include_router(shm.router)
 api_v1_router.include_router(energy.router)
 api_v1_router.include_router(scenarios.router)
 api_v1_router.include_router(forecasts.router)

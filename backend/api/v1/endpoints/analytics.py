@@ -6,6 +6,7 @@ Provides performant 15-minute rolling aggregations of traffic observations acros
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
@@ -106,10 +107,11 @@ async def get_feature_drift(
                average_speed_kmh AS speed_kmh,
                28.5 AS ambient_temp_c
         FROM traffic_observations
-        WHERE observed_at >= datetime('now', :hours_param)
+        WHERE observed_at >= :cutoff_time
         ORDER BY observed_at ASC
     """)
-    res = await session.execute(stmt, {"hours_param": f"-{hours_ago} hours"})
+    cutoff_time = (datetime.now(timezone.utc) - timedelta(hours=abs(hours_ago))).isoformat()
+    res = await session.execute(stmt, {"cutoff_time": cutoff_time})
     rows = res.fetchall()
 
     detector = FeatureDriftDetector()

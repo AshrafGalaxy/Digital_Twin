@@ -588,3 +588,28 @@ CREATE TABLE IF NOT EXISTS energy_power_balance_history (
 );
 CREATE INDEX IF NOT EXISTS idx_power_balance_sub_time ON energy_power_balance_history (substation_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_power_balance_alert ON energy_power_balance_history (thermal_alert_status, observed_at DESC);
+
+-- 35. Structural Health Monitoring (SHM) Telemetry (Traffic TASK-07)
+CREATE TABLE IF NOT EXISTS shm_telemetry (
+    id SERIAL PRIMARY KEY,
+    structure_id VARCHAR(64) NOT NULL,
+    structure_name VARCHAR(128),
+    span_id VARCHAR(64) NOT NULL,
+    sensor_id VARCHAR(64) NOT NULL,
+    observed_at TIMESTAMPTZ NOT NULL,
+    vibration_ppv_mms DOUBLE PRECISION NOT NULL,
+    strain_microstrain DOUBLE PRECISION NOT NULL,
+    resonant_freq_hz DOUBLE PRECISION NOT NULL,
+    resonant_baseline_hz DOUBLE PRECISION NOT NULL,
+    resonant_drift_pct DOUBLE PRECISION NOT NULL,
+    temperature_celsius DOUBLE PRECISION NOT NULL,
+    hcv_axle_load_tonnes DOUBLE PRECISION,
+    integrity_status VARCHAR(32) NOT NULL DEFAULT 'NOMINAL',
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'LIVE',
+    quality_score DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+    provenance_metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_shm_struct_time ON shm_telemetry (structure_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shm_status ON shm_telemetry (integrity_status, observed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shm_span_time ON shm_telemetry (span_id, observed_at DESC);
