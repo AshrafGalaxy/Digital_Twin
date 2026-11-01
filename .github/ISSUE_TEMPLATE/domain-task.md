@@ -10,7 +10,7 @@ assignees: ""
 <!-- Describe what needs to be implemented and why it matters -->
 
 ### Specification Reference
-<!-- Reference to section in FuturePlans/*.md or AGENTS.md -->
+<!-- Reference to section in specifications/*.md or AGENTS.md -->
 
 ### Acceptance Criteria
 - [ ] Criterion 1

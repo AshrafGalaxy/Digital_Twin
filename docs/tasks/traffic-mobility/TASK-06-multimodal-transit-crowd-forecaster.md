@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-06`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 8.2
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 8.2
 - **Component / Scope:** Machine Learning
 - **Priority:** Medium
 - **Type:** Machine Learning & Transit Intelligence

@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-01`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 7.1
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 7.1
 - **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Architectural Enhancement / Gap Fix

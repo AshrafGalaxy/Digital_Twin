@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-10`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 9.1 & 9.2
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 9.1 & 9.2
 - **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Governance Audit Workflow

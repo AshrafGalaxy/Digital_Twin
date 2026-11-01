@@ -1,14 +1,14 @@
 # Energy Management & Microgrid Optimization: Implementation Task Directory
 
 > **System Component:** Pune Nagar Road & Commercial Facility Digital Twin (Viman Nagar Chowk Microgrid)  
-> **Master Specification:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md)  
+> **Master Specification:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md)  
 > **Status:** Active Execution Blueprint
 
 ---
 
 ## 1. Executive Overview
 
-This task suite translates the engineering blueprint defined in [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) into ten (10) modular, production-grade engineering tasks. Each task contains explicit mathematical models, electrical balance equations, database schemas, API contracts, target files, and acceptance criteria.
+This task suite translates the engineering blueprint defined in [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) into ten (10) modular, production-grade engineering tasks. Each task contains explicit mathematical models, electrical balance equations, database schemas, API contracts, target files, and acceptance criteria.
 
 All tasks strictly uphold the architectural invariants defined in [`AGENTS.md`](../../AGENTS.md):
 1. **Strict Non-Actuation:** Read-only decision support with dual-key human authorization for demand-response dispatches.

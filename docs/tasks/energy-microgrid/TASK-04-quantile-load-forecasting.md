@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-04`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 8.1
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 8.1
 - **Component / Scope:** Machine Learning
 - **Priority:** High
 - **Type:** Machine Learning & Feature Engineering

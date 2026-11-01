@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-10`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 9.2, 10, 11
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 9.2, 10, 11
 - **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Governance Audit Workflow

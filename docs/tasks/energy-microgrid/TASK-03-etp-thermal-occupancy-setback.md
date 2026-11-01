@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-03`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 7.2 & 7.3
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 7.2 & 7.3
 - **Component / Scope:** Simulation & Control
 - **Priority:** High
 - **Type:** Microscopic Thermal Modeling & Demand Flexibility

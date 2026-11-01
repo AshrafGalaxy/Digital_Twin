@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-06`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 9.1
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 9.1
 - **Component / Scope:** Optimization & Control
 - **Priority:** High
 - **Type:** Mathematical Optimization & Economic Dispatch

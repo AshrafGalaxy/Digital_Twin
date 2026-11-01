@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-03`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 9.2
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 9.2
 - **Component / Scope:** Simulation & Control
 - **Priority:** High
 - **Type:** Core Feature Implementation

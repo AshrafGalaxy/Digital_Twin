@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-07`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 9.2, 9.3, 10
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 9.2, 9.3, 10
 - **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Interlocks & Failsafe Communication

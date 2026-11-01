@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-07`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 10.1
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 10.1
 - **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Sensor Telemetry & Ingestion Subsystem

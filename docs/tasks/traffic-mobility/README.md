@@ -1,14 +1,14 @@
 # Intelligent Traffic Mobility & Adaptive Corridor Control: Implementation Task Directory
 
 > **System Component:** Pune Nagar Road Digital Twin (Viman Nagar Chowk ↔ Somnath Nagar Chowk)  
-> **Master Specification:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md)  
+> **Master Specification:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md)  
 > **Status:** Active Execution Blueprint
 
 ---
 
 ## 1. Executive Overview
 
-This task suite translates the comprehensive architectural blueprint defined in [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) into ten (10) modular, production-grade engineering tasks. Each task is self-contained with explicit mathematical formulations, database schemas, API data contracts, file targets, and acceptance criteria.
+This task suite translates the comprehensive architectural blueprint defined in [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) into ten (10) modular, production-grade engineering tasks. Each task is self-contained with explicit mathematical formulations, database schemas, API data contracts, file targets, and acceptance criteria.
 
 All tasks strictly uphold the architectural invariants defined in [`AGENTS.md`](../../AGENTS.md):
 1. **Strict Non-Actuation:** Read-only decision support with dual-key human authorization.

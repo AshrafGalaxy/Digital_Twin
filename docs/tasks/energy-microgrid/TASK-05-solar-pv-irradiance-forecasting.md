@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-05`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 8.2
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 8.2
 - **Component / Scope:** Machine Learning
 - **Priority:** High
 - **Type:** Physical Modeling & Renewable Analytics

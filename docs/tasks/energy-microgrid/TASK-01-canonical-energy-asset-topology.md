@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-01`
 - **Domain:** Energy Management & Microgrid Optimization
-- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../FuturePlans/ENERGY_MANAGEMENT.md) Section 4, 5, 6
+- **Specification Reference:** [`ENERGY_MANAGEMENT.md`](../../specifications/ENERGY_MANAGEMENT.md) Section 4, 5, 6
 - **Component / Scope:** Backend & Telemetry
 - **Priority:** High
 - **Type:** Architectural Foundation & Telemetry Ingestion

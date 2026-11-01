@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-05`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 8.1
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 8.1
 - **Component / Scope:** Machine Learning
 - **Priority:** High
 - **Type:** Machine Learning & Feature Store Pipeline

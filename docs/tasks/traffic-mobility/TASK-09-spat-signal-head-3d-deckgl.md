@@ -2,7 +2,7 @@
 
 - **Task Identifier:** `TASK-09`
 - **Domain:** Intelligent Traffic Mobility & Adaptive Corridor Control
-- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../FuturePlans/TRAFFIC_MANAGEMENT.md) Section 7.3 & 11.2
+- **Specification Reference:** [`TRAFFIC_MANAGEMENT.md`](../../specifications/TRAFFIC_MANAGEMENT.md) Section 7.3 & 11.2
 - **Component / Scope:** Frontend & UI
 - **Priority:** High
 - **Type:** UI/UX & Geospatial Deck.gl Layer

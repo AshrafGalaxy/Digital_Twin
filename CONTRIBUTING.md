@@ -190,5 +190,5 @@ npm --prefix frontend run build
 
 For questions, architectural guidance, or feature suggestions:
 - Check existing documentation in [docs/architecture.md](docs/architecture.md) and [PRD.md](PRD.md).
-- Browse future task roadmaps in [FuturePlans/](FuturePlans/) and [docs/tasks/](docs/tasks/).
+- Browse future task roadmaps in [specifications/](specifications/) and [docs/tasks/](docs/tasks/).
 - Open an Issue using our domain task template.
