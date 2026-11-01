@@ -215,9 +215,199 @@ flowchart TD
 
 ---
 
-## 3. Core Architectural Invariants
+## 3. Tri-Domain Physical Coupling: Traffic, Energy, and Environmental Dynamics
 
-Every module, service, API endpoint, and UI component strictly preserves four non-negotiable architectural invariants:
+Conventional smart city platforms manage traffic signals, electrical substations, and ambient air monitors through isolated operational silos, displaying separate charts on disconnected dashboards. In physical reality, an urban arterial corridor functions as an intimately coupled thermodynamic, hydrodynamic, and electro-mechanical continuum.
+
+The digital twin models the bidirectional physical interactions connecting these three domains in real time:
+
+```text
++---------------------------------------------------------------------------------------------------+
+|                                  THE TRI-DOMAIN PHYSICAL NEXUS                                    |
+|                                                                                                   |
+|     +-------------------------+                 +-------------------------+                       |
+|     |     TRAFFIC MOBILITY    |                 |   ELECTRICAL MICROGRID  |                       |
+|     |  Speed, Flow, Queues,   |                 | 3-Phase Power, Feeders, |                       |
+|     |    Webster Cycle Time   |                 |   HVAC Chillers, BESS   |                       |
+|     +-------------------------+                 +-------------------------+                       |
+|           \             ^                             ^             /                             |
+|            \           /                               \           /                              |
+|   Tailpipe  \         / Traffic               Vehicular \         / Chiller Waste                 |
+|   Emissions  \       /  Gating                 Arrival   \       /  Heat Rejection                |
+|   & Queues    \     /   Advisories              Footfall  \     /   (UHI Plume)                   |
+|                v   /                             & EVs     \   v                                  |
+|            +---------------------------------------------------+                                  |
+|            |                AMBIENT ENVIRONMENT                |                                  |
+|            |            PM2.5, PM10, NO2, CO, CPCB             |                                  |
+|            |           AQI, Temperature, Wind Vector           |                                  |
+|            +---------------------------------------------------+                                  |
++---------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### 3.1 Traffic to Environment: Vehicle Kinematics, Emissions, and Dispersion
+
+Vehicular exhaust emissions are not static constants; they are dynamic non-linear functions of vehicle space-mean speed, queue acceleration cycles, and traffic congestion states along each arterial link.
+
+#### 1. Speed-Dependent Specific Emission Factors
+Vehicle specific emission factors for criteria pollutant $p \in \{\text{PM}_{2.5}, \text{PM}_{10}, \text{NO}_x, \text{CO}\}$ are modeled as a function of space-mean velocity $v$ (in km/h) based on European COPERT and HBEFA kinematic formulations:
+
+$$E_p(v) = \frac{\alpha_p + \beta_p \cdot v + \gamma_p \cdot v^2}{v} + \delta_p \cdot \exp(-\zeta_p \cdot v)$$
+
+Where:
+* $E_p(v)$: Specific emission rate per vehicle (in g/km).
+* $\alpha_p, \beta_p, \gamma_p, \delta_p, \zeta_p$: Empirical vehicle fleet calibration coefficients reflecting engine displacement, fuel type mix, and catalytic converter efficiency.
+* **Physical Insight:** Under free-flow conditions ($40 \le v \le 60\text{ km/h}$), internal combustion engines operate in their optimal thermal efficiency window, minimizing specific emissions. When space-mean speed collapses into hyper-congested stop-and-go conditions ($v < 15\text{ km/h}$), emissions spike exponentially due to repeated vehicle braking, rich air-fuel mixture transients, and sub-optimal catalytic conversion temperatures.
+
+#### 2. Queue Acceleration Shockwaves and Tractive Power Spikes
+During intersection signal cycling, vehicles accelerating from a standing queue exert high tractive force, emitting dramatically higher mass rates than steady-state cruising:
+
+$$\dot{m}_p(t) = \dot{m}_{\text{idle}, p} + \kappa_p \cdot \max(0, \; P_{\text{tractive}}(t))$$
+
+Where instantaneous vehicle tractive power $P_{\text{tractive}}(t)$ (in kW) is governed by vehicle mechanics:
+
+$$P_{\text{tractive}}(t) = \left[ m \cdot a(t) + m \cdot g \cdot C_r + \frac{1}{2} \rho_{\text{air}} C_d A \cdot v(t)^2 \right] \cdot \frac{v(t)}{1000}$$
+
+Where $m$ is vehicle mass (kg), $a(t)$ is instantaneous acceleration ($\text{m/s}^2$), $C_r$ is rolling resistance coefficient, $C_d$ is aerodynamic drag coefficient, and $A$ is frontal surface area ($\text{m}^2$). Uncoordinated traffic signals produce recurring stop-and-go shockwaves, generating up to $3.8\times$ higher localized particulate mass emissions compared to an arterial corridor synchronized via green wave coordination offsets.
+
+#### 3. Atmospheric Street Canyon Dispersion
+Tailpipe emissions accumulate within the street canyon based on vertical and lateral Gaussian dispersion:
+
+$$C_p(x, z) = \sqrt{\frac{2}{\pi}} \frac{q_p}{u_{\text{eff}} \cdot \sigma_z(x)} \exp\left( -\frac{z^2}{2 \sigma_z^2(x)} \right) + C_{\text{background}, p}$$
+
+Where:
+* $q_p = \sum_{j} \dot{m}_{p, j} \cdot k \cdot v$: Link line-source emission strength (g/m-s), with density $k$ (veh/km) and velocity $v$ (km/h).
+* $u_{\text{eff}} = \max(0.5, \; u_{\text{wind}} \cdot |\cos(\theta_{\text{canyon}})|)$: Effective wind velocity along the street canyon (m/s).
+* $\sigma_z(x) = a \cdot x^b$: Vertical dispersion coefficient parameterized by downwind distance $x$ and atmospheric stability class.
+* $C_{\text{background}, p}$: Regional background pollutant concentration ($\mu\text{g/m}^3$).
+
+The resulting ground-level concentration $C_p$ directly determines the Central Pollution Control Board (CPCB) continuous sub-index:
+
+$$I_p = I_{\text{low}} + \left[ \frac{I_{\text{high}} - I_{\text{low}}}{C_{\text{high}} - C_{\text{low}}} \right] \cdot (C_p - C_{\text{low}})$$
+
+---
+
+### 3.2 Traffic to Energy: Fleet Electrification, Customer Arrival, and Chiller Loads
+
+Traffic flow directly drives commercial electrical demand through two distinct physical coupling mechanisms: dynamic Electric Vehicle (EV) charging loads and occupant-driven building thermal gains.
+
+#### 1. Electric Vehicle (EV) Charging Demand at Commercial Hubs
+As electric vehicle penetration increases, vehicle arrival rates at commercial hubs directly drive substation feeder loading:
+
+$$\lambda_{\text{EV}}(t) = q_{\text{in}}(t) \cdot \eta_{\text{EV}}$$
+
+Where $q_{\text{in}}(t)$ is vehicular ingress flow from the arterial link (veh/h) and $\eta_{\text{EV}}$ is the corridor fleet EV penetration ratio. The aggregate active power load demanded by DC fast-charging clusters ($P_{\text{EV}}$ in kW) is modeled as:
+
+$$P_{\text{EV}}(t) = \sum_{j=1}^{N_{\text{chargers}}} P_{\text{rated}, j} \cdot u_j(t) \cdot \eta_{\text{charger}}$$
+
+Where $u_j(t) \in \{0, 1\}$ indicates charger connection status and $\eta_{\text{charger}} \approx 0.94$ is AC-to-DC conversion efficiency.
+
+#### 2. Vehicular Ingress, Space Occupancy, and Internal Thermal Gains
+Commuter and customer arrivals at major commercial complexes (such as shopping centers, office parks, and retail districts) are a lagged convolution of corridor traffic flow:
+
+$$N_{\text{occ}}(t) = \int_{0}^{t} q_{\text{in}}(\tau) \cdot p_{\text{enter}} \cdot \exp\left( -\frac{t - \tau}{\tau_{\text{dwell}}} \right) d\tau$$
+
+Where $p_{\text{enter}}$ is the fraction of passing corridor vehicles entering the facility and $\tau_{\text{dwell}}$ is mean customer dwell time (typically 1.5 to 2.5 hours). Each occupant introduces internal sensible and latent thermal heat gains ($q_{\text{human}} \approx 100\text{ to } 120\text{ W/person}$), driving internal thermal load:
+
+$$\dot{Q}_{\text{internal}}(t) = \frac{N_{\text{occ}}(t) \cdot q_{\text{human}}}{1000} + P_{\text{lighting}}(t) + P_{\text{plug}}(t) \quad [\text{kW}]$$
+
+#### 3. Building HVAC Cooling Load and Feeder Thermal Headroom
+The commercial facility's centralized chiller plant must balance envelope heat conduction and dynamic internal occupant heat gains to maintain statutory indoor temperature setpoints ($T_{\text{set}} \approx 24^\circ\text{C}$):
+
+$$\dot{Q}_{\text{cooling}}(t) = U \cdot A_{\text{envelope}} \cdot (T_{\text{amb}}(t) - T_{\text{set}}) + \dot{Q}_{\text{internal}}(t)$$
+
+The electrical active power required by the chiller plant is governed by its thermodynamic Coefficient of Performance (COP):
+
+$$P_{\text{HVAC}}(t) = \frac{\dot{Q}_{\text{cooling}}(t)}{\text{COP}(T_{\text{amb}}(t))}$$
+
+Total substation bus load combines baseline commercial power, HVAC cooling power, and EV charging power:
+
+$$P_{\text{bus}}(t) = P_{\text{base}}(t) + P_{\text{HVAC}}(t) + P_{\text{EV}}(t)$$
+
+Which directly stresses the 22kV distribution feeder thermal limit:
+
+$$I_{\text{feeder}}(t) = \frac{P_{\text{bus}}(t)}{\sqrt{3} \cdot V_{\text{LL}} \cdot \text{PF}} \le I_{\text{rated}}$$
+
+When evening commuter congestion coincides with retail shopping peaks, the combined surge in HVAC cooling and EV charging significantly reduces available feeder thermal headroom:
+
+$$P_{\text{headroom}}(t) = \sqrt{3} \cdot V_{\text{LL}} \cdot \big(I_{\text{rated}} - I_{\text{feeder}}(t)\big) \cdot \text{PF} \quad [\text{kW}]$$
+
+---
+
+### 3.3 Energy to Environment: Microclimate Heat Rejection and Clean Generation
+
+Energy consumption in commercial facilities exerts a direct reciprocal impact on the ambient corridor microclimate and regional air quality.
+
+#### 1. HVAC Condenser Waste Heat Rejection (Urban Heat Island Plume)
+Commercial refrigeration cycles operate by extracting thermal energy from building interiors and discharging that heat, plus compressor electrical work, directly into the surrounding ambient air canyon:
+
+$$\dot{Q}_{\text{condenser}}(t) = \dot{Q}_{\text{cooling}}(t) \cdot \left( 1 + \frac{1}{\text{COP}(T_{\text{amb}}(t))} \right)$$
+
+For multi-megawatt commercial complexes, the condenser heat rejection flux ($\dot{Q}_{\text{condenser}} > 3500\text{ kW}$) elevates street canyon ambient temperature by $1.5^\circ\text{C to } 3.5^\circ\text{C}$ above rural baselines. This localized Urban Heat Island (UHI) effect suppresses natural atmospheric boundary layer venting and traps particulate matter near ground level.
+
+#### 2. Distributed Energy Resources (DER) and Emission Offsets
+Corridor-level rooftop solar PV generation $P_{\text{solar}}(t)$ and Battery Energy Storage System (BESS) peak discharge $P_{\text{bess,dis}}(t)$ displace grid power imported from centralized fossil-fuel thermal plants:
+
+$$\Delta \dot{M}_{\text{CO2}}(t) = \big( P_{\text{solar}}(t) + P_{\text{bess,dis}}(t) \big) \cdot EF_{\text{grid,marginal}} \quad [\text{kg CO}_2\text{/h}]$$
+
+Where $EF_{\text{grid,marginal}} \approx 0.82\text{ kg CO}_2\text{/kWh}$ represents the marginal emissions intensity of thermal power stations on regional distribution grids.
+
+---
+
+### 3.4 Environmental Feedbacks to Traffic and Energy: Closed-Loop Governance
+
+The physical coupling is fully closed loop: environmental conditions exert direct thermodynamic and operational feedbacks onto both the energy microgrid and arterial traffic control.
+
+#### 1. Ambient Temperature Effect on Solar PV Efficiency
+Photovoltaic cell temperature $T_{\text{cell}}(t)$ rises with ambient temperature $T_{\text{amb}}(t)$ and plane-of-array solar irradiance $G_{\text{poa}}(t)$:
+
+$$T_{\text{cell}}(t) = T_{\text{amb}}(t) + G_{\text{poa}}(t) \cdot \left( \frac{\text{NOCT} - 20}{800} \right)$$
+
+Where $\text{NOCT} \approx 45^\circ\text{C}$ is Nominal Operating Cell Temperature. High ambient temperatures degrade solar PV efficiency linearly above standard test conditions ($25^\circ\text{C}$):
+
+$$P_{\text{solar}}(t) = P_{\text{STC}} \cdot \left( \frac{G_{\text{poa}}(t)}{1000} \right) \cdot \Big[ 1 - \gamma_{\text{temp}} \cdot \big(T_{\text{cell}}(t) - 25\big) \Big]$$
+
+Where temperature power coefficient $\gamma_{\text{temp}} \approx 0.004\ /^\circ\text{C}$. For every $10^\circ\text{C}$ increase in corridor ambient temperature, solar generation drops by approximately 4%, reducing local clean energy supply exactly when air conditioning loads peak.
+
+#### 2. Thermodynamic Chiller COP Degradation under Ambient Heat
+As street canyon ambient temperature $T_{\text{amb}}$ increases, the thermodynamic Carnot efficiency limit of chiller refrigeration cycles drops:
+
+$$\text{COP}(T_{\text{amb}}) = \eta_{\text{carnot}} \cdot \frac{T_{\text{chilled}} + 273.15}{(T_{\text{amb}} - T_{\text{chilled}})}$$
+
+Where $T_{\text{chilled}} \approx 7^\circ\text{C}$ is chilled water supply temperature and $\eta_{\text{carnot}} \approx 0.55$ is empirical compressor efficiency. A $5^\circ\text{C}$ heatwave elevates chiller electricity demand by 15% to 20% for identical indoor cooling loads, exacerbating electrical substation stress.
+
+#### 3. Air Quality Threshold Advisory on Traffic Signal Gating
+When CAAQMS stations detect severe particulate accumulation ($C_{\text{PM2.5}} \ge 250\ \mu\text{g/m}^3$ or $I_{\text{AQI}} \ge 400$), the digital twin evaluates cross-domain mitigation advisories:
+
+$$q_{\text{advisory,max}}(t) = q_{\text{nominal}}(t) \cdot \max\left(0.60, \; 1.0 - \frac{I_{\text{AQI}}(t) - 300}{250}\right)$$
+
+The advisory engine recommends:
+1. Extending arterial green wave progression offsets to clear stop-and-go queues ($v \to 40\text{ km/h}$), cutting idling emission factors by up to 45%.
+2. Advisory gating on upstream highway feeder ramps to meter heavy commercial freight until street canyon particulate concentrations disperse below statutory warning levels.
+
+---
+
+### 3.5 Tri-Domain Physical Coupling Summary Matrix
+
+| Primary Driving Domain | Impacted Domain | Physical Coupling Channel | Governing Mathematical Relationship | Physical Manifestation | Digital Twin Advisory Mitigation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Traffic Mobility** | **Environment** | Vehicle speed collapse and stop-and-go idling | $E_p(v) = \frac{\alpha_p + \beta_p v + \gamma_p v^2}{v} + \delta_p e^{-\zeta_p v}$ | Exponential spike in PM2.5 and NOx during traffic congestion ($v < 15\text{ km/h}$) | Green Wave offset optimization to eliminate stopping shockwaves |
+| **Traffic Mobility** | **Environment** | Acceleration from standing queue | $\dot{m}_p(t) = \dot{m}_{\text{idle}, p} + \kappa_p P_{\text{tractive}}(t)$ | Localized exhaust plume spike during signal queue discharge | Coordinated queue clearance phases preventing vehicle deceleration |
+| **Traffic Mobility** | **Energy** | EV arrival and opportunistic fast charging | $P_{\text{EV}}(t) = \sum P_{\text{rated}, j} \cdot u_j(t) \cdot \eta$ | Sudden multi-hundred kilowatt power demand spikes on commercial bus | Time-of-Use smart charging modulation and BESS peak shaving |
+| **Traffic Mobility** | **Energy** | Commuter footfall and commercial building ingress | $N_{\text{occ}}(t) = \int q_{\text{in}}(\tau) p_{\text{enter}} e^{-\frac{t-\tau}{\tau_{\text{dwell}}}} d\tau$ | Internal sensible heat gains forcing increased chiller electrical work | Pre-cooling building thermal mass via 2R-2C ETP setback optimizer |
+| **Energy** | **Environment** | Chiller condenser thermal heat rejection | $\dot{Q}_{\text{condenser}} = \dot{Q}_{\text{cooling}} \cdot \left(1 + \frac{1}{\text{COP}}\right)$ | Street canyon Urban Heat Island heating ($+1.5^\circ\text{C to } +3.5^\circ\text{C}$), trapping particulate matter | Chiller sequencing and night-time cold thermal storage discharge |
+| **Energy** | **Environment** | Clean DER generation displacing grid fossil power | $\Delta \dot{M}_{\text{CO2}} = (P_{\text{solar}} + P_{\text{bess,dis}}) \cdot EF_{\text{marginal}}$ | Net reduction in regional power generation greenhouse gas emissions | Real-time solar self-consumption and battery arbitrage dispatch |
+| **Environment** | **Energy** | Ambient temperature degradation of solar PV panels | $P_{\text{solar}} = P_{\text{STC}} \frac{G}{1000} [1 - \gamma (T_{\text{cell}} - 25)]$ | 0.4% solar efficiency loss per degree Celsius of ambient heating | Dynamic BESS dispatch compensating for solar generation dips |
+| **Environment** | **Energy** | Ambient heatwave degradation of chiller plant COP | $\text{COP} = \eta_{\text{carnot}} \frac{T_{\text{chilled}}}{T_{\text{amb}} - T_{\text{chilled}}}$ | Chiller power consumption surges by up to 20% during microclimate heatwaves | HVAC thermostat setbacks and fan speed throttling in low-occupancy zones |
+| **Environment** | **Traffic** | Severe particulate accumulation ($I_{\text{AQI}} > 400$) | $q_{\text{advisory,max}} = q_{\text{nominal}} [1 - \min(0.40, \frac{I_{\text{AQI}}-300}{250})]$ | Street canyon smog concentration exceeding safe human exposure thresholds | Upstream freight metering advisory and signal green wave progression |
+
+
+---
+
+## 4. Core Architectural Invariants
+
+Every module, service, API endpoint, and UI component strictly preserves five non-negotiable architectural invariants:
 
 1. **System of Record Invariant:** PostgreSQL/TimescaleDB (or the resilient local SQLite fallback engine) is the authoritative system of record. MQTT is message transport only.
 2. **State Separation Invariant:** Ground truth observations (`LIVE`/`REPLAY`), physics simulations (`SIMULATION`), and machine learning predictions (`PREDICTED`) are strictly separated into distinct tables. Predictions and simulations never overwrite observed twin current state.
@@ -227,7 +417,7 @@ Every module, service, API endpoint, and UI component strictly preserves four no
 
 ---
 
-## 4. Complete Technical Stack
+## 5. Complete Technical Stack
 
 | Layer | Component | Approved Technology | Role & Exact Codebase Location |
 | :--- | :--- | :--- | :--- |
@@ -253,7 +443,7 @@ Every module, service, API endpoint, and UI component strictly preserves four no
 
 ---
 
-## 5. Master Documentation Suite (4 Volumes)
+## 6. Master Documentation Suite (4 Volumes)
 
 The repository provides a complete 4-volume engineering handbook and evaluation briefing suite in both Markdown and publication-grade PDF format:
 
@@ -272,7 +462,7 @@ The repository provides a complete 4-volume engineering handbook and evaluation 
 
 ---
 
-## 6. Active Future Enhancement Tracks (21 GitHub Issues)
+## 7. Active Future Enhancement Tracks (21 GitHub Issues)
 
 The platform is expanding through two prioritized enhancement tracks covering 21 detailed engineering tasks:
 
@@ -311,7 +501,7 @@ Detailed directory: [docs/tasks/energy-microgrid/](docs/tasks/energy-microgrid/)
 
 ---
 
-## 7. Quickstart: Running the Platform
+## 8. Quickstart: Running the Platform
 
 ### Option A: Local Development (Windows / PowerShell)
 ```powershell
@@ -336,7 +526,7 @@ docker compose --profile full up -d
 
 ---
 
-## 8. Repository Directory Structure
+## 9. Repository Directory Structure
 
 ```text
 ├── .github/                        # GitHub Actions CI, issue & PR templates
@@ -387,6 +577,6 @@ docker compose --profile full up -d
 
 ---
 
-## 9. License & Ethics Notice
+## 10. License & Ethics Notice
 
 This project is an academic research and engineering prototype. Data from OpenStreetMap is licensed under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/). All external benchmark datasets are cataloged with explicit licenses and restrictions in `data/manifests/DATASET_REGISTRY.md`.
