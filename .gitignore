@@ -41,3 +41,7 @@ scratch/
 # Local design skills and agent configurations (local only)
 .agents/
 currentproblems.md
+
+# Local master documentation suite and PDFs (local only)
+docs/Volume_*
+*.pdf

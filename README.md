@@ -443,26 +443,7 @@ Every module, service, API endpoint, and UI component strictly preserves five no
 
 ---
 
-## 6. Master Documentation Suite (4 Volumes)
-
-The repository provides a complete 4-volume engineering handbook and evaluation briefing suite in both Markdown and publication-grade PDF format:
-
-1. **Volume 1: System Architecture and Data Flow**
-   - [Markdown](docs/Volume_1_System_Architecture.md) | [PDF](docs/Volume_1_System_Architecture.pdf)
-   - Complete technical stack, implementation reality breakdown, end-to-end data pipeline, data provenance vocabulary, master inventory of all 32 emitted physical metrics, and municipal ROI.
-2. **Volume 2: Domain Engineering and Mathematical Foundations**
-   - [Markdown](docs/Volume_2_Domain_Engineering_and_Math.md) | [PDF](docs/Volume_2_Domain_Engineering_and_Math.pdf)
-   - First-principles mathematical derivations: Greenshields traffic continuum, Indo-HCM (IRC:106) dual-criteria Level of Service, Webster minimum delay signal optimization, Green Wave progression offsets, 3-phase AC Kirchhoff power balance, feeder thermal headroom, CPCB AQI linear interpolation, Isolation Forest anomaly scoring, Conformal Prediction, and TreeSHAP.
-3. **Volume 3: Screen-by-Screen Operator Manual and UI Guide**
-   - [Markdown](docs/Volume_3_Screen_Operator_Guide.md) | [PDF](docs/Volume_3_Screen_Operator_Guide.pdf)
-   - Granular manual for all 11 application views: explains every button, toggle, and click action; explains every number, gauge, and badge; explains Persistence Baselines, Gain vs Base, Forecast Skill Scores, and XGBoost vs neural networks.
-4. **Volume 4: Judge Defense, Critical Q&A, Demo Script, and Forensic Audit**
-   - [Markdown](docs/Volume_4_Judge_Defense_and_Script.md) | [PDF](docs/Volume_4_Judge_Defense_and_Script.pdf)
-   - 20 bulletproof answers to the hardest technical judge questions, screen-by-screen live demonstration script with simple words and visual pause cues, and the complete Forensic Architecture and Flaws Resolution Dossier.
-
----
-
-## 7. Active Future Enhancement Tracks (21 GitHub Issues)
+## 6. Active Future Enhancement Tracks (21 GitHub Issues)
 
 The platform is expanding through two prioritized enhancement tracks covering 21 detailed engineering tasks:
 
@@ -501,7 +482,7 @@ Detailed directory: [docs/tasks/energy-microgrid/](docs/tasks/energy-microgrid/)
 
 ---
 
-## 8. Quickstart: Running the Platform
+## 7. Quickstart: Running the Platform
 
 ### Option A: Local Development (Windows / PowerShell)
 ```powershell
@@ -526,7 +507,7 @@ docker compose --profile full up -d
 
 ---
 
-## 9. Repository Directory Structure
+## 8. Repository Directory Structure
 
 ```text
 ├── .github/                        # GitHub Actions CI, issue & PR templates
@@ -539,11 +520,7 @@ docker compose --profile full up -d
 │   ├── ENVIRONMENT_MANAGEMENT.md   # Air quality & environmental monitoring blueprint
 │   ├── WATER_MANAGEMENT.md         # Municipal water distribution blueprint
 │   └── WASTE_MANAGEMENT.md         # Solid waste collection & routing blueprint
-├── docs/                           # Architecture blueprints, master handbook & task directories
-│   ├── Volume_1_System_Architecture.md # Vol 1: Architecture, data flow & 32 metrics catalog
-│   ├── Volume_2_Domain_Engineering_and_Math.md # Vol 2: First-principles physics & mathematical derivations
-│   ├── Volume_3_Screen_Operator_Guide.md # Vol 3: Exhaustive screen-by-screen operator & UI manual
-│   ├── Volume_4_Judge_Defense_and_Script.md # Vol 4: 20 judge Q&As, live demo script & forensic audit
+├── docs/                           # Architecture blueprints and task directories
 │   ├── architecture.md             # Technical architecture and DB schemas
 │   └── tasks/                      # Modular engineering implementation task directories
 │       ├── traffic-mobility/       # 11 engineering tasks for Traffic Mobility (Tasks 01 to 11)
