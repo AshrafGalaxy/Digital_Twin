@@ -25,6 +25,22 @@ import {
 
 const API_BASE = '/api/v1';
 
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const saved = localStorage.getItem('digital_twin_auth_user');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed?.token) {
+        headers['Authorization'] = `Bearer ${parsed.token}`;
+      }
+    }
+  } catch {
+    // Ignore localStorage parse error
+  }
+  return headers;
+}
+
 /**
  * Resilient fetch wrapper with automatic backoff and retry.
  * Handles transient network dropouts, 503 (backend warming up), and 502/504 gateway delays gracefully.
@@ -448,7 +464,7 @@ export async function authorizeAdvisory(
 ): Promise<DispatchWorkOrder> {
   const res = await fetch(`${API_BASE}/recommendations/${encodeURIComponent(recId)}/authorize`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   if (!res.ok) {
@@ -1002,7 +1018,7 @@ export async function fetchAccessInquiries(statusFilter?: string): Promise<Acces
   const url = statusFilter
     ? `${API_BASE}/inquiries?status_filter=${encodeURIComponent(statusFilter)}`
     : `${API_BASE}/inquiries`;
-  const res = await resilientFetch(url);
+  const res = await resilientFetch(url, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch access inquiries');
   return res.json();
 }
@@ -1013,7 +1029,7 @@ export async function approveAccessInquiry(
 ): Promise<ApproveInquiryResponse> {
   const res = await fetch(`${API_BASE}/inquiries/${encodeURIComponent(inquiryId)}/approve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   if (!res.ok) {
@@ -1029,7 +1045,7 @@ export async function rejectAccessInquiry(
 ): Promise<{ inquiry_id: string; status: string; rejection_reason: string }> {
   const res = await fetch(`${API_BASE}/inquiries/${encodeURIComponent(inquiryId)}/reject`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ rejection_reason: rejectionReason })
   });
   if (!res.ok) {
@@ -1071,7 +1087,7 @@ export async function authorizeEnergyAdvisory(
 ): Promise<EnergyDispatchWorkOrder> {
   const res = await fetch(`${API_BASE}/energy/advisories/${encodeURIComponent(advisoryId)}/authorize`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload)
   });
   if (!res.ok) {

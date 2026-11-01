@@ -23,17 +23,40 @@ from backend.core.database import get_db_session
 
 router = APIRouter()
 
-# Authoritative cryptographic session secret
-JWT_SECRET_KEY = os.getenv("MUNICIPAL_JWT_SECRET", "pune-dt-corridor-key-2026-viman-nagar")
+INSECURE_FALLBACK_JWT_SECRET = "pune-dt-corridor-key-2026-viman-nagar"
 
-VALID_MUNICIPAL_ROLES = [
+
+def get_jwt_secret() -> str:
+    """Retrieves authoritative JWT secret; refuses execution if missing or insecure fallback."""
+    secret = os.getenv("MUNICIPAL_JWT_SECRET", "").strip()
+    if not secret or secret == INSECURE_FALLBACK_JWT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Cryptographic session secret MUNICIPAL_JWT_SECRET is unconfigured or using an insecure fallback."
+        )
+    return secret
+
+
+OPERATIONAL_ROLES = [
     "Municipal Analyst",
     "Traffic Systems Engineer",
     "Energy Grid Manager",
     "Executive Auditor"
 ]
 
+PUBLIC_ROLES = [
+    "Civic Observer"
+]
+
+VALID_MUNICIPAL_ROLES = OPERATIONAL_ROLES + PUBLIC_ROLES
+
 ROLE_METADATA: Dict[str, Dict[str, Any]] = {
+    "Civic Observer": {
+        "badge": "CIVIC OBSERVER",
+        "clearance": "Level 0 : Public Transparency & Read-Only Access",
+        "department": "Public Stakeholder & Community Registry",
+        "workspaces": ["Operations Map (Read-Only)"]
+    },
     "Traffic Systems Engineer": {
         "badge": "TRAFFIC COMMAND",
         "clearance": "Level 2 • Operational Kinematics & Signal Control",
@@ -134,11 +157,12 @@ def _b64url_decode(data_str: str) -> bytes:
 
 def _create_jwt_token(payload: Dict[str, Any]) -> str:
     """Issues an authentic signed HMAC-SHA256 JWT session token."""
+    secret = get_jwt_secret()
     header = {"alg": "HS256", "typ": "JWT"}
     header_str = _b64url_encode(json.dumps(header, separators=(',', ':')).encode('utf-8'))
     payload_str = _b64url_encode(json.dumps(payload, separators=(',', ':')).encode('utf-8'))
     msg = f"{header_str}.{payload_str}".encode('utf-8')
-    sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), msg, hashlib.sha256).digest()
+    sig = hmac.new(secret.encode('utf-8'), msg, hashlib.sha256).digest()
     sig_str = _b64url_encode(sig)
     return f"{header_str}.{payload_str}.{sig_str}"
 
@@ -146,12 +170,16 @@ def _create_jwt_token(payload: Dict[str, Any]) -> str:
 def _verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
     """Decodes and cryptographically verifies an HMAC-SHA256 JWT token."""
     try:
+        secret = get_jwt_secret()
+    except HTTPException:
+        return None
+    try:
         parts = token.split('.')
         if len(parts) != 3:
             return None
         header_str, payload_str, sig_str = parts
         msg = f"{header_str}.{payload_str}".encode('utf-8')
-        expected_sig = hmac.new(JWT_SECRET_KEY.encode('utf-8'), msg, hashlib.sha256).digest()
+        expected_sig = hmac.new(secret.encode('utf-8'), msg, hashlib.sha256).digest()
         actual_sig = _b64url_decode(sig_str)
         if not hmac.compare_digest(expected_sig, actual_sig):
             return None
@@ -252,10 +280,19 @@ def register(payload: RegisterRequest):
     """
     email_clean = payload.email.strip().lower()
     
-    if payload.role not in VALID_MUNICIPAL_ROLES:
+    if payload.role in OPERATIONAL_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"Operational role '{payload.role}' cannot be self-assigned via public registration. "
+                "Municipal operational clearance requires administrative provisioning via official inquiry approval."
+            )
+        )
+
+    if payload.role not in PUBLIC_ROLES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid municipal role '{payload.role}'. Must be one of: {VALID_MUNICIPAL_ROLES}"
+            detail=f"Invalid registration role '{payload.role}'. Public registration allows only: {PUBLIC_ROLES}."
         )
 
     if email_clean in DEMO_USERS or email_clean in REGISTERED_USERS:
@@ -442,3 +479,55 @@ async def redeem_magic_link(
         workspaces=meta["workspaces"]
     )
 
+
+
+def get_current_authenticated_officer(
+    authorization: Optional[str] = Header(None, alias="Authorization")
+) -> Dict[str, Any]:
+    """
+    FastAPI dependency validating an incoming Bearer JWT session token.
+    Returns authenticated officer claims dictionary.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a valid Bearer session token."
+        )
+    raw_token = authorization.split("Bearer ", 1)[1].strip()
+    claims = _verify_jwt_token(raw_token)
+    if not claims:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session token expired or signature invalid."
+        )
+    return claims
+
+
+def require_admin_or_analyst(
+    officer: Dict[str, Any] = Depends(get_current_authenticated_officer)
+) -> Dict[str, Any]:
+    """
+    Restricts access to administrators and master analysts for inquiry approval and management.
+    """
+    role = officer.get("role")
+    if role not in ("Municipal Analyst", "Executive Auditor"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Operation requires administrative clearance. Current role: '{role}'."
+        )
+    return officer
+
+
+def require_operational_officer(
+    officer: Dict[str, Any] = Depends(get_current_authenticated_officer)
+) -> Dict[str, Any]:
+    """
+    Restricts access to certified operational municipal officers for advisory review and authorization.
+    """
+    role = officer.get("role")
+    if role not in OPERATIONAL_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Dispatch authorization requires operational clearance. Current role: '{role}'."
+        )
+    return officer

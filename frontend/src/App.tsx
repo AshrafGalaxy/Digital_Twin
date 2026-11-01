@@ -211,7 +211,7 @@ export const App: React.FC = () => {
     return null;
   });
 
-  const userRole: MunicipalRole = authUser?.role || 'Municipal Analyst';
+  const userRole: MunicipalRole = authUser?.role || 'Civic Observer';
 
   const handleNavigateAuth = useCallback((mode: 'signin' | 'signup' = 'signin') => {
     setAuthInitialMode(mode);

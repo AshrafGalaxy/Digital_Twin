@@ -4,7 +4,8 @@ export type MunicipalRole =
   | 'Municipal Analyst'
   | 'Traffic Systems Engineer'
   | 'Energy Grid Manager'
-  | 'Executive Auditor';
+  | 'Executive Auditor'
+  | 'Civic Observer';
 
 export type QualityStatus = 'VALID' | 'STALE' | 'DEGRADED' | 'INVALID';
 
@@ -316,10 +317,18 @@ export interface AdvisoryRecommendation {
   updatedAt: string;
 }
 
-export interface AuthorizeAdvisoryPayload {
+export interface OfficerCredentials {
+  officerName: string;
   badgeId: string;
+  department?: string;
+}
+
+export interface AuthorizeAdvisoryPayload {
+  primaryOfficer?: OfficerCredentials;
+  concurringOfficer?: OfficerCredentials;
+  badgeId?: string;
   shiftId: string;
-  reviewer: string;
+  reviewer?: string;
   decision: RecommendationStatus;
   notes?: string;
 }
@@ -596,8 +605,10 @@ export interface EnergyAdvisoryDossier {
 }
 
 export interface AuthorizeEnergyAdvisoryPayload {
-  reviewer: string;
-  badgeId: string;
+  primaryOfficer?: OfficerCredentials;
+  concurringOfficer?: OfficerCredentials;
+  reviewer?: string;
+  badgeId?: string;
   shiftId: string;
   decision: EnergyAdvisoryStatus;
   notes?: string;
@@ -613,6 +624,8 @@ export interface EnergyDispatchWorkOrder {
   shiftId: string;
   issuedAt: string;
   decision: EnergyAdvisoryStatus;
+  primaryOfficer?: OfficerCredentials;
+  concurringOfficer?: OfficerCredentials;
   schedule: DispatchScheduleSlot[];
   safetyChecks: SafetyInterlocks;
   projectedSavingsInr: number;

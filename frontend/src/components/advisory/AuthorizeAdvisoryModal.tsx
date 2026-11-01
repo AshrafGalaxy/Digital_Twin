@@ -9,7 +9,9 @@ import {
   Check,
   X,
   FileCheck,
-  Hash
+  Hash,
+  UserCheck,
+  Users
 } from 'lucide-react';
 import {
   AdvisoryRecommendation,
@@ -28,13 +30,21 @@ interface AuthorizeAdvisoryModalProps {
 
 export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
   advisory,
-  initialReviewerName = 'Municipal Analyst',
+  initialReviewerName = 'Traffic Operations Engineer',
   onClose,
   onAuthorized
 }) => {
-  const [badgeId, setBadgeId] = useState<string>('MCC-OPS-4091');
+  // Dual-control credentials: Primary Initiating Officer
+  const [primaryOfficerName, setPrimaryOfficerName] = useState<string>(initialReviewerName);
+  const [primaryBadgeId, setPrimaryBadgeId] = useState<string>('MCC-OPS-4091');
+  const [primaryDepartment, setPrimaryDepartment] = useState<string>('Transportation Operations Division');
+
+  // Dual-control credentials: Concurring Secondary Supervisor
+  const [concurringOfficerName, setConcurringOfficerName] = useState<string>('Municipal Traffic Supervisor');
+  const [concurringBadgeId, setConcurringBadgeId] = useState<string>('MCC-SUP-1088');
+  const [concurringDepartment, setConcurringDepartment] = useState<string>('Municipal Traffic Management Cell');
+
   const [shiftId, setShiftId] = useState<string>('SHIFT-EVENING-B');
-  const [reviewer, setReviewer] = useState<string>(initialReviewerName);
   const [decision, setDecision] = useState<RecommendationStatus>('ACKNOWLEDGED');
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -44,8 +54,22 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badgeId.trim()) {
-      setError('Dispatcher Badge ID is mandatory for municipal audit logging.');
+    if (!primaryOfficerName.trim() || !primaryBadgeId.trim()) {
+      setError('Primary Initiating Officer name and badge ID are mandatory.');
+      return;
+    }
+    if (!concurringOfficerName.trim() || !concurringBadgeId.trim()) {
+      setError('Concurring Secondary Supervisor name and badge ID are mandatory for dual-control authorization.');
+      return;
+    }
+
+    if (primaryBadgeId.trim().toLowerCase() === concurringBadgeId.trim().toLowerCase()) {
+      setError('Dual-control invariant violation: Initiating officer and concurring supervisor cannot share identical badge identifiers.');
+      return;
+    }
+
+    if (primaryOfficerName.trim().toLowerCase() === concurringOfficerName.trim().toLowerCase()) {
+      setError('Dual-control invariant violation: Initiating officer and concurring supervisor cannot be identical individuals.');
       return;
     }
 
@@ -53,9 +77,19 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
       setSubmitting(true);
       setError(null);
       const payload: AuthorizeAdvisoryPayload = {
-        badgeId: badgeId.trim(),
+        primaryOfficer: {
+          officerName: primaryOfficerName.trim(),
+          badgeId: primaryBadgeId.trim(),
+          department: primaryDepartment.trim() || 'Transportation Operations Division'
+        },
+        concurringOfficer: {
+          officerName: concurringOfficerName.trim(),
+          badgeId: concurringBadgeId.trim(),
+          department: concurringDepartment.trim() || 'Municipal Traffic Management Cell'
+        },
+        badgeId: primaryBadgeId.trim(),
+        reviewer: primaryOfficerName.trim(),
         shiftId: shiftId.trim(),
-        reviewer: reviewer.trim(),
         decision,
         notes: notes.trim() || undefined
       };
@@ -110,8 +144,8 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
         border: '1px solid var(--color-border-strong, #222329)',
         borderRadius: 'var(--radius-lg, 12px)',
         width: '100%',
-        maxWidth: '640px',
-        maxHeight: '90vh',
+        maxWidth: '720px',
+        maxHeight: '92vh',
         overflowY: 'auto',
         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.65)',
         display: 'flex',
@@ -140,7 +174,7 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
             </div>
             <div>
               <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-text, #F0F6FC)' }}>
-                {issuedOrder ? 'Municipal Dispatch Order Issued' : 'Operator Authorization & Dispatch Workflow'}
+                {issuedOrder ? 'Municipal Dispatch Order Issued' : 'Dual-Control Operator Authorization Workflow'}
               </h2>
               <span style={{ fontSize: '11px', color: 'var(--color-text-secondary, #C9D1D9)' }}>
                 {advisory.recommendationId} : {(advisory.targetEntityId || '').split(':').pop()}
@@ -173,7 +207,7 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
           }}>
             <AlertTriangle size={18} color="#D29922" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '12px', color: '#F0F6FC', lineHeight: '1.5' }}>
-              <strong>Mandatory Non-Actuation Governance:</strong> The digital twin platform is strictly read-only decision support. Authorizing this recommendation generates an immutable dispatch work order with a cryptographic SHA-256 hash. No direct physical actuator signal is emitted. Field implementation requires authorization outside the platform.
+              <strong>Mandatory Non-Actuation Governance:</strong> The digital twin platform is strictly read-only decision support. Authorizing this recommendation generates an immutable dispatch work order requiring dual-officer credentials and producing a cryptographic SHA-256 hash. No physical actuator signal is emitted. Field implementation requires offline authorization outside the platform.
             </div>
           </div>
 
@@ -194,22 +228,141 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
           {!issuedOrder ? (
             /* Authorization Form */
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-                    Dispatcher Badge ID *
+              {/* Dual Control Section Header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                paddingBottom: '6px',
+                borderBottom: '1px solid var(--color-border, #16171B)'
+              }}>
+                <Users size={15} color="var(--color-primary, #2F81F7)" />
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Dual-Control Officer Verification Invariant
+                </span>
+              </div>
+
+              {/* Officer 1: Primary Initiating Officer */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--color-border, #16171B)',
+                borderRadius: 'var(--radius-md, 8px)',
+                padding: '14px',
+                marginBottom: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                  <UserCheck size={14} color="var(--color-primary, #2F81F7)" />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase' }}>
+                    1. Primary Initiating Officer (Reviewer)
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Officer Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={primaryOfficerName}
+                      onChange={(e) => setPrimaryOfficerName(e.target.value)}
+                      placeholder="e.g. Ramesh Kadam"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Dispatcher Badge ID *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={primaryBadgeId}
+                      onChange={(e) => setPrimaryBadgeId(e.target.value)}
+                      placeholder="e.g. MCC-OPS-4091"
+                      style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                    Department / Division
                   </label>
                   <input
                     type="text"
-                    required
                     className="form-input"
-                    value={badgeId}
-                    onChange={(e) => setBadgeId(e.target.value)}
-                    placeholder="e.g. MCC-OPS-4091"
-                    style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                    value={primaryDepartment}
+                    onChange={(e) => setPrimaryDepartment(e.target.value)}
+                    placeholder="e.g. Transportation Operations Division"
+                    style={{ width: '100%' }}
                   />
                 </div>
+              </div>
 
+              {/* Officer 2: Concurring Secondary Supervisor */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--color-border, #16171B)',
+                borderRadius: 'var(--radius-md, 8px)',
+                padding: '14px',
+                marginBottom: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                  <ShieldCheck size={14} color="#3FB950" />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase' }}>
+                    2. Concurring Secondary Supervisor (Approver)
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Supervisor Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={concurringOfficerName}
+                      onChange={(e) => setConcurringOfficerName(e.target.value)}
+                      placeholder="e.g. Sunita Deshmukh"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Supervisor Badge ID *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      value={concurringBadgeId}
+                      onChange={(e) => setConcurringBadgeId(e.target.value)}
+                      placeholder="e.g. MCC-SUP-1088"
+                      style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                    Department / Division
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={concurringDepartment}
+                    onChange={(e) => setConcurringDepartment(e.target.value)}
+                    placeholder="e.g. Municipal Traffic Management Cell"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Shift and Decision Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
                     Operating Shift ID *
@@ -222,23 +375,6 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
                     onChange={(e) => setShiftId(e.target.value)}
                     placeholder="e.g. SHIFT-EVENING-B"
                     style={{ width: '100%', fontFamily: 'var(--font-mono)' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-                    Reviewer Name & Role
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="form-input"
-                    value={reviewer}
-                    onChange={(e) => setReviewer(e.target.value)}
-                    placeholder="e.g. Municipal Traffic Officer"
-                    style={{ width: '100%' }}
                   />
                 </div>
 
@@ -302,11 +438,11 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
                 <button
                   type="submit"
                   className="btn btn-primary btn-sm"
-                  disabled={submitting || !badgeId.trim()}
-                  style={{ minWidth: '220px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  disabled={submitting || !primaryBadgeId.trim() || !concurringBadgeId.trim()}
+                  style={{ minWidth: '240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
                   <FileCheck size={15} />
-                  <span>{submitting ? 'Generating Cryptographic Order...' : 'Generate Municipal Dispatch Order'}</span>
+                  <span>{submitting ? 'Generating Cryptographic Order...' : 'Authorize Dual-Control Dispatch Order'}</span>
                 </button>
               </div>
             </form>
@@ -326,7 +462,7 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
                 <CheckCircle2 size={24} color="#3FB950" style={{ flexShrink: 0 }} />
                 <div>
                   <span style={{ fontSize: '11px', fontWeight: 600, color: '#3FB950', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Municipal Work Order Generated & Authenticated
+                    Dual-Control Municipal Work Order Issued & Authenticated
                   </span>
                   <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#F0F6FC', marginTop: '2px' }}>
                     {issuedOrder.dispatchOrderId}
@@ -389,12 +525,20 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
                   <span style={{ fontFamily: 'var(--font-mono)', color: '#F0F6FC' }}>{issuedOrder.targetEntityId}</span>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '10px' }}>Authorized By:</span>
-                  <span style={{ color: '#F0F6FC' }}>{issuedOrder.authorizedBy} (Badge: {issuedOrder.badgeId})</span>
+                  <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '10px' }}>Authorized Officers:</span>
+                  <span style={{ color: '#F0F6FC' }}>{issuedOrder.authorizedBy}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '10px' }}>Officer Badge Numbers:</span>
+                  <span style={{ color: '#F0F6FC', fontFamily: 'var(--font-mono)' }}>{issuedOrder.badgeId}</span>
                 </div>
                 <div>
                   <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '10px' }}>Duty Shift:</span>
                   <span style={{ color: '#F0F6FC' }}>{issuedOrder.shiftId}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '10px' }}>Decision Status:</span>
+                  <span style={{ color: '#F0F6FC', fontWeight: 600 }}>{issuedOrder.decision}</span>
                 </div>
                 <div>
                   <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '10px' }}>Issued At:</span>

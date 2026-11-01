@@ -44,7 +44,7 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
   const [signUpName, setSignUpName] = useState<string>('');
   const [signUpEmail, setSignUpEmail] = useState<string>('');
   const [signUpPassword, setSignUpPassword] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<MunicipalRole>('Traffic Systems Engineer');
+  const [selectedRole, setSelectedRole] = useState<MunicipalRole>('Civic Observer');
 
   const demoAccounts = [
     {
@@ -338,11 +338,11 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value as MunicipalRole)}
                 >
-                  <option value="Traffic Systems Engineer">Traffic Systems Engineer (Level 2)</option>
-                  <option value="Energy Grid Manager">Energy Grid Manager (Level 2)</option>
-                  <option value="Executive Auditor">Executive Auditor (Level 3)</option>
-                  <option value="Municipal Analyst">Municipal Analyst (Level 1 Master)</option>
+                  <option value="Civic Observer">Civic Observer (Level 0 Public Transparency)</option>
                 </select>
+                <span style={{ fontSize: '11px', color: '#8B949E', marginTop: '4px', display: 'block' }}>
+                  Operational clearances require reviewed agency provisioning. Certified municipal officers should submit an official inquiry via the Request Access tab.
+                </span>
               </div>
 
               <div className="input-group">

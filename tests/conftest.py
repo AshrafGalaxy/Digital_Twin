@@ -4,6 +4,7 @@ from pathlib import Path
 
 # Enforce hermetic SQLite database backend for all automated test runs (Invariant #6)
 os.environ["DATABASE_BACKEND"] = "sqlite"
+os.environ["MUNICIPAL_JWT_SECRET"] = "hermetic-secure-municipal-jwt-token-secret-2026-key-64bytes"
 
 # Add project root to sys.path so tests can import backend and simulation modules
 ROOT_DIR = Path(__file__).resolve().parent.parent

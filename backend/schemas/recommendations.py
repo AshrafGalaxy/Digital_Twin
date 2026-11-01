@@ -106,6 +106,12 @@ class AdvisoryRecommendation(BaseModel):
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class OfficerCredentials(BaseModel):
+    officerName: str = Field(..., min_length=2, max_length=120, description="Officer full name")
+    badgeId: str = Field(..., min_length=2, max_length=64, description="Officer badge identifier")
+    department: Optional[str] = Field(default="Transportation Operations Division", max_length=120)
+
+
 class ReviewRecommendationRequest(BaseModel):
     newStatus: RecommendationStatus = Field(..., description="Target status: UNDER_REVIEW, ACKNOWLEDGED, or DISMISSED")
     reviewer: str = Field(default="Municipal Traffic Cell Officer", min_length=2, description="Reviewer name or identifier")
@@ -113,9 +119,11 @@ class ReviewRecommendationRequest(BaseModel):
 
 
 class AuthorizeAdvisoryRequest(BaseModel):
-    badgeId: str = Field(..., min_length=2, max_length=64, description="Dispatcher municipal badge ID")
+    primaryOfficer: Optional[OfficerCredentials] = Field(default=None, description="Primary reviewing officer")
+    concurringOfficer: Optional[OfficerCredentials] = Field(default=None, description="Secondary concurring supervisor")
+    badgeId: Optional[str] = Field(default=None, max_length=64, description="Dispatcher municipal badge ID (legacy)")
     shiftId: str = Field(default="SHIFT-A", min_length=2, max_length=64, description="Operating shift identifier")
-    reviewer: str = Field(default="Municipal Traffic Officer", min_length=2, description="Authorized reviewer name")
+    reviewer: Optional[str] = Field(default=None, max_length=120, description="Authorized reviewer name (legacy)")
     decision: RecommendationStatus = Field(default=RecommendationStatus.ACKNOWLEDGED, description="Authorization status")
     notes: Optional[str] = Field(None, max_length=1000, description="Operational justification and dispatch notes")
 
@@ -124,11 +132,13 @@ class DispatchWorkOrder(BaseModel):
     dispatchOrderId: str = Field(..., description="Unique municipal dispatch identifier (MDO-YYYYMMDD-XXXX)")
     recommendationId: str = Field(..., description="Target recommendation ID")
     targetEntityId: str = Field(..., description="Physical corridor entity target")
-    authorizedBy: str = Field(..., description="Authorizing dispatcher")
-    badgeId: str = Field(..., description="Dispatcher badge number")
+    authorizedBy: str = Field(..., description="Authorizing dispatcher(s)")
+    badgeId: str = Field(..., description="Dispatcher badge number(s)")
     shiftId: str = Field(..., description="Duty shift identifier")
     issuedAt: datetime = Field(..., description="Authorization timestamp")
     decision: RecommendationStatus = Field(..., description="Authorization status decision")
+    primaryOfficer: Optional[OfficerCredentials] = None
+    concurringOfficer: Optional[OfficerCredentials] = None
     proposedChange: Optional[ProposedParameterChange] = None
     predictedImpact: Optional[ConformalPredictedImpact] = None
     safetyChecklist: Optional[SafetyConstraintChecklist] = None

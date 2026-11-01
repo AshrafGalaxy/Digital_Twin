@@ -1,3 +1,4 @@
+from backend.api.v1.endpoints.auth import require_operational_officer
 """
 energy.py
 
@@ -334,8 +335,22 @@ async def get_energy_advisory_detail(advisory_id: str):
 async def authorize_energy_advisory(
     advisory_id: str,
     request: AuthorizeEnergyAdvisoryRequest,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    officer: Dict[str, Any] = Depends(require_operational_officer)
 ):
+    # Enforce dual-control authorization
+    if not request.primaryOfficer or not request.concurringOfficer:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dual-control authorization requires both primaryOfficer and concurringOfficer credentials."
+        )
+
+    if (request.primaryOfficer.badgeId.strip().lower() == request.concurringOfficer.badgeId.strip().lower() or
+        request.primaryOfficer.officerName.strip().lower() == request.concurringOfficer.officerName.strip().lower()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dual-control authorization requires two distinct municipal officers. Initiating officer and concurring supervisor cannot be identical."
+        )
     """
     Authorizes an energy demand-response advisory via dual-key operator sign-off.
     Generates a cryptographic SHA-256 tamper-evident hash, creates an official

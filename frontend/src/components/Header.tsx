@@ -55,7 +55,8 @@ export const ROLE_ALLOWED_TABS: Record<MunicipalRole, TabId[]> = {
     'recommendations',
     'evaluation',
     'health'
-  ]
+  ],
+  'Civic Observer': ['landing', 'provisioning', 'auth', 'operations']
 };
 
 interface HeaderProps {
@@ -182,6 +183,8 @@ export const Header: React.FC<HeaderProps> = ({
       ? '#10B981'
       : userRole === 'Executive Auditor'
       ? '#38BDF8'
+      : userRole === 'Civic Observer'
+      ? '#8B949E'
       : '#2F81F7';
 
   return (
@@ -347,7 +350,7 @@ export const Header: React.FC<HeaderProps> = ({
                             backgroundColor: authUser ? '#10B981' : '#F59E0B'
                           }}
                         />
-                        {authUser ? 'Verified Authorization' : 'Guest Analyst Session'}
+                        {authUser ? 'Verified Authorization' : 'Unauthenticated Visitor'}
                       </span>
                     </div>
                   </div>

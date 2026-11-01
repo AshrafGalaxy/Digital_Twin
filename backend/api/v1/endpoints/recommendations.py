@@ -1,3 +1,4 @@
+from backend.api.v1.endpoints.auth import require_operational_officer
 """
 recommendations.py
 
@@ -168,13 +169,28 @@ async def review_recommendation(rec_id: str, request: ReviewRecommendationReques
 async def authorize_advisory(
     rec_id: str,
     request: AuthorizeAdvisoryRequest,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    officer: Dict[str, Any] = Depends(require_operational_officer)
 ):
     """
     Authorizes an advisory recommendation by generating an official Municipal Dispatch Order (MDO),
     computing a cryptographic SHA-256 tamper-evident hash, and persisting an immutable audit record.
     Strict non-actuation invariant is preserved: recommendations remain advisory.
     """
+    # Enforce dual-control authorization
+    if not request.primaryOfficer or not request.concurringOfficer:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dual-control authorization requires both primaryOfficer and concurringOfficer credentials."
+        )
+
+    if (request.primaryOfficer.badgeId.strip().lower() == request.concurringOfficer.badgeId.strip().lower() or
+        request.primaryOfficer.officerName.strip().lower() == request.concurringOfficer.officerName.strip().lower()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dual-control authorization requires two distinct municipal officers. Initiating officer and concurring supervisor cannot be identical."
+        )
+
     result = rule_engine.authorize_advisory(rec_id, request)
     if not result:
         raise HTTPException(
@@ -227,8 +243,8 @@ async def authorize_advisory(
                 "action_type": "MUNICIPAL_DISPATCH_AUTHORIZATION",
                 "previous_status": prev_status_val,
                 "new_status": request.decision.value if hasattr(request.decision, "value") else str(request.decision),
-                "authorized_by": request.reviewer,
-                "badge_id": request.badgeId,
+                "authorized_by": dispatch_order.authorizedBy,
+                "badge_id": dispatch_order.badgeId,
                 "shift_id": request.shiftId,
                 "justification_notes": request.notes or "",
                 "dispatch_order_id": dispatch_order.dispatchOrderId,
@@ -239,6 +255,11 @@ async def authorize_advisory(
         await session.commit()
     except Exception as e:
         logger.error(f"Failed to persist advisory_audit_log to database: {e}")
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Cryptographic audit persistence failed: {e}. Dispatch order revoked."
+        )
 
     return dispatch_order
 

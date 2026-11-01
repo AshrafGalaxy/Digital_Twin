@@ -3,6 +3,7 @@ test_provisioning_workflow.py
 
 Hermetic automated test suite for end-to-end access inquiry intake,
 admin review, single-use cryptographic magic link issuance, and redemption.
+Verifies administrative RBAC enforcement (analyst/auditor clearance required).
 """
 
 import pytest
@@ -16,17 +17,30 @@ def client():
         yield c
 
 
+def _get_admin_auth_header(client):
+    """Helper to retrieve authenticated Bearer token for Municipal Analyst."""
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123"
+    })
+    assert res.status_code == 200
+    token = res.json()["token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_submit_access_inquiry_and_admin_lifecycle(client):
     """
     Verifies that:
-    1. A prospective agency can submit an access inquiry.
-    2. Admin can list pending inquiries from the database.
+    1. A prospective agency can submit an access inquiry (public endpoint).
+    2. Admin can list pending inquiries from the database with Bearer auth.
     3. Admin can approve the inquiry with a specific municipal role.
     4. System issues a single-use cryptographic magic access token and email payload.
     5. The magic link can be redeemed to receive an authentic JWT session.
     6. Re-using the same magic token is strictly rejected.
     """
-    # Step 1: Submit Inquiry
+    admin_headers = _get_admin_auth_header(client)
+
+    # Step 1: Submit Inquiry (Publicly accessible)
     payload = {
         "organization": "Metropolitan Transit Authority",
         "work_email": "ops.director@mta-corridor.gov",
@@ -43,8 +57,8 @@ def test_submit_access_inquiry_and_admin_lifecycle(client):
     assert inquiry_id.startswith("INQ-")
     assert submit_data["status"] == "received"
 
-    # Step 2: Admin lists inquiries and locates the submitted request
-    list_resp = client.get("/api/v1/inquiries?status_filter=PENDING")
+    # Step 2: Admin lists inquiries and locates the submitted request (Protected)
+    list_resp = client.get("/api/v1/inquiries?status_filter=PENDING", headers=admin_headers)
     assert list_resp.status_code == 200
     inquiries = list_resp.json()
     assert any(inq["id"] == inquiry_id for inq in inquiries)
@@ -54,13 +68,13 @@ def test_submit_access_inquiry_and_admin_lifecycle(client):
     assert matching_inq["contact_name"] == "Director Sarah Chen"
     assert matching_inq["status"] == "PENDING"
 
-    # Step 3: Admin approves inquiry with designated role
+    # Step 3: Admin approves inquiry with designated role (Protected)
     approve_payload = {
         "assigned_role": "Traffic Systems Engineer",
         "expiry_days": 14,
         "reviewer_notes": "Approved for metropolitan timing demonstration."
     }
-    approve_resp = client.post(f"/api/v1/inquiries/{inquiry_id}/approve", json=approve_payload)
+    approve_resp = client.post(f"/api/v1/inquiries/{inquiry_id}/approve", json=approve_payload, headers=admin_headers)
     assert approve_resp.status_code == 200
     approve_data = approve_resp.json()
     assert approve_data["status"] == "APPROVED"
@@ -91,6 +105,7 @@ def test_reject_access_inquiry(client):
     """
     Verifies that admin can reject an access inquiry with a stated reason.
     """
+    admin_headers = _get_admin_auth_header(client)
     payload = {
         "organization": "Unauthorized Commercial Scraper Inc",
         "work_email": "bot@unverified-domain.com",
@@ -106,16 +121,26 @@ def test_reject_access_inquiry(client):
 
     reject_resp = client.post(
         f"/api/v1/inquiries/{inquiry_id}/reject",
-        json={"rejection_reason": "Unverified municipal jurisdiction and non-authorized domain."}
+        json={"rejection_reason": "Unverified municipal jurisdiction and non-authorized domain."},
+        headers=admin_headers
     )
     assert reject_resp.status_code == 200
     assert reject_resp.json()["status"] == "REJECTED"
 
     # Confirm status in admin list
-    list_resp = client.get("/api/v1/inquiries?status_filter=REJECTED")
+    list_resp = client.get("/api/v1/inquiries?status_filter=REJECTED", headers=admin_headers)
     assert list_resp.status_code == 200
     inquiries = list_resp.json()
     assert any(inq["id"] == inquiry_id for inq in inquiries)
+
+
+def test_inquiries_unauthenticated_rejection(client):
+    """
+    Verifies that inquiries management endpoints reject unauthenticated access with HTTP 401.
+    """
+    assert client.get("/api/v1/inquiries").status_code == 401
+    assert client.post("/api/v1/inquiries/INQ-FAKE-01/approve", json={"assigned_role": "Traffic Systems Engineer"}).status_code == 401
+    assert client.post("/api/v1/inquiries/INQ-FAKE-01/reject", json={"rejection_reason": "test"}).status_code == 401
 
 
 def test_magic_link_invalid_token(client):

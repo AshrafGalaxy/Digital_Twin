@@ -62,9 +62,17 @@ class EnergyAdvisoryDossier(BaseModel):
     )
 
 
+class EnergyOfficerCredentials(BaseModel):
+    officerName: str = Field(..., min_length=2, max_length=120, description="Officer full name")
+    badgeId: str = Field(..., min_length=2, max_length=64, description="Operator badge identifier")
+    department: Optional[str] = Field(default="Municipal Utilities & Commercial Grid", max_length=120)
+
+
 class AuthorizeEnergyAdvisoryRequest(BaseModel):
-    reviewer: str = Field(..., min_length=2, max_length=120, description="Authorizing operator name")
-    badgeId: str = Field(..., min_length=2, max_length=64, description="Operator municipal badge identifier")
+    primaryOfficer: Optional[EnergyOfficerCredentials] = Field(default=None, description="Primary reviewing engineer")
+    concurringOfficer: Optional[EnergyOfficerCredentials] = Field(default=None, description="Secondary concurring supervisor")
+    reviewer: Optional[str] = Field(default=None, max_length=120, description="Authorizing operator name (legacy)")
+    badgeId: Optional[str] = Field(default=None, max_length=64, description="Operator municipal badge identifier (legacy)")
     shiftId: str = Field(default="SHIFT-EVENING-B", min_length=2, max_length=64, description="Operating duty shift")
     decision: AdvisoryStatus = Field(default=AdvisoryStatus.AUTHORIZED, description="Authorization decision: AUTHORIZED or REJECTED")
     notes: Optional[str] = Field(None, max_length=1000, description="Operational justification notes")
@@ -75,11 +83,13 @@ class EnergyDispatchWorkOrder(BaseModel):
     advisoryId: str = Field(..., description="Referenced advisory ID")
     facilityId: str = Field(..., description="Target facility ID")
     facilityName: str = Field(..., description="Target facility name")
-    authorizedBy: str = Field(..., description="Authorizing operator")
-    badgeId: str = Field(..., description="Operator badge ID")
+    authorizedBy: str = Field(..., description="Authorizing operator(s)")
+    badgeId: str = Field(..., description="Operator badge ID(s)")
     shiftId: str = Field(..., description="Operating shift")
     issuedAt: datetime = Field(..., description="Authorization timestamp")
     decision: AdvisoryStatus = Field(..., description="Recorded decision")
+    primaryOfficer: Optional[EnergyOfficerCredentials] = None
+    concurringOfficer: Optional[EnergyOfficerCredentials] = None
     schedule: List[DispatchScheduleSlot] = Field(..., description="Authorized dispatch schedule")
     safetyChecks: SafetyInterlocks = Field(..., description="Validated safety interlocks")
     projectedSavingsInr: float = Field(..., description="Projected financial savings in INR")

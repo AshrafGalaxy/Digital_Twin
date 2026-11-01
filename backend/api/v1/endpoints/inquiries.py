@@ -1,3 +1,4 @@
+from backend.api.v1.endpoints.auth import require_admin_or_analyst
 """
 inquiries.py
 
@@ -135,7 +136,8 @@ async def submit_access_inquiry(
 )
 async def list_access_inquiries(
     status_filter: Optional[str] = Query(None, description="Filter by status: PENDING, APPROVED, REJECTED"),
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    officer: Dict[str, Any] = Depends(require_admin_or_analyst)
 ) -> List[AccessInquiryRecord]:
     if status_filter:
         query = text("""
@@ -187,7 +189,8 @@ async def list_access_inquiries(
 async def approve_access_inquiry(
     inquiry_id: str,
     payload: ApproveInquiryRequest,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    officer: Dict[str, Any] = Depends(require_admin_or_analyst)
 ) -> ApproveInquiryResponse:
     # 1. Fetch inquiry
     res = await session.execute(
@@ -233,12 +236,13 @@ async def approve_access_inquiry(
         UPDATE access_inquiries
         SET status = 'APPROVED',
             assigned_role = :role,
-            reviewed_by = 'Platform Administrator',
+            reviewed_by = :reviewed_by,
             reviewed_at = :reviewed_at
         WHERE id = :id
     """)
     await session.execute(update_stmt, {
         "role": payload.assigned_role,
+        "reviewed_by": officer.get("name", "Platform Administrator"),
         "reviewed_at": now_utc,
         "id": inquiry_id
     })
@@ -287,7 +291,8 @@ City Operations Center Platform Administration
 async def reject_access_inquiry(
     inquiry_id: str,
     payload: RejectInquiryRequest,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    officer: Dict[str, Any] = Depends(require_admin_or_analyst)
 ):
     res = await session.execute(
         text("SELECT * FROM access_inquiries WHERE id = :id"),
@@ -301,12 +306,13 @@ async def reject_access_inquiry(
         UPDATE access_inquiries
         SET status = 'REJECTED',
             rejection_reason = :reason,
-            reviewed_by = 'Platform Administrator',
+            reviewed_by = :reviewed_by,
             reviewed_at = :reviewed_at
         WHERE id = :id
     """)
     await session.execute(update_stmt, {
         "reason": payload.rejection_reason.strip(),
+        "reviewed_by": officer.get("name", "Platform Administrator"),
         "reviewed_at": datetime.now(timezone.utc),
         "id": inquiry_id
     })

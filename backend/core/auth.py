@@ -1,17 +1,22 @@
 """
 auth.py
 
-Role-Based Access Control (RBAC) and basic demo authentication for the platform (D-11).
-Supports viewer, analyst, and admin roles for remote stakeholder demonstrations.
-Can be toggled via AUTH_ENABLED in settings (defaults to False for frictionless local dev).
+Core authentication and Role-Based Access Control (RBAC) dependency provider.
+Integrates cryptographic Bearer JWT verification and dual-control operational clearances.
 """
 
 import os
 from enum import Enum
-from typing import List, Optional
-from fastapi import Header, HTTPException, Security, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from typing import List, Optional, Dict, Any
+from fastapi import Header, HTTPException, Security, status, Depends
 from pydantic import BaseModel
+
+from backend.api.v1.endpoints.auth import (
+    get_current_authenticated_officer,
+    require_admin_or_analyst,
+    require_operational_officer,
+    _verify_jwt_token
+)
 
 
 class UserRole(str, Enum):
@@ -25,64 +30,27 @@ class AuthenticatedUser(BaseModel):
     role: UserRole
 
 
-# Default demo credentials when AUTH_ENABLED=True
-DEMO_CREDENTIALS = {
-    "admin": ("admin123", UserRole.ADMIN),
-    "analyst": ("analyst123", UserRole.ANALYST),
-    "viewer": ("viewer123", UserRole.VIEWER),
-}
-
-# Role hierarchy: admin > analyst > viewer
-ROLE_PERMISSIONS = {
-    UserRole.ADMIN: [UserRole.ADMIN, UserRole.ANALYST, UserRole.VIEWER],
-    UserRole.ANALYST: [UserRole.ANALYST, UserRole.VIEWER],
-    UserRole.VIEWER: [UserRole.VIEWER],
-}
-
-security = HTTPBasic(auto_error=False)
-
-
 def get_current_user(
-    credentials: Optional[HTTPBasicCredentials] = Security(security),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
     x_api_key: Optional[str] = Header(None, alias="X-API-Key")
 ) -> AuthenticatedUser:
     """
-    Authenticates requests if AUTH_ENABLED is set to true.
-    If AUTH_ENABLED is false (default), grants admin access automatically for local dev.
+    Authenticates requests via Bearer JWT session token or administrative API key.
     """
-    auth_enabled = os.getenv("AUTH_ENABLED", "false").strip().lower() in ("true", "1", "yes")
-
-    if not auth_enabled:
-        return AuthenticatedUser(username="local-dev-operator", role=UserRole.ADMIN)
-
-    # API Key shortcut for automated CI / headless scripts
     master_key = os.getenv("DEMO_API_KEY", "twin-demo-secret-key-2026")
     if x_api_key and x_api_key == master_key:
         return AuthenticatedUser(username="api-client", role=UserRole.ADMIN)
 
-    # HTTP Basic authentication
-    if credentials:
-        user_info = DEMO_CREDENTIALS.get(credentials.username)
-        if user_info and user_info[0] == credentials.password:
-            return AuthenticatedUser(username=credentials.username, role=user_info[1])
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split("Bearer ", 1)[1].strip()
+        claims = _verify_jwt_token(token)
+        if claims:
+            role_str = claims.get("role", "")
+            mapped_role = UserRole.ADMIN if role_str in ("Municipal Analyst", "Executive Auditor") else UserRole.ANALYST
+            return AuthenticatedUser(username=claims.get("name", "officer"), role=mapped_role)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or missing authentication credentials for remote demo access.",
-        headers={"WWW-Authenticate": "Basic"}
+        detail="Invalid or missing authentication credentials.",
+        headers={"WWW-Authenticate": "Bearer"}
     )
-
-
-def require_role(allowed_roles: List[UserRole]):
-    """
-    Dependency factory verifying that the authenticated user possesses the required role.
-    """
-    def role_checker(user: AuthenticatedUser = Security(get_current_user)) -> AuthenticatedUser:
-        user_permissions = ROLE_PERMISSIONS.get(user.role, [])
-        if not any(role in user_permissions for role in allowed_roles):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Operation requires one of roles: {[r.value for r in allowed_roles]}. Current role: '{user.role.value}'."
-            )
-        return user
-    return role_checker

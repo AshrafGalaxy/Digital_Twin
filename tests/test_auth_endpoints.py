@@ -4,26 +4,32 @@ tests/test_auth_endpoints.py
 Hermetic verification of Municipal Authentication API endpoints:
 - Successful login with demo credentials
 - Invalid credentials rejection
-- Municipal official registration with valid role assignment
-- Rejection of unauthorized roles
+- Municipal official registration with valid role assignment (Civic Observer public)
+- Rejection of self-assigned operational roles (HTTP 403 Forbidden)
+- Rejection of unauthorized roles (HTTP 400 Bad Request)
+- Insecure fallback secret refusal (HTTP 500 Internal Server Error)
 - Roles and clearance metadata query
 """
 
+import os
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from backend.main import app
+from backend.api.v1.endpoints.auth import get_jwt_secret, INSECURE_FALLBACK_JWT_SECRET
 
 client = TestClient(app)
 
 
 def test_auth_roles_metadata():
-    """Verify metadata returns all 4 municipal roles with clearance scopes."""
+    """Verify metadata returns all 5 municipal roles (4 operational + 1 civic observer) with clearance scopes."""
     response = client.get("/api/v1/auth/roles")
     assert response.status_code == 200
     data = response.json()
     assert "roles" in data
     assert "metadata" in data
-    assert len(data["roles"]) == 4
+    assert len(data["roles"]) == 5
+    assert "Civic Observer" in data["roles"]
     assert "Traffic Systems Engineer" in data["roles"]
     assert "Energy Grid Manager" in data["roles"]
     assert "Executive Auditor" in data["roles"]
@@ -68,21 +74,36 @@ def test_login_invalid_password():
     assert response.status_code == 401
 
 
-def test_registration_success():
-    """Verify new municipal officer registration."""
+def test_registration_success_civic_observer():
+    """Verify new civic observer registration is permitted publicly."""
     payload = {
         "name": "Siddharth Joshi",
-        "email": f"siddharth.joshi.test@pmc.gov.in",
+        "email": "siddharth.joshi.civic@pmc.gov.in",
         "password": "securepassword123",
-        "role": "Energy Grid Manager",
-        "department": "Municipal Utilities & Commercial Grid"
+        "role": "Civic Observer",
+        "department": "Public Stakeholder & Community Registry"
     }
     response = client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 200
     user = response.json()
     assert user["name"] == "Siddharth Joshi"
-    assert user["role"] == "Energy Grid Manager"
+    assert user["role"] == "Civic Observer"
     assert "token" in user
+
+
+def test_registration_operational_role_forbidden():
+    """Verify self-registration for operational clearance roles is rejected with HTTP 403 Forbidden."""
+    for op_role in ["Traffic Systems Engineer", "Energy Grid Manager", "Executive Auditor", "Municipal Analyst"]:
+        payload = {
+            "name": "Unauthorized Operator",
+            "email": f"operator.{op_role.lower().replace(' ', '')}@pmc.gov.in",
+            "password": "securepassword123",
+            "role": op_role,
+            "department": "Operations Division"
+        }
+        response = client.post("/api/v1/auth/register", json=payload)
+        assert response.status_code == 403
+        assert "cannot be self-assigned via public registration" in response.json()["detail"]
 
 
 def test_registration_invalid_role():
@@ -121,3 +142,18 @@ def test_session_verification_invalid():
     """Verify invalid or tampered token is rejected with 401."""
     response = client.get("/api/v1/auth/verify", headers={"Authorization": "Bearer fake.tampered.token"})
     assert response.status_code == 401
+
+
+def test_jwt_secret_fallback_refusal(monkeypatch):
+    """Verify get_jwt_secret() refuses to execute if unset or set to insecure fallback."""
+    # Test missing secret
+    monkeypatch.setenv("MUNICIPAL_JWT_SECRET", "")
+    with pytest.raises(HTTPException) as excinfo:
+        get_jwt_secret()
+    assert excinfo.value.status_code == 500
+
+    # Test insecure fallback string
+    monkeypatch.setenv("MUNICIPAL_JWT_SECRET", INSECURE_FALLBACK_JWT_SECRET)
+    with pytest.raises(HTTPException) as excinfo:
+        get_jwt_secret()
+    assert excinfo.value.status_code == 500

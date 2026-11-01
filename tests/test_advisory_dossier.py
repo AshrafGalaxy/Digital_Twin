@@ -5,6 +5,7 @@ Hermetic unit and integration test suite for the Operator Advisory Dossier & Aud
 - Complete decision-support dossier models (proposed parameter change, conformal confidence bounds, safety checklist, XAI top features)
 - Webster timing advisory integration with full dossier attributions
 - Operator authorization workflow with deterministic SHA-256 tamper-evident hashing
+- Authenticated dual-control before dispatch issuance (TASK-10 / BUG-01)
 - Non-actuation protocol adherence (read-only decision support, mandatory human approval)
 - Municipal Dispatch Order (MDO) generation and lookup
 - Database persistence in advisory_audit_log table
@@ -25,6 +26,7 @@ from backend.schemas.recommendations import (
     ConformalPredictedImpact,
     DispatchWorkOrder,
     FeatureAttribution,
+    OfficerCredentials,
     ProposedParameterChange,
     RecommendationStatus,
     SafetyConstraintChecklist
@@ -32,6 +34,17 @@ from backend.schemas.recommendations import (
 from backend.services.rule_engine import AdvisoryRuleEngine, rule_engine
 
 client = TestClient(app)
+
+
+def _get_traffic_auth_header():
+    """Helper to retrieve authenticated Bearer token for Traffic Systems Engineer."""
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "traffic.engineer@pmc.gov.in",
+        "password": "traffic123"
+    })
+    assert res.status_code == 200
+    token = res.json()["token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_seeded_traffic_advisory_has_complete_dossier():
@@ -93,9 +106,17 @@ def test_authorize_advisory_generates_sha256_and_order_id():
     rec_id = "REC-TRF-20260920-001"
 
     req = AuthorizeAdvisoryRequest(
-        badgeId="PUNE-TP-4091",
+        primaryOfficer=OfficerCredentials(
+            officerName="Ramesh Kadam",
+            badgeId="MCC-OPS-4091",
+            department="Transportation Operations Division"
+        ),
+        concurringOfficer=OfficerCredentials(
+            officerName="Sunita Deshmukh",
+            badgeId="MCC-SUP-1088",
+            department="Municipal Traffic Management Cell"
+        ),
         shiftId="SHIFT-EVENING-B",
-        reviewer="Traffic Cell Senior Inspector",
         decision=RecommendationStatus.ACKNOWLEDGED,
         notes="Authorizing SCEN-INT-01 green extension for evening rush."
     )
@@ -106,7 +127,8 @@ def test_authorize_advisory_generates_sha256_and_order_id():
 
     # Verify Dispatch Work Order
     assert dispatch_order.dispatchOrderId.startswith("MDO-")
-    assert dispatch_order.badgeId == "PUNE-TP-4091"
+    assert "MCC-OPS-4091" in dispatch_order.badgeId
+    assert "MCC-SUP-1088" in dispatch_order.badgeId
     assert dispatch_order.shiftId == "SHIFT-EVENING-B"
     assert dispatch_order.decision == RecommendationStatus.ACKNOWLEDGED
     assert len(dispatch_order.tamperEvidentHash) == 64
@@ -118,7 +140,7 @@ def test_authorize_advisory_generates_sha256_and_order_id():
 
     # Verify audit trail appended
     latest_audit = updated_rec.auditTrail[-1]
-    assert "PUNE-TP-4091" in latest_audit.reviewer
+    assert "MCC-OPS-4091" in latest_audit.reviewer or "Ramesh Kadam" in latest_audit.reviewer
     assert latest_audit.newStatus == RecommendationStatus.ACKNOWLEDGED
 
 
@@ -129,9 +151,17 @@ def test_strict_non_actuation_invariant():
     assert rec.humanApprovalRequired is True
 
     req = AuthorizeAdvisoryRequest(
-        badgeId="PUNE-TP-4091",
+        primaryOfficer=OfficerCredentials(
+            officerName="Inspector Kulkarni",
+            badgeId="PUNE-TP-4091",
+            department="Operations Division"
+        ),
+        concurringOfficer=OfficerCredentials(
+            officerName="Supervisor Deshmukh",
+            badgeId="PUNE-TP-1088",
+            department="Traffic Command Cell"
+        ),
         shiftId="SHIFT-A",
-        reviewer="Inspector",
         decision=RecommendationStatus.ACKNOWLEDGED
     )
     updated_rec, dispatch_order = engine.authorize_advisory("REC-TRF-20260920-001", req)
@@ -145,9 +175,17 @@ def test_get_dispatch_order():
     """Verifies retrieval of registered dispatch work orders from the rule engine."""
     engine = AdvisoryRuleEngine()
     req = AuthorizeAdvisoryRequest(
-        badgeId="PUNE-TP-1001",
+        primaryOfficer=OfficerCredentials(
+            officerName="Inspector Kulkarni",
+            badgeId="PUNE-TP-1001",
+            department="Operations Division"
+        ),
+        concurringOfficer=OfficerCredentials(
+            officerName="Supervisor Joshi",
+            badgeId="PUNE-TP-2002",
+            department="Command Cell"
+        ),
         shiftId="SHIFT-A",
-        reviewer="Inspector Kulkarni",
         decision=RecommendationStatus.ACKNOWLEDGED
     )
     _, dispatch_order = engine.authorize_advisory("REC-TRF-20260920-001", req)
@@ -174,22 +212,32 @@ def test_sha256_tamper_evidence():
 
 @pytest.mark.asyncio
 async def test_api_authorize_advisory_endpoint():
-    """Verifies POST /api/v1/recommendations/{id}/authorize generates an authenticated dispatch order."""
+    """Verifies POST /api/v1/recommendations/{id}/authorize generates an authenticated dispatch order with dual control."""
+    headers = _get_traffic_auth_header()
     payload = {
-        "badgeId": "PUNE-TP-4091",
+        "primaryOfficer": {
+            "officerName": "Ramesh Kadam",
+            "badgeId": "MCC-OPS-4091",
+            "department": "Transportation Operations Division"
+        },
+        "concurringOfficer": {
+            "officerName": "Sunita Deshmukh",
+            "badgeId": "MCC-SUP-1088",
+            "department": "Municipal Traffic Management Cell"
+        },
         "shiftId": "SHIFT-EVENING-B",
-        "reviewer": "Traffic Cell Duty Officer",
         "decision": "ACKNOWLEDGED",
         "notes": "Field authorization granted per municipal congestion protocol."
     }
 
-    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload)
+    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
     assert resp.status_code == 200
     data = resp.json()
 
     assert data["dispatchOrderId"].startswith("MDO-")
     assert data["recommendationId"] == "REC-TRF-20260920-001"
-    assert data["badgeId"] == "PUNE-TP-4091"
+    assert "MCC-OPS-4091" in data["badgeId"]
+    assert "MCC-SUP-1088" in data["badgeId"]
     assert data["shiftId"] == "SHIFT-EVENING-B"
     assert len(data["tamperEvidentHash"]) == 64
 
@@ -205,39 +253,107 @@ async def test_api_authorize_advisory_endpoint():
         assert row[2] == data["tamperEvidentHash"]
 
 
-def test_api_authorize_missing_404():
-    """Verifies that authorizing an unknown advisory ID returns HTTP 404."""
+def test_api_authorize_unauthenticated_rejection():
+    """Verifies that authorizing without Bearer token returns HTTP 401 Unauthorized."""
     payload = {
-        "badgeId": "PUNE-TP-4091",
+        "primaryOfficer": {
+            "officerName": "Ramesh Kadam",
+            "badgeId": "MCC-OPS-4091"
+        },
+        "concurringOfficer": {
+            "officerName": "Sunita Deshmukh",
+            "badgeId": "MCC-SUP-1088"
+        },
         "shiftId": "SHIFT-A",
-        "reviewer": "Officer",
         "decision": "ACKNOWLEDGED"
     }
-    resp = client.post("/api/v1/recommendations/REC-UNKNOWN-999/authorize", json=payload)
+    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload)
+    assert resp.status_code == 401
+
+
+def test_api_authorize_dual_control_identical_officer_rejection():
+    """Verifies that initiating officer and concurring supervisor cannot be identical (HTTP 400)."""
+    headers = _get_traffic_auth_header()
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Ramesh Kadam",
+            "badgeId": "MCC-OPS-4091"
+        },
+        "concurringOfficer": {
+            "officerName": "Ramesh Kadam",
+            "badgeId": "MCC-OPS-4091"
+        },
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED"
+    }
+    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
+    assert resp.status_code == 400
+    assert "cannot be identical" in resp.json()["detail"]
+
+
+def test_api_authorize_missing_concurring_officer_rejection():
+    """Verifies that dual-control authorization strictly requires concurringOfficer (HTTP 400)."""
+    headers = _get_traffic_auth_header()
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Ramesh Kadam",
+            "badgeId": "MCC-OPS-4091"
+        },
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED"
+    }
+    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
+    assert resp.status_code == 400
+    assert "Dual-control authorization requires both primaryOfficer and concurringOfficer" in resp.json()["detail"]
+
+
+def test_api_authorize_missing_404():
+    """Verifies that authorizing an unknown advisory ID with valid dual control returns HTTP 404."""
+    headers = _get_traffic_auth_header()
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Ramesh Kadam",
+            "badgeId": "MCC-OPS-4091"
+        },
+        "concurringOfficer": {
+            "officerName": "Sunita Deshmukh",
+            "badgeId": "MCC-SUP-1088"
+        },
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED"
+    }
+    resp = client.post("/api/v1/recommendations/REC-UNKNOWN-999/authorize", json=payload, headers=headers)
     assert resp.status_code == 404
 
 
 def test_api_authorize_validation_failure_422():
     """Verifies that an incomplete authorization payload fails validation with HTTP 422."""
-    # badgeId is mandatory (omitted here)
+    headers = _get_traffic_auth_header()
     payload = {
-        "shiftId": "SHIFT-A",
-        "reviewer": "Officer"
+        "shiftId": 12345,  # Invalid type
+        "decision": "INVALID_DECISION_ENUM"
     }
-    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload)
-    assert resp.status_code == 422
+    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
+    assert resp.status_code in (400, 422)
 
 
 def test_api_get_dispatch_order_endpoint():
     """Verifies GET /api/v1/recommendations/{id}/dispatch-order retrieves the issued order."""
+    headers = _get_traffic_auth_header()
     # First authorize
     auth_payload = {
-        "badgeId": "PUNE-TP-4091",
+        "primaryOfficer": {
+            "officerName": "Inspector Kulkarni",
+            "badgeId": "PUNE-TP-4091"
+        },
+        "concurringOfficer": {
+            "officerName": "Supervisor Deshmukh",
+            "badgeId": "PUNE-TP-1088"
+        },
         "shiftId": "SHIFT-A",
-        "reviewer": "Duty Inspector",
         "decision": "ACKNOWLEDGED"
     }
-    auth_resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=auth_payload)
+    auth_resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=auth_payload, headers=headers)
     assert auth_resp.status_code == 200
     expected_order_id = auth_resp.json()["dispatchOrderId"]
 
@@ -246,7 +362,7 @@ def test_api_get_dispatch_order_endpoint():
     assert resp.status_code == 200
     data = resp.json()
     assert data["dispatchOrderId"] == expected_order_id
-    assert data["badgeId"] == "PUNE-TP-4091"
+    assert "PUNE-TP-4091" in data["badgeId"]
 
 
 def test_api_audit_logs_endpoint():
@@ -265,7 +381,7 @@ def test_api_audit_logs_endpoint():
 
 @pytest.mark.asyncio
 async def test_authorize_preserves_under_review_previous_status():
-    """Verifies Bug 12.3 fix: previous status is faithfully recorded as UNDER_REVIEW in audit trail."""
+    """Verifies previous status is faithfully recorded as UNDER_REVIEW in audit trail."""
     engine = AdvisoryRuleEngine()
     rec_id = "REC-TRF-20260920-001"
 
@@ -281,9 +397,15 @@ async def test_authorize_preserves_under_review_previous_status():
 
     # 2. Authorize moves status to ACKNOWLEDGED
     auth_req = AuthorizeAdvisoryRequest(
-        badgeId="MCC-OPS-4091",
+        primaryOfficer=OfficerCredentials(
+            officerName="Ramesh Kadam",
+            badgeId="MCC-OPS-4091"
+        ),
+        concurringOfficer=OfficerCredentials(
+            officerName="Sunita Deshmukh",
+            badgeId="MCC-SUP-1088"
+        ),
         shiftId="SHIFT-A",
-        reviewer="Inspector",
         decision=RecommendationStatus.ACKNOWLEDGED,
         notes="Authorized after field confirmation."
     )

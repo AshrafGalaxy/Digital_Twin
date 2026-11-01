@@ -13,6 +13,7 @@ import logging
 import threading
 from typing import Any, Dict, List, Optional
 import uuid
+from fastapi import HTTPException, status
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -117,12 +118,29 @@ class EnergyAdvisoryService:
             now = datetime.now(timezone.utc)
             date_str = now.strftime("%Y%m%d")
 
-            # Canonical manifest for tamper-evident cryptographic hash
-            canonical_manifest = (
-                f"REC:{dossier.advisoryId}|ENTITY:{dossier.facilityId}|BADGE:{request.badgeId}|"
-                f"SHIFT:{request.shiftId}|REVIEWER:{request.reviewer}|DECISION:{request.decision.value}|"
-                f"PEAK_KW:{dossier.peakReductionKw}|SAVINGS_INR:{dossier.projectedSavingsInr}|TIME:{now.isoformat()}"
-            )
+            # Resolve dual-control credentials with backward compatibility
+            if request.primaryOfficer and request.concurringOfficer:
+                p_name = request.primaryOfficer.officerName
+                p_badge = request.primaryOfficer.badgeId
+                c_name = request.concurringOfficer.officerName
+                c_badge = request.concurringOfficer.badgeId
+                auth_by_str = f"{p_name} & {c_name}"
+                badge_str = f"{p_badge} + {c_badge}"
+                canonical_manifest = (
+                    f"REC:{dossier.advisoryId}|ENTITY:{dossier.facilityId}|"
+                    f"P_BADGE:{p_badge}|P_NAME:{p_name}|C_BADGE:{c_badge}|C_NAME:{c_name}|"
+                    f"SHIFT:{request.shiftId}|DECISION:{request.decision.value}|"
+                    f"PEAK_KW:{dossier.peakReductionKw}|SAVINGS_INR:{dossier.projectedSavingsInr}|TIME:{now.isoformat()}"
+                )
+            else:
+                auth_by_str = request.reviewer or (request.primaryOfficer.officerName if request.primaryOfficer else "Chief Facility Energy Manager")
+                badge_str = request.badgeId or (request.primaryOfficer.badgeId if request.primaryOfficer else "MCC-OPS-4091")
+                canonical_manifest = (
+                    f"REC:{dossier.advisoryId}|ENTITY:{dossier.facilityId}|BADGE:{badge_str}|"
+                    f"SHIFT:{request.shiftId}|REVIEWER:{auth_by_str}|DECISION:{request.decision.value}|"
+                    f"PEAK_KW:{dossier.peakReductionKw}|SAVINGS_INR:{dossier.projectedSavingsInr}|TIME:{now.isoformat()}"
+                )
+
             tamper_evident_hash = hashlib.sha256(canonical_manifest.encode("utf-8")).hexdigest()
             dispatch_order_id = f"EDO-{date_str}-{tamper_evident_hash[:8].upper()}"
 
@@ -184,8 +202,10 @@ class EnergyAdvisoryService:
                 advisoryId=dossier.advisoryId,
                 facilityId=dossier.facilityId,
                 facilityName=dossier.facilityName,
-                authorizedBy=request.reviewer,
-                badgeId=request.badgeId,
+                authorizedBy=auth_by_str,
+                badgeId=badge_str,
+                primaryOfficer=request.primaryOfficer,
+                concurringOfficer=request.concurringOfficer,
                 shiftId=request.shiftId,
                 issuedAt=now,
                 decision=request.decision,
@@ -208,8 +228,8 @@ class EnergyAdvisoryService:
             dossier.status = request.decision
             dossier.auditHash = tamper_evident_hash
             dossier.dispatchOrderId = dispatch_order_id
-            dossier.authorizedBy = request.reviewer
-            dossier.badgeId = request.badgeId
+            dossier.authorizedBy = auth_by_str
+            dossier.badgeId = badge_str
             dossier.shiftId = request.shiftId
             dossier.notes = request.notes
 
@@ -257,8 +277,8 @@ class EnergyAdvisoryService:
                     "action_type": "ENERGY_DEMAND_RESPONSE_AUTHORIZATION",
                     "previous_status": previous_status,
                     "new_status": request.decision.value,
-                    "authorized_by": request.reviewer,
-                    "badge_id": request.badgeId,
+                    "authorized_by": auth_by_str,
+                    "badge_id": badge_str,
                     "shift_id": request.shiftId,
                     "justification_notes": request.notes or "",
                     "dispatch_order_id": dispatch_order_id,
@@ -270,6 +290,11 @@ class EnergyAdvisoryService:
             logger.info("Successfully persisted demand response audit log %s for advisory %s", audit_id, advisory_id)
         except Exception as e:
             logger.error("Failed to persist advisory_audit_log for energy demand response: %s", e)
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Cryptographic audit persistence failed: {e}. Demand response authorization revoked."
+            )
 
         return work_order
 

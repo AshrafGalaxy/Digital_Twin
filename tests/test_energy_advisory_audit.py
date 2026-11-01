@@ -15,10 +15,21 @@ from sqlalchemy import text
 
 from backend.core.database import AsyncSessionLocal
 from backend.main import app
-from backend.schemas.energy_advisory import AdvisoryStatus, AuthorizeEnergyAdvisoryRequest
+from backend.schemas.energy_advisory import AdvisoryStatus, AuthorizeEnergyAdvisoryRequest, EnergyOfficerCredentials
 from backend.services.energy_advisory_service import EnergyAdvisoryService, energy_advisory_service
 
 client = TestClient(app)
+
+
+def _get_energy_auth_header():
+    """Helper to retrieve authenticated Bearer token for Energy Grid Manager."""
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "grid.manager@pmc.gov.in",
+        "password": "energy123"
+    })
+    assert res.status_code == 200
+    token = res.json()["token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_energy_advisory_service_initialization():
@@ -98,26 +109,36 @@ def test_api_list_and_get_energy_advisories():
 async def test_dual_key_authorization_and_tamper_evident_audit():
     """
     Verifies the complete dual-key authorization workflow:
-    - Authorizes advisory with dispatcher credentials and justification notes.
+    - Authorizes advisory with authenticated dual-officer credentials and justification notes.
     - Computes SHA-256 cryptographic hash.
     - Generates OpenADR 2.0b and Modbus dispatch tickets.
     - Persists an immutable record to Table 29 (advisory_audit_log).
     """
+    headers = _get_energy_auth_header()
     payload = {
-        "reviewer": "Chief Facility Energy Manager",
-        "badgeId": "MCC-OPS-4091",
+        "primaryOfficer": {
+            "officerName": "Chief Facility Energy Manager",
+            "badgeId": "FAC-ENG-8021",
+            "department": "Commercial Facility Microgrid Management"
+        },
+        "concurringOfficer": {
+            "officerName": "Municipal Grid Interconnection Supervisor",
+            "badgeId": "GRID-SUP-3044",
+            "department": "Municipal Energy & Power Distribution Cell"
+        },
         "shiftId": "SHIFT-EVENING-B",
         "decision": "AUTHORIZED",
         "notes": "Authorized 840 kW peak shaving for evening TOD tariff window."
     }
 
-    res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload)
+    res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload, headers=headers)
     assert res.status_code == 200
     work_order = res.json()
 
     assert work_order["advisoryId"] == "ADVISORY-DR-20261023-001"
-    assert work_order["authorizedBy"] == "Chief Facility Energy Manager"
-    assert work_order["badgeId"] == "MCC-OPS-4091"
+    assert "Chief Facility Energy Manager" in work_order["authorizedBy"]
+    assert "FAC-ENG-8021" in work_order["badgeId"]
+    assert "GRID-SUP-3044" in work_order["badgeId"]
     assert work_order["decision"] == "AUTHORIZED"
     assert work_order["dispatchOrderId"].startswith("EDO-")
 
@@ -146,8 +167,8 @@ async def test_dual_key_authorization_and_tamper_evident_audit():
         assert row is not None
         assert row[1] == "ADVISORY-DR-20261023-001"
         assert row[2] == "ENERGY_DEMAND_RESPONSE_AUTHORIZATION"
-        assert row[3] == "Chief Facility Energy Manager"
-        assert row[4] == "MCC-OPS-4091"
+        assert "Chief Facility Energy Manager" in row[3]
+        assert "FAC-ENG-8021" in row[4]
         assert row[5] == tamper_hash
 
     # Retrieve dispatch ticket via endpoint
@@ -156,3 +177,41 @@ async def test_dual_key_authorization_and_tamper_evident_audit():
     ticket_data = ticket_res.json()
     assert ticket_data["dispatchOrderId"] == work_order["dispatchOrderId"]
     assert ticket_data["tamperEvidentHash"] == tamper_hash
+
+
+def test_energy_authorize_unauthenticated_rejection():
+    """Verifies that authorizing energy advisory without Bearer token returns 401."""
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Chief Facility Energy Manager",
+            "badgeId": "FAC-ENG-8021"
+        },
+        "concurringOfficer": {
+            "officerName": "Municipal Grid Interconnection Supervisor",
+            "badgeId": "GRID-SUP-3044"
+        },
+        "shiftId": "SHIFT-A",
+        "decision": "AUTHORIZED"
+    }
+    res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload)
+    assert res.status_code == 401
+
+
+def test_energy_authorize_identical_officer_rejection():
+    """Verifies that initiating engineer and concurring supervisor cannot be identical (HTTP 400)."""
+    headers = _get_energy_auth_header()
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Chief Facility Energy Manager",
+            "badgeId": "FAC-ENG-8021"
+        },
+        "concurringOfficer": {
+            "officerName": "Chief Facility Energy Manager",
+            "badgeId": "FAC-ENG-8021"
+        },
+        "shiftId": "SHIFT-A",
+        "decision": "AUTHORIZED"
+    }
+    res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload, headers=headers)
+    assert res.status_code == 400
+    assert "cannot be identical" in res.json()["detail"]

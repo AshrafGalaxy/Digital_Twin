@@ -13,7 +13,9 @@ import {
   X,
   Clock,
   Activity,
-  Layers
+  Layers,
+  UserCheck,
+  Users
 } from 'lucide-react';
 import {
   EnergyAdvisoryDossier,
@@ -36,9 +38,17 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
   onClose,
   onAuthorized
 }) => {
-  const [badgeId, setBadgeId] = useState<string>('MCC-OPS-4091');
+  // Dual-control credentials: Primary Initiating Facility Engineer
+  const [primaryOfficerName, setPrimaryOfficerName] = useState<string>(initialReviewerName);
+  const [primaryBadgeId, setPrimaryBadgeId] = useState<string>('FAC-ENG-8021');
+  const [primaryDepartment, setPrimaryDepartment] = useState<string>('Commercial Facility Microgrid Management');
+
+  // Dual-control credentials: Concurring Secondary Grid Supervisor
+  const [concurringOfficerName, setConcurringOfficerName] = useState<string>('Municipal Grid Interconnection Supervisor');
+  const [concurringBadgeId, setConcurringBadgeId] = useState<string>('GRID-SUP-3044');
+  const [concurringDepartment, setConcurringDepartment] = useState<string>('Municipal Energy & Power Distribution Cell');
+
   const [shiftId, setShiftId] = useState<string>('SHIFT-EVENING-B');
-  const [reviewer, setReviewer] = useState<string>(initialReviewerName);
   const [decision, setDecision] = useState<EnergyAdvisoryStatus>('AUTHORIZED');
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -51,8 +61,20 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badgeId.trim()) {
-      setError('Dispatcher Badge ID is mandatory for municipal audit logging.');
+    if (!primaryOfficerName.trim() || !primaryBadgeId.trim()) {
+      setError('Primary Initiating Facility Engineer name and badge ID are mandatory.');
+      return;
+    }
+    if (!concurringOfficerName.trim() || !concurringBadgeId.trim()) {
+      setError('Concurring Grid Interconnection Supervisor name and badge ID are mandatory for dual-control authorization.');
+      return;
+    }
+    if (primaryBadgeId.trim().toLowerCase() === concurringBadgeId.trim().toLowerCase()) {
+      setError('Dual-control invariant violation: Primary engineer and concurring supervisor cannot share identical badge identifiers.');
+      return;
+    }
+    if (primaryOfficerName.trim().toLowerCase() === concurringOfficerName.trim().toLowerCase()) {
+      setError('Dual-control invariant violation: Primary engineer and concurring supervisor cannot be identical individuals.');
       return;
     }
 
@@ -60,9 +82,19 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
       setSubmitting(true);
       setError(null);
       const payload: AuthorizeEnergyAdvisoryPayload = {
-        badgeId: badgeId.trim(),
+        primaryOfficer: {
+          officerName: primaryOfficerName.trim(),
+          badgeId: primaryBadgeId.trim(),
+          department: primaryDepartment.trim() || 'Commercial Facility Microgrid Management'
+        },
+        concurringOfficer: {
+          officerName: concurringOfficerName.trim(),
+          badgeId: concurringBadgeId.trim(),
+          department: concurringDepartment.trim() || 'Municipal Energy & Power Distribution Cell'
+        },
+        badgeId: primaryBadgeId.trim(),
+        reviewer: primaryOfficerName.trim(),
         shiftId: shiftId.trim(),
-        reviewer: reviewer.trim(),
         decision,
         notes: notes.trim() || undefined
       };
@@ -106,8 +138,8 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
     advisoryId: advisory.advisoryId,
     facilityId: advisory.facilityId,
     facilityName: advisory.facilityName,
-    authorizedBy: advisory.authorizedBy || reviewer,
-    badgeId: advisory.badgeId || badgeId,
+    authorizedBy: advisory.authorizedBy || primaryOfficerName,
+    badgeId: advisory.badgeId || primaryBadgeId,
     shiftId: advisory.shiftId || shiftId,
     issuedAt: advisory.generatedAt,
     decision: advisory.status,
@@ -512,70 +544,197 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-                <div>
+              {/* Dual-Control Officer Authorization Form */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                paddingBottom: '6px',
+                borderBottom: '1px solid var(--color-border, #16171B)'
+              }}>
+                <Users size={15} color="var(--color-primary, #2F81F7)" />
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Dual-Control Officer Verification Invariant
+                </span>
+              </div>
+
+              {/* Primary Facility Engineer */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--color-border, #16171B)',
+                borderRadius: '6px',
+                padding: '10px 12px',
+                marginBottom: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <UserCheck size={13} color="var(--color-primary, #2F81F7)" />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase' }}>
+                    1. Primary Initiating Facility Engineer (Reviewer)
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                      Engineer Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={primaryOfficerName}
+                      onChange={(e) => setPrimaryOfficerName(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        background: 'rgba(15, 15, 18, 0.9)',
+                        border: '1px solid var(--color-border, #16171B)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        color: 'var(--color-text, #F0F6FC)'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                      Badge ID *
+                    </label>
+                    <input
+                      type="text"
+                      value={primaryBadgeId}
+                      onChange={(e) => setPrimaryBadgeId(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        background: 'rgba(15, 15, 18, 0.9)',
+                        border: '1px solid var(--color-border, #16171B)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        color: 'var(--color-text, #F0F6FC)',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: '6px' }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
-                    Authorizing Officer Name
+                    Department / Division
                   </label>
                   <input
                     type="text"
-                    value={reviewer}
-                    onChange={(e) => setReviewer(e.target.value)}
-                    required
+                    value={primaryDepartment}
+                    onChange={(e) => setPrimaryDepartment(e.target.value)}
                     style={{
                       width: '100%',
                       background: 'rgba(15, 15, 18, 0.9)',
                       border: '1px solid var(--color-border, #16171B)',
                       borderRadius: '6px',
-                      padding: '8px 10px',
+                      padding: '6px 10px',
                       fontSize: '12px',
                       color: 'var(--color-text, #F0F6FC)'
                     }}
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
-                    Municipal / Facility Badge ID
-                  </label>
-                  <input
-                    type="text"
-                    value={badgeId}
-                    onChange={(e) => setBadgeId(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      background: 'rgba(15, 15, 18, 0.9)',
-                      border: '1px solid var(--color-border, #16171B)',
-                      borderRadius: '6px',
-                      padding: '8px 10px',
-                      fontSize: '12px',
-                      color: 'var(--color-text, #F0F6FC)',
-                      fontFamily: 'var(--font-mono)'
-                    }}
-                  />
+              {/* Concurring Grid Supervisor */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--color-border, #16171B)',
+                borderRadius: '6px',
+                padding: '10px 12px',
+                marginBottom: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <ShieldCheck size={13} color="#3FB950" />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text, #F0F6FC)', textTransform: 'uppercase' }}>
+                    2. Concurring Secondary Grid Supervisor (Approver)
+                  </span>
                 </div>
-
-                <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                      Supervisor Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={concurringOfficerName}
+                      onChange={(e) => setConcurringOfficerName(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        background: 'rgba(15, 15, 18, 0.9)',
+                        border: '1px solid var(--color-border, #16171B)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        color: 'var(--color-text, #F0F6FC)'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                      Badge ID *
+                    </label>
+                    <input
+                      type="text"
+                      value={concurringBadgeId}
+                      onChange={(e) => setConcurringBadgeId(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        background: 'rgba(15, 15, 18, 0.9)',
+                        border: '1px solid var(--color-border, #16171B)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        color: 'var(--color-text, #F0F6FC)',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: '6px' }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
-                    Operating Duty Shift
+                    Department / Division
                   </label>
                   <input
                     type="text"
-                    value={shiftId}
-                    onChange={(e) => setShiftId(e.target.value)}
-                    required
+                    value={concurringDepartment}
+                    onChange={(e) => setConcurringDepartment(e.target.value)}
                     style={{
                       width: '100%',
                       background: 'rgba(15, 15, 18, 0.9)',
                       border: '1px solid var(--color-border, #16171B)',
                       borderRadius: '6px',
-                      padding: '8px 10px',
+                      padding: '6px 10px',
                       fontSize: '12px',
                       color: 'var(--color-text, #F0F6FC)'
                     }}
                   />
                 </div>
+              </div>
+
+              {/* Operating Duty Shift */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                  Operating Duty Shift *
+                </label>
+                <input
+                  type="text"
+                  value={shiftId}
+                  onChange={(e) => setShiftId(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    background: 'rgba(15, 15, 18, 0.9)',
+                    border: '1px solid var(--color-border, #16171B)',
+                    borderRadius: '6px',
+                    padding: '8px 10px',
+                    fontSize: '12px',
+                    color: 'var(--color-text, #F0F6FC)'
+                  }}
+                />
               </div>
 
               <div style={{ marginBottom: '14px' }}>

@@ -499,11 +499,29 @@ class AdvisoryRuleEngine:
                 f"{rec.proposedChange.parameter}={rec.proposedChange.recommendedValue}"
                 if rec.proposedChange else "DEFAULT"
             )
-            canonical_manifest = (
-                f"REC:{rec.recommendationId}|ENTITY:{target_entity}|BADGE:{request.badgeId}|"
-                f"SHIFT:{request.shiftId}|REVIEWER:{request.reviewer}|DECISION:{request.decision}|"
-                f"PARAMS:{param_str}|TIME:{now.isoformat()}"
-            )
+            # Resolve dual-control officer credentials with backward compatibility
+            if request.primaryOfficer and request.concurringOfficer:
+                p_name = request.primaryOfficer.officerName
+                p_badge = request.primaryOfficer.badgeId
+                c_name = request.concurringOfficer.officerName
+                c_badge = request.concurringOfficer.badgeId
+                auth_by_str = f"{p_name} & {c_name}"
+                badge_str = f"{p_badge} + {c_badge}"
+                canonical_manifest = (
+                    f"REC:{rec.recommendationId}|ENTITY:{target_entity}|"
+                    f"P_BADGE:{p_badge}|P_NAME:{p_name}|C_BADGE:{c_badge}|C_NAME:{c_name}|"
+                    f"SHIFT:{request.shiftId}|DECISION:{request.decision}|"
+                    f"PARAMS:{param_str}|TIME:{now.isoformat()}"
+                )
+            else:
+                auth_by_str = request.reviewer or (request.primaryOfficer.officerName if request.primaryOfficer else "Municipal Officer")
+                badge_str = request.badgeId or (request.primaryOfficer.badgeId if request.primaryOfficer else "BADGE-DEFAULT")
+                canonical_manifest = (
+                    f"REC:{rec.recommendationId}|ENTITY:{target_entity}|BADGE:{badge_str}|"
+                    f"SHIFT:{request.shiftId}|REVIEWER:{auth_by_str}|DECISION:{request.decision}|"
+                    f"PARAMS:{param_str}|TIME:{now.isoformat()}"
+                )
+
             tamper_evident_hash = hashlib.sha256(canonical_manifest.encode("utf-8")).hexdigest()
             dispatch_order_id = f"MDO-{date_str}-{tamper_evident_hash[:8].upper()}"
 
@@ -511,11 +529,13 @@ class AdvisoryRuleEngine:
                 dispatchOrderId=dispatch_order_id,
                 recommendationId=rec.recommendationId,
                 targetEntityId=target_entity,
-                authorizedBy=request.reviewer,
-                badgeId=request.badgeId,
+                authorizedBy=auth_by_str,
+                badgeId=badge_str,
                 shiftId=request.shiftId,
                 issuedAt=now,
                 decision=request.decision,
+                primaryOfficer=request.primaryOfficer,
+                concurringOfficer=request.concurringOfficer,
                 proposedChange=rec.proposedChange,
                 predictedImpact=rec.predictedImpact,
                 safetyChecklist=rec.safetyChecklist,
@@ -541,7 +561,7 @@ class AdvisoryRuleEngine:
                 timestamp=now,
                 previousStatus=previous_status,
                 newStatus=request.decision,
-                reviewer=f"{request.reviewer} (Badge: {request.badgeId}, Shift: {request.shiftId})",
+                reviewer=f"{auth_by_str} (Badge: {badge_str}, Shift: {request.shiftId})",
                 notes=request.notes or f"Official municipal dispatch order generated: {dispatch_order_id}."
             )
             rec.auditTrail.append(audit_entry)
