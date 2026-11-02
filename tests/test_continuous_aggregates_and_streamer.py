@@ -196,3 +196,156 @@ def test_health_reports_streamer_and_tables(client):
     assert "telemetryStreamerActive" in subsystems
     assert "telemetryStreamerTicks" in subsystems
     assert subsystems["telemetryStreamerTicks"] >= 0
+
+@pytest.mark.asyncio
+async def test_simulation_tick_does_not_overwrite_observed_current_state():
+    """
+    Verifies Non-Negotiable Invariant #2 (State Separation Invariant):
+    A seeded LIVE or REPLAY current-state row in entity_current_state must survive
+    telemetry_streamer.tick_once() with its source_mode, speed, and queue length untouched.
+    Simulations must still record their time-series rows into history tables with honest
+    tier-0 synthetic quality score (0.70).
+    """
+    import json
+
+    seg_id = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+    bld_id = "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01"
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    try:
+        # 1. Seed a LIVE road segment and a LIVE building into entity_current_state
+        async with persistence_manager.session_factory() as session:
+            live_seg_metrics = {
+                "averageSpeedKmh": 6.5,
+                "vehicleFlowPerHour": 450.0,
+                "occupancyPercent": 85.0,
+                "queueLengthMeters": 420.0,
+                "congestionIndex": 0.87
+            }
+            await session.execute(
+                text("""
+                    INSERT INTO entity_current_state (
+                        entity_id, entity_type, source_mode, observed_at, updated_at,
+                        metrics, quality_status, freshness_seconds
+                    ) VALUES (
+                        :entity_id, :entity_type, :source_mode, :observed_at, :updated_at,
+                        :metrics, :quality_status, :freshness_seconds
+                    ) ON CONFLICT(entity_id) DO UPDATE SET
+                        source_mode = EXCLUDED.source_mode,
+                        observed_at = EXCLUDED.observed_at,
+                        updated_at = EXCLUDED.updated_at,
+                        metrics = EXCLUDED.metrics,
+                        quality_status = EXCLUDED.quality_status,
+                        freshness_seconds = EXCLUDED.freshness_seconds
+                """),
+                {
+                    "entity_id": seg_id,
+                    "entity_type": "RoadSegment",
+                    "source_mode": "LIVE",
+                    "observed_at": now_iso,
+                    "updated_at": now_iso,
+                    "metrics": json.dumps(live_seg_metrics),
+                    "quality_status": "VALID",
+                    "freshness_seconds": 0.0,
+                }
+            )
+
+            live_bld_metrics = {
+                "activePowerKw": 3333.0,
+                "reactivePowerKvar": 1050.0,
+                "powerFactor": 0.95,
+                "energyConsumptionKwh": 80000.0
+            }
+            await session.execute(
+                text("""
+                    INSERT INTO entity_current_state (
+                        entity_id, entity_type, source_mode, observed_at, updated_at,
+                        metrics, quality_status, freshness_seconds
+                    ) VALUES (
+                        :entity_id, :entity_type, :source_mode, :observed_at, :updated_at,
+                        :metrics, :quality_status, :freshness_seconds
+                    ) ON CONFLICT(entity_id) DO UPDATE SET
+                        source_mode = EXCLUDED.source_mode,
+                        observed_at = EXCLUDED.observed_at,
+                        updated_at = EXCLUDED.updated_at,
+                        metrics = EXCLUDED.metrics,
+                        quality_status = EXCLUDED.quality_status,
+                        freshness_seconds = EXCLUDED.freshness_seconds
+                """),
+                {
+                    "entity_id": bld_id,
+                    "entity_type": "Building",
+                    "source_mode": "LIVE",
+                    "observed_at": now_iso,
+                    "updated_at": now_iso,
+                    "metrics": json.dumps(live_bld_metrics),
+                    "quality_status": "VALID",
+                    "freshness_seconds": 0.0,
+                }
+            )
+            await session.commit()
+
+        # 2. Trigger streamer tick in SIMULATION mode
+        assert telemetry_streamer.mode == "SIMULATION"
+        tick_res = await telemetry_streamer.tick_once()
+        assert tick_res["status"] == "TICK_SUCCESS"
+
+        # 3. Verify entity_current_state was NOT overwritten by simulation
+        async with persistence_manager.session_factory() as session:
+            seg_row = (await session.execute(
+                text("SELECT source_mode, metrics, quality_status FROM entity_current_state WHERE entity_id = :id"),
+                {"id": seg_id}
+            )).fetchone()
+            assert seg_row is not None
+            assert seg_row[0] == "LIVE"
+            seg_metrics = json.loads(seg_row[1]) if isinstance(seg_row[1], str) else seg_row[1]
+            assert seg_metrics["averageSpeedKmh"] == 6.5
+            assert seg_metrics["queueLengthMeters"] == 420.0
+
+            bld_row = (await session.execute(
+                text("SELECT source_mode, metrics FROM entity_current_state WHERE entity_id = :id"),
+                {"id": bld_id}
+            )).fetchone()
+            assert bld_row is not None
+            assert bld_row[0] == "LIVE"
+            bld_metrics = json.loads(bld_row[1]) if isinstance(bld_row[1], str) else bld_row[1]
+            assert bld_metrics["activePowerKw"] == 3333.0
+
+            # 4. Verify historical tables DID receive SIMULATION observation with honest quality score
+            sim_obs = (await session.execute(
+                text("SELECT source_mode, average_speed_kmh FROM traffic_observations WHERE segment_id = :id ORDER BY observed_at DESC LIMIT 1"),
+                {"id": seg_id}
+            )).fetchone()
+            assert sim_obs is not None
+            assert sim_obs[0] == "SIMULATION"
+
+            sim_los = (await session.execute(
+                text("SELECT source_mode, quality_score FROM segment_los_history WHERE segment_id = :id ORDER BY observed_at DESC LIMIT 1"),
+                {"id": seg_id}
+            )).fetchone()
+            assert sim_los is not None
+            assert sim_los[0] == "SIMULATION"
+            assert sim_los[1] == 0.70
+    finally:
+        # Hermetic order-invariance: restore pristine REPLAY state for SEG-NR-EB-01
+        async with persistence_manager.session_factory() as session:
+            await session.execute(
+                text("""
+                    UPDATE entity_current_state
+                    SET source_mode = 'REPLAY',
+                        metrics = :metrics
+                    WHERE entity_id = :id
+                """),
+                {
+                    "id": seg_id,
+                    "metrics": json.dumps({
+                        "averageSpeedKmh": 42.5,
+                        "vehicleFlowPerHour": 1820.0,
+                        "occupancyPercent": 32.0,
+                        "queueLengthMeters": 15.0,
+                        "congestionIndex": 0.35
+                    })
+                }
+            )
+            await session.commit()
+

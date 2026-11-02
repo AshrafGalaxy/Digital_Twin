@@ -187,7 +187,7 @@ async def get_corridor_los(
             free_flow_speed_kmh=free_flow,
             policy_standard=policy_standard,
             source_mode=src_mode,
-            quality_score=0.98,
+            quality_score=None,
             observed_at=obs_time
         )
 

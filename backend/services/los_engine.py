@@ -191,13 +191,24 @@ class LOSEngine:
         free_flow_speed_kmh: float = 50.0,
         policy_standard: Optional[str] = None,
         source_mode: str = "REPLAY",
-        quality_score: float = 0.98,
+        quality_score: Optional[float] = None,
         observed_at: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Comprehensive segment-level LOS computation returning canonical data contracts.
+        Enforces honest tier-0 synthetic baseline quality scores (0.70) per AGENTS.md §3.
         """
         policy = policy_standard or self.default_policy
+        if quality_score is None:
+            sm_norm = (source_mode or "REPLAY").upper()
+            if sm_norm == "SIMULATION":
+                quality_score = 0.70
+            elif sm_norm == "LIVE":
+                quality_score = 0.98
+            elif sm_norm == "REPLAY":
+                quality_score = 0.95
+            else:
+                quality_score = 0.70
         hydro = self.compute_hydrodynamics(
             speed_kmh=speed_kmh,
             flow_vph=flow_vph,

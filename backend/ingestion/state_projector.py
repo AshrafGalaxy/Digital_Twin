@@ -91,7 +91,10 @@ class StateProjector:
                     metrics = EXCLUDED.metrics,
                     quality_status = EXCLUDED.quality_status,
                     freshness_seconds = EXCLUDED.freshness_seconds
-                WHERE EXCLUDED.observed_at >= entity_current_state.observed_at
+                WHERE (
+                    entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                    OR EXCLUDED.observed_at >= entity_current_state.observed_at
+                )
             """)
 
             now_utc = datetime.now(timezone.utc)
@@ -170,7 +173,10 @@ class StateProjector:
                     metrics = EXCLUDED.metrics,
                     quality_status = EXCLUDED.quality_status,
                     freshness_seconds = EXCLUDED.freshness_seconds
-                WHERE EXCLUDED.observed_at >= entity_current_state.observed_at
+                WHERE (
+                    entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                    OR EXCLUDED.observed_at >= entity_current_state.observed_at
+                )
             """)
             now_utc = datetime.now(timezone.utc)
             freshness = max(0.0, (now_utc - event.observedAt).total_seconds())
@@ -213,6 +219,47 @@ class StateProjector:
             "precipitation_mm": event.precipitationMm,
             "quality_flag": event.qualityFlag.value
         })
+
+        if event.sourceMode in (SourceMode.LIVE, SourceMode.REPLAY):
+            env_metrics = {
+                "aqi": event.aqiValue,
+                "pm25": event.pm25,
+                "pm10": event.pm10,
+                "temperatureC": event.temperatureC,
+                "relativeHumidityPct": event.relativeHumidityPct,
+                "precipitationMm": event.precipitationMm
+            }
+            upsert_env_sql = text("""
+                INSERT INTO entity_current_state (
+                    entity_id, entity_type, source_mode, observed_at,
+                    updated_at, metrics, quality_status, freshness_seconds
+                ) VALUES (
+                    :entity_id, :entity_type, :source_mode, :observed_at,
+                    NOW(), :metrics, :quality_status, :freshness_seconds
+                )
+                ON CONFLICT (entity_id) DO UPDATE SET
+                    source_mode = EXCLUDED.source_mode,
+                    observed_at = EXCLUDED.observed_at,
+                    updated_at = NOW(),
+                    metrics = EXCLUDED.metrics,
+                    quality_status = EXCLUDED.quality_status,
+                    freshness_seconds = EXCLUDED.freshness_seconds
+                WHERE (
+                    entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                    OR EXCLUDED.observed_at >= entity_current_state.observed_at
+                )
+            """)
+            now_utc = datetime.now(timezone.utc)
+            freshness = max(0.0, (now_utc - event.observedAt).total_seconds())
+            await session.execute(upsert_env_sql, {
+                "entity_id": event.stationId,
+                "entity_type": EntityType.AIR_QUALITY_STATION.value,
+                "source_mode": event.sourceMode.value,
+                "observed_at": event.observedAt,
+                "metrics": json.dumps(env_metrics),
+                "quality_status": event.qualityFlag.value,
+                "freshness_seconds": round(freshness, 1)
+            })
 
     @staticmethod
     async def record_ingestion_error(

@@ -692,7 +692,7 @@ class EnergyTopologyService:
                     "device_metrics_json": metrics_json
                 })
 
-                # Update entity_current_state for this asset
+                # Update entity_current_state for this asset (Invariant 2: SIMULATION cannot overwrite LIVE/REPLAY)
                 upsert_state = text("""
                     INSERT INTO entity_current_state (
                         entity_id, entity_type, source_mode, observed_at,
@@ -708,7 +708,10 @@ class EnergyTopologyService:
                         updated_at = EXCLUDED.updated_at,
                         metrics = EXCLUDED.metrics,
                         quality_status = 'VALID',
-                        freshness_seconds = 0.0;
+                        freshness_seconds = 0.0
+                    WHERE (
+                        entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                    );
                 """)
                 state_payload = {
                     "activePowerKw": ac["activePowerKw"],

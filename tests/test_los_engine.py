@@ -260,3 +260,56 @@ def test_api_segment_los_not_found():
     """Verifies GET /api/v1/traffic/segment/{segment_id}/los returns 404 for unknown segment."""
     res = client.get("/api/v1/traffic/segment/SEG-UNKNOWN-999/los")
     assert res.status_code == 404
+
+
+def test_compute_segment_los_provenance_honest_quality_scores():
+    """
+    Verifies that compute_segment_los assigns honest tier-0 synthetic quality score
+    (0.70) for SIMULATION feeds per AGENTS.md Section 3, while assigning 0.98 for LIVE and 0.95 for REPLAY.
+    """
+    engine = LOSEngine()
+
+    # 1. SIMULATION mode defaults to 0.70
+    sim_res = engine.compute_segment_los(
+        segment_id="SEG-NR-EB-01",
+        speed_kmh=25.0,
+        flow_vph=1200.0,
+        capacity_vph=2400.0,
+        source_mode="SIMULATION"
+    )
+    assert sim_res["provenance"]["sourceMode"] == "SIMULATION"
+    assert sim_res["provenance"]["qualityScore"] == 0.70
+
+    # 2. LIVE mode defaults to 0.98
+    live_res = engine.compute_segment_los(
+        segment_id="SEG-NR-EB-01",
+        speed_kmh=25.0,
+        flow_vph=1200.0,
+        capacity_vph=2400.0,
+        source_mode="LIVE"
+    )
+    assert live_res["provenance"]["sourceMode"] == "LIVE"
+    assert live_res["provenance"]["qualityScore"] == 0.98
+
+    # 3. REPLAY mode defaults to 0.95
+    replay_res = engine.compute_segment_los(
+        segment_id="SEG-NR-EB-01",
+        speed_kmh=25.0,
+        flow_vph=1200.0,
+        capacity_vph=2400.0,
+        source_mode="REPLAY"
+    )
+    assert replay_res["provenance"]["sourceMode"] == "REPLAY"
+    assert replay_res["provenance"]["qualityScore"] == 0.95
+
+    # 4. Explicit override preserved
+    override_res = engine.compute_segment_los(
+        segment_id="SEG-NR-EB-01",
+        speed_kmh=25.0,
+        flow_vph=1200.0,
+        capacity_vph=2400.0,
+        source_mode="SIMULATION",
+        quality_score=0.85
+    )
+    assert override_res["provenance"]["qualityScore"] == 0.85
+

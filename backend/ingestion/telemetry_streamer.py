@@ -222,6 +222,7 @@ class TelemetryStreamerWorker:
                         "operationalCondition": los_data["operationalCondition"],
                         "policyStandard": los_data["policyStandard"]
                     }
+                    # Invariant 2 (State Separation): SIMULATION ticks must never overwrite LIVE or REPLAY state
                     upsert_state = text("""
                         INSERT INTO entity_current_state (
                             entity_id, entity_type, source_mode, observed_at,
@@ -237,7 +238,11 @@ class TelemetryStreamerWorker:
                             updated_at = EXCLUDED.updated_at,
                             metrics = EXCLUDED.metrics,
                             quality_status = 'VALID',
-                            freshness_seconds = 0.0;
+                            freshness_seconds = 0.0
+                        WHERE (
+                            EXCLUDED.source_mode IN ('LIVE', 'REPLAY')
+                            OR entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                        );
                     """)
                     await session.execute(upsert_state, {
                         "entity_id": seg_id,
@@ -261,6 +266,7 @@ class TelemetryStreamerWorker:
                                 :operational_condition, :policy_standard, :source_mode, :quality_score
                             )
                         """)
+                        hist_quality_score = 0.70 if self.mode.upper() == "SIMULATION" else 0.95
                         await session.execute(los_hist_stmt, {
                             "segment_id": seg_id,
                             "observed_at": now_dt,
@@ -271,7 +277,7 @@ class TelemetryStreamerWorker:
                             "operational_condition": los_data["operationalCondition"],
                             "policy_standard": los_data["policyStandard"],
                             "source_mode": self.mode,
-                            "quality_score": 0.98
+                            "quality_score": hist_quality_score
                         })
                     except Exception as los_err:
                         logger.debug("segment_los_history insert notice: %s", los_err)

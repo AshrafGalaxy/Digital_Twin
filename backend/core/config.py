@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     TELEMETRY_STREAMER_INTERVAL_SEC: float = 5.0
     TELEMETRY_STREAMER_MODE: str = "SIMULATION"  # Options: "SIMULATION", "REPLAY"
 
+    # Provenance Quality Score Baselines (AGENTS.md Section 3)
+    SYNTHETIC_LOS_QUALITY_SCORE: float = 0.70  # Tier-0 zero-hardware synthetic baseline
+    OBSERVED_LOS_QUALITY_SCORE: float = 0.98   # Physical sensor / verified live telemetry
+    REPLAY_LOS_QUALITY_SCORE: float = 0.95     # Calibrated historical telemetry replay
+
     # API Server
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000

@@ -318,7 +318,7 @@ class SPaTAdapter:
                     "source_mode": current_state.source_mode
                 })
 
-                # Update entity_current_state for the intersection
+                # Update entity_current_state for the intersection (Invariant 2: SIMULATION cannot overwrite LIVE/REPLAY)
                 upsert_entity = text("""
                     INSERT INTO entity_current_state (
                         entity_id, entity_type, source_mode, observed_at,
@@ -334,7 +334,11 @@ class SPaTAdapter:
                         updated_at = EXCLUDED.updated_at,
                         metrics = EXCLUDED.metrics,
                         quality_status = 'VALID',
-                        freshness_seconds = 0.0;
+                        freshness_seconds = 0.0
+                    WHERE (
+                        EXCLUDED.source_mode IN ('LIVE', 'REPLAY')
+                        OR entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                    );
                 """)
                 metrics_payload = {
                     "activePhase": packet.active_phase,
