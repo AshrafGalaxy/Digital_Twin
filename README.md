@@ -251,7 +251,7 @@ The digital twin models the bidirectional physical interactions connecting these
 Vehicular exhaust emissions are not static constants; they are dynamic non-linear functions of vehicle space-mean speed, queue acceleration cycles, and traffic congestion states along each arterial link.
 
 #### 1. Speed-Dependent Specific Emission Factors
-Vehicle specific emission factors for criteria pollutant $p \in \{\text{PM}_{2.5}, \text{PM}_{10}, \text{NO}_x, \text{CO}\}$ are modeled as a function of space-mean velocity $v$ (in km/h) based on European COPERT and HBEFA kinematic formulations:
+Vehicle specific emission factors for criteria pollutant $p \in \{\text{PM}\_{2.5}, \text{PM}\_{10}, \text{NO}\_x, \text{CO}\}$ are modeled as a function of space-mean velocity $v$ (in km/h) based on European COPERT and HBEFA kinematic formulations:
 
 $$E_p(v) = \frac{\alpha_p + \beta_p \cdot v + \gamma_p \cdot v^2}{v} + \delta_p \cdot \exp(-\zeta_p \cdot v)$$
 
