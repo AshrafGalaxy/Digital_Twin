@@ -159,8 +159,34 @@ def test_rule_engine_webster_advisory():
     assert rec.humanApprovalRequired is True
     assert "INT-VN-01" in rec.targetEntityId
     assert "Webster" in rec.title
-    assert "pedestrian crosswalk clearance invariant met" in rec.suggestedAction
+    assert "Do not authorize" in rec.suggestedAction
+    assert "max saturation" in rec.suggestedAction
+    assert rec.safetyChecklist is not None
+    assert rec.safetyChecklist.maxWaitThresholdSafe is False
+    assert "Verified: pedestrian crosswalk clearance invariant met" not in rec.suggestedAction
     assert len(rec.auditTrail) >= 1
+
+
+def test_webster_advisory_text_matches_a_legal_plan():
+    """A plan inside the saturation cap keeps the verified sentence and still requires a person."""
+    engine = AdvisoryRuleEngine()
+    rec = engine.generate_webster_timing_advisory(
+        intersection_id="urn:ngsi-ld:Intersection:TEST:INT-LEGAL",
+        approaches=[
+            ApproachDemand("APP-EB", "Eastbound Through", 240.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+            ApproachDemand("APP-WB", "Westbound Through", 240.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+            ApproachDemand("APP-NB", "Northbound Approach", 180.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+            ApproachDemand("APP-SB", "Southbound Approach", 180.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+        ],
+    )
+    assert rec.safetyChecklist is not None
+    assert rec.safetyChecklist.pedestrianPhaseSafe is True
+    assert rec.safetyChecklist.minGreenSatisfied is True
+    assert rec.safetyChecklist.maxWaitThresholdSafe is True
+    assert rec.safetyChecklist.emergencyPreemptionClear is True
+    assert "pedestrian crosswalk clearance invariant met" in rec.suggestedAction
+    assert "Human authorization is required" in rec.suggestedAction
+    assert rec.humanApprovalRequired is True
     assert "Webster Optimization Engine" in rec.auditTrail[0].reviewer
 
 
@@ -235,6 +261,48 @@ def test_api_get_intersection_optimal_timing():
     assert len(plan["phases"]) >= 2
     assert plan["targetCycleSec"] >= 60
     assert plan["safetyValidation"]["minGreenSatisfied"] is True
+    assert plan["status"] == "REQUIRES_HUMAN_APPROVAL"
+
+
+def test_min_green_certificate_rejects_infeasible_cycle():
+    """A cycle cap that cannot hold statutory greens must not certify them as satisfied."""
+    optimizer = WebsterSignalOptimizer()
+    approaches = [
+        ApproachDemand("A", "Approach A", 351.0, lanes=2, min_green_sec=35.0, crosswalk_width_m=3.6),
+        ApproachDemand("B", "Approach B", 311.0, lanes=2, min_green_sec=35.0, crosswalk_width_m=3.6),
+        ApproachDemand("C", "Approach C", 176.0, lanes=2, min_green_sec=30.0, crosswalk_width_m=3.6),
+        ApproachDemand("D", "Approach D", 162.0, lanes=2, min_green_sec=30.0, crosswalk_width_m=3.6),
+    ]
+    plan = optimizer.compute_optimal_timing(
+        intersection_id="INT-MIN-GREEN",
+        approaches=approaches,
+        constraints=SignalConstraints(max_cycle_sec=90),
+    )
+    greens = [phase.green_sec for phase in plan.phases]
+    assert greens == [26, 23, 13, 12]
+    assert plan.safety_validation["minGreenSatisfied"] is False
+    assert plan.safety_validation["pedestrianInvariantVerified"] is True
+    assert plan.status == "REJECTED_SAFETY_BOUNDS"
+
+
+def test_min_green_certificate_accepts_feasible_plan():
+    """When the cycle can hold the floors, each green meets max(min green, pedestrian clearance)."""
+    optimizer = WebsterSignalOptimizer()
+    approaches = [
+        ApproachDemand("EB", "Eastbound", 800.0, lanes=2, min_green_sec=15.0, crosswalk_width_m=14.0),
+        ApproachDemand("WB", "Westbound", 800.0, lanes=2, min_green_sec=15.0, crosswalk_width_m=14.0),
+        ApproachDemand("NB", "Northbound", 350.0, lanes=1, min_green_sec=15.0, crosswalk_width_m=12.0),
+        ApproachDemand("SB", "Southbound", 350.0, lanes=1, min_green_sec=15.0, crosswalk_width_m=12.0),
+    ]
+    plan = optimizer.compute_optimal_timing(
+        intersection_id="INT-LEGAL-GREEN",
+        approaches=approaches,
+    )
+    for phase, approach in zip(plan.phases, approaches):
+        floor = max(approach.min_green_sec, phase.ped_clearance_sec)
+        assert phase.green_sec >= floor
+    assert plan.safety_validation["minGreenSatisfied"] is True
+    assert plan.status == "REQUIRES_HUMAN_APPROVAL"
 
 
 def test_api_get_intersection_optimal_timing_custom_intersection():

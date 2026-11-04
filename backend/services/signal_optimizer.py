@@ -245,6 +245,7 @@ class WebsterSignalOptimizer:
                 diff += 1
 
         actual_cycle = sum(final_greens) + total_lost_time
+        min_green_ok = all(final_greens[i] >= min_required_greens[i] for i in range(m))
 
         # 8. Compute phase results, delay, and saturation metrics
         phase_results: List[PhaseResult] = []
@@ -323,7 +324,7 @@ class WebsterSignalOptimizer:
                 "maxSaturation": round(max_observed_sat, 3),
                 "saturationCapSatisfied": bool(max_observed_sat <= cfg.max_saturation_cap + 0.05),
                 "pedestrianInvariantVerified": ped_invariants_met,
-                "minGreenSatisfied": True,
+                "minGreenSatisfied": min_green_ok,
                 "cycleBounded": bool(cfg.min_cycle_sec <= actual_cycle <= cfg.max_cycle_sec),
                 "oversaturatedRegime": bool(y_sum >= 0.85),
                 "advisoryNote": (
@@ -337,7 +338,11 @@ class WebsterSignalOptimizer:
                 "optimizerVersion": "webster-constrained-v2.1",
                 "formula": "modified-webster-delay-minimization"
             },
-            status="REQUIRES_HUMAN_APPROVAL"
+            status=(
+                "REQUIRES_HUMAN_APPROVAL"
+                if min_green_ok and ped_invariants_met
+                else "REJECTED_SAFETY_BOUNDS"
+            )
         )
 
 

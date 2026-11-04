@@ -15,8 +15,17 @@ from sqlalchemy import text
 
 from backend.core.database import AsyncSessionLocal
 from backend.main import app
-from backend.schemas.energy_advisory import AdvisoryStatus, AuthorizeEnergyAdvisoryRequest, EnergyOfficerCredentials
-from backend.services.energy_advisory_service import EnergyAdvisoryService, energy_advisory_service
+from backend.schemas.energy_advisory import (
+    AdvisoryStatus,
+    AuthorizeEnergyAdvisoryRequest,
+    EnergyOfficerCredentials,
+    SafetyInterlocks,
+)
+from backend.services.energy_advisory_service import (
+    EnergyAdvisoryService,
+    energy_advisory_service,
+    interlock_status_mask,
+)
 
 client = TestClient(app)
 
@@ -156,6 +165,7 @@ async def test_dual_key_authorization_and_tamper_evident_audit():
     assert "40001_bess_power_setpoint_kw" in work_order["modbusRegisters"]
     assert work_order["modbusRegisters"]["40001_bess_power_setpoint_kw"] == 450
     assert work_order["modbusRegisters"]["40002_bess_inverter_mode"] == 2
+    assert work_order["modbusRegisters"]["40004_interlock_status_flags"] == 15
 
     # Verify persistent audit trail record in Table 29 (advisory_audit_log)
     async with AsyncSessionLocal() as session:
@@ -215,3 +225,65 @@ def test_energy_authorize_identical_officer_rejection():
     res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload, headers=headers)
     assert res.status_code == 400
     assert "cannot be identical" in res.json()["detail"]
+
+
+def test_interlock_mask_tracks_each_boolean():
+    """Register 40004 is 15 only when every interlock passes."""
+    passing = SafetyInterlocks()
+    assert interlock_status_mask(passing) == 15
+    failed = passing.model_copy(update={
+        "voltageCompliant": False,
+        "rampRateCompliant": False,
+        "socBounded": False,
+        "comfortPreserved": False,
+    })
+    assert interlock_status_mask(failed) == 0
+    voltage_only = passing.model_copy(update={
+        "rampRateCompliant": False,
+        "socBounded": False,
+        "comfortPreserved": False,
+    })
+    assert interlock_status_mask(voltage_only) == 1
+
+
+def test_energy_authorize_rejects_failed_interlock():
+    """A failed interlock returns 409 and does not serialize the all-pass mask."""
+    headers = _get_energy_auth_header()
+    dossier = energy_advisory_service.get_advisory("ADVISORY-DR-20261023-001")
+    assert dossier is not None
+    original = dossier.safetyChecks
+    status_before = dossier.status
+    order_before = dossier.dispatchOrderId
+    dossier.safetyChecks = original.model_copy(update={
+        "voltageCompliant": False,
+        "rampRateCompliant": False,
+        "socBounded": False,
+        "comfortPreserved": False,
+    })
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Chief Facility Energy Manager",
+            "badgeId": "FAC-ENG-8021",
+        },
+        "concurringOfficer": {
+            "officerName": "Municipal Grid Interconnection Supervisor",
+            "badgeId": "GRID-SUP-3044",
+        },
+        "shiftId": "SHIFT-EVENING-B",
+        "decision": "AUTHORIZED",
+        "notes": "Must be refused.",
+    }
+    try:
+        res = client.post(
+            "/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize",
+            json=payload,
+            headers=headers,
+        )
+        assert res.status_code == 409
+        assert "40004_interlock_status_flags" not in res.text
+        body = res.json()
+        assert "interlock" in body["detail"]
+        assert dossier.status == status_before
+        assert dossier.dispatchOrderId == order_before
+    finally:
+        dossier.safetyChecks = original

@@ -30,6 +30,20 @@ from backend.schemas.energy_advisory import (
 logger = logging.getLogger(__name__)
 
 
+def interlock_status_mask(checks: SafetyInterlocks) -> int:
+    """Pack the four physical interlocks into Modbus register 40004. All-pass is 15."""
+    mask = 0
+    if checks.voltageCompliant:
+        mask |= 1
+    if checks.rampRateCompliant:
+        mask |= 2
+    if checks.socBounded:
+        mask |= 4
+    if checks.comfortPreserved:
+        mask |= 8
+    return mask
+
+
 class EnergyAdvisoryService:
     """
     Manages energy demand response advisory dossiers, physical interlock checks,
@@ -114,6 +128,24 @@ class EnergyAdvisoryService:
             dossier = self._advisories.get(advisory_id)
             if not dossier:
                 return None
+            if interlock_status_mask(dossier.safetyChecks) != 15:
+                failed_interlocks = []
+                if not dossier.safetyChecks.voltageCompliant:
+                    failed_interlocks.append("voltage")
+                if not dossier.safetyChecks.rampRateCompliant:
+                    failed_interlocks.append("ramp rate")
+                if not dossier.safetyChecks.socBounded:
+                    failed_interlocks.append("state of charge")
+                if not dossier.safetyChecks.comfortPreserved:
+                    failed_interlocks.append("thermal comfort")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        "Authorization refused. Energy interlocks failed: "
+                        + ", ".join(failed_interlocks)
+                        + "."
+                    )
+                )
 
             now = datetime.now(timezone.utc)
             date_str = now.strftime("%Y%m%d")
@@ -192,7 +224,7 @@ class EnergyAdvisoryService:
                 "40001_bess_power_setpoint_kw": int(primary_bess_kw),
                 "40002_bess_inverter_mode": 2,  # 1=Charge, 2=Discharge, 0=Idle
                 "40003_hvac_temperature_offset_tenths_c": int(primary_setback_delta * 10),
-                "40004_interlock_status_flags": 15,  # Bitmask: all 4 interlocks pass (1+2+4+8)
+                "40004_interlock_status_flags": interlock_status_mask(dossier.safetyChecks),
                 "40005_watchdog_timeout_sec": 300,
                 "40006_dispatch_heartbeat_status": 1
             }

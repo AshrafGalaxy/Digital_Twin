@@ -27,7 +27,7 @@ from backend.schemas.recommendations import (
     RecommendationStatus,
     ReviewRecommendationRequest
 )
-from backend.services.rule_engine import rule_engine
+from backend.services.rule_engine import SafetyBoundRejected, rule_engine
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +191,13 @@ async def authorize_advisory(
             detail="Dual-control authorization requires two distinct municipal officers. Initiating officer and concurring supervisor cannot be identical."
         )
 
-    result = rule_engine.authorize_advisory(rec_id, request)
+    try:
+        result = rule_engine.authorize_advisory(rec_id, request)
+    except SafetyBoundRejected as rejected:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=rejected.detail
+        )
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

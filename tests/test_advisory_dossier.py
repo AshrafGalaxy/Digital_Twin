@@ -31,7 +31,7 @@ from backend.schemas.recommendations import (
     RecommendationStatus,
     SafetyConstraintChecklist
 )
-from backend.services.rule_engine import AdvisoryRuleEngine, rule_engine
+from backend.services.rule_engine import AdvisoryRuleEngine, SafetyBoundRejected, rule_engine
 
 client = TestClient(app)
 
@@ -417,3 +417,63 @@ async def test_authorize_preserves_under_review_previous_status():
     latest_audit = updated_rec.auditTrail[-1]
     assert latest_audit.previousStatus == RecommendationStatus.UNDER_REVIEW
     assert latest_audit.newStatus == RecommendationStatus.ACKNOWLEDGED
+
+
+def test_authorize_rejects_failed_saturation_bound():
+    """A checklist with maxWaitThresholdSafe false must not become a dispatch order."""
+    engine = AdvisoryRuleEngine()
+    source = engine.get_recommendation("REC-TRF-20260920-001")
+    assert source is not None
+    unsafe = source.model_copy(update={
+        "recommendationId": "REC-UNSAFE-SAT-01",
+        "safetyChecklist": SafetyConstraintChecklist(
+            pedestrianPhaseSafe=True,
+            maxWaitThresholdSafe=False,
+            emergencyPreemptionClear=True,
+            minGreenSatisfied=True,
+        ),
+    })
+    engine.add_custom_recommendation(unsafe)
+    req = AuthorizeAdvisoryRequest(
+        primaryOfficer=OfficerCredentials(officerName="Officer One", badgeId="B-1"),
+        concurringOfficer=OfficerCredentials(officerName="Officer Two", badgeId="B-2"),
+        shiftId="SHIFT-A",
+        decision=RecommendationStatus.ACKNOWLEDGED,
+        notes="Must be refused.",
+    )
+    with pytest.raises(SafetyBoundRejected) as rejected:
+        engine.authorize_advisory("REC-UNSAFE-SAT-01", req)
+    assert "saturation cap" in rejected.value.detail
+    assert engine.get_dispatch_order("REC-UNSAFE-SAT-01") is None
+
+
+def test_api_authorize_rejects_failed_saturation_bound():
+    """POST authorize returns 409 when the stored safety checklist fails."""
+    source = rule_engine.get_recommendation("REC-TRF-20260920-001")
+    assert source is not None
+    unsafe = source.model_copy(update={
+        "recommendationId": "REC-UNSAFE-SAT-API",
+        "safetyChecklist": SafetyConstraintChecklist(
+            pedestrianPhaseSafe=True,
+            maxWaitThresholdSafe=False,
+            emergencyPreemptionClear=True,
+            minGreenSatisfied=True,
+        ),
+    })
+    rule_engine.add_custom_recommendation(unsafe)
+    payload = {
+        "primaryOfficer": {"officerName": "Officer One", "badgeId": "B-1"},
+        "concurringOfficer": {"officerName": "Officer Two", "badgeId": "B-2"},
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED",
+        "notes": "Must be refused.",
+    }
+    resp = client.post(
+        "/api/v1/recommendations/REC-UNSAFE-SAT-API/authorize",
+        json=payload,
+        headers=_get_traffic_auth_header(),
+    )
+    assert resp.status_code == 409
+    assert "saturation cap" in resp.json()["detail"]
+    missing = client.get("/api/v1/recommendations/REC-UNSAFE-SAT-API/dispatch-order")
+    assert missing.status_code == 404

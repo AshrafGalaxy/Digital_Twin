@@ -34,6 +34,32 @@ from backend.services.anomaly_detector import EnvironmentalAnomalyDetector
 from backend.services.signal_optimizer import ApproachDemand, webster_optimizer
 
 
+class SafetyBoundRejected(Exception):
+    """Raised when an advisory fails a statutory safety bound and must not be dispatched."""
+
+    def __init__(self, detail: str):
+        self.detail = detail
+        super().__init__(detail)
+
+
+def safety_bound_failure(checklist: Optional[SafetyConstraintChecklist]) -> Optional[str]:
+    """Returns a refusal sentence when any statutory bound on the checklist is false."""
+    if checklist is None:
+        return None
+    failed: List[str] = []
+    if not checklist.pedestrianPhaseSafe:
+        failed.append("pedestrian clearance")
+    if not checklist.minGreenSatisfied:
+        failed.append("minimum green")
+    if not checklist.maxWaitThresholdSafe:
+        failed.append("saturation cap")
+    if not checklist.emergencyPreemptionClear:
+        failed.append("emergency preemption")
+    if not failed:
+        return None
+    return "Authorization refused. Safety bounds failed: " + ", ".join(failed) + "."
+
+
 class AdvisoryRuleEngine:
     """
     Evaluates corridor conditions and ML forecasts against deterministic governance rules.
@@ -391,6 +417,30 @@ class AdvisoryRuleEngine:
             baseline_cycle_sec=baseline_cycle_sec
         )
 
+        ped_ok = bool(plan.safety_validation.get("pedestrianInvariantVerified"))
+        min_green_ok = bool(plan.safety_validation.get("minGreenSatisfied"))
+        max_saturation = float(plan.safety_validation.get("maxSaturation", 1.0))
+        saturation_ok = max_saturation <= 0.85
+        if ped_ok and min_green_ok and saturation_ok:
+            suggested_action = (
+                f"Authorize deployment of {plan.target_cycle_sec}s timing plan. "
+                "Verified: pedestrian crosswalk clearance invariant met on all phases, "
+                "minimum green satisfied, max saturation x <= 0.85. "
+                "Human authorization is required before any field action."
+            )
+        else:
+            reasons: List[str] = []
+            if not ped_ok:
+                reasons.append("pedestrian clearance failed")
+            if not min_green_ok:
+                reasons.append("minimum green failed")
+            if not saturation_ok:
+                reasons.append(f"max saturation {max_saturation:.3f} exceeds 0.85")
+            suggested_action = (
+                f"Do not authorize the {plan.target_cycle_sec}s timing plan. "
+                f"Safety bounds failed: {', '.join(reasons)}."
+            )
+
         phase_summary = ", ".join(
             f"Phase {p.phase_id} ({p.approach_id}): {p.green_sec}s green (x={p.saturation_x:.2f})"
             for p in plan.phases
@@ -420,10 +470,7 @@ class AdvisoryRuleEngine:
                 confidenceScore=0.94,
                 timestamp=now
             ),
-            suggestedAction=(
-                f"Authorize deployment of {plan.target_cycle_sec}s timing plan. "
-                f"Verified: pedestrian crosswalk clearance invariant met on all phases, max saturation x <= 0.85."
-            ),
+            suggestedAction=suggested_action,
             proposedChange=ProposedParameterChange(
                 phaseId=plan.phases[0].phase_id if plan.phases else 1,
                 parameter="greenSplitSec",
@@ -441,9 +488,10 @@ class AdvisoryRuleEngine:
                 fuelSavedLitersPerHr=round(plan.estimated_delay_reduction_sec * 2.2, 1)
             ),
             safetyChecklist=SafetyConstraintChecklist(
-                pedestrianPhaseSafe=bool(plan.safety_validation.get("pedestrianInvariantVerified", True)),
-                maxWaitThresholdSafe=float(plan.safety_validation.get("maxSaturation", 0.8)) <= 0.85,
-                emergencyPreemptionClear=True
+                pedestrianPhaseSafe=ped_ok,
+                maxWaitThresholdSafe=saturation_ok,
+                emergencyPreemptionClear=True,
+                minGreenSatisfied=min_green_ok
             ),
             topFeatures=[
                 FeatureAttribution(feature="Critical Approach Flow Ratio (Y)", impact=42.0),
@@ -489,6 +537,9 @@ class AdvisoryRuleEngine:
             rec = self._recommendations.get(rec_id)
             if not rec:
                 return None
+            bound_failure = safety_bound_failure(rec.safetyChecklist)
+            if bound_failure:
+                raise SafetyBoundRejected(bound_failure)
 
             now = datetime.now(timezone.utc)
             date_str = now.strftime("%Y%m%d")

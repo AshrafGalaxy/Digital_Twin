@@ -286,6 +286,7 @@ export interface SafetyConstraintChecklist {
   pedestrianPhaseSafe: boolean;
   maxWaitThresholdSafe: boolean;
   emergencyPreemptionClear: boolean;
+  minGreenSatisfied?: boolean;
 }
 
 export interface FeatureAttribution {

@@ -159,7 +159,11 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
       "40001_bess_power_setpoint_kw": 450,
       "40002_bess_inverter_mode": 2,
       "40003_hvac_temperature_offset_tenths_c": 10,
-      "40004_interlock_status_flags": 15
+      "40004_interlock_status_flags":
+        (advisory.safetyChecks.voltageCompliant ? 1 : 0) +
+        (advisory.safetyChecks.rampRateCompliant ? 2 : 0) +
+        (advisory.safetyChecks.socBounded ? 4 : 0) +
+        (advisory.safetyChecks.comfortPreserved ? 8 : 0)
     },
     governanceDisclaimer: advisory.governanceNotice
   } as EnergyDispatchWorkOrder : null);
