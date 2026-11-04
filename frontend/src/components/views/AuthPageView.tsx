@@ -46,6 +46,13 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
   const [signUpPassword, setSignUpPassword] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<MunicipalRole>('Civic Observer');
 
+  const isDev = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    if (import.meta.env.DEV) return true;
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.endsWith('.local') || import.meta.env.MODE === 'development';
+  }, []);
+
   const demoAccounts = [
     {
       role: 'Traffic Systems Engineer' as MunicipalRole,
@@ -78,8 +85,29 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
       email: 'analyst@pmc.gov.in',
       password: 'analyst123',
       color: '#2F81F7'
+    },
+    {
+      role: 'Civic Observer' as MunicipalRole,
+      label: 'Observer',
+      fullName: 'Civic Observer',
+      email: 'observer@pmc.gov.in',
+      password: 'observer123',
+      color: '#94A3B8'
     }
   ];
+
+  const handleInstantBypass = async () => {
+    setErrorMessage(null);
+    setIsLoading(true);
+    try {
+      const user = await loginMunicipalUser('demo', 'demo');
+      onAuthSuccess(user);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Instant bypass failed. Please try a persona button.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleQuickSignIn = async (demo: typeof demoAccounts[0]) => {
     setSignInEmail(demo.email);
@@ -195,10 +223,15 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
             </button>
           </div>
 
-          {/* Quick Demo Persona Access */}
-          {authMode === 'signin' && (
+          {/* Quick Demo Persona Access (Development & Local Testing Only - Automatically Omitted in Hosted Production) */}
+          {authMode === 'signin' && isDev && (
             <div className="auth-quick-access">
-              <span className="quick-access-label">Quick Demo Access</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span className="quick-access-label" style={{ margin: 0 }}>Development Quick Access</span>
+                <span style={{ fontSize: '10px', color: '#8B949E', backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                  Local Dev
+                </span>
+              </div>
               <div className="quick-access-grid">
                 {demoAccounts.map((demo) => (
                   <button
@@ -214,10 +247,37 @@ export const AuthPageView: React.FC<AuthPageViewProps> = ({
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                className="quick-bypass-btn"
+                onClick={handleInstantBypass}
+                disabled={isLoading}
+                style={{
+                  marginTop: '10px',
+                  width: '100%',
+                  padding: '7px 12px',
+                  fontSize: '11px',
+                  backgroundColor: 'rgba(47, 129, 247, 0.15)',
+                  color: '#58A6FF',
+                  border: '1px solid rgba(47, 129, 247, 0.35)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  fontWeight: 500,
+                  transition: 'background-color 0.15s ease'
+                }}
+                title="Instant 1-Click bypass with Master Municipal Analyst clearance"
+              >
+                <ShieldCheck size={13} />
+                <span>Instant 1-Click Master Access (Dev Bypass)</span>
+              </button>
             </div>
           )}
 
-          {authMode === 'signin' && (
+          {authMode === 'signin' && isDev && (
             <div className="auth-divider">
               <span>or sign in with credentials</span>
             </div>

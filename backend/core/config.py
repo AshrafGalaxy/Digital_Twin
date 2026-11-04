@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     MUNICIPAL_JWT_SECRET: Optional[str] = None
 
     @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT.lower() == "production"
+
+    @property
+    def is_development(self) -> bool:
+        return not self.is_production
+
+    @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 

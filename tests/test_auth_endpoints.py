@@ -145,7 +145,8 @@ def test_session_verification_invalid():
 
 
 def test_jwt_secret_fallback_refusal(monkeypatch):
-    """Verify get_jwt_secret() refuses to execute if unset or set to insecure fallback."""
+    """Verify get_jwt_secret() refuses to execute in production mode if unset or set to insecure fallback."""
+    monkeypatch.setenv("ENVIRONMENT", "production")
     # Test missing secret
     monkeypatch.setenv("MUNICIPAL_JWT_SECRET", "")
     with pytest.raises(HTTPException) as excinfo:
@@ -157,3 +158,38 @@ def test_jwt_secret_fallback_refusal(monkeypatch):
     with pytest.raises(HTTPException) as excinfo:
         get_jwt_secret()
     assert excinfo.value.status_code == 500
+
+
+def test_jwt_secret_dev_mock_allowed_in_development(monkeypatch):
+    """Verify get_jwt_secret() supplies development mock secret without crashing when in development mode."""
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("MUNICIPAL_JWT_SECRET", "")
+    secret = get_jwt_secret()
+    assert len(secret) > 16
+    assert secret != INSECURE_FALLBACK_JWT_SECRET
+
+
+def test_demo_bypass_login_success_in_dev():
+    """Verify dedicated 1-click dev demo account works in development mode."""
+    payload = {
+        "username_or_email": "demo",
+        "password": "demo"
+    }
+    response = client.post("/api/v1/auth/login", json=payload)
+    assert response.status_code == 200
+    user = response.json()
+    assert user["name"] == "Development Lead Director (Demo)"
+    assert user["role"] == "Municipal Analyst"
+    assert "token" in user
+
+
+def test_demo_bypass_login_disabled_in_production(monkeypatch):
+    """Verify dedicated dev demo account is strictly blocked in production mode with 403 Forbidden."""
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    payload = {
+        "username_or_email": "demo",
+        "password": "demo"
+    }
+    response = client.post("/api/v1/auth/login", json=payload)
+    assert response.status_code == 403
+    assert "Development demo accounts are disabled in production" in response.json()["detail"]

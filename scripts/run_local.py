@@ -132,6 +132,8 @@ def main():
     ]
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    if "MUNICIPAL_JWT_SECRET" not in env or not env["MUNICIPAL_JWT_SECRET"].strip():
+        env["MUNICIPAL_JWT_SECRET"] = "pmc-dt-secure-jwt-secret-2026-production-grade-corridor-key"
     
     print(f"{CYAN}[SYSTEM]{RESET} Launching FastAPI backend on port 8000...")
     backend_proc = subprocess.Popen(

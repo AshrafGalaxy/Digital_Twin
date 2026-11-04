@@ -37,6 +37,11 @@ if (-Not (Test-Path "$RootDir\frontend\node_modules")) {
     npm --prefix "$RootDir\frontend" install
 }
 
-# 3. Launch unified runner directly in current terminal
+# 3. Ensure development cryptographic session secret is set for local testing
+if (-not $env:MUNICIPAL_JWT_SECRET) {
+    $env:MUNICIPAL_JWT_SECRET = "pmc-dt-secure-jwt-secret-2026-production-grade-corridor-key"
+}
+
+# 4. Launch unified runner directly in current terminal
 & $PythonBin "$RootDir\scripts\run_local.py"
 
