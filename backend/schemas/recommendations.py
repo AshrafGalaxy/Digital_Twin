@@ -62,10 +62,10 @@ class ProposedParameterChange(BaseModel):
 
 
 class ConformalPredictedImpact(BaseModel):
-    delayDeltaPct: float = Field(..., description="Predicted percentage change in corridor delay")
-    delayDeltaCI: List[float] = Field(..., description="Conformal 90% confidence interval [lower, upper]")
-    queueDeltaMeters: float = Field(..., description="Expected queue reduction in meters")
-    fuelSavedLitersPerHr: float = Field(..., description="Estimated fuel burn savings in L/hr")
+    delayDeltaPct: float = Field(..., description="Percent change in delay from the baseline plan to the candidate plan. Negative means the candidate delay is lower.")
+    delayDeltaCI: Optional[List[float]] = Field(default=None, description="Interval bounds only when a conformal residual model produced them.")
+    queueDeltaMeters: Optional[float] = Field(default=None, description="Queue change in meters only when a documented conversion from the plan produced it.")
+    fuelSavedLitersPerHr: Optional[float] = Field(default=None, description="Fuel change in liters per hour only when a documented conversion from the plan produced it.")
 
 
 class SafetyConstraintChecklist(BaseModel):
@@ -77,7 +77,7 @@ class SafetyConstraintChecklist(BaseModel):
 
 class FeatureAttribution(BaseModel):
     feature: str = Field(..., description="Feature name driving the recommendation")
-    impact: float = Field(..., description="TreeSHAP impact attribution percentage")
+    impact: float = Field(..., description="Impact share. Present only when an attribution method ran for this plan.")
 
 
 class AdvisoryRecommendation(BaseModel):
@@ -97,6 +97,7 @@ class AdvisoryRecommendation(BaseModel):
     topFeatures: List[FeatureAttribution] = Field(default_factory=list)
     dispatchOrderId: Optional[str] = None
     tamperEvidentHash: Optional[str] = None
+    isFixture: bool = Field(default=False, description="True for a stored sample that the operator list must not serve as a measurement.")
     humanApprovalRequired: bool = Field(default=True, description="Strict invariant: platform cannot actuate external systems")
     governanceNotice: str = Field(
         default="Advisory only. Requires human verification and municipal authorization before any physical intervention.",

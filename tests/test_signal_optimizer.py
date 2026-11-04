@@ -147,6 +147,88 @@ def test_delay_reduction_positive():
     assert plan.optimal_delay_sec_veh <= plan.baseline_delay_sec_veh
 
 
+def test_webster_overflow_term_uses_arrival_flow():
+    """At x = 0.75 and q = 0.15 veh/s the overflow term is 7.50 s, not the capacity form."""
+    overflow = WebsterSignalOptimizer.webster_overflow_delay(0.75, 0.15)
+    assert abs(overflow - 7.50) < 0.01
+    delay = WebsterSignalOptimizer.calculate_webster_delay(
+        cycle_sec=90.0,
+        split_ratio=0.40,
+        flow_vps=0.15,
+        saturation_flow_vps=0.50,
+    )
+    # Uniform term: 90 * (0.6)^2 / (2 * (1 - 0.40 * 0.75)) = 23.142857
+    assert abs(delay - (23.142857 + 7.50)) < 0.01
+    assert delay == 30.64
+
+
+def test_oversaturated_delay_is_not_a_single_cap():
+    """A worse degree of saturation must not collapse onto the same 180 second cap."""
+    milder = WebsterSignalOptimizer.calculate_webster_delay(90.0, 0.40, 0.30, 0.50)
+    worse = WebsterSignalOptimizer.calculate_webster_delay(90.0, 0.40, 0.40, 0.50)
+    assert milder != 180.0
+    assert worse != 180.0
+    assert worse > milder
+
+
+def test_delay_reduction_can_be_negative():
+    """A constrained plan that is slower than the baseline reports a negative reduction."""
+    optimizer = WebsterSignalOptimizer()
+    approaches = [
+        ApproachDemand("APP-A", "Approach A", 2200.0, lanes=2, min_green_sec=40.0, crosswalk_width_m=3.6, saturation_flow_vph_lane=1800.0),
+        ApproachDemand("APP-B", "Approach B", 2200.0, lanes=2, min_green_sec=40.0, crosswalk_width_m=3.6, saturation_flow_vph_lane=1800.0),
+    ]
+    plan = optimizer.compute_optimal_timing(
+        intersection_id="INT-WORSE-01",
+        approaches=approaches,
+        constraints=SignalConstraints(min_cycle_sec=60, max_cycle_sec=70),
+        baseline_cycle_sec=150,
+    )
+    assert plan.optimal_delay_sec_veh > plan.baseline_delay_sec_veh
+    assert plan.estimated_delay_reduction_sec < 0.0
+    assert plan.provenance["sourceMode"] == "PREDICTED"
+    assert plan.provenance["delayUpperClampApplied"] is False
+
+
+def test_advisory_current_green_is_the_baseline_green():
+    """The dossier current value is the baseline phase green, and feature impacts are not invented."""
+    engine = AdvisoryRuleEngine()
+    approaches = [
+        ApproachDemand("APP-A", "Approach A", 500.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+        ApproachDemand("APP-B", "Approach B", 280.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+    ]
+    advisory = engine.generate_webster_timing_advisory(
+        intersection_id="urn:ngsi-ld:Intersection:TEST:INT-BIND",
+        approaches=approaches,
+        baseline_cycle_sec=90,
+    )
+    plan = webster_optimizer.compute_optimal_timing(
+        intersection_id="urn:ngsi-ld:Intersection:TEST:INT-BIND",
+        approaches=approaches,
+        baseline_cycle_sec=90,
+    )
+    assert advisory.proposedChange is not None
+    assert advisory.proposedChange.currentValue == float(plan.phases[0].baseline_green_sec)
+    assert advisory.proposedChange.recommendedValue == float(plan.phases[0].green_sec)
+    assert advisory.topFeatures == []
+    assert advisory.evidence.confidenceScore is None
+    assert advisory.predictedImpact is not None
+    assert advisory.predictedImpact.delayDeltaCI is None
+    assert advisory.evidence.sourceMode == "PREDICTED"
+
+    heavier = [
+        ApproachDemand("APP-A", "Approach A", 1400.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+        ApproachDemand("APP-B", "Approach B", 300.0, lanes=2, min_green_sec=10.0, crosswalk_width_m=12.0),
+    ]
+    other = engine.generate_webster_timing_advisory(
+        intersection_id="urn:ngsi-ld:Intersection:TEST:INT-BIND-2",
+        approaches=heavier,
+        baseline_cycle_sec=90,
+    )
+    assert other.topFeatures == []
+    assert [item.impact for item in advisory.topFeatures] != [42.0, 28.0, 14.0, -10.0, 6.0]
+
+
 def test_rule_engine_webster_advisory():
     """Verifies AdvisoryRuleEngine generates compliant Webster timing recommendations."""
     engine = AdvisoryRuleEngine()

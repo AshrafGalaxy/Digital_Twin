@@ -47,37 +47,22 @@ def _get_traffic_auth_header():
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_seeded_traffic_advisory_has_complete_dossier():
-    """Verifies that the seeded traffic congestion advisory contains complete dossier models."""
+def test_seeded_traffic_advisory_is_not_served_as_a_measurement():
+    """The frozen speed card stays off the operator list and is not labeled as a model measurement."""
+    listed = rule_engine.list_recommendations()
+    assert all(rec.recommendationId != "REC-TRF-20260920-001" for rec in listed)
+    assert all(rec.evidence.observedOrPredictedValue != 17.8 for rec in listed)
+    assert all(rec.evidence.modelVersion != "traffic-xgb-v1" for rec in listed)
+
     rec = rule_engine.get_recommendation("REC-TRF-20260920-001")
     assert rec is not None
-    assert rec.domain == "TRAFFIC"
-
-    # 1. Proposed Change
-    assert rec.proposedChange is not None
-    assert rec.proposedChange.phaseId == 1
-    assert rec.proposedChange.parameter == "greenSplitSec"
-    assert rec.proposedChange.currentValue == 45.0
-    assert rec.proposedChange.recommendedValue == 55.0
-
-    # 2. Conformal Predicted Impact
-    assert rec.predictedImpact is not None
-    assert rec.predictedImpact.delayDeltaPct == -18.4
-    assert len(rec.predictedImpact.delayDeltaCI) == 2
-    assert rec.predictedImpact.delayDeltaCI[0] < rec.predictedImpact.delayDeltaCI[1]
-    assert rec.predictedImpact.queueDeltaMeters == -24.0
-    assert rec.predictedImpact.fuelSavedLitersPerHr == 32.5
-
-    # 3. Safety Checklist
+    assert rec.isFixture is True
+    assert rec.evidence.modelVersion == "fixture"
+    assert rec.evidence.observedOrPredictedValue != 17.8
+    assert "XGBoost" not in rec.description
     assert rec.safetyChecklist is not None
     assert rec.safetyChecklist.pedestrianPhaseSafe is True
-    assert rec.safetyChecklist.maxWaitThresholdSafe is True
-    assert rec.safetyChecklist.emergencyPreemptionClear is True
-
-    # 4. Top-5 TreeSHAP Features
-    assert len(rec.topFeatures) == 5
-    feature_names = [f.feature for f in rec.topFeatures]
-    assert "Upstream Corridor Queue Length" in feature_names
+    assert rec.humanApprovalRequired is True
 
 
 def test_webster_timing_advisory_dossier():
@@ -92,12 +77,16 @@ def test_webster_timing_advisory_dossier():
     assert advisory.proposedChange.recommendedValue > 0
 
     assert advisory.predictedImpact is not None
-    assert advisory.predictedImpact.delayDeltaPct < 0.0
-    assert len(advisory.predictedImpact.delayDeltaCI) == 2
+    assert advisory.predictedImpact.delayDeltaCI is None
+    assert advisory.predictedImpact.queueDeltaMeters is None
+    assert advisory.predictedImpact.fuelSavedLitersPerHr is None
+    assert advisory.evidence.confidenceScore is None
+    assert advisory.evidence.sourceMode == "PREDICTED"
+    assert advisory.topFeatures == []
+    assert advisory.proposedChange.currentValue != round(advisory.proposedChange.recommendedValue * 0.8, 1)
 
     assert advisory.safetyChecklist is not None
     assert advisory.safetyChecklist.pedestrianPhaseSafe is True
-    assert len(advisory.topFeatures) == 5
 
 
 def test_authorize_advisory_generates_sha256_and_order_id():

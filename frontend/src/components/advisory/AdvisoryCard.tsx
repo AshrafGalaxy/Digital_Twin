@@ -192,20 +192,22 @@ export const AdvisoryCard: React.FC<AdvisoryCardProps> = ({
               <span style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#F0F6FC' }}>
                 {advisory.predictedImpact.delayDeltaPct.toFixed(1)}%
               </span>
-              <span style={{
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono)',
-                color: '#8B949E',
-                background: 'rgba(255, 255, 255, 0.06)',
-                padding: '1px 5px',
-                borderRadius: '4px'
-              }}>
-                90% CI: [{advisory.predictedImpact.delayDeltaCI[0].toFixed(1)}%, {advisory.predictedImpact.delayDeltaCI[1].toFixed(1)}%]
-              </span>
+              {advisory.predictedImpact.delayDeltaCI && advisory.predictedImpact.delayDeltaCI.length === 2 && (
+                <span style={{
+                  fontSize: '10px',
+                  fontFamily: 'var(--font-mono)',
+                  color: '#8B949E',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  padding: '1px 5px',
+                  borderRadius: '4px'
+                }}>
+                  [{advisory.predictedImpact.delayDeltaCI[0].toFixed(1)}%, {advisory.predictedImpact.delayDeltaCI[1].toFixed(1)}%]
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Queue Reduction */}
+          {advisory.predictedImpact.queueDeltaMeters != null && (
           <div style={{
             background: 'rgba(63, 185, 80, 0.08)',
             border: '1px solid rgba(63, 185, 80, 0.25)',
@@ -219,8 +221,9 @@ export const AdvisoryCard: React.FC<AdvisoryCardProps> = ({
               {advisory.predictedImpact.queueDeltaMeters.toFixed(1)} m
             </div>
           </div>
+          )}
 
-          {/* Fuel Saved */}
+          {advisory.predictedImpact.fuelSavedLitersPerHr != null && (
           <div style={{
             background: 'rgba(210, 153, 34, 0.08)',
             border: '1px solid rgba(210, 153, 34, 0.25)',
@@ -234,6 +237,7 @@ export const AdvisoryCard: React.FC<AdvisoryCardProps> = ({
               {advisory.predictedImpact.fuelSavedLitersPerHr.toFixed(1)} L/hr
             </div>
           </div>
+          )}
         </div>
       )}
 

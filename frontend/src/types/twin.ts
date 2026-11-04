@@ -277,9 +277,9 @@ export interface ProposedParameterChange {
 
 export interface ConformalPredictedImpact {
   delayDeltaPct: number;
-  delayDeltaCI: [number, number];
-  queueDeltaMeters: number;
-  fuelSavedLitersPerHr: number;
+  delayDeltaCI?: [number, number] | null;
+  queueDeltaMeters?: number | null;
+  fuelSavedLitersPerHr?: number | null;
 }
 
 export interface SafetyConstraintChecklist {

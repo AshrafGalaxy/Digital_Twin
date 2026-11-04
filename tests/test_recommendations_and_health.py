@@ -33,21 +33,21 @@ def client():
 def test_rule_engine_initial_seeding_and_invariants():
     """Verifies that the rule engine initializes with realistic seeded advisories and mandatory governance flags."""
     recs = rule_engine.list_recommendations()
-    assert len(recs) >= 3
+    assert all(r.recommendationId != "REC-TRF-20260920-001" for r in recs)
+    assert all(not r.isFixture for r in recs)
 
-    # Traffic advisory verification (hermetic check on seeded advisory)
-    trf_rec = next((r for r in recs if r.recommendationId == "REC-TRF-20260920-001"), None)
+    trf_rec = rule_engine.get_recommendation("REC-TRF-20260920-001")
     assert trf_rec is not None
+    assert trf_rec.isFixture is True
     assert trf_rec.domain == RecommendationDomain.TRAFFIC
     assert trf_rec.humanApprovalRequired is True
     assert "human verification" in trf_rec.governanceNotice.lower()
-    assert trf_rec.evidence.sourceMode == "PREDICTED"
-    assert trf_rec.evidence.modelVersion == "traffic-xgb-v1"
-    assert trf_rec.evidence.scenarioId == "SCEN-INT-01"
+    assert trf_rec.evidence.modelVersion != "traffic-xgb-v1"
+    assert trf_rec.evidence.observedOrPredictedValue != 17.8
 
-    # Energy advisory verification
-    nrg_rec = next((r for r in recs if r.domain == RecommendationDomain.ENERGY), None)
+    nrg_rec = rule_engine.get_recommendation("REC-NRG-20260920-002")
     assert nrg_rec is not None
+    assert nrg_rec.isFixture is True
     assert nrg_rec.humanApprovalRequired is True
     assert nrg_rec.evidence.threshold == 4800.0
 
@@ -95,7 +95,8 @@ def test_api_recommendation_filtering_and_review(client):
     res = client.get("/api/v1/recommendations?domain=TRAFFIC")
     assert res.status_code == 200
     traffic_recs = res.json()
-    assert len(traffic_recs) >= 1
+    assert all(r["recommendationId"] != "REC-TRF-20260920-001" for r in traffic_recs)
+    assert all(r.get("evidence", {}).get("observedOrPredictedValue") != 17.8 for r in traffic_recs)
     for r in traffic_recs:
         assert r["domain"] == "TRAFFIC"
 
@@ -103,7 +104,7 @@ def test_api_recommendation_filtering_and_review(client):
     res_sum = client.get("/api/v1/recommendations/summary")
     assert res_sum.status_code == 200
     summary = res_sum.json()
-    assert summary["totalActive"] >= 1
+    assert summary["totalActive"] >= 0
     assert "TRAFFIC" in summary["byDomain"]
 
     # 3. Execute review via API
@@ -138,7 +139,7 @@ def test_health_check_deep_subsystem_reporting(client):
     assert subsystems["mlEnergyModel"] is True
     assert subsystems["simulationEngine"] is True
     assert subsystems["scenarioTemplatesCount"] >= 3
-    assert subsystems["activeAdvisoriesCount"] >= 1
+    assert subsystems["activeAdvisoriesCount"] >= 0
 
 
 def test_recommendation_non_actuation_invariant():

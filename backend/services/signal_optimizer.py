@@ -52,6 +52,7 @@ class PhaseResult:
     saturation_x: float
     delay_sec_veh: float
     ped_clearance_sec: float
+    baseline_green_sec: int = 0
 
 
 @dataclass
@@ -92,7 +93,8 @@ class TimingPlan:
                     "flowRatioY": round(p.flow_ratio_y, 4),
                     "saturationX": round(p.saturation_x, 3),
                     "delaySecVeh": round(p.delay_sec_veh, 1),
-                    "pedClearanceSec": round(p.ped_clearance_sec, 1)
+                    "pedClearanceSec": round(p.ped_clearance_sec, 1),
+                    "baselineGreenSec": p.baseline_green_sec
                 }
                 for p in self.phases
             ],
@@ -113,6 +115,33 @@ class WebsterSignalOptimizer:
     """
 
     @staticmethod
+    def webster_overflow_delay(degree_of_saturation: float, arrival_vps: float) -> float:
+        """Undersaturated overflow: x^2 / (2 * q * (1 - x)), with q in vehicles per second."""
+        x = degree_of_saturation
+        if arrival_vps <= 0.0 or x <= 0.0 or x >= 1.0:
+            return 0.0
+        return (x * x) / (2.0 * arrival_vps * (1.0 - x))
+
+    @staticmethod
+    def akcelik_overflow_delay(
+        degree_of_saturation: float,
+        capacity_vps: float,
+        period_sec: float = 900.0,
+    ) -> float:
+        """
+        Time-dependent overflow delay in seconds when x >= 1.
+        d = 900 * T * ((x - 1) + sqrt((x - 1)^2 + 12 * (x - 0.67) / (c * T)))
+        T is the analysis period in hours and c is capacity in vehicles per hour.
+        """
+        x = degree_of_saturation
+        if x < 1.0 or capacity_vps <= 0.0 or period_sec <= 0.0:
+            return 0.0
+        t_hours = period_sec / 3600.0
+        capacity_vph = capacity_vps * 3600.0
+        extra = max(0.0, 12.0 * (x - 0.67)) / max(capacity_vph * t_hours, 1e-6)
+        return 900.0 * t_hours * ((x - 1.0) + math.sqrt((x - 1.0) ** 2 + extra))
+
+    @staticmethod
     def calculate_webster_delay(
         cycle_sec: float,
         split_ratio: float,
@@ -120,10 +149,10 @@ class WebsterSignalOptimizer:
         saturation_flow_vps: float
     ) -> float:
         """
-        Computes Webster delay per vehicle using standard uniform and overflow terms:
-        d = d1 + d2
-        d1 = [C * (1 - lambda)^2] / [2 * (1 - min(1, lambda * x))]
-        d2 = overflow delay with Akcelik/HCM transition for oversaturation.
+        Delay per vehicle.
+        Undersaturated (x < 1): D = C * (1 - lambda)^2 / (2 * (1 - lambda * x)) + x^2 / (2 * q * (1 - x)).
+        Oversaturated (x >= 1): the same uniform term with x held at 1, plus the Akcelik time-dependent term.
+        Valid results are not clamped to 180 seconds.
         """
         if split_ratio <= 0.0 or cycle_sec <= 0.0 or saturation_flow_vps <= 0.0:
             return 90.0
@@ -133,28 +162,16 @@ class WebsterSignalOptimizer:
             return 90.0
 
         x = flow_vps / capacity_vps
-        safe_x = max(0.01, x)
+        if x < 1.0:
+            denom = 2.0 * (1.0 - (split_ratio * x))
+            d1 = (cycle_sec * ((1.0 - split_ratio) ** 2)) / denom if denom > 1e-9 else 0.0
+            d2 = WebsterSignalOptimizer.webster_overflow_delay(x, flow_vps)
+            return round(max(0.0, d1 + d2), 2)
 
-        # Uniform delay term d1
-        denom1 = 2.0 * max(0.05, 1.0 - min(0.95, split_ratio * safe_x))
-        d1 = (cycle_sec * ((1.0 - split_ratio) ** 2)) / denom1
-
-        # Overflow delay term d2
-        if safe_x <= 0.85:
-            d2 = (safe_x ** 2) / (2.0 * capacity_vps * (1.0 - safe_x))
-        elif safe_x <= 1.0:
-            # Transition region
-            d2_at_85 = (0.85 ** 2) / (2.0 * capacity_vps * 0.15)
-            slope = (0.85 / (capacity_vps * (0.15 ** 2)))
-            d2 = d2_at_85 + slope * (safe_x - 0.85)
-        else:
-            # Oversaturated regime (Akcelik formulation)
-            d2_at_1 = (0.85 ** 2) / (2.0 * capacity_vps * 0.15) + (0.85 / (capacity_vps * 0.0225)) * 0.15
-            t_period_sec = 900.0  # 15-minute analysis period
-            d2 = d2_at_1 + (safe_x - 1.0) * (t_period_sec / 2.0)
-
-        total_delay = d1 + d2
-        return round(max(2.0, min(180.0, total_delay)), 2)
+        denom = 2.0 * (1.0 - split_ratio)
+        d1 = (cycle_sec * ((1.0 - split_ratio) ** 2)) / denom if denom > 1e-9 else 0.0
+        d2 = WebsterSignalOptimizer.akcelik_overflow_delay(x, capacity_vps)
+        return round(max(0.0, d1 + d2), 2)
 
     def compute_optimal_timing(
         self,
@@ -293,7 +310,8 @@ class WebsterSignalOptimizer:
                 flow_ratio_y=flow_ratios_y[i],
                 saturation_x=sat_x,
                 delay_sec_veh=d_opt,
-                ped_clearance_sec=ped_clearances[i]
+                ped_clearance_sec=ped_clearances[i],
+                baseline_green_sec=int(baseline_green_per_phase),
             ))
 
         # Overall weighted intersection delay
@@ -301,8 +319,9 @@ class WebsterSignalOptimizer:
         avg_optimal_delay = sum(d * q for d, q in zip(optimal_delays, flow_vps_list)) / max(0.01, total_demand)
         avg_baseline_delay = sum(d * q for d, q in zip(baseline_delays, flow_vps_list)) / max(0.01, total_demand)
 
-        delay_reduction_sec = max(0.0, avg_baseline_delay - avg_optimal_delay)
+        delay_reduction_sec = avg_baseline_delay - avg_optimal_delay
         delay_reduction_pct = (delay_reduction_sec / max(0.01, avg_baseline_delay)) * 100.0
+        oversaturated = any(p.saturation_x >= 1.0 for p in phase_results)
 
         now_iso = datetime.now(timezone.utc).isoformat()
         rec_id = f"REC-OPT-{intersection_id.split(':')[-1]}-{uuid.uuid4().hex[:6]}"
@@ -336,7 +355,12 @@ class WebsterSignalOptimizer:
             provenance={
                 "sourceMode": "PREDICTED",
                 "optimizerVersion": "webster-constrained-v2.1",
-                "formula": "modified-webster-delay-minimization"
+                "formula": (
+                    "akcelik-time-dependent-overflow"
+                    if oversaturated
+                    else "webster-d1-plus-arrival-overflow"
+                ),
+                "delayUpperClampApplied": False,
             },
             status=(
                 "REQUIRES_HUMAN_APPROVAL"

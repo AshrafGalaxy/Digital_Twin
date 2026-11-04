@@ -21,7 +21,6 @@ from backend.schemas.recommendations import (
     AuthorizeAdvisoryRequest,
     ConformalPredictedImpact,
     DispatchWorkOrder,
-    FeatureAttribution,
     ProposedParameterChange,
     RecommendationDomain,
     RecommendationEvidence,
@@ -85,18 +84,17 @@ class AdvisoryRuleEngine:
             status=RecommendationStatus.ACTIVE,
             targetEntityId="urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
             title="Arterial Congestion Surge Predicted on Nagar Road Eastbound",
-            description="15-minute XGBoost speed forecast predicts arterial deceleration to 17.8 km/h due to evening commute convergence approaching Viman Nagar Chowk.",
+            description="Fixture record retained for dispatch tests. Not a forecast measurement and not served on the operator list.",
             triggerRule="RULE-TRF-CONGESTION-PREDICTED",
             evidence=RecommendationEvidence(
                 sourceMode=SourceMode.PREDICTED,
                 metricName="averageSpeedKmh",
-                observedOrPredictedValue=17.8,
+                observedOrPredictedValue=0.0,
                 threshold=20.0,
                 unit="km/h",
                 horizonMinutes=15,
-                modelVersion="traffic-xgb-v1",
+                modelVersion="fixture",
                 scenarioId="SCEN-INT-01",
-                confidenceScore=0.88,
                 timestamp=now
             ),
             suggestedAction="Authorize deployment of SCEN-INT-01 (+10s Nagar Rd EB green split extension) to flush accumulated upstream queues from Ramwadi.",
@@ -107,24 +105,14 @@ class AdvisoryRuleEngine:
                 recommendedValue=55.0,
                 unit="s"
             ),
-            predictedImpact=ConformalPredictedImpact(
-                delayDeltaPct=-18.4,
-                delayDeltaCI=[-22.1, -14.2],
-                queueDeltaMeters=-24.0,
-                fuelSavedLitersPerHr=32.5
-            ),
+            predictedImpact=None,
             safetyChecklist=SafetyConstraintChecklist(
                 pedestrianPhaseSafe=True,
                 maxWaitThresholdSafe=True,
                 emergencyPreemptionClear=True
             ),
-            topFeatures=[
-                FeatureAttribution(feature="Upstream Corridor Queue Length", impact=34.0),
-                FeatureAttribution(feature="Platoon Arrival Coherence", impact=26.0),
-                FeatureAttribution(feature="Rainfall Speed Degradation", impact=15.0),
-                FeatureAttribution(feature="Cross-Street Side Demand", impact=-18.0),
-                FeatureAttribution(feature="Historical Time-of-Day Pattern", impact=7.0),
-            ],
+            topFeatures=[],
+            isFixture=True,
             humanApprovalRequired=True,
             governanceNotice="Advisory only. Requires human verification and municipal authorization before any physical intervention.",
             auditTrail=[
@@ -133,7 +121,7 @@ class AdvisoryRuleEngine:
                     previousStatus=RecommendationStatus.ACTIVE,
                     newStatus=RecommendationStatus.ACTIVE,
                     reviewer="System Rule Engine",
-                    notes="Automated trigger: predicted speed 17.8 km/h below 20.0 km/h threshold."
+                    notes="Fixture record. Not served on the operator list."
                 )
             ],
             createdAt=now,
@@ -149,17 +137,16 @@ class AdvisoryRuleEngine:
             status=RecommendationStatus.ACTIVE,
             targetEntityId="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
             title="Commercial Peak Demand Threshold Approaching at Phoenix Marketcity",
-            description="60-minute energy demand forecast projects electrical load of 4,940 kW, crossing the 4,800 kW elevated demand advisory threshold (contract capacity: 6,800 kW).",
+            description="Fixture record retained for dispatch tests. Not a forecast measurement and not served on the operator list.",
             triggerRule="RULE-NRG-PEAK-SURGE",
             evidence=RecommendationEvidence(
                 sourceMode=SourceMode.PREDICTED,
                 metricName="electricalDemandKw",
-                observedOrPredictedValue=4940.0,
+                observedOrPredictedValue=0.0,
                 threshold=4800.0,
                 unit="kW",
                 horizonMinutes=60,
-                modelVersion="energy-xgb-v1",
-                confidenceScore=0.92,
+                modelVersion="fixture",
                 timestamp=now
             ),
             suggestedAction="Advise building management to stage commercial chiller compressors and adjust HVAC setpoint by +0.5 C between 14:00-17:00 IST to avert tariff surcharges.",
@@ -181,13 +168,8 @@ class AdvisoryRuleEngine:
                 maxWaitThresholdSafe=True,
                 emergencyPreemptionClear=True
             ),
-            topFeatures=[
-                FeatureAttribution(feature="Ambient Outdoor Temperature", impact=42.0),
-                FeatureAttribution(feature="Commercial Occupancy Footfall", impact=31.0),
-                FeatureAttribution(feature="Solar Insolation Profile", impact=18.0),
-                FeatureAttribution(feature="Pre-cooling Thermal Storage", impact=-12.0),
-                FeatureAttribution(feature="Grid Demand Tariff Peak Tier", impact=8.0),
-            ],
+            topFeatures=[],
+            isFixture=True,
             humanApprovalRequired=True,
             governanceNotice="Advisory only. Requires human verification and municipal authorization before any physical intervention.",
             auditTrail=[
@@ -196,7 +178,7 @@ class AdvisoryRuleEngine:
                     previousStatus=RecommendationStatus.ACTIVE,
                     newStatus=RecommendationStatus.ACTIVE,
                     reviewer="System Rule Engine",
-                    notes="Automated trigger: 60-min load forecast 4,940 kW exceeded 4,800 kW limit."
+                    notes="Fixture record. Not served on the operator list."
                 )
             ],
             createdAt=now,
@@ -224,6 +206,7 @@ class AdvisoryRuleEngine:
                 timestamp=now
             ),
             suggestedAction="Monitor telemetry buffer. If latency exceeds 60s, dispatch automated communication ping to optical detector gateway.",
+            isFixture=True,
             humanApprovalRequired=True,
             governanceNotice="Advisory only. Requires human verification and municipal authorization before any physical intervention.",
             auditTrail=[
@@ -247,7 +230,7 @@ class AdvisoryRuleEngine:
     ) -> List[AdvisoryRecommendation]:
         """Lists all registered recommendations with optional filtering."""
         with self._lock:
-            results = list(self._recommendations.values())
+            results = [r for r in self._recommendations.values() if not r.isFixture]
             if domain:
                 results = [r for r in results if r.domain == domain]
             if status:
@@ -307,8 +290,17 @@ class AdvisoryRuleEngine:
                 severity = RecommendationSeverity.CRITICAL if predicted_speed < 15.0 else RecommendationSeverity.WARNING
                 if rec_id in self._recommendations:
                     rec = self._recommendations[rec_id]
+                    rec.isFixture = False
+                    rec.description = (
+                        f"15-minute speed forecast projects arterial speed of {predicted_speed:.1f} km/h "
+                        "below the 20.0 km/h congestion threshold."
+                    )
                     rec.evidence.observedOrPredictedValue = predicted_speed
+                    rec.evidence.modelVersion = traffic_model_ver
+                    rec.evidence.confidenceScore = None
                     rec.evidence.timestamp = now
+                    rec.predictedImpact = None
+                    rec.topFeatures = []
                     rec.severity = severity
                     rec.updatedAt = now
                 else:
@@ -330,7 +322,6 @@ class AdvisoryRuleEngine:
                             horizonMinutes=15,
                             modelVersion=traffic_model_ver,
                             scenarioId="SCEN-INT-01",
-                            confidenceScore=0.90,
                             timestamp=now
                         ),
                         suggestedAction="Evaluate SCEN-INT-01 in Scenario Studio to test green extension mitigation.",
@@ -467,25 +458,18 @@ class AdvisoryRuleEngine:
                 unit="s",
                 horizonMinutes=15,
                 modelVersion="webster-constrained-v2.1",
-                confidenceScore=0.94,
                 timestamp=now
             ),
             suggestedAction=suggested_action,
             proposedChange=ProposedParameterChange(
                 phaseId=plan.phases[0].phase_id if plan.phases else 1,
                 parameter="greenSplitSec",
-                currentValue=round(plan.phases[0].green_sec * 0.8, 1) if plan.phases else 40.0,
-                recommendedValue=plan.phases[0].green_sec if plan.phases else 50.0,
+                currentValue=float(plan.phases[0].baseline_green_sec) if plan.phases else 0.0,
+                recommendedValue=float(plan.phases[0].green_sec) if plan.phases else 0.0,
                 unit="s"
             ),
             predictedImpact=ConformalPredictedImpact(
-                delayDeltaPct=-round(plan.estimated_delay_reduction_pct, 1),
-                delayDeltaCI=[
-                    -round(plan.estimated_delay_reduction_pct * 1.15, 1),
-                    -round(plan.estimated_delay_reduction_pct * 0.85, 1)
-                ],
-                queueDeltaMeters=-round(plan.estimated_delay_reduction_sec * 1.8, 1),
-                fuelSavedLitersPerHr=round(plan.estimated_delay_reduction_sec * 2.2, 1)
+                delayDeltaPct=-round(plan.estimated_delay_reduction_pct, 1)
             ),
             safetyChecklist=SafetyConstraintChecklist(
                 pedestrianPhaseSafe=ped_ok,
@@ -493,13 +477,7 @@ class AdvisoryRuleEngine:
                 emergencyPreemptionClear=True,
                 minGreenSatisfied=min_green_ok
             ),
-            topFeatures=[
-                FeatureAttribution(feature="Critical Approach Flow Ratio (Y)", impact=42.0),
-                FeatureAttribution(feature="Saturation Degree Bounding", impact=28.0),
-                FeatureAttribution(feature="Lost Time Clearance Overhead", impact=14.0),
-                FeatureAttribution(feature="Pedestrian Statutory Clearance", impact=-10.0),
-                FeatureAttribution(feature="Cycle Length Optimization Bound", impact=6.0)
-            ],
+            topFeatures=[],
             humanApprovalRequired=True,
             governanceNotice="Advisory only. Requires human verification and municipal authorization before any physical intervention.",
             auditTrail=[
@@ -709,7 +687,10 @@ class AdvisoryRuleEngine:
     def get_summary(self) -> AdvisorySummary:
         """Returns aggregated counters of recommendations across severity and domain."""
         with self._lock:
-            active = [r for r in self._recommendations.values() if r.status == RecommendationStatus.ACTIVE]
+            active = [
+                r for r in self._recommendations.values()
+                if r.status == RecommendationStatus.ACTIVE and not r.isFixture
+            ]
             crit = sum(1 for r in active if r.severity == RecommendationSeverity.CRITICAL)
             warn = sum(1 for r in active if r.severity == RecommendationSeverity.WARNING)
             info = sum(1 for r in active if r.severity == RecommendationSeverity.INFO)
