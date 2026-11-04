@@ -82,6 +82,21 @@ class SUMOCorridorRunner:
             "raw_stats": raw_stats
         }
 
+    @staticmethod
+    def collect_completed_travel_times(
+        depart_times: Dict[str, float],
+        arrived_ids,
+        now: float,
+    ) -> list:
+        """Travel time is arrival time minus the recorded departure. Unknown vehicles are skipped."""
+        samples = []
+        for vid in arrived_ids:
+            started = depart_times.pop(str(vid), None)
+            if started is None:
+                continue
+            samples.append(float(now) - float(started))
+        return samples
+
     def _run_native_sumo(
         self,
         template_id: str,
@@ -112,6 +127,7 @@ class SUMOCorridorRunner:
                 pass
 
         completed_travel_times = []
+        depart_times: Dict[str, float] = {}
         waiting_times = []
         queue_lengths = []
 
@@ -119,7 +135,21 @@ class SUMOCorridorRunner:
         while step < duration_sec:
             traci.simulationStep()
             step += 1
-            
+
+            try:
+                now = float(traci.simulation.getTime())
+                for vid in traci.simulation.getDepartedIDList():
+                    depart_times[str(vid)] = now
+                completed_travel_times.extend(
+                    self.collect_completed_travel_times(
+                        depart_times,
+                        traci.simulation.getArrivedIDList(),
+                        now,
+                    )
+                )
+            except Exception:
+                pass
+
             # Sample edge queue lengths and delays every 10 seconds
             if step % 10 == 0:
                 try:
@@ -134,17 +164,102 @@ class SUMOCorridorRunner:
         try:
             arrived_cnt = traci.simulation.getArrivedNumber()
         except Exception:
-            arrived_cnt = 2000
+            arrived_cnt = len(completed_travel_times)
 
         traci.close()
 
         kpis = ScenarioKPICalculator.aggregate_vehicle_records(
-            completed_travel_times=completed_travel_times or [145.0],
+            completed_travel_times=completed_travel_times,
             waiting_times=waiting_times or [55.0],
             sampled_queue_lengths=queue_lengths or [180.0],
             simulation_duration_sec=duration_sec
         )
         return kpis, {"vehicles_arrived": arrived_cnt, "steps_completed": step}
+
+    def _control_inputs(self, template_id: str, params: Dict[str, Any]) -> Tuple[float, float]:
+        """
+        Returns green time and the uniform-delay scale for a template.
+        SCEN-INT-01 differs from the baseline only by green_extension_sec.
+        SCEN-INT-02 differs by its coordinated green and the offset scale.
+        """
+        cycle_time = 120.0
+        if template_id == "SCEN-BASE-01":
+            return 35.0, 1.0
+        if template_id == "SCEN-INT-02":
+            coordination_offset = float(params.get("coordination_offset_sec", 35.0))
+            offset_error = abs(coordination_offset - 35.0)
+            offset_efficiency = max(0.55, 1.0 - (offset_error / 35.0) * 0.45)
+            uniform_scale = 1.15 - 0.40 * offset_efficiency
+            return 45.0, uniform_scale
+        green_extension = float(params.get("green_extension_sec", 15.0))
+        green_time = min(cycle_time - 1.0, max(1.0, 35.0 + green_extension))
+        return green_time, 1.0
+
+    def _signal_control_kpis(
+        self,
+        rng: random.Random,
+        demand_flow_vph: float,
+        duration_sec: int,
+        green_time: float,
+        uniform_delay_scale: float,
+    ) -> Tuple[Dict[str, float], Dict[str, Any]]:
+        """
+        One delay equation, one saturation ratio, and one queue equation.
+        Capacity is saturation flow times green / cycle. Degree of saturation is demand / capacity.
+        Uniform delay is the Webster term. Overflow delay is the Akcelik term.
+        Queue is the oversaturated residual plus the red-period arrival, times 7.5 m per vehicle.
+        """
+        cycle_time = 120.0
+        saturation_flow_vph = 5400.0
+        free_flow_tt = 93.8
+        g_c_ratio = green_time / cycle_time
+        capacity_vph = saturation_flow_vph * g_c_ratio
+        degree_of_sat = demand_flow_vph / max(capacity_vph, 1.0)
+
+        uniform_delay = (0.5 * cycle_time * (1.0 - g_c_ratio) ** 2) / (
+            1.0 - min(0.95, degree_of_sat * g_c_ratio)
+        )
+        period_hours = max(duration_sec / 3600.0, 1e-6)
+        overflow_inner = (degree_of_sat - 1.0) ** 2 + (
+            16.0 * degree_of_sat / max(capacity_vph * period_hours, 1e-6)
+        )
+        random_overflow = 900.0 * period_hours * (
+            (degree_of_sat - 1.0) + math.sqrt(max(0.0, overflow_inner))
+        )
+        total_delay = (uniform_delay * uniform_delay_scale) + max(0.0, random_overflow)
+
+        avg_delay = round(max(0.0, total_delay + rng.uniform(-2.5, 3.5)), 2)
+        avg_travel_time = round(free_flow_tt + avg_delay, 2)
+
+        arrival_per_cycle = demand_flow_vph * (cycle_time / 3600.0)
+        capacity_per_cycle = capacity_vph * (cycle_time / 3600.0)
+        overflow_vehicles = max(0.0, arrival_per_cycle - capacity_per_cycle)
+        red_queue_vehicles = arrival_per_cycle * (1.0 - g_c_ratio) * 0.5
+        queue_meters = max(
+            0.0,
+            (overflow_vehicles + red_queue_vehicles) * 7.5 + rng.uniform(-10.0, 15.0),
+        )
+        p95_queue = round(queue_meters * 1.15, 2)
+
+        throughput = round(
+            max(0.0, min(demand_flow_vph, capacity_vph) + rng.uniform(-30.0, 40.0)),
+            1,
+        )
+
+        kpis = {
+            "average_travel_time_sec": avg_travel_time,
+            "average_delay_sec": avg_delay,
+            "p95_queue_length_meters": p95_queue,
+            "throughput_veh_per_hour": throughput,
+        }
+        raw_stats = {
+            "steps_simulated": duration_sec,
+            "saturation_degree": round(degree_of_sat, 3),
+            "effective_capacity_vph": round(capacity_vph, 1),
+            "corridor_length_meters": 1250.0,
+            "green_time_sec": green_time,
+        }
+        return kpis, raw_stats
 
     def _run_calibrated_kinematic_model(
         self,
@@ -154,117 +269,17 @@ class SUMOCorridorRunner:
         params: Dict[str, Any]
     ) -> Tuple[Dict[str, float], Dict[str, Any]]:
         """
-        High-fidelity calibrated queuing and car-following model.
-        Calibrated against Viman Nagar Chowk arterial geometry and peak demand parameters:
-        - Corridor length: 1,250 m (Nagar Road EB: 480m approach + 770m link to Somnath Nagar)
-        - Free-flow speed: 48 km/h (13.33 m/s) -> Free-flow travel time = 93.8 seconds
-        - Baseline green split: 35s on 120s cycle (g/C = 0.292)
-        - Intervention green split: 50s on 120s cycle (+15s green, g/C = 0.417)
+        Calibrated kinematic fallback used when native SUMO is not available.
+        Free-flow travel time is 93.8 seconds over a 1,250 m link at 48 km/h.
+        Baseline green is 35 seconds on a 120 second cycle.
         """
         rng = random.Random(seed)
-
-        # Baseline parameters
-        demand_flow_vph = params.get("demand_multiplier", 1.0) * 2400.0  # Nagar Road EB peak flow
-        saturation_flow_vph = 5400.0  # 3 lanes * 1800 vph/lane
-        free_flow_tt = 93.8  # seconds
-
-        if template_id == "SCEN-BASE-01":
-            # Fixed-time baseline: 35s green, cycle 120s
-            green_time = 35.0
-            cycle_time = 120.0
-            g_c_ratio = green_time / cycle_time
-            capacity_vph = saturation_flow_vph * g_c_ratio  # 1575 vph capacity vs 2400 vph demand
-            degree_of_sat = min(1.35, demand_flow_vph / capacity_vph)
-            
-            # Webster's delay equation with over-saturation queue accumulation term
-            uniform_delay = (0.5 * cycle_time * (1.0 - g_c_ratio)**2) / (1.0 - min(0.95, degree_of_sat * g_c_ratio))
-            random_overflow = 900.0 * (duration_sec / 3600.0) * (
-                (degree_of_sat - 1.0) + math.sqrt((degree_of_sat - 1.0)**2 + (16.0 * degree_of_sat / (capacity_vph * (duration_sec / 3600.0))))
-            )
-            total_delay = uniform_delay + min(120.0, max(15.0, random_overflow))
-
-            # Add stochastic variance seeded deterministically
-            jitter = rng.uniform(-2.5, 3.5)
-            avg_delay = round(total_delay + jitter, 2)
-            avg_travel_time = round(free_flow_tt + avg_delay, 2)
-            
-            # Queue length: 480m approach capacity is ~65 vehicles; spillback queue under baseline
-            base_queue_vehicles = (demand_flow_vph - capacity_vph) * (cycle_time / 3600.0) + (degree_of_sat * 18.0)
-            queue_meters = min(460.0, max(180.0, base_queue_vehicles * 7.5 + rng.uniform(-10.0, 15.0)))
-            p95_queue = round(queue_meters * 1.15, 2)
-
-            # Corridor throughput: limited by intersection capacity + spillback friction
-            throughput = round(min(demand_flow_vph, capacity_vph * 1.1) + rng.uniform(-30.0, 40.0), 1)
-
-        elif template_id == "SCEN-INT-02":
-            # Intervention SCEN-INT-02: Arterial Two-Junction Progression (VN-01 <-> SN-01)
-            # Offset optimization creates continuous arterial green band over the 770m link
-            coordination_offset = params.get("coordination_offset_sec", 35.0)
-            # Optimal offset around 32-38s for 770m link at 48 km/h minimizes platoon stops
-            offset_error = abs(coordination_offset - 35.0)
-            offset_efficiency = max(0.55, 1.0 - (offset_error / 35.0) * 0.45)
-
-            green_time = 45.0
-            cycle_time = 120.0
-            g_c_ratio = green_time / cycle_time
-            capacity_vph = saturation_flow_vph * g_c_ratio * 1.04
-            degree_of_sat = min(1.10, demand_flow_vph / capacity_vph)
-
-            uniform_delay = (0.5 * cycle_time * (1.0 - g_c_ratio)**2) / (1.0 - min(0.95, degree_of_sat * g_c_ratio))
-            # Coordinated green band reduces uniform stopping delay
-            progression_delay = uniform_delay * (1.15 - 0.40 * offset_efficiency)
-            random_overflow = 900.0 * (duration_sec / 3600.0) * (
-                (degree_of_sat - 1.0) + math.sqrt((degree_of_sat - 1.0)**2 + (16.0 * degree_of_sat / (capacity_vph * (duration_sec / 3600.0))))
-            )
-            total_delay = progression_delay + min(55.0, max(5.0, random_overflow * 0.75))
-
-            jitter = rng.uniform(-1.8, 2.2)
-            avg_delay = round(max(8.0, total_delay + jitter), 2)
-            avg_travel_time = round(free_flow_tt + avg_delay, 2)
-
-            int_queue_vehicles = max(4.0, (demand_flow_vph - capacity_vph) * (cycle_time / 3600.0) + (degree_of_sat * 10.0))
-            queue_meters = max(95.0, min(260.0, int_queue_vehicles * 6.8 * (1.2 - 0.3 * offset_efficiency) + rng.uniform(-8.0, 10.0)))
-            p95_queue = round(queue_meters * 1.10, 2)
-
-            throughput = round(min(demand_flow_vph, capacity_vph * 1.10) + rng.uniform(-15.0, 30.0), 1)
-
-        else:
-            # Intervention SCEN-INT-01: Dynamic split re-allocation (+15s green, 50s total green, 120s cycle)
-            green_extension = params.get("green_extension_sec", 15.0)
-            green_time = 35.0 + green_extension
-            cycle_time = 120.0
-            g_c_ratio = green_time / cycle_time
-            capacity_vph = saturation_flow_vph * g_c_ratio  # 2250 vph capacity
-            degree_of_sat = min(1.15, demand_flow_vph / capacity_vph)
-
-            uniform_delay = (0.5 * cycle_time * (1.0 - g_c_ratio)**2) / (1.0 - min(0.95, degree_of_sat * g_c_ratio))
-            random_overflow = 900.0 * (duration_sec / 3600.0) * (
-                (degree_of_sat - 1.0) + math.sqrt((degree_of_sat - 1.0)**2 + (16.0 * degree_of_sat / (capacity_vph * (duration_sec / 3600.0))))
-            )
-            total_delay = uniform_delay + min(70.0, max(8.0, random_overflow))
-
-            jitter = rng.uniform(-2.0, 2.8)
-            avg_delay = round(total_delay + jitter, 2)
-            avg_travel_time = round(free_flow_tt + avg_delay, 2)
-
-            int_queue_vehicles = max(6.0, (demand_flow_vph - capacity_vph) * (cycle_time / 3600.0) + (degree_of_sat * 12.0))
-            queue_meters = max(110.0, min(320.0, int_queue_vehicles * 7.5 + rng.uniform(-8.0, 12.0)))
-            p95_queue = round(queue_meters * 1.12, 2)
-
-            throughput = round(min(demand_flow_vph, capacity_vph * 1.08) + rng.uniform(-20.0, 35.0), 1)
-
-        kpis = {
-            "average_travel_time_sec": avg_travel_time,
-            "average_delay_sec": avg_delay,
-            "p95_queue_length_meters": p95_queue,
-            "throughput_veh_per_hour": throughput
-        }
-
-        raw_stats = {
-            "steps_simulated": duration_sec,
-            "saturation_degree": round(degree_of_sat, 3),
-            "effective_capacity_vph": round(capacity_vph, 1),
-            "corridor_length_meters": 1250.0
-        }
-
-        return kpis, raw_stats
+        demand_flow_vph = float(params.get("demand_multiplier", 1.0)) * 2400.0
+        green_time, uniform_delay_scale = self._control_inputs(template_id, params)
+        return self._signal_control_kpis(
+            rng=rng,
+            demand_flow_vph=demand_flow_vph,
+            duration_sec=duration_sec,
+            green_time=green_time,
+            uniform_delay_scale=uniform_delay_scale,
+        )
