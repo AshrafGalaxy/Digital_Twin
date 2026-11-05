@@ -30,14 +30,16 @@
    - **Body (Direct Bullets):** Direct bullet list detailing files/modules modified and their technical purpose (without redundant headings like "Technical Changes:").
    - **Invariants:** Explicit statement confirming preservation of invariants (e.g. state separation, non-actuation, provenance).
    - **Verification:** Exact automated test command and passing test count.
-   - **Tracking:** GitHub issue closure reference (`Closes #<id>`).
+   - **Tracking:** GitHub issue closure reference (`Closes #<id>`). The same session must then post the Section 10 solution dossier comment on that issue. Do not report the issue closed until that comment exists on the issue.
+   - **Remote publication:** When the user says "make a push", "push", or "commit and push", publish the commits to the GitHub remote with `git push`. A local commit is not a push. After that push closes an issue, post the Section 10 dossier in the same session.
 9. **Plain-Text Mathematical Presentation:** In chat communications, mathematical expressions and formulas must strictly use readable plain-text arithmetic notation (e.g. `C_0 = (1.5 * L + 5) / (1 - Y)`, `q = k * v`). Strictly prohibit raw LaTeX delimiters (`$...$`, `$$...$$`) and LaTeX formatting commands in chat dialogue.
-10. **Issue Tracking & Comprehensive Closure Dossier Contract:** Every task completed must map to its verified GitHub issue identifier. When closing any issue, a comprehensive solution dossier must be documented and posted to the issue record containing:
-    - **Header & Scope:** Exact Task ID and verified GitHub Issue Number (`#<id>`).
-    - **Architectural Solution:** Technical root-cause resolution, physical/mathematical equations applied, and invariants preserved.
-    - **Implementation Details:** Direct list of files created or modified with their technical purpose.
-    - **Verification Evidence:** Exact test suite execution commands, passing test counts, and production build verification status.
-    - **Operational Summary:** Concrete decision-support and operator-facing capabilities delivered.
+10. **Issue Tracking & Comprehensive Closure Dossier Contract:** Every task completed must map to its verified GitHub issue identifier. Closing an issue is not complete when the GitHub state flips to closed. In the same session, before reporting the task done, post a comprehensive solution dossier as a comment on that issue. A commit trailer (`Closes #<id>`), a local note, or a chat summary does not replace the comment. If a commit already closed the issue, post the comment immediately on the closed issue. Match the markdown template used on the previously closed issues (`#2`, `#3`, `#4`, `#6`, `#12`, `#13`, `#14`, `#22`, `#24`, `#25`): a title line `Comprehensive Solution Dossier: Issue #<id> (<task-id>)`, then these sections:
+    - **1. Header & Scope:** Exact Task ID, verified GitHub Issue Number (`#<id>`), subsystem, and the invariants this change preserves.
+    - **2. Architectural Solution:** Technical root-cause resolution, physical or mathematical relations applied in plain text, and invariants preserved. State any bound that is still not computed.
+    - **3. Implementation Details:** Direct list of files created or modified, each with its technical purpose.
+    - **4. Verification Evidence:** Exact test commands, passing test counts, production build result, commit SHA, and pre-push gate result. Do not claim a check that did not run.
+    - **5. Operational Summary:** Concrete decision-support and operator-facing capabilities delivered.
+    - **Formatting:** No emojis, and no em dashes or en dashes, in the dossier comment.
 
 ---
 
@@ -99,4 +101,4 @@ A contribution is complete only when:
 - [ ] Contains zero em dashes in UI copy, technical documentation, or code comments.
 - [ ] It contains zero hardcoded secrets or unlicensed data.
 - [ ] Commit messages strictly adhere to the structured technical format (<60 char header with technical architectural scope, direct bullets of file changes, invariants adherence, test verification pass count, and tracking issue reference). Strictly prohibit domain names (`traffic`, `energy`), physical domain nouns (never use 'road' or 'roads'; use 'segment', 'edge', 'link', or 'corridor' instead), geographic identifiers, phase tags, or informal milestone prefixes.
-- [ ] Issue tracking verified, with a comprehensive solution dossier (architectural resolution, implementation files, verification counts, and operational summary) documented for the closed issue.
+- [ ] Issue tracking verified: the GitHub issue has a posted solution dossier comment (header and scope, architectural resolution, implementation files, verification counts, and operational summary) in the Section 10 template. A `Closes #<id>` trailer alone does not satisfy this item.
