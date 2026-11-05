@@ -193,3 +193,22 @@ def test_demo_bypass_login_disabled_in_production(monkeypatch):
     response = client.post("/api/v1/auth/login", json=payload)
     assert response.status_code == 403
     assert "Development demo accounts are disabled in production" in response.json()["detail"]
+
+
+def test_privileged_controls_require_a_session():
+    """Review, replay control, and simulator control reject a caller with no session."""
+    review = client.post(
+        "/api/v1/recommendations/REC-TRF-20260920-001/review",
+        json={"newStatus": "DISMISSED", "reviewer": "anonymous"},
+    )
+    replay = client.post(
+        "/api/v1/stream/replay/control",
+        json={"action": "seek", "minutes_ago": 30},
+    )
+    simulator = client.post(
+        "/api/v1/stream/simulator/control",
+        json={"action": "pause"},
+    )
+    assert review.status_code == 401
+    assert replay.status_code == 401
+    assert simulator.status_code == 401

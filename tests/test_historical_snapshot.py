@@ -18,6 +18,15 @@ from backend.main import app
 client = TestClient(app)
 
 
+def _analyst_headers():
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123",
+    })
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
+
+
 def test_corridor_snapshot_default_endpoint():
     """Verify GET /api/v1/state/snapshot returns 10 corridor segments with REPLAY provenance."""
     response = client.get("/api/v1/state/snapshot?minutes_ago=60")
@@ -119,35 +128,37 @@ def test_replay_session_control_lifecycle():
     assert "minutesAgo" in status
     assert "speed" in status
 
+    headers = _analyst_headers()
+
     # 2. Seek to -180 minutes
     seek_res = client.post("/api/v1/stream/replay/control", json={
         "action": "seek",
         "minutes_ago": 180
-    })
+    }, headers=headers)
     assert seek_res.status_code == 200
     seek_data = seek_res.json()
     assert seek_data["minutesAgo"] == 180
     assert seek_data["sourceMode"] == "REPLAY"
 
     # 3. Start playback at 5x speed
-    play_res = client.post("/api/v1/stream/replay/control", json={"action": "play"})
+    play_res = client.post("/api/v1/stream/replay/control", json={"action": "play"}, headers=headers)
     assert play_res.status_code == 200
     assert play_res.json()["isPlaying"] is True
 
     speed_res = client.post("/api/v1/stream/replay/control", json={
         "action": "speed",
         "speed": 5.0
-    })
+    }, headers=headers)
     assert speed_res.status_code == 200
     assert speed_res.json()["speed"] == 5.0
 
     # 4. Pause playback
-    pause_res = client.post("/api/v1/stream/replay/control", json={"action": "pause"})
+    pause_res = client.post("/api/v1/stream/replay/control", json={"action": "pause"}, headers=headers)
     assert pause_res.status_code == 200
     assert pause_res.json()["isPlaying"] is False
 
     # 5. Jump back to live
-    live_res = client.post("/api/v1/stream/replay/control", json={"action": "jump_to_live"})
+    live_res = client.post("/api/v1/stream/replay/control", json={"action": "jump_to_live"}, headers=headers)
     assert live_res.status_code == 200
     live_data = live_res.json()
     assert live_data["minutesAgo"] == 0
@@ -161,8 +172,22 @@ def test_replay_control_input_validation():
     invalid_res = client.post("/api/v1/stream/replay/control", json={
         "action": "seek",
         "minutes_ago": 1500
-    })
+    }, headers=_analyst_headers())
     assert invalid_res.status_code == 422
+
+
+def test_replay_control_anonymous_does_not_seek():
+    """An anonymous seek returns 401 and leaves the replay clock unchanged."""
+    before = client.get("/api/v1/stream/replay/status").json()
+    res = client.post("/api/v1/stream/replay/control", json={
+        "action": "seek",
+        "minutes_ago": 30,
+    })
+    assert res.status_code == 401
+    after = client.get("/api/v1/stream/replay/status").json()
+    assert after["minutesAgo"] == before["minutesAgo"]
+    assert after["isPlaying"] == before["isPlaying"]
+    assert after["sourceMode"] == before["sourceMode"]
 
 
 def test_segment_comparison_endpoint_valid_pair():

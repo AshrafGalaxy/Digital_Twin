@@ -30,6 +30,15 @@ def client():
     return TestClient(app)
 
 
+def _analyst_headers(client: TestClient):
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123",
+    })
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
+
+
 def test_rule_engine_initial_seeding_and_invariants():
     """Verifies that the rule engine initializes with realistic seeded advisories and mandatory governance flags."""
     recs = rule_engine.list_recommendations()
@@ -107,20 +116,58 @@ def test_api_recommendation_filtering_and_review(client):
     assert summary["totalActive"] >= 0
     assert "TRAFFIC" in summary["byDomain"]
 
-    # 3. Execute review via API
+    # 3. Execute review via API. The stored reviewer is the token subject.
     rec_id = "REC-NRG-20260920-002"
+    headers = _analyst_headers(client)
     review_res = client.post(
         f"/api/v1/recommendations/{rec_id}/review",
+        headers=headers,
         json={
             "newStatus": "UNDER_REVIEW",
-            "reviewer": "Facility Energy Manager",
+            "reviewer": "anonymous",
             "notes": "Checking chiller stage schedule."
         }
     )
     assert review_res.status_code == 200
     updated = review_res.json()
     assert updated["status"] == "UNDER_REVIEW"
-    assert updated["auditTrail"][-1]["reviewer"] == "Facility Energy Manager"
+    assert updated["auditTrail"][-1]["reviewer"] == "usr-analyst-01"
+    assert updated["auditTrail"][-1]["reviewer"] != "anonymous"
+
+
+def test_api_review_records_token_subject_for_each_transition(client):
+    """Dismiss, acknowledge, and under-review each store the authenticated subject."""
+    source = rule_engine.get_recommendation("REC-TRF-20260920-001")
+    assert source is not None
+    rec_id = "REC-REVIEW-SESSION-01"
+    rule_engine.add_custom_recommendation(source.model_copy(update={"recommendationId": rec_id}))
+    headers = _analyst_headers(client)
+    for new_status in ("UNDER_REVIEW", "ACKNOWLEDGED", "DISMISSED"):
+        res = client.post(
+            f"/api/v1/recommendations/{rec_id}/review",
+            headers=headers,
+            json={"newStatus": new_status, "reviewer": "anonymous", "notes": "Session bound review."},
+        )
+        assert res.status_code == 200
+        entry = res.json()["auditTrail"][-1]
+        assert entry["newStatus"] == new_status
+        assert entry["reviewer"] == "usr-analyst-01"
+
+
+def test_api_review_anonymous_does_not_change_status(client):
+    """A review call without a session returns 401 and leaves the advisory unchanged."""
+    rec_id = "REC-TRF-20260920-001"
+    before = client.get(f"/api/v1/recommendations/{rec_id}")
+    assert before.status_code == 200
+    before_body = before.json()
+    res = client.post(
+        f"/api/v1/recommendations/{rec_id}/review",
+        json={"newStatus": "DISMISSED", "reviewer": "anonymous"},
+    )
+    assert res.status_code == 401
+    after = client.get(f"/api/v1/recommendations/{rec_id}").json()
+    assert after["status"] == before_body["status"]
+    assert len(after["auditTrail"]) == len(before_body["auditTrail"])
 
 
 def test_health_check_deep_subsystem_reporting(client):

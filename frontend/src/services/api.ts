@@ -144,7 +144,7 @@ export async function controlReplaySession(params: {
   try {
     const res = await fetch(`${API_BASE}/stream/replay/control`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(params)
     });
     if (!res.ok) return null;
@@ -443,7 +443,7 @@ export async function reviewRecommendation(
 ): Promise<AdvisoryRecommendation> {
   const res = await fetch(`${API_BASE}/recommendations/${recId}/review`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ newStatus, reviewer, notes })
   });
   if (!res.ok) throw new Error(`Failed to review recommendation ${recId}`);
@@ -657,7 +657,7 @@ export async function controlStreamer(params: {
   try {
     const res = await fetch(`${API_BASE}/stream/simulator/control`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(params)
     });
     if (!res.ok) return null;

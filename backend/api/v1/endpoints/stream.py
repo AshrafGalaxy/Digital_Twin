@@ -10,7 +10,9 @@ import logging
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+
+from backend.api.v1.endpoints.auth import get_current_authenticated_officer
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +134,10 @@ async def get_replay_status():
     return replay_session.get_status()
 
 @router.post("/replay/control", response_model=ReplayStatusResponse)
-async def control_replay_stream(req: ReplayControlRequest):
+async def control_replay_stream(
+    req: ReplayControlRequest,
+    _officer: Dict[str, Any] = Depends(get_current_authenticated_officer),
+):
     """
     Controls the digital twin historical corridor replay state.
     Broadcasts the state change to all active WebSocket clients.
@@ -152,7 +157,10 @@ async def get_simulator_status():
     return telemetry_streamer.get_status()
 
 @router.post("/simulator/control", response_model=StreamerStatusResponse)
-async def control_simulator_stream(req: StreamerControlRequest):
+async def control_simulator_stream(
+    req: StreamerControlRequest,
+    _officer: Dict[str, Any] = Depends(get_current_authenticated_officer),
+):
     """
     Controls the embedded in-process corridor telemetry streamer.
     Supports starting, stopping, pausing, resuming, triggering single tick, or setting tick interval.

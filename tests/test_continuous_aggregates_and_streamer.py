@@ -34,6 +34,15 @@ def client():
         yield c
 
 
+def _analyst_headers(client: TestClient):
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123",
+    })
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
+
+
 @pytest.mark.asyncio
 async def test_schema_includes_traffic_15m_aggregates():
     """Verifies that the schema migrator creates table 19 (traffic_15m_aggregates)."""
@@ -218,29 +227,50 @@ def test_streamer_api_status_and_controls(client):
     assert data["sourceMode"] in ("SIMULATION", "REPLAY")
 
     initial_ticks = data["ticksCount"]
+    headers = _analyst_headers(client)
 
     # 2. Pause
-    pause_resp = client.post("/api/v1/stream/simulator/control", json={"action": "pause"})
+    pause_resp = client.post("/api/v1/stream/simulator/control", json={"action": "pause"}, headers=headers)
     assert pause_resp.status_code == 200
     assert pause_resp.json()["isPaused"] is True
 
     # 3. Resume
-    resume_resp = client.post("/api/v1/stream/simulator/control", json={"action": "resume"})
+    resume_resp = client.post("/api/v1/stream/simulator/control", json={"action": "resume"}, headers=headers)
     assert resume_resp.status_code == 200
     assert resume_resp.json()["isPaused"] is False
 
     # 4. Trigger manual tick
-    tick_resp = client.post("/api/v1/stream/simulator/control", json={"action": "tick_once"})
+    tick_resp = client.post("/api/v1/stream/simulator/control", json={"action": "tick_once"}, headers=headers)
     assert tick_resp.status_code == 200
     assert tick_resp.json()["ticksCount"] >= initial_ticks + 1
 
     # 5. Set interval
-    int_resp = client.post("/api/v1/stream/simulator/control", json={"action": "set_interval", "interval_sec": 8.0})
+    int_resp = client.post(
+        "/api/v1/stream/simulator/control",
+        json={"action": "set_interval", "interval_sec": 8.0},
+        headers=headers,
+    )
     assert int_resp.status_code == 200
     assert int_resp.json()["intervalSec"] == 8.0
 
     # Reset back to 5.0
-    client.post("/api/v1/stream/simulator/control", json={"action": "set_interval", "interval_sec": 5.0})
+    client.post(
+        "/api/v1/stream/simulator/control",
+        json={"action": "set_interval", "interval_sec": 5.0},
+        headers=headers,
+    )
+
+
+def test_simulator_control_anonymous_does_not_pause(client):
+    """An anonymous pause request returns 401 and leaves the streamer running state unchanged."""
+    before = client.get("/api/v1/stream/simulator/status")
+    assert before.status_code == 200
+    paused_before = before.json()["isPaused"]
+    res = client.post("/api/v1/stream/simulator/control", json={"action": "pause"})
+    assert res.status_code == 401
+    after = client.get("/api/v1/stream/simulator/status")
+    assert after.status_code == 200
+    assert after.json()["isPaused"] is paused_before
 
 
 def test_health_reports_streamer_and_tables(client):

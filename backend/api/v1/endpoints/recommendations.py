@@ -147,15 +147,25 @@ async def get_recommendation_detail(rec_id: str):
 
 
 @router.post("/{rec_id}/review", response_model=AdvisoryRecommendation)
-async def review_recommendation(rec_id: str, request: ReviewRecommendationRequest):
+async def review_recommendation(
+    rec_id: str,
+    request: ReviewRecommendationRequest,
+    officer: Dict[str, Any] = Depends(require_operational_officer),
+):
     """
-    Executes a human governance review transition (UNDER_REVIEW, ACKNOWLEDGED, DISMISSED)
-    with reviewer name and justification notes, recording a permanent audit trail entry.
+    Executes a human governance review transition (UNDER_REVIEW, ACKNOWLEDGED, DISMISSED).
+    The audit reviewer is the authenticated subject. A client-supplied name is not stored.
     """
+    reviewer = str(officer.get("sub") or "").strip()
+    if not reviewer:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a valid Bearer session token."
+        )
     updated_rec = rule_engine.review_recommendation(
         rec_id=rec_id,
         new_status=request.newStatus,
-        reviewer=request.reviewer,
+        reviewer=reviewer,
         notes=request.notes
     )
     if not updated_rec:
