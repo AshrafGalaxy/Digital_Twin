@@ -118,6 +118,7 @@ async def get_corridor_snapshot(
                        ROW_NUMBER() OVER (PARTITION BY segment_id ORDER BY observed_at DESC) as rn
                 FROM traffic_observations
                 WHERE observed_at <= :target_dt
+                  AND source_mode IN ('LIVE', 'REPLAY')
             ) ranked
             WHERE rn = 1
         """

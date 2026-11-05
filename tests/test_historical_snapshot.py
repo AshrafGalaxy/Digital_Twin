@@ -9,7 +9,10 @@ and realistic corridor metrics without mutating current live state.
 import pytest
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
+from backend.core.database import persistence_manager
+from backend.ingestion.telemetry_streamer import CORRIDOR_SEGMENTS
 from backend.main import app
 
 client = TestClient(app)
@@ -31,6 +34,40 @@ def test_corridor_snapshot_default_endpoint():
         assert "congestionIndex" in item["metrics"]
         assert 10.0 <= item["metrics"]["averageSpeedKmh"] <= 60.0
         assert 0.0 <= item["metrics"]["congestionIndex"] <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_snapshot_does_not_relabel_simulation_as_replay():
+    """Generated rows stay out of a historical snapshot, even when their speed is below 10 km/h."""
+    observed_at = datetime(1999, 6, 15, 18, 0, tzinfo=timezone.utc)
+    async with persistence_manager.session_factory() as session:
+        for segment in CORRIDOR_SEGMENTS:
+            await session.execute(
+                text("""
+                    INSERT INTO traffic_observations (
+                        observed_at, sensor_id, segment_id, source_mode,
+                        average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
+                        queue_length_meters, congestion_index, quality_flag
+                    ) VALUES (
+                        :observed_at, :sensor_id, :segment_id, 'SIMULATION',
+                        7.6, 150.0, 40.0, 900.0, 0.85, 'VALID'
+                    )
+                """),
+                {
+                    "observed_at": observed_at,
+                    "sensor_id": "urn:ngsi-ld:TrafficSensor:PROOF:SNAP-01",
+                    "segment_id": segment["id"],
+                },
+            )
+        await session.commit()
+
+    response = client.get("/api/v1/state/snapshot?target_time=1999-06-15T18:30:00Z")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 10
+    assert all(item["sourceMode"] == "REPLAY" for item in data)
+    assert all(item["metrics"]["averageSpeedKmh"] != 7.6 for item in data)
+    assert all(10.0 <= item["metrics"]["averageSpeedKmh"] <= 60.0 for item in data)
 
 
 def test_corridor_snapshot_evening_rush_profile():
