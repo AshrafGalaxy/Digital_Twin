@@ -23,7 +23,7 @@ import {
   AuthorizeEnergyAdvisoryPayload,
   EnergyAdvisoryStatus
 } from '../../types/twin';
-import { authorizeEnergyAdvisory } from '../../services/api';
+import { authorizeEnergyAdvisory, loginMunicipalUser } from '../../services/api';
 
 interface DemandResponseDossierModalProps {
   advisory: EnergyAdvisoryDossier;
@@ -47,6 +47,8 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
   const [concurringOfficerName, setConcurringOfficerName] = useState<string>('Municipal Grid Interconnection Supervisor');
   const [concurringBadgeId, setConcurringBadgeId] = useState<string>('GRID-SUP-3044');
   const [concurringDepartment, setConcurringDepartment] = useState<string>('Municipal Energy & Power Distribution Cell');
+  const [concurringUsername, setConcurringUsername] = useState<string>('');
+  const [concurringPassword, setConcurringPassword] = useState<string>('');
 
   const [shiftId, setShiftId] = useState<string>('SHIFT-EVENING-B');
   const [decision, setDecision] = useState<EnergyAdvisoryStatus>('AUTHORIZED');
@@ -77,10 +79,19 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
       setError('Dual-control invariant violation: Primary engineer and concurring supervisor cannot be identical individuals.');
       return;
     }
+    if (!concurringUsername.trim() || !concurringPassword) {
+      setError('The concurring officer must sign in with a different municipal account.');
+      return;
+    }
 
     try {
       setSubmitting(true);
       setError(null);
+      const concurringSession = await loginMunicipalUser(concurringUsername.trim(), concurringPassword);
+      if (!concurringSession.token) {
+        setError('The concurring officer session did not return a token.');
+        return;
+      }
       const payload: AuthorizeEnergyAdvisoryPayload = {
         primaryOfficer: {
           officerName: primaryOfficerName.trim(),
@@ -92,6 +103,7 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
           badgeId: concurringBadgeId.trim(),
           department: concurringDepartment.trim() || 'Municipal Energy & Power Distribution Cell'
         },
+        concurringToken: concurringSession.token,
         badgeId: primaryBadgeId.trim(),
         reviewer: primaryOfficerName.trim(),
         shiftId: shiftId.trim(),
@@ -716,6 +728,53 @@ export const DemandResponseDossierModal: React.FC<DemandResponseDossierModalProp
                       color: 'var(--color-text, #F0F6FC)'
                     }}
                   />
+                </div>
+                <p style={{ margin: '8px 0', fontSize: '11px', color: 'var(--color-text-secondary, #C9D1D9)', lineHeight: 1.4 }}>
+                  The signed-in officer is the primary approver. The concurring officer must sign in with a different municipal account.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                      Concurring account *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="username"
+                      value={concurringUsername}
+                      onChange={(e) => setConcurringUsername(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(15, 15, 18, 0.9)',
+                        border: '1px solid var(--color-border, #16171B)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        color: 'var(--color-text, #F0F6FC)'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary, #C9D1D9)', marginBottom: '4px' }}>
+                      Concurring password *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      value={concurringPassword}
+                      onChange={(e) => setConcurringPassword(e.target.value)}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(15, 15, 18, 0.9)',
+                        border: '1px solid var(--color-border, #16171B)',
+                        borderRadius: '6px',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        color: 'var(--color-text, #F0F6FC)'
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 

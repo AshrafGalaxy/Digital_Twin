@@ -151,7 +151,20 @@ class EnergyAdvisoryService:
             date_str = now.strftime("%Y%m%d")
 
             # Resolve dual-control credentials with backward compatibility
-            if request.primaryOfficer and request.concurringOfficer:
+            if request.primarySubject and request.concurringSubject and request.primaryOfficer and request.concurringOfficer:
+                p_name = request.primarySubject
+                p_badge = request.primaryOfficer.badgeId
+                c_name = request.concurringSubject
+                c_badge = request.concurringOfficer.badgeId
+                auth_by_str = f"{p_name} & {c_name}"
+                badge_str = f"{p_badge} + {c_badge}"
+                canonical_manifest = (
+                    f"REC:{dossier.advisoryId}|ENTITY:{dossier.facilityId}|"
+                    f"P_SUB:{p_name}|P_BADGE:{p_badge}|C_SUB:{c_name}|C_BADGE:{c_badge}|"
+                    f"SHIFT:{request.shiftId}|DECISION:{request.decision.value}|"
+                    f"PEAK_KW:{dossier.peakReductionKw}|SAVINGS_INR:{dossier.projectedSavingsInr}|TIME:{now.isoformat()}"
+                )
+            elif request.primaryOfficer and request.concurringOfficer:
                 p_name = request.primaryOfficer.officerName
                 p_badge = request.primaryOfficer.badgeId
                 c_name = request.concurringOfficer.officerName

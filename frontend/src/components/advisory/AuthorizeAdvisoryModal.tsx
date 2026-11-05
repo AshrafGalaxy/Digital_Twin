@@ -19,7 +19,7 @@ import {
   DispatchWorkOrder,
   RecommendationStatus
 } from '../../types/twin';
-import { authorizeAdvisory } from '../../services/api';
+import { authorizeAdvisory, loginMunicipalUser } from '../../services/api';
 
 interface AuthorizeAdvisoryModalProps {
   advisory: AdvisoryRecommendation;
@@ -43,6 +43,8 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
   const [concurringOfficerName, setConcurringOfficerName] = useState<string>('Municipal Traffic Supervisor');
   const [concurringBadgeId, setConcurringBadgeId] = useState<string>('MCC-SUP-1088');
   const [concurringDepartment, setConcurringDepartment] = useState<string>('Municipal Traffic Management Cell');
+  const [concurringUsername, setConcurringUsername] = useState<string>('');
+  const [concurringPassword, setConcurringPassword] = useState<string>('');
 
   const [shiftId, setShiftId] = useState<string>('SHIFT-EVENING-B');
   const [decision, setDecision] = useState<RecommendationStatus>('ACKNOWLEDGED');
@@ -72,10 +74,19 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
       setError('Dual-control invariant violation: Initiating officer and concurring supervisor cannot be identical individuals.');
       return;
     }
+    if (!concurringUsername.trim() || !concurringPassword) {
+      setError('The concurring officer must sign in with a different municipal account.');
+      return;
+    }
 
     try {
       setSubmitting(true);
       setError(null);
+      const concurringSession = await loginMunicipalUser(concurringUsername.trim(), concurringPassword);
+      if (!concurringSession.token) {
+        setError('The concurring officer session did not return a token.');
+        return;
+      }
       const payload: AuthorizeAdvisoryPayload = {
         primaryOfficer: {
           officerName: primaryOfficerName.trim(),
@@ -87,6 +98,7 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
           badgeId: concurringBadgeId.trim(),
           department: concurringDepartment.trim() || 'Municipal Traffic Management Cell'
         },
+        concurringToken: concurringSession.token,
         badgeId: primaryBadgeId.trim(),
         reviewer: primaryOfficerName.trim(),
         shiftId: shiftId.trim(),
@@ -358,6 +370,39 @@ export const AuthorizeAdvisoryModal: React.FC<AuthorizeAdvisoryModalProps> = ({
                     placeholder="e.g. Municipal Traffic Management Cell"
                     style={{ width: '100%' }}
                   />
+                </div>
+                <p style={{ margin: '10px 0 8px', fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
+                  The signed-in officer is the primary approver. The concurring officer must sign in with a different municipal account.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Concurring account *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="username"
+                      className="form-input"
+                      value={concurringUsername}
+                      onChange={(e) => setConcurringUsername(e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                      Concurring password *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      className="form-input"
+                      value={concurringPassword}
+                      onChange={(e) => setConcurringPassword(e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
                 </div>
               </div>
 

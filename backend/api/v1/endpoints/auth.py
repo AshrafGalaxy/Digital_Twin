@@ -14,7 +14,7 @@ import hmac
 import hashlib
 import secrets
 import os
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from fastapi import APIRouter, HTTPException, Header, status, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import text
@@ -298,6 +298,7 @@ def login(payload: LoginRequest):
         "role": role,
         "department": matched_user.get("department", meta["department"]),
         "clearance": meta["clearance"],
+        "badge": matched_user["id"],
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(hours=8)).timestamp()),
         "iss": "pune-digital-twin-auth"
@@ -372,6 +373,7 @@ def register(payload: RegisterRequest):
         "role": payload.role,
         "department": dept,
         "clearance": meta["clearance"],
+        "badge": user_id,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(hours=8)).timestamp()),
         "iss": "pune-digital-twin-auth"
@@ -505,6 +507,7 @@ async def redeem_magic_link(
         "role": role,
         "department": row["department"],
         "clearance": meta["clearance"],
+        "badge": user_id,
         "iat": int(now_utc.timestamp()),
         "exp": int((now_utc + timedelta(hours=8)).timestamp()),
         "iss": "pune-digital-twin-auth"
@@ -575,3 +578,56 @@ def require_operational_officer(
             detail=f"Dispatch authorization requires operational clearance. Current role: '{role}'."
         )
     return officer
+
+
+def _officer_identity(claims: Dict[str, Any]) -> Dict[str, str]:
+    subject = str(claims.get("sub") or "").strip()
+    return {
+        "sub": subject,
+        "email": str(claims.get("email") or "").strip().lower(),
+        "name": str(claims.get("name") or subject).strip(),
+        "badge": str(claims.get("badge") or subject).strip(),
+        "department": str(claims.get("department") or "").strip(),
+    }
+
+
+def bind_dual_control(
+    primary_claims: Dict[str, Any],
+    concurring_token: Optional[str]
+) -> Tuple[Dict[str, str], Dict[str, str]]:
+    """
+    Binds dispatch approval to two authenticated sessions.
+    The bearer is the primary officer. The concurring token must be a different operational subject.
+    """
+    if not concurring_token or not str(concurring_token).strip():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Dual-control authorization requires a second authenticated officer session. One session cannot approve both sides."
+        )
+    second = _verify_jwt_token(str(concurring_token).strip())
+    if not second:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Concurring officer session token expired or signature invalid."
+        )
+    if second.get("role") not in OPERATIONAL_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The concurring officer must hold operational clearance."
+        )
+    primary = _officer_identity(primary_claims)
+    concurring = _officer_identity(second)
+    if not primary["sub"] or not concurring["sub"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Both officers must be authenticated subjects."
+        )
+    same_subject = primary["sub"].lower() == concurring["sub"].lower()
+    same_email = bool(primary["email"]) and primary["email"] == concurring["email"]
+    same_badge = bool(primary["badge"]) and primary["badge"].lower() == concurring["badge"].lower()
+    if same_subject or same_email or same_badge:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Dual-control authorization requires two distinct municipal officers. Initiating officer and concurring supervisor cannot be identical."
+        )
+    return primary, concurring

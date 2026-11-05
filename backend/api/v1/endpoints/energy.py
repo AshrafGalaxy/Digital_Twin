@@ -1,4 +1,4 @@
-from backend.api.v1.endpoints.auth import require_operational_officer
+from backend.api.v1.endpoints.auth import bind_dual_control, require_operational_officer
 """
 energy.py
 
@@ -20,7 +20,8 @@ from backend.schemas.energy_advisory import (
     AdvisoryStatus,
     AuthorizeEnergyAdvisoryRequest,
     EnergyAdvisoryDossier,
-    EnergyDispatchWorkOrder
+    EnergyDispatchWorkOrder,
+    EnergyOfficerCredentials,
 )
 from backend.services.energy_advisory_service import energy_advisory_service
 from backend.services.energy_topology_service import energy_topology_service
@@ -338,25 +339,19 @@ async def authorize_energy_advisory(
     session: AsyncSession = Depends(get_db),
     officer: Dict[str, Any] = Depends(require_operational_officer)
 ):
-    # Enforce dual-control authorization
-    if not request.primaryOfficer or not request.concurringOfficer:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dual-control authorization requires both primaryOfficer and concurringOfficer credentials."
-        )
-
-    if (request.primaryOfficer.badgeId.strip().lower() == request.concurringOfficer.badgeId.strip().lower() or
-        request.primaryOfficer.officerName.strip().lower() == request.concurringOfficer.officerName.strip().lower()):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dual-control authorization requires two distinct municipal officers. Initiating officer and concurring supervisor cannot be identical."
-        )
-    """
-    Authorizes an energy demand-response advisory via dual-key operator sign-off.
-    Generates a cryptographic SHA-256 tamper-evident hash, creates an official
-    OpenADR 2.0b / Modbus dispatch ticket, and writes an immutable audit record
-    to Table 29 (advisory_audit_log).
-    """
+    primary, concurring = bind_dual_control(officer, request.concurringToken)
+    request.primarySubject = primary["sub"]
+    request.concurringSubject = concurring["sub"]
+    request.primaryOfficer = EnergyOfficerCredentials(
+        officerName=primary["name"],
+        badgeId=primary["badge"],
+        department=primary["department"] or "Municipal Utilities & Commercial Grid",
+    )
+    request.concurringOfficer = EnergyOfficerCredentials(
+        officerName=concurring["name"],
+        badgeId=concurring["badge"],
+        department=concurring["department"] or "Municipal Utilities & Commercial Grid",
+    )
     work_order = await energy_advisory_service.authorize_advisory(
         advisory_id=advisory_id,
         request=request,

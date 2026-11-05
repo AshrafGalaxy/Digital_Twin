@@ -329,6 +329,7 @@ export interface OfficerCredentials {
 export interface AuthorizeAdvisoryPayload {
   primaryOfficer?: OfficerCredentials;
   concurringOfficer?: OfficerCredentials;
+  concurringToken?: string;
   badgeId?: string;
   shiftId: string;
   reviewer?: string;
@@ -610,6 +611,7 @@ export interface EnergyAdvisoryDossier {
 export interface AuthorizeEnergyAdvisoryPayload {
   primaryOfficer?: OfficerCredentials;
   concurringOfficer?: OfficerCredentials;
+  concurringToken?: string;
   reviewer?: string;
   badgeId?: string;
   shiftId: string;

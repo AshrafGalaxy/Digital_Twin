@@ -47,6 +47,15 @@ def _get_traffic_auth_header():
     return {"Authorization": f"Bearer {token}"}
 
 
+def _analyst_session_token() -> str:
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123"
+    })
+    assert res.status_code == 200
+    return res.json()["token"]
+
+
 def test_seeded_traffic_advisory_is_not_served_as_a_measurement():
     """The frozen speed card stays off the operator list and is not labeled as a model measurement."""
     listed = rule_engine.list_recommendations()
@@ -216,7 +225,8 @@ async def test_api_authorize_advisory_endpoint():
         },
         "shiftId": "SHIFT-EVENING-B",
         "decision": "ACKNOWLEDGED",
-        "notes": "Field authorization granted per municipal congestion protocol."
+        "notes": "Field authorization granted per municipal congestion protocol.",
+        "concurringToken": _analyst_session_token(),
     }
 
     resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
@@ -225,8 +235,10 @@ async def test_api_authorize_advisory_endpoint():
 
     assert data["dispatchOrderId"].startswith("MDO-")
     assert data["recommendationId"] == "REC-TRF-20260920-001"
-    assert "MCC-OPS-4091" in data["badgeId"]
-    assert "MCC-SUP-1088" in data["badgeId"]
+    assert "usr-traffic-01" in data["authorizedBy"]
+    assert "usr-analyst-01" in data["authorizedBy"]
+    assert "usr-traffic-01" in data["badgeId"]
+    assert "usr-analyst-01" in data["badgeId"]
     assert data["shiftId"] == "SHIFT-EVENING-B"
     assert len(data["tamperEvidentHash"]) == 64
 
@@ -261,23 +273,40 @@ def test_api_authorize_unauthenticated_rejection():
 
 
 def test_api_authorize_dual_control_identical_officer_rejection():
-    """Verifies that initiating officer and concurring supervisor cannot be identical (HTTP 400)."""
+    """The same session on both sides is rejected."""
     headers = _get_traffic_auth_header()
     payload = {
         "primaryOfficer": {
-            "officerName": "Ramesh Kadam",
-            "badgeId": "MCC-OPS-4091"
+            "officerName": "Invented One",
+            "badgeId": "B-001"
         },
         "concurringOfficer": {
-            "officerName": "Ramesh Kadam",
-            "badgeId": "MCC-OPS-4091"
+            "officerName": "Invented Two",
+            "badgeId": "B-002"
         },
+        "concurringToken": headers["Authorization"].split(" ", 1)[1],
         "shiftId": "SHIFT-A",
         "decision": "ACKNOWLEDGED"
     }
     resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
-    assert resp.status_code == 400
+    assert resp.status_code == 403
     assert "cannot be identical" in resp.json()["detail"]
+    assert "MDO-" not in resp.text
+
+
+def test_api_authorize_rejects_two_names_from_one_session():
+    """One bearer plus two typed names does not issue a dispatch order."""
+    headers = _get_traffic_auth_header()
+    payload = {
+        "primaryOfficer": {"officerName": "Invented One", "badgeId": "B-001"},
+        "concurringOfficer": {"officerName": "Invented Two", "badgeId": "B-002"},
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED"
+    }
+    resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
+    assert resp.status_code == 403
+    assert "second authenticated officer" in resp.json()["detail"]
+    assert "MDO-" not in resp.text
 
 
 def test_api_authorize_missing_concurring_officer_rejection():
@@ -292,8 +321,8 @@ def test_api_authorize_missing_concurring_officer_rejection():
         "decision": "ACKNOWLEDGED"
     }
     resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=payload, headers=headers)
-    assert resp.status_code == 400
-    assert "Dual-control authorization requires both primaryOfficer and concurringOfficer" in resp.json()["detail"]
+    assert resp.status_code == 403
+    assert "second authenticated officer" in resp.json()["detail"]
 
 
 def test_api_authorize_missing_404():
@@ -309,7 +338,8 @@ def test_api_authorize_missing_404():
             "badgeId": "MCC-SUP-1088"
         },
         "shiftId": "SHIFT-A",
-        "decision": "ACKNOWLEDGED"
+        "decision": "ACKNOWLEDGED",
+        "concurringToken": _analyst_session_token(),
     }
     resp = client.post("/api/v1/recommendations/REC-UNKNOWN-999/authorize", json=payload, headers=headers)
     assert resp.status_code == 404
@@ -340,7 +370,8 @@ def test_api_get_dispatch_order_endpoint():
             "badgeId": "PUNE-TP-1088"
         },
         "shiftId": "SHIFT-A",
-        "decision": "ACKNOWLEDGED"
+        "decision": "ACKNOWLEDGED",
+        "concurringToken": _analyst_session_token(),
     }
     auth_resp = client.post("/api/v1/recommendations/REC-TRF-20260920-001/authorize", json=auth_payload, headers=headers)
     assert auth_resp.status_code == 200
@@ -351,7 +382,8 @@ def test_api_get_dispatch_order_endpoint():
     assert resp.status_code == 200
     data = resp.json()
     assert data["dispatchOrderId"] == expected_order_id
-    assert "PUNE-TP-4091" in data["badgeId"]
+    assert "usr-traffic-01" in data["badgeId"]
+    assert "usr-analyst-01" in data["authorizedBy"]
 
 
 def test_api_audit_logs_endpoint():
@@ -456,6 +488,7 @@ def test_api_authorize_rejects_failed_saturation_bound():
         "shiftId": "SHIFT-A",
         "decision": "ACKNOWLEDGED",
         "notes": "Must be refused.",
+        "concurringToken": _analyst_session_token(),
     }
     resp = client.post(
         "/api/v1/recommendations/REC-UNSAFE-SAT-API/authorize",

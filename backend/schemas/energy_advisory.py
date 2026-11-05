@@ -71,6 +71,9 @@ class EnergyOfficerCredentials(BaseModel):
 class AuthorizeEnergyAdvisoryRequest(BaseModel):
     primaryOfficer: Optional[EnergyOfficerCredentials] = Field(default=None, description="Primary reviewing engineer")
     concurringOfficer: Optional[EnergyOfficerCredentials] = Field(default=None, description="Secondary concurring supervisor")
+    concurringToken: Optional[str] = Field(default=None, description="Session token of the concurring officer")
+    primarySubject: Optional[str] = Field(default=None, description="Authenticated primary subject, set by the server")
+    concurringSubject: Optional[str] = Field(default=None, description="Authenticated concurring subject, set by the server")
     reviewer: Optional[str] = Field(default=None, max_length=120, description="Authorizing operator name (legacy)")
     badgeId: Optional[str] = Field(default=None, max_length=64, description="Operator municipal badge identifier (legacy)")
     shiftId: str = Field(default="SHIFT-EVENING-B", min_length=2, max_length=64, description="Operating duty shift")

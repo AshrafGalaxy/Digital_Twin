@@ -41,6 +41,15 @@ def _get_energy_auth_header():
     return {"Authorization": f"Bearer {token}"}
 
 
+def _analyst_session_token() -> str:
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123"
+    })
+    assert res.status_code == 200
+    return res.json()["token"]
+
+
 def test_energy_advisory_service_initialization():
     """
     Verifies that the EnergyAdvisoryService seeds baseline demand response dossiers
@@ -137,7 +146,8 @@ async def test_dual_key_authorization_and_tamper_evident_audit():
         },
         "shiftId": "SHIFT-EVENING-B",
         "decision": "AUTHORIZED",
-        "notes": "Authorized 840 kW peak shaving for evening TOD tariff window."
+        "notes": "Authorized 840 kW peak shaving for evening TOD tariff window.",
+        "concurringToken": _analyst_session_token(),
     }
 
     res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload, headers=headers)
@@ -145,9 +155,10 @@ async def test_dual_key_authorization_and_tamper_evident_audit():
     work_order = res.json()
 
     assert work_order["advisoryId"] == "ADVISORY-DR-20261023-001"
-    assert "Chief Facility Energy Manager" in work_order["authorizedBy"]
-    assert "FAC-ENG-8021" in work_order["badgeId"]
-    assert "GRID-SUP-3044" in work_order["badgeId"]
+    assert "usr-grid-01" in work_order["authorizedBy"]
+    assert "usr-analyst-01" in work_order["authorizedBy"]
+    assert "usr-grid-01" in work_order["badgeId"]
+    assert "usr-analyst-01" in work_order["badgeId"]
     assert work_order["decision"] == "AUTHORIZED"
     assert work_order["dispatchOrderId"].startswith("EDO-")
 
@@ -177,8 +188,9 @@ async def test_dual_key_authorization_and_tamper_evident_audit():
         assert row is not None
         assert row[1] == "ADVISORY-DR-20261023-001"
         assert row[2] == "ENERGY_DEMAND_RESPONSE_AUTHORIZATION"
-        assert "Chief Facility Energy Manager" in row[3]
-        assert "FAC-ENG-8021" in row[4]
+        assert "usr-grid-01" in row[3]
+        assert "usr-analyst-01" in row[3]
+        assert "usr-grid-01" in row[4]
         assert row[5] == tamper_hash
 
     # Retrieve dispatch ticket via endpoint
@@ -208,23 +220,40 @@ def test_energy_authorize_unauthenticated_rejection():
 
 
 def test_energy_authorize_identical_officer_rejection():
-    """Verifies that initiating engineer and concurring supervisor cannot be identical (HTTP 400)."""
+    """The same session on both sides is rejected and no energy order is issued."""
     headers = _get_energy_auth_header()
     payload = {
         "primaryOfficer": {
-            "officerName": "Chief Facility Energy Manager",
-            "badgeId": "FAC-ENG-8021"
+            "officerName": "Invented One",
+            "badgeId": "B-001"
         },
         "concurringOfficer": {
-            "officerName": "Chief Facility Energy Manager",
-            "badgeId": "FAC-ENG-8021"
+            "officerName": "Invented Two",
+            "badgeId": "B-002"
         },
+        "concurringToken": headers["Authorization"].split(" ", 1)[1],
         "shiftId": "SHIFT-A",
         "decision": "AUTHORIZED"
     }
     res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload, headers=headers)
-    assert res.status_code == 400
+    assert res.status_code == 403
     assert "cannot be identical" in res.json()["detail"]
+    assert "EDO-" not in res.text
+
+
+def test_energy_authorize_rejects_two_names_from_one_session():
+    """One bearer plus two typed names does not issue an energy dispatch order."""
+    headers = _get_energy_auth_header()
+    payload = {
+        "primaryOfficer": {"officerName": "Invented One", "badgeId": "B-001"},
+        "concurringOfficer": {"officerName": "Invented Two", "badgeId": "B-002"},
+        "shiftId": "SHIFT-A",
+        "decision": "AUTHORIZED"
+    }
+    res = client.post("/api/v1/energy/advisories/ADVISORY-DR-20261023-001/authorize", json=payload, headers=headers)
+    assert res.status_code == 403
+    assert "second authenticated officer" in res.json()["detail"]
+    assert "EDO-" not in res.text
 
 
 def test_interlock_mask_tracks_each_boolean():
@@ -272,6 +301,7 @@ def test_energy_authorize_rejects_failed_interlock():
         "shiftId": "SHIFT-EVENING-B",
         "decision": "AUTHORIZED",
         "notes": "Must be refused.",
+        "concurringToken": _analyst_session_token(),
     }
     try:
         res = client.post(

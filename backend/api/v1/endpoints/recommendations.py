@@ -1,4 +1,4 @@
-from backend.api.v1.endpoints.auth import require_operational_officer
+from backend.api.v1.endpoints.auth import bind_dual_control, require_operational_officer
 """
 recommendations.py
 
@@ -23,6 +23,7 @@ from backend.schemas.recommendations import (
     AdvisorySummary,
     AuthorizeAdvisoryRequest,
     DispatchWorkOrder,
+    OfficerCredentials,
     RecommendationDomain,
     RecommendationStatus,
     ReviewRecommendationRequest
@@ -177,19 +178,19 @@ async def authorize_advisory(
     computing a cryptographic SHA-256 tamper-evident hash, and persisting an immutable audit record.
     Strict non-actuation invariant is preserved: recommendations remain advisory.
     """
-    # Enforce dual-control authorization
-    if not request.primaryOfficer or not request.concurringOfficer:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dual-control authorization requires both primaryOfficer and concurringOfficer credentials."
-        )
-
-    if (request.primaryOfficer.badgeId.strip().lower() == request.concurringOfficer.badgeId.strip().lower() or
-        request.primaryOfficer.officerName.strip().lower() == request.concurringOfficer.officerName.strip().lower()):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Dual-control authorization requires two distinct municipal officers. Initiating officer and concurring supervisor cannot be identical."
-        )
+    primary, concurring = bind_dual_control(officer, request.concurringToken)
+    request.primarySubject = primary["sub"]
+    request.concurringSubject = concurring["sub"]
+    request.primaryOfficer = OfficerCredentials(
+        officerName=primary["name"],
+        badgeId=primary["badge"],
+        department=primary["department"] or "Transportation Operations Division",
+    )
+    request.concurringOfficer = OfficerCredentials(
+        officerName=concurring["name"],
+        badgeId=concurring["badge"],
+        department=concurring["department"] or "Transportation Operations Division",
+    )
 
     try:
         result = rule_engine.authorize_advisory(rec_id, request)

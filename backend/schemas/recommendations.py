@@ -123,6 +123,9 @@ class ReviewRecommendationRequest(BaseModel):
 class AuthorizeAdvisoryRequest(BaseModel):
     primaryOfficer: Optional[OfficerCredentials] = Field(default=None, description="Primary reviewing officer")
     concurringOfficer: Optional[OfficerCredentials] = Field(default=None, description="Secondary concurring supervisor")
+    concurringToken: Optional[str] = Field(default=None, description="Session token of the concurring officer")
+    primarySubject: Optional[str] = Field(default=None, description="Authenticated primary subject, set by the server")
+    concurringSubject: Optional[str] = Field(default=None, description="Authenticated concurring subject, set by the server")
     badgeId: Optional[str] = Field(default=None, max_length=64, description="Dispatcher municipal badge ID (legacy)")
     shiftId: str = Field(default="SHIFT-A", min_length=2, max_length=64, description="Operating shift identifier")
     reviewer: Optional[str] = Field(default=None, max_length=120, description="Authorized reviewer name (legacy)")
