@@ -54,6 +54,11 @@ async def get_structure_status(
     """
     try:
         return await shm_service.get_structure_status(session, structure_id)
+    except LookupError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No observation is stored for this structure",
+        )
     except Exception as e:
         logger.error("Error retrieving status for structure %s: %s", structure_id, e)
         raise HTTPException(

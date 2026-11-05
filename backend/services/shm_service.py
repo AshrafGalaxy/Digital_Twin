@@ -68,24 +68,6 @@ def resolve_shm_source_mode(claimed_mode: Optional[str], sensor_id: str) -> str:
         return stream_mode
     return SourceMode.SIMULATION.value
 
-# Initial canonical registered structural assets for corridor demonstration
-DEFAULT_STRUCTURES = [
-    {
-        "structureId": "STR-VN-FLY-01",
-        "structureName": "Viman Nagar Corridor Flyover",
-        "spans": ["SPAN-01-EB", "SPAN-02-EB", "SPAN-03-EB", "SPAN-01-WB", "SPAN-02-WB", "SPAN-03-WB"],
-        "baselineFreqHz": 4.25,
-        "sensorCount": 6,
-    },
-    {
-        "structureId": "STR-SN-BRG-01",
-        "structureName": "Somnath Nagar River Span Bridge",
-        "spans": ["SPAN-01-CENTRAL", "SPAN-02-APPROACH"],
-        "baselineFreqHz": 3.80,
-        "sensorCount": 4,
-    },
-]
-
 
 class SHMTelemetryService:
     """
@@ -348,45 +330,25 @@ class SHMTelemetryService:
         rows = res.fetchall()
 
         summaries: List[SHMStructureSummary] = []
-        if rows:
-            for r in rows:
-                struct_id = r[0]
-                latest_record = await self.get_structure_latest(session, struct_id)
-                status = latest_record.integrityStatus if latest_record else "NOMINAL"
-                freq = latest_record.resonantFreqHz if latest_record else 4.25
-                drift = latest_record.resonantDriftPct if latest_record else 0.0
-
-                summaries.append(
-                    SHMStructureSummary(
-                        structureId=struct_id,
-                        structureName=r[1] or struct_id,
-                        totalSpans=max(1, r[2]),
-                        sensorCount=max(1, r[3]),
-                        latestStatus=status,
-                        lastObservedAt=r[4],
-                        peakVibrationMms=round(float(r[5] or 0.0), 3),
-                        peakStrainMicrostrain=round(float(r[6] or 0.0), 2),
-                        resonantFrequencyHz=round(float(freq), 3),
-                        resonantDriftPct=round(float(drift), 2),
-                    )
+        for r in rows:
+            struct_id = r[0]
+            latest_record = await self.get_structure_latest(session, struct_id)
+            if latest_record is None:
+                continue
+            summaries.append(
+                SHMStructureSummary(
+                    structureId=struct_id,
+                    structureName=r[1] or struct_id,
+                    totalSpans=max(1, r[2]),
+                    sensorCount=max(1, r[3]),
+                    latestStatus=latest_record.integrityStatus,
+                    lastObservedAt=r[4],
+                    peakVibrationMms=round(float(r[5] or 0.0), 3),
+                    peakStrainMicrostrain=round(float(r[6] or 0.0), 2),
+                    resonantFrequencyHz=round(float(latest_record.resonantFreqHz), 3),
+                    resonantDriftPct=round(float(latest_record.resonantDriftPct), 2),
                 )
-        else:
-            # Fallback to configured study area structure assets
-            for default_s in DEFAULT_STRUCTURES:
-                summaries.append(
-                    SHMStructureSummary(
-                        structureId=default_s["structureId"],
-                        structureName=default_s["structureName"],
-                        totalSpans=len(default_s["spans"]),
-                        sensorCount=default_s["sensorCount"],
-                        latestStatus="NOMINAL",
-                        lastObservedAt=datetime.now(timezone.utc).isoformat(),
-                        peakVibrationMms=3.42,
-                        peakStrainMicrostrain=520.5,
-                        resonantFrequencyHz=default_s["baselineFreqHz"],
-                        resonantDriftPct=-1.18,
-                    )
-                )
+            )
 
         return summaries
 
@@ -449,41 +411,7 @@ class SHMTelemetryService:
         """
         latest = await self.get_structure_latest(session, structure_id)
         if not latest:
-            # Baseline nominal default response
-            struct_info = next(
-                (s for s in DEFAULT_STRUCTURES if s["structureId"] == structure_id),
-                {
-                    "structureId": structure_id,
-                    "structureName": structure_id,
-                    "baselineFreqHz": 4.25,
-                    "spans": ["SPAN-01-EB"],
-                },
-            )
-            return SHMStructureStatus(
-                structureId=structure_id,
-                structureName=struct_info["structureName"],
-                spanId=struct_info["spans"][0],
-                integrityStatus="NOMINAL",
-                isFatigueAlert=False,
-                isOverloadAlert=False,
-                activeAlerts=[],
-                currentMetrics={
-                    "vibrationPpvMms": 2.85,
-                    "strainMicrostrain": 480.0,
-                    "resonantFreqHz": struct_info["baselineFreqHz"],
-                    "resonantBaselineHz": struct_info["baselineFreqHz"],
-                    "resonantDriftPct": 0.0,
-                    "temperatureCelsius": 28.5,
-                    "hcvAxleLoadTonnes": None,
-                },
-                safetyThresholds={
-                    "maxPpvMms": SHM_PPV_MAX_MMS,
-                    "yieldStrainMicrostrain": SHM_STRAIN_YIELD_ALERT,
-                    "maxResonantDriftPct": SHM_RESONANT_DRIFT_THRESHOLD_PCT,
-                    "maxAxleLoadTonnes": SHM_HCV_AXLE_LIMIT_TONNES,
-                },
-                lastUpdated=datetime.now(timezone.utc).isoformat(),
-            )
+            raise LookupError(f"No observation is stored for structure {structure_id}")
 
         status, alerts = self.evaluate_integrity_status(
             strain_val=latest.strainMicrostrain,

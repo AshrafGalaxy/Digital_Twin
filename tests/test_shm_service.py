@@ -194,12 +194,17 @@ def test_shm_rest_api_endpoints():
     - GET /api/v1/shm/structures/{id}/status
     - GET /api/v1/shm/structures/{id}/telemetry
     """
-    # 1. List structures
+    # 1. List structures. An empty table is an empty catalog, not a fabricated pair.
     resp = client.get("/api/v1/shm/structures")
     assert resp.status_code == 200
     structures = resp.json()
     assert isinstance(structures, list)
-    assert len(structures) >= 1
+    for item in structures:
+        assert not (
+            item["peakStrainMicrostrain"] == 520.5
+            and item["peakVibrationMms"] == 3.42
+            and item["resonantDriftPct"] == -1.18
+        )
 
     # 2. Ingest telemetry via POST
     sample_payload = {
@@ -356,3 +361,29 @@ def test_unregistered_sensor_cannot_store_live():
     body = response.json()
     assert body["sourceMode"] == "SIMULATION"
     assert body["integrityStatus"] == "NOMINAL"
+
+
+def test_unknown_structure_status_is_not_a_fabricated_reading():
+    response = client.get("/api/v1/shm/structures/STR-DOES-NOT-EXIST/status")
+    assert response.status_code == 404
+    body = response.text
+    assert "480.0" not in body
+    assert "2.85" not in body
+    assert "28.5" not in body
+
+
+@pytest.mark.asyncio
+async def test_empty_telemetry_catalog_does_not_invent_readings():
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM shm_telemetry"))
+        await session.commit()
+        summaries = await shm_service.get_monitored_structures(session)
+    assert summaries == []
+
+    response = client.get("/api/v1/shm/structures")
+    assert response.status_code == 200
+    assert response.json() == []
+    raw = response.text
+    assert "520.5" not in raw
+    assert "3.42" not in raw
+    assert "-1.18" not in raw
