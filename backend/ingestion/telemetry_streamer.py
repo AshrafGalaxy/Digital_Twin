@@ -30,19 +30,91 @@ CORRIDOR_INTERSECTIONS = [
     "urn:ngsi-ld:Intersection:PUNE:INT-SN-01"
 ]
 
+# Approach storage is the segment length from the corridor asset register.
+# A queue longer than this storage is spillback into the upstream link.
+LINK_CYCLE_SEC = 120.0
+LINK_BASE_GREEN_SEC = 35.0
+VEHICLE_SPACING_M = 7.5
+SPEED_VALID_MAX_KMH = 120.0
+
 # Corridor Segment Topology
 CORRIDOR_SEGMENTS = [
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", "name": "Nagar Road EB Approach", "speedLimit": 50.0, "baseSpeed": 42.0, "capacity": 2400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02", "name": "Nagar Road EB Central", "speedLimit": 50.0, "baseSpeed": 38.0, "capacity": 2400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03", "name": "Nagar Road EB Somnath", "speedLimit": 50.0, "baseSpeed": 44.0, "capacity": 2400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01", "name": "Nagar Road WB Somnath", "speedLimit": 50.0, "baseSpeed": 41.0, "capacity": 2400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02", "name": "Nagar Road WB Central", "speedLimit": 50.0, "baseSpeed": 36.0, "capacity": 2400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03", "name": "Nagar Road WB Approach", "speedLimit": 50.0, "baseSpeed": 43.0, "capacity": 2400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01", "name": "Viman Nagar Northbound", "speedLimit": 40.0, "baseSpeed": 28.0, "capacity": 1400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01", "name": "Viman Nagar Southbound", "speedLimit": 40.0, "baseSpeed": 32.0, "capacity": 1400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01", "name": "Somnath Nagar Northbound", "speedLimit": 40.0, "baseSpeed": 30.0, "capacity": 1200},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01", "name": "Somnath Nagar Southbound", "speedLimit": 40.0, "baseSpeed": 34.0, "capacity": 1200},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", "name": "Nagar Road EB Approach", "speedLimit": 50.0, "baseSpeed": 42.0, "capacity": 2400, "approachStorageMeters": 480.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02", "name": "Nagar Road EB Central", "speedLimit": 50.0, "baseSpeed": 38.0, "capacity": 2400, "approachStorageMeters": 1180.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03", "name": "Nagar Road EB Somnath", "speedLimit": 50.0, "baseSpeed": 44.0, "capacity": 2400, "approachStorageMeters": 450.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01", "name": "Nagar Road WB Somnath", "speedLimit": 50.0, "baseSpeed": 41.0, "capacity": 2400, "approachStorageMeters": 450.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02", "name": "Nagar Road WB Central", "speedLimit": 50.0, "baseSpeed": 36.0, "capacity": 2400, "approachStorageMeters": 1180.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03", "name": "Nagar Road WB Approach", "speedLimit": 50.0, "baseSpeed": 43.0, "capacity": 2400, "approachStorageMeters": 480.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01", "name": "Viman Nagar Northbound", "speedLimit": 40.0, "baseSpeed": 28.0, "capacity": 1400, "approachStorageMeters": 350.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01", "name": "Viman Nagar Southbound", "speedLimit": 40.0, "baseSpeed": 32.0, "capacity": 1400, "approachStorageMeters": 400.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01", "name": "Somnath Nagar Northbound", "speedLimit": 40.0, "baseSpeed": 30.0, "capacity": 1200, "approachStorageMeters": 300.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01", "name": "Somnath Nagar Southbound", "speedLimit": 40.0, "baseSpeed": 34.0, "capacity": 1200, "approachStorageMeters": 320.0},
 ]
+
+
+def compute_link_kinematics(
+    *,
+    speed_limit_kmh: float,
+    base_speed_kmh: float,
+    capacity_vph: float,
+    approach_storage_m: float,
+    rush_intensity: float,
+    speed_jitter: float = 0.0,
+    flow_jitter: float = 0.0,
+    demand_vph: Optional[float] = None,
+    discharge_vph: Optional[float] = None,
+) -> Dict[str, float]:
+    """
+    One speed, one throughput, and one queue for a generated tick.
+
+    Demand rises with the rush factor. Speed falls as demand exceeds capacity and
+    stays inside 0 to 120 km/h, with no 14 km/h floor. Throughput is the lesser of
+    demand and discharge, so a blocked approach can be near zero vehicles per hour.
+    Queue uses the same residual as the kinematic scenario: unserved arrivals in one
+    120 s cycle, plus the red-period arrival, times 7.5 m per vehicle. The result is
+    not capped at 120 m or at approach storage. Meters above storage are spillback.
+    """
+    capacity = max(float(capacity_vph), 1.0)
+    limit = max(float(speed_limit_kmh), 1.0)
+    storage = max(float(approach_storage_m), 1.0)
+    rush = max(0.0, min(1.0, float(rush_intensity)))
+
+    demand = float(demand_vph) if demand_vph is not None else capacity * (0.35 + 0.90 * rush)
+    demand = max(0.0, demand)
+    pressure = demand / capacity
+    raw_speed = float(base_speed_kmh) * (1.15 - 0.85 * min(pressure, 1.6)) + float(speed_jitter)
+    speed = max(0.0, min(SPEED_VALID_MAX_KMH, min(limit, raw_speed)))
+
+    if discharge_vph is None:
+        discharge = max(0.0, capacity * (speed / limit) + float(flow_jitter))
+    else:
+        discharge = max(0.0, float(discharge_vph))
+    flow = max(0.0, min(demand, discharge))
+
+    green_ratio = LINK_BASE_GREEN_SEC / LINK_CYCLE_SEC
+    arrival_per_cycle = demand * (LINK_CYCLE_SEC / 3600.0)
+    served_per_cycle = discharge * (LINK_CYCLE_SEC / 3600.0)
+    overflow_vehicles = max(0.0, arrival_per_cycle - served_per_cycle)
+    red_queue_vehicles = arrival_per_cycle * (1.0 - green_ratio) * 0.5
+    queue = max(0.0, (overflow_vehicles + red_queue_vehicles) * VEHICLE_SPACING_M)
+    spillback = max(0.0, queue - storage)
+
+    # Moving density is flow / speed. A stopped approach uses the queued vehicles
+    # spread over the storage length so the record still has a density.
+    if speed >= 1.0:
+        density = flow / speed
+    else:
+        density = (queue / VEHICLE_SPACING_M) / (storage / 1000.0)
+
+    return {
+        "averageSpeedKmh": round(speed, 2),
+        "vehicleFlowPerHour": round(flow, 1),
+        "queueLengthMeters": round(queue, 1),
+        "approachStorageMeters": round(storage, 1),
+        "spillbackMeters": round(spillback, 1),
+        "densityVehKm": round(density, 2),
+        "demandVehPerHour": round(demand, 1),
+    }
 
 # Paired Sensor Stations
 SENSOR_STATIONS = [
@@ -136,12 +208,20 @@ class TelemetryStreamerWorker:
 
             await asyncio.sleep(self.interval_sec)
 
-    async def tick_once(self) -> Dict[str, Any]:
+    async def tick_once(
+        self,
+        *,
+        now: Optional[datetime] = None,
+        rng: Optional[random.Random] = None,
+    ) -> Dict[str, Any]:
         """
         Executes a single physics-grounded telemetry generation pass across all entities,
         persisting records to database and dispatching WebSocket updates.
         """
-        now_dt = datetime.now(timezone.utc)
+        sampler = rng if rng is not None else random
+        now_dt = now if now is not None else datetime.now(timezone.utc)
+        if now_dt.tzinfo is None:
+            now_dt = now_dt.replace(tzinfo=timezone.utc)
         now_iso = now_dt.isoformat()
         hour = now_dt.hour + (now_dt.minute / 60.0)
 
@@ -160,14 +240,20 @@ class TelemetryStreamerWorker:
 
                 for seg in CORRIDOR_SEGMENTS:
                     seg_id = seg["id"]
-                    base_speed = seg["baseSpeed"]
-                    # Speed decreases during rush hour with small random stochastic jitter
-                    jitter = random.uniform(-2.5, 2.5)
-                    speed = max(14.0, min(seg["speedLimit"], base_speed * (1.1 - 0.45 * rush_intensity) + jitter))
-                    flow = max(400.0, min(seg["capacity"], seg["capacity"] * (0.35 + 0.60 * rush_intensity) + random.uniform(-100, 100)))
-                    occ = max(10.0, min(90.0, (1.0 - (speed / seg["speedLimit"])) * 75.0 + random.uniform(-3, 3)))
-                    queue = max(2.0, min(120.0, (1.0 - (speed / seg["speedLimit"])) * 85.0 + random.uniform(-5, 5)))
-                    cong = max(0.05, min(0.95, (1.0 - (speed / seg["speedLimit"]))))
+                    kinematics = compute_link_kinematics(
+                        speed_limit_kmh=seg["speedLimit"],
+                        base_speed_kmh=seg["baseSpeed"],
+                        capacity_vph=seg["capacity"],
+                        approach_storage_m=seg["approachStorageMeters"],
+                        rush_intensity=rush_intensity,
+                        speed_jitter=sampler.uniform(-2.5, 2.5),
+                        flow_jitter=sampler.uniform(-80.0, 80.0),
+                    )
+                    speed = kinematics["averageSpeedKmh"]
+                    flow = kinematics["vehicleFlowPerHour"]
+                    queue = kinematics["queueLengthMeters"]
+                    occ = max(0.0, min(100.0, (1.0 - (speed / seg["speedLimit"])) * 75.0 + sampler.uniform(-3, 3)))
+                    cong = max(0.0, min(1.0, (1.0 - (speed / seg["speedLimit"]))))
 
                     total_speed += speed
                     total_flow += flow
@@ -215,6 +301,8 @@ class TelemetryStreamerWorker:
                         "vehicleFlowPerHour": round(flow, 0),
                         "occupancyPercent": round(occ, 1),
                         "queueLengthMeters": round(queue, 1),
+                        "approachStorageMeters": kinematics["approachStorageMeters"],
+                        "spillbackMeters": kinematics["spillbackMeters"],
                         "congestionIndex": round(cong, 3),
                         "volumeCapacityRatio": los_data["volumeCapacityRatio"],
                         "densityVehKm": los_data["densityVehKm"],

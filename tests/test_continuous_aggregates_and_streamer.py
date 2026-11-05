@@ -11,6 +11,7 @@ Verifies:
 """
 
 import asyncio
+import random
 from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
@@ -19,7 +20,11 @@ from sqlalchemy import text
 from backend.main import app
 from backend.core.database import persistence_manager, get_db_session
 from backend.core.schema_migrator import init_db_schema
-from backend.ingestion.telemetry_streamer import telemetry_streamer
+from backend.ingestion.telemetry_streamer import (
+    CORRIDOR_SEGMENTS,
+    compute_link_kinematics,
+    telemetry_streamer,
+)
 from backend.services.continuous_aggregator import continuous_aggregator
 
 
@@ -81,6 +86,60 @@ async def test_telemetry_streamer_physics_tick_and_persistence():
             text("SELECT COUNT(*) FROM entity_current_state WHERE entity_type = 'RoadSegment'")
         )
         assert (state_res.scalar() or 0) >= 10
+
+
+def test_high_demand_kinematics_emit_spillback_above_storage():
+    """A blocked high-demand approach can queue past its storage. Speed and flow are not floored."""
+    segment = next(item for item in CORRIDOR_SEGMENTS if item["id"].endswith("SEG-NR-EB-01"))
+    storage = segment["approachStorageMeters"]
+    assert storage >= 200.0
+
+    row = compute_link_kinematics(
+        speed_limit_kmh=segment["speedLimit"],
+        base_speed_kmh=segment["baseSpeed"],
+        capacity_vph=segment["capacity"],
+        approach_storage_m=storage,
+        rush_intensity=1.0,
+        speed_jitter=0.0,
+        flow_jitter=0.0,
+        demand_vph=2880.0,
+        discharge_vph=150.0,
+    )
+
+    assert row["queueLengthMeters"] > 200.0
+    assert row["queueLengthMeters"] > storage
+    assert row["spillbackMeters"] > 0.0
+    assert 0.0 <= row["averageSpeedKmh"] < 14.0
+    assert row["averageSpeedKmh"] <= 120.0
+    assert 0.0 <= row["vehicleFlowPerHour"] < 400.0
+
+
+@pytest.mark.asyncio
+async def test_peak_tick_persists_simulation_spillback():
+    """A peak-hour generated tick stays SIMULATION and can store a queue above 200 m."""
+    peak = datetime(2026, 6, 15, 18, 30, tzinfo=timezone.utc)
+    tick_res = await telemetry_streamer.tick_once(now=peak, rng=random.Random(42))
+
+    assert tick_res["status"] == "TICK_SUCCESS"
+    assert telemetry_streamer.mode == "SIMULATION"
+
+    async with persistence_manager.session_factory() as session:
+        result = await session.execute(
+            text("""
+                SELECT average_speed_kmh, vehicle_flow_per_hour, queue_length_meters, source_mode
+                FROM traffic_observations
+                WHERE observed_at = :observed_at
+            """),
+            {"observed_at": peak},
+        )
+        rows = result.fetchall()
+
+    assert len(rows) >= 10
+    assert all(row.source_mode == "SIMULATION" for row in rows)
+    assert all(0.0 <= float(row.average_speed_kmh) <= 120.0 for row in rows)
+    assert max(float(row.queue_length_meters) for row in rows) > 200.0
+    assert min(float(row.average_speed_kmh) for row in rows) < 14.0
+    assert min(float(row.vehicle_flow_per_hour) for row in rows) < 400.0
 
 
 @pytest.mark.asyncio

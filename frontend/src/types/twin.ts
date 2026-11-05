@@ -33,6 +33,8 @@ export interface EntityCurrentState {
     vehicleFlowPerHour?: number;
     occupancyPercent?: number;
     queueLengthMeters?: number;
+    approachStorageMeters?: number;
+    spillbackMeters?: number;
     congestionIndex?: number;
     activePowerKw?: number;
     reactivePowerKvar?: number;

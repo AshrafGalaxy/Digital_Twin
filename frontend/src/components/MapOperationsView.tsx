@@ -520,8 +520,13 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         features: roadSegments.map(seg => {
           const state = liveStates[seg.id];
           const speed = state?.metrics?.averageSpeedKmh ?? 45.0;
+          const queueMeters = state?.metrics?.queueLengthMeters;
+          const storageMeters = state?.metrics?.approachStorageMeters;
+          const spillback = typeof queueMeters === 'number'
+            && typeof storageMeters === 'number'
+            && queueMeters > storageMeters;
           let color = '#3FB950'; // Green: Normal (>35 km/h)
-          if (speed < 20) color = '#F85149'; // Red: Congested (<20 km/h)
+          if (spillback || speed < 20) color = '#F85149'; // Red: spillback or speed under 20 km/h
           else if (speed < 35) color = '#D29922'; // Amber: Moderate (20-35 km/h)
 
           const isSelected = selectedEntity?.id === seg.id;
@@ -540,6 +545,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               ...seg,
               color,
               speed,
+              queueMeters: queueMeters ?? null,
+              spillback,
               isSelected,
               isCompare,
               casingColor
@@ -1291,6 +1298,11 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                 {roadSegments.map(seg => {
                   const state = liveStates[seg.id];
                   const speed = state?.metrics?.averageSpeedKmh ?? 45.0;
+                  const queueMeters = state?.metrics?.queueLengthMeters;
+                  const storageMeters = state?.metrics?.approachStorageMeters;
+                  const spillback = typeof queueMeters === 'number'
+                    && typeof storageMeters === 'number'
+                    && queueMeters > storageMeters;
                   const los = speed >= 42 ? 'A' : speed >= 38 ? 'B' : speed >= 32 ? 'C' : speed >= 25 ? 'D' : speed >= 18 ? 'E' : 'F';
                   const mode = state?.sourceMode || 'SIMULATION';
                   return (
@@ -1304,10 +1316,15 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                       </td>
                       <td className="mono-cell">{seg.speedLimitKmh} km/h</td>
                       <td>
-                        <span style={{ fontWeight: 700, color: speed < 20 ? '#EF4444' : speed < 35 ? '#F59E0B' : '#10B981' }}>
+                        <span style={{ fontWeight: 700, color: spillback || speed < 20 ? '#EF4444' : speed < 35 ? '#F59E0B' : '#10B981' }}>
                           {speed.toFixed(1)} km/h
                         </span>{' '}
                         <span className={`los-badge los-${los.toLowerCase()}`}>LOS {los}</span>
+                        {typeof queueMeters === 'number' && (
+                          <div className="font-mono" style={{ fontSize: '12px', marginTop: '2px' }}>
+                            {queueMeters.toFixed(0)} m{spillback ? ' spillback' : ''}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span className="font-mono">
