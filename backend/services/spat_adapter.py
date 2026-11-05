@@ -17,6 +17,9 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.config import settings
+from backend.core.constants import SourceMode
+
 logger = logging.getLogger("digital_twin.services.spat_adapter")
 
 
@@ -172,6 +175,24 @@ CANONICAL_INTERSECTION_PHASES: Dict[str, List[PhaseMovement]] = {
     ]
 }
 
+REGISTERED_SIGNAL_IDS = frozenset(CANONICAL_INTERSECTION_PHASES)
+
+
+def resolve_spat_source_mode(claimed_mode: Optional[str], intersection_id: str) -> str:
+    """
+    A missing claim is never LIVE. LIVE is stored only for a registered controller.
+    Any other claim follows the stream mode, which is SIMULATION or REPLAY.
+    """
+    claimed = (claimed_mode or "").strip().upper()
+    if claimed == SourceMode.LIVE.value and intersection_id in REGISTERED_SIGNAL_IDS:
+        return SourceMode.LIVE.value
+    if claimed in (SourceMode.SIMULATION.value, SourceMode.REPLAY.value):
+        return claimed
+    stream_mode = str(getattr(settings, "TELEMETRY_STREAMER_MODE", SourceMode.SIMULATION.value)).strip().upper()
+    if stream_mode in (SourceMode.SIMULATION.value, SourceMode.REPLAY.value):
+        return stream_mode
+    return SourceMode.SIMULATION.value
+
 
 class SPaTAdapter:
     """
@@ -287,16 +308,30 @@ class SPaTAdapter:
             current_state.phase_color = packet.phase_color
             current_state.time_to_next_phase_sec = packet.time_to_next_phase_sec
             current_state.controller_mode = packet.controller_mode
-            current_state.source_mode = packet.provenance.get("sourceMode", "LIVE")
+            claimed_mode = packet.provenance.get("sourceMode") if packet.provenance else None
+            current_state.source_mode = resolve_spat_source_mode(claimed_mode, packet.intersection_id)
             current_state.observed_at = packet.timestamp
             current_state.last_heartbeat = now_dt
 
             if phase_transitioned or is_first_packet:
                 current_state.current_phase_start_time = parsed_obs_dt
 
-        # If phase transitioned and DB session provided, log transition to signal_phase_history
-        if phase_transitioned and session is not None:
-            duration_sec = max(0.5, (parsed_obs_dt - prev_start).total_seconds())
+        # The opening frame is stored. A later change stores the phase that just ended.
+        if session is not None and (is_first_packet or phase_transitioned):
+            if is_first_packet:
+                hist_phase_id = packet.active_phase
+                hist_phase_name = packet.active_phase_name
+                hist_color = packet.phase_color.value if isinstance(packet.phase_color, SignalColor) else str(packet.phase_color)
+                hist_duration = 0.0
+                hist_start = parsed_obs_dt.isoformat()
+                hist_end = parsed_obs_dt.isoformat()
+            else:
+                hist_phase_id = prev_phase
+                hist_phase_name = prev_phase_name
+                hist_color = prev_color.value if isinstance(prev_color, SignalColor) else str(prev_color)
+                hist_duration = round(max(0.5, (parsed_obs_dt - prev_start).total_seconds()), 2)
+                hist_start = prev_start.isoformat()
+                hist_end = parsed_obs_dt.isoformat()
             try:
                 hist_stmt = text("""
                     INSERT INTO signal_phase_history (
@@ -309,12 +344,12 @@ class SPaTAdapter:
                 """)
                 await session.execute(hist_stmt, {
                     "intersection_id": packet.intersection_id,
-                    "phase_id": prev_phase,
-                    "phase_name": prev_phase_name,
-                    "color": prev_color.value if isinstance(prev_color, SignalColor) else str(prev_color),
-                    "duration_sec": round(duration_sec, 2),
-                    "start_time": prev_start.isoformat(),
-                    "end_time": parsed_obs_dt.isoformat(),
+                    "phase_id": hist_phase_id,
+                    "phase_name": hist_phase_name,
+                    "color": hist_color,
+                    "duration_sec": hist_duration,
+                    "start_time": hist_start,
+                    "end_time": hist_end,
                     "source_mode": current_state.source_mode
                 })
 

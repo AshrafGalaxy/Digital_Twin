@@ -31,6 +31,15 @@ from backend.services.spat_adapter import (
 client = TestClient(app)
 
 
+def _analyst_headers():
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123",
+    })
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
+
+
 def test_spat_packet_validation_valid():
     """Verifies that a valid J2735 SPaT packet parses correctly."""
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -262,7 +271,7 @@ def test_api_post_spat_ingest_valid():
             "protocol": "SAE_J2735_SPAT"
         }
     }
-    res = client.post("/api/v1/traffic/signals/spat/ingest", json=payload)
+    res = client.post("/api/v1/traffic/signals/spat/ingest", json=payload, headers=_analyst_headers())
     assert res.status_code == 200
     data = res.json()
     assert data["activePhase"] == 2
@@ -281,7 +290,7 @@ def test_api_post_spat_ingest_invalid():
         "phaseColor": "PURPLE", # Invalid color
         "timeToNextPhaseSec": -5.0
     }
-    res = client.post("/api/v1/traffic/signals/spat/ingest", json=payload)
+    res = client.post("/api/v1/traffic/signals/spat/ingest", json=payload, headers=_analyst_headers())
     assert res.status_code == 422
 
 
@@ -291,6 +300,104 @@ def test_api_get_spat_history():
     assert res.status_code == 200
     records = res.json()
     assert isinstance(records, list)
+
+
+def test_api_spat_ingest_anonymous_is_rejected():
+    """A frame with no session is refused and is not stored."""
+    payload = {
+        "intersectionId": "INT-PROOF-ANON",
+        "timestamp": "2026-11-02T12:00:00+00:00",
+        "cycleLengthSec": 90,
+        "elapsedCycleSec": 0.0,
+        "activePhase": 2,
+        "activePhaseName": "Proof phase",
+        "phaseColor": "GREEN",
+        "timeToNextPhaseSec": 20.0,
+        "controllerMode": "ACTUATED",
+    }
+    res = client.post("/api/v1/traffic/signals/spat/ingest", json=payload)
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_api_first_frame_without_provenance_is_stored_and_not_live():
+    """An omitted provenance claim is not stored as LIVE, and the first frame is readable."""
+    payload = {
+        "intersectionId": "INT-PROOF-SPAT",
+        "timestamp": "2026-11-02T12:00:00+00:00",
+        "cycleLengthSec": 90,
+        "elapsedCycleSec": 0.0,
+        "activePhase": 2,
+        "activePhaseName": "Proof phase",
+        "phaseColor": "GREEN",
+        "timeToNextPhaseSec": 20.0,
+        "controllerMode": "ACTUATED",
+    }
+    res = client.post("/api/v1/traffic/signals/spat/ingest", json=payload, headers=_analyst_headers())
+    assert res.status_code == 200
+    body = res.json()
+    assert body["sourceMode"] != "LIVE"
+    assert body["phaseColor"] == "GREEN"
+    assert body["activePhase"] == 2
+
+    async with AsyncSessionLocal() as session:
+        hist = await session.execute(
+            text("SELECT source_mode, color, phase_id FROM signal_phase_history WHERE intersection_id = :id"),
+            {"id": "INT-PROOF-SPAT"},
+        )
+        hist_row = hist.fetchone()
+        state = await session.execute(
+            text("SELECT source_mode, metrics FROM entity_current_state WHERE entity_id = :id"),
+            {"id": "INT-PROOF-SPAT"},
+        )
+        state_row = state.fetchone()
+    assert hist_row is not None
+    assert hist_row[0] != "LIVE"
+    assert hist_row[1] == "GREEN"
+    assert hist_row[2] == 2
+    assert state_row is not None
+    assert state_row[0] != "LIVE"
+    assert "GREEN" in state_row[1]
+
+
+@pytest.mark.asyncio
+async def test_api_simulation_frame_does_not_replace_live_state():
+    """A later generated frame cannot replace a stored LIVE controller row."""
+    intersection_id = "urn:ngsi-ld:Intersection:PUNE:INT-SN-01"
+    headers = _analyst_headers()
+    live_payload = {
+        "intersectionId": intersection_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "cycleLengthSec": 90,
+        "elapsedCycleSec": 0.0,
+        "activePhase": 1,
+        "activePhaseName": "Opening phase",
+        "phaseColor": "GREEN",
+        "timeToNextPhaseSec": 20.0,
+        "controllerMode": "ACTUATED",
+        "provenance": {"sourceMode": "LIVE"},
+    }
+    live_res = client.post("/api/v1/traffic/signals/spat/ingest", json=live_payload, headers=headers)
+    assert live_res.status_code == 200
+    assert live_res.json()["sourceMode"] == "LIVE"
+
+    simulated_payload = dict(live_payload)
+    simulated_payload["timestamp"] = datetime.now(timezone.utc).isoformat()
+    simulated_payload["activePhase"] = 2
+    simulated_payload["phaseColor"] = "YELLOW"
+    simulated_payload["provenance"] = {"sourceMode": "SIMULATION"}
+    sim_res = client.post("/api/v1/traffic/signals/spat/ingest", json=simulated_payload, headers=headers)
+    assert sim_res.status_code == 200
+
+    async with AsyncSessionLocal() as session:
+        state = await session.execute(
+            text("SELECT source_mode, metrics FROM entity_current_state WHERE entity_id = :id"),
+            {"id": intersection_id},
+        )
+        row = state.fetchone()
+    assert row is not None
+    assert row[0] == "LIVE"
+    assert '"activePhase": 1' in row[1]
 
 
 def test_spat_unregistered_intersection_fallback():

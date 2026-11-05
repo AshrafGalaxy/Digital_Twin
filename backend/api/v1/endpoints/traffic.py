@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.auth import get_current_user
 from backend.core.database import get_db_session
 from backend.services.los_engine import PolicyStandard, los_engine
 from backend.services.signal_optimizer import (
@@ -587,7 +588,8 @@ async def get_intersection_spat(intersection_id: str):
 @router.post("/signals/spat/ingest", response_model=SPaTResponse)
 async def ingest_spat_frame(
     payload: SPaTIngestRequest,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    _principal: Any = Depends(get_current_user),
 ):
     """
     Ingests an inbound NTCIP 1202 / SAE J2735 high-frequency SPaT frame (1 to 10 Hz).
@@ -607,10 +609,7 @@ async def ingest_spat_frame(
             "time_to_next_phase_sec": payload.timeToNextPhaseSec,
             "preempt_status": payload.preemptStatus,
             "controller_mode": ControllerMode(payload.controllerMode.upper()),
-            "provenance": payload.provenance or {
-                "sourceMode": "LIVE",
-                "protocol": "SAE_J2735_SPAT"
-            }
+            "provenance": dict(payload.provenance or {})
         }
         updated_state = await spat_adapter.ingest_packet(raw_dict, session=session)
         state_dict = updated_state.to_dict()
