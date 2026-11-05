@@ -7,7 +7,8 @@ Tests sensor telemetry bounds validation, resonant frequency drift fatigue alert
 fiber-optic microstrain yield warnings, Weigh-in-Motion axle overloads, and REST API endpoints.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import json
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -18,6 +19,15 @@ from backend.schemas.shm import SHMReadingValue, ResonantFreqReading, SHMTelemet
 from backend.services.shm_service import SHMTelemetryService, shm_service
 
 client = TestClient(app)
+
+
+def _auth_header() -> dict:
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123",
+    })
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
 
 
 def test_shm_integrity_status_classification():
@@ -205,7 +215,7 @@ def test_shm_rest_api_endpoints():
         "hcvAxleLoadTonnes": 9.1,
         "provenance": {"sourceMode": "LIVE", "sensorType": "FBG_OPTICAL_PIEZO"},
     }
-    post_resp = client.post("/api/v1/shm/telemetry", json=sample_payload)
+    post_resp = client.post("/api/v1/shm/telemetry", json=sample_payload, headers=_auth_header())
     assert post_resp.status_code == 201
     created = post_resp.json()
     assert created["structureId"] == "STR-SN-BRG-01"
@@ -231,5 +241,118 @@ def test_shm_rest_api_endpoints():
     # 5. Verify invalid payload returns 422
     bad_payload = dict(sample_payload)
     bad_payload["vibrationPPV"] = {"value": 250.0, "unit": "mm/s"}
-    bad_resp = client.post("/api/v1/shm/telemetry", json=bad_payload)
+    bad_resp = client.post("/api/v1/shm/telemetry", json=bad_payload, headers=_auth_header())
     assert bad_resp.status_code == 422
+
+
+def _nominal_packet(**overrides) -> dict:
+    packet = {
+        "structureId": "STR-VN-FLY-01",
+        "structureName": "Viman Nagar Corridor Flyover",
+        "spanId": "SPAN-01-EB",
+        "sensorId": "SENSOR-SHM-EB-03",
+        "observedAt": datetime.now(timezone.utc).isoformat(),
+        "vibrationPPV": {"value": 3.2, "unit": "mm/s", "qualityScore": 0.99},
+        "strain": {"value": 510.0, "unit": "microstrain", "qualityScore": 0.99},
+        "resonantFreqHz": {"value": 3.40, "baselineHz": 4.25, "driftPct": 0.4},
+        "ambientTempC": 28.0,
+        "hcvAxleLoadTonnes": 8.5,
+        "provenance": {"sourceMode": "LIVE", "sensorType": "FBG_OPTICAL_PIEZO"},
+    }
+    packet.update(overrides)
+    return packet
+
+
+def test_computed_drift_replaces_caller_drift_and_is_not_nominal():
+    """3.40 Hz against a 4.25 Hz baseline is -20.0 percent, even if the caller sends 0.4."""
+    response = client.post("/api/v1/shm/telemetry", json=_nominal_packet(), headers=_auth_header())
+    assert response.status_code == 201
+    body = response.json()
+    assert body["resonantDriftPct"] == -20.0
+    assert body["integrityStatus"] != "NOMINAL"
+    assert body["integrityStatus"] == "ADVISORY_FATIGUE"
+
+
+def test_future_shm_timestamp_is_rejected():
+    future = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+    response = client.post(
+        "/api/v1/shm/telemetry",
+        json=_nominal_packet(observedAt=future, structureId="STR-FUTURE-01"),
+        headers=_auth_header(),
+    )
+    assert response.status_code == 422
+    assert "INVALID" in response.json()["detail"]
+
+
+def test_shm_ingest_requires_a_session():
+    response = client.post("/api/v1/shm/telemetry", json=_nominal_packet())
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_shm_packet_does_not_replace_segment_metrics():
+    segment_id = "urn:ngsi-ld:RoadSegment:PROOF:SEG-01"
+    original_metrics = {"averageSpeedKmh": 18.0, "queueLengthMeters": 410.0}
+    observed = datetime.now(timezone.utc).isoformat()
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            text("""
+                INSERT INTO entity_current_state (
+                    entity_id, entity_type, source_mode, observed_at, updated_at,
+                    metrics, quality_status, freshness_seconds
+                ) VALUES (
+                    :entity_id, :entity_type, :source_mode, :observed_at, :updated_at,
+                    :metrics, 'VALID', 0.0
+                )
+                ON CONFLICT(entity_id) DO UPDATE SET
+                    entity_type = excluded.entity_type,
+                    source_mode = excluded.source_mode,
+                    metrics = excluded.metrics
+            """),
+            {
+                "entity_id": segment_id,
+                "entity_type": "RoadSegment",
+                "source_mode": "LIVE",
+                "observed_at": observed,
+                "updated_at": observed,
+                "metrics": json.dumps(original_metrics),
+            },
+        )
+        await session.commit()
+
+    response = client.post(
+        "/api/v1/shm/telemetry",
+        json=_nominal_packet(structureId=segment_id),
+        headers=_auth_header(),
+    )
+    assert response.status_code == 422
+
+    async with AsyncSessionLocal() as session:
+        row = (await session.execute(
+            text("SELECT entity_type, source_mode, metrics FROM entity_current_state WHERE entity_id = :id"),
+            {"id": segment_id},
+        )).fetchone()
+
+    assert row is not None
+    assert row[0] == "RoadSegment"
+    assert row[1] == "LIVE"
+    stored = json.loads(row[2]) if isinstance(row[2], str) else row[2]
+    assert stored["averageSpeedKmh"] == 18.0
+    assert stored["queueLengthMeters"] == 410.0
+
+
+def test_unregistered_sensor_cannot_store_live():
+    response = client.post(
+        "/api/v1/shm/telemetry",
+        json=_nominal_packet(
+            structureId="STR-UNREGISTERED-01",
+            sensorId="SENSOR-SHM-UNKNOWN",
+            resonantFreqHz={"value": 4.20, "baselineHz": 4.25, "driftPct": -1.18},
+        ),
+        headers=_auth_header(),
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["sourceMode"] == "SIMULATION"
+    assert body["integrityStatus"] == "NOMINAL"

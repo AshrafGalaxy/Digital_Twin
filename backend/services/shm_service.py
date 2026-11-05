@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.config import settings
 from backend.core.constants import (
     SHM_HCV_AXLE_LIMIT_TONNES,
     SHM_PPV_HARD_MAX_MMS,
@@ -35,6 +36,37 @@ from backend.schemas.shm import (
 )
 
 logger = logging.getLogger("digital_twin.shm")
+
+# Installed gauge ids. A client may label a packet LIVE only when the sensor is one of these.
+REGISTERED_SHM_SENSOR_IDS = frozenset({
+    "SENSOR-SHM-EB-03",
+    "SENSOR-SHM-SN-01",
+})
+DRIFT_AGREEMENT_TOLERANCE_PCT = 0.05
+FUTURE_TIMESTAMP_SKEW = timedelta(seconds=5)
+
+
+def compute_resonant_drift_pct(measured_hz: float, baseline_hz: float) -> float:
+    """Server drift: ((measured - baseline) / baseline) * 100."""
+    if baseline_hz <= 0.0:
+        raise ValueError("INVALID: resonant baseline must be positive")
+    return round(((measured_hz - baseline_hz) / baseline_hz) * 100.0, 2)
+
+
+def resolve_shm_source_mode(claimed_mode: Optional[str], sensor_id: str) -> str:
+    """
+    LIVE is stored only for a registered sensor. Any other LIVE claim uses the
+    stream mode, which is SIMULATION or REPLAY.
+    """
+    claimed = (claimed_mode or "").strip().upper()
+    if claimed == SourceMode.LIVE.value and sensor_id in REGISTERED_SHM_SENSOR_IDS:
+        return SourceMode.LIVE.value
+    if claimed in (SourceMode.SIMULATION.value, SourceMode.REPLAY.value):
+        return claimed
+    stream_mode = str(getattr(settings, "TELEMETRY_STREAMER_MODE", SourceMode.SIMULATION.value)).strip().upper()
+    if stream_mode in (SourceMode.SIMULATION.value, SourceMode.REPLAY.value):
+        return stream_mode
+    return SourceMode.SIMULATION.value
 
 # Initial canonical registered structural assets for corridor demonstration
 DEFAULT_STRUCTURES = [
@@ -135,7 +167,20 @@ class SHMTelemetryService:
         strain_val = payload.strain.value
         f0_val = payload.resonantFreqHz.value
         baseline_f0 = payload.resonantFreqHz.baselineHz
-        drift_pct = payload.resonantFreqHz.driftPct
+        drift_pct = compute_resonant_drift_pct(f0_val, baseline_f0)
+        caller_drift = payload.resonantFreqHz.driftPct
+        if abs(caller_drift - drift_pct) > DRIFT_AGREEMENT_TOLERANCE_PCT:
+            logger.info(
+                "Caller resonant drift %.4f discarded. Stored computed drift %.4f.",
+                caller_drift,
+                drift_pct,
+            )
+
+        observed_at = payload.observedAt
+        if observed_at.tzinfo is None:
+            observed_at = observed_at.replace(tzinfo=timezone.utc)
+        if observed_at > datetime.now(timezone.utc) + FUTURE_TIMESTAMP_SKEW:
+            raise ValueError("INVALID: observedAt is in the future")
 
         if vibration_val < SHM_PPV_MIN_MMS or vibration_val > SHM_PPV_HARD_MAX_MMS:
             raise ValueError(
@@ -154,12 +199,25 @@ class SHMTelemetryService:
             vibration_ppv=vibration_val,
         )
 
-        obs_iso = payload.observedAt.isoformat()
+        obs_iso = observed_at.isoformat()
         now_utc = datetime.now(timezone.utc).isoformat()
-        provenance = payload.provenance or {}
-        source_mode = provenance.get("sourceMode", SourceMode.LIVE.value)
+        provenance = dict(payload.provenance or {})
+        sensor_id = payload.sensorId or "SENSOR-SHM-01"
+        source_mode = resolve_shm_source_mode(provenance.get("sourceMode"), sensor_id)
+        provenance["sourceMode"] = source_mode
+        provenance["resonantDriftPctComputed"] = drift_pct
         quality_score = payload.strain.qualityScore
         structure_name = payload.structureName or payload.structureId
+
+        existing = await session.execute(
+            text("SELECT entity_type, metrics FROM entity_current_state WHERE entity_id = :entity_id"),
+            {"entity_id": payload.structureId},
+        )
+        existing_row = existing.fetchone()
+        if existing_row is not None and existing_row[0] != EntityType.STRUCTURAL_ASSET.value:
+            raise ValueError(
+                f"SHM ingest cannot replace current state for entity type {existing_row[0]}"
+            )
 
         # Insert into shm_telemetry table
         insert_stmt = text("""
@@ -184,7 +242,7 @@ class SHMTelemetryService:
                 "structure_id": payload.structureId,
                 "structure_name": structure_name,
                 "span_id": payload.spanId,
-                "sensor_id": payload.sensorId or "SENSOR-SHM-01",
+                "sensor_id": sensor_id,
                 "observed_at": obs_iso,
                 "vibration_ppv_mms": vibration_val,
                 "strain_microstrain": strain_val,
@@ -252,7 +310,7 @@ class SHMTelemetryService:
             structureId=payload.structureId,
             structureName=structure_name,
             spanId=payload.spanId,
-            sensorId=payload.sensorId or "SENSOR-SHM-01",
+            sensorId=sensor_id,
             observedAt=obs_iso,
             vibrationPpvMms=vibration_val,
             strainMicrostrain=strain_val,

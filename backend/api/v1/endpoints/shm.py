@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.auth import get_current_user
 from backend.core.database import get_db
 from backend.schemas.shm import (
     SHMStructureStatus,
@@ -94,6 +95,7 @@ async def get_structure_telemetry_history(
 async def ingest_shm_telemetry(
     payload: SHMTelemetryPayload,
     session: AsyncSession = Depends(get_db),
+    _officer: Any = Depends(get_current_user),
 ) -> SHMTelemetryRecord:
     """
     Ingests, validates, evaluates, and stores a new SHM telemetry reading from an on-structure sensor cluster.
