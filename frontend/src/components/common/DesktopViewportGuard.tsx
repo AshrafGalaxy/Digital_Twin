@@ -59,11 +59,11 @@ export const DesktopViewportGuard: React.FC<DesktopViewportGuardProps> = ({
   }
 
   return (
-    <aside
+    <div
       className="desktop-viewport-guard"
       role="dialog"
       aria-modal="true"
-      aria-label="Display Viewport Notice"
+      aria-labelledby="viewport-guard-title-id"
     >
       <div className="viewport-guard-backdrop" />
       <div className="viewport-guard-card">
@@ -73,7 +73,7 @@ export const DesktopViewportGuard: React.FC<DesktopViewportGuardProps> = ({
           </div>
         </div>
 
-        <h2 className="viewport-guard-title">
+        <h2 id="viewport-guard-title-id" className="viewport-guard-title">
           Switch to Fullscreen for the Best Experience
         </h2>
 
@@ -105,6 +105,6 @@ export const DesktopViewportGuard: React.FC<DesktopViewportGuardProps> = ({
           <span>Tip: Press F11 for fullscreen, or press Esc to exit or dismiss at any time.</span>
         </div>
       </div>
-    </aside>
+    </div>
   );
 };

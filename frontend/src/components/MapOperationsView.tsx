@@ -400,13 +400,13 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             geometry: {
               type: 'Polygon',
               coordinates: [
-                // Outer ring spanning the entire globe
+                // Outer ring spanning the entire globe within valid Web Mercator latitudes (-85 to +85)
                 [
-                  [-180.0, -90.0],
-                  [180.0, -90.0],
-                  [180.0, 90.0],
-                  [-180.0, 90.0],
-                  [-180.0, -90.0]
+                  [-180.0, -85.0],
+                  [180.0, -85.0],
+                  [180.0, 85.0],
+                  [-180.0, 85.0],
+                  [-180.0, -85.0]
                 ],
                 // Inner cutout exposing strictly the active 1.8km Nagar Road corridor
                 [

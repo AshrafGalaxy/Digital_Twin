@@ -315,6 +315,8 @@ export const App: React.FC = () => {
 
   // Connect to Real-Time State Stream
   useEffect(() => {
+    if (activeTab === 'auth') return;
+
     const disconnect = connectStateStream(
       (data) => {
         lastWsMessageRef.current = Date.now();
@@ -388,7 +390,7 @@ export const App: React.FC = () => {
     );
 
     return () => disconnect();
-  }, []);
+  }, [activeTab]);
 
   // Real-Time Micro-Fluctuation Telemetry Heartbeat
   // Ensures telemetry values feel organically alive in LIVE mode even during network latency

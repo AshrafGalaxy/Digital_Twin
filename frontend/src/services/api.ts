@@ -294,9 +294,7 @@ export function connectStateStream(
   onConnectionChange?: (connected: boolean) => void
 ): () => void {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = window.location.port === '5173'
-    ? `${protocol}//${window.location.hostname}:8000/api/v1/stream/state`
-    : `${protocol}//${window.location.host}/api/v1/stream/state`;
+  const wsUrl = `${protocol}//${window.location.host}/api/v1/stream/state`;
 
   let ws: WebSocket | null = null;
   let reconnectTimeout: any = null;
@@ -347,7 +345,9 @@ export function connectStateStream(
         ws.onmessage = null;
         ws.onclose = null;
         ws.onerror = null;
-        ws.close();
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
       } catch {
         // ignore stale socket close errors
       }
