@@ -224,7 +224,10 @@ export const App: React.FC = () => {
     localStorage.setItem('digital_twin_auth_user', JSON.stringify(user));
     localStorage.setItem('municipal_role', user.role);
     const allowedTabs = ROLE_ALLOWED_TABS[user.role] || ['operations'];
-    const targetTab = allowedTabs.find(t => t !== 'landing' && t !== 'auth') || 'operations';
+    const targetTab = allowedTabs.includes('operations')
+      ? 'operations'
+      : (allowedTabs.find(t => t !== 'landing' && t !== 'auth' && t !== 'provisioning') || 'recommendations');
+    window.location.hash = targetTab;
     setActiveTab(targetTab);
   }, []);
 
