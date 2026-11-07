@@ -1,15 +1,6 @@
 # Digital Twin-Enabled Smart City Analytics Platform
 
-> **Document Status:** Authoritative System Documentation & Production Architecture  
-> **Platform Classification:** Read-Only Municipal Decision-Support System  
-> **Reference Pilot Corridor:** Viman Nagar Chowk to Somnath Nagar Chowk (1.8 km arterial corridor, Nagar Road, Pune, Maharashtra)  
-> **Generalization Contract:** Open, modular urban analytics platform scalable to any municipal arterial network worldwide
-
----
-
-## 1. Executive Summary
-
-This **Digital Twin-Enabled Smart City Analytics Platform** is an evidence-backed urban decision-support and predictive intelligence system that couples road traffic mobility, commercial electrical microgrids, and ambient air quality into an integrated operational engine.
+An evidence-backed urban decision-support and predictive intelligence platform that integrates road network mobility, commercial electrical microgrids, and ambient air quality into a unified operational engine.
 
 The platform continuously mirrors physical infrastructure conditions using event-driven MQTT sensor telemetry, forecasts speeds and energy demands 15, 30, and 60 minutes ahead via extreme gradient-boosted trees (XGBoost) with distribution-free Conformal Prediction uncertainty bands, and provides a microscopic what-if simulation sandbox (Eclipse SUMO) where city planners test mobility interventions in software before physical implementation.
 
@@ -18,7 +9,7 @@ The platform is strictly a **read-only decision-support advisory system**. It wi
 
 ---
 
-## 2. Comprehensive System Architecture
+## 1. Comprehensive System Architecture
 
 The platform is engineered as a high-concurrency modular monolith with a resilient dual-engine persistence layer, real-time WebSocket distribution fabric, and an accessible React 18 / 3D Cesium photogrammetric operations console.
 
@@ -188,11 +179,27 @@ flowchart TD
    - **Spatial Registry:** Standardizes all assets using FIWARE NGSI-LD URN specifications (`RoadSegment`, `Intersection`, `BuildingZone`, `AirQualityStation`).
 
 4. **Tier 4: Core Analytics, Physics and Microscopic Simulation**
-   - **Traffic Mobility:** Implements Greenshields hydrodynamic flow theory (`q = k * v`) and Indo-HCM (IRC:106) dual-criteria Level of Service (LOS) with Passenger Car Unit (PCU) equivalence for mixed traffic.
-   - **Signal Optimization:** Implements F.V. Webster minimum-delay cycle time formulation: `C_0 = (1.5 * L + 5) / (1 - Y)` and allocates proportional green splits.
-   - **Microgrid Power:** Computes 3-phase AC power physics (`P = sqrt(3) * V_LL * I_L * cos(phi)`), enforces Kirchhoff energy conservation (`P_grid + P_solar + P_bess = P_loads + P_losses`), and monitors 22kV feeder thermal ampacity and electrical headroom.
-   - **Air Quality:** Computes official CPCB piecewise linear AQI interpolation and executes Scikit-Learn Isolation Forest anomaly detection (`s(x, n) = 2^(-E(h(x)) / c(n))`).
-   - **Simulation Sandbox:** Integrates Eclipse SUMO 1.20 via Python TraCI with a verified kinematic fallback runner for what-if scenario testing.
+   - **Traffic Mobility:** Implements Greenshields hydrodynamic flow theory coupling flow rate $q$ (veh/h), traffic density $k$ (veh/km), and space-mean speed $v$ (km/h):
+     $$q = k \cdot v$$
+     Evaluates Indo-HCM (IRC:106) and US HCM dual-criteria Level of Service (LOS) matrices using Passenger Car Unit (PCU) equivalence factors for mixed urban traffic.
+   - **Signal Timing Optimization:** Solves F.V. Webster minimum-delay optimum cycle time formulation:
+     $$C_0 = \frac{1.5 L + 5}{1 - Y}$$
+     Where $L$ is total intersection lost time per cycle (seconds) and $Y = \sum y_i$ is the sum of critical lane group flow ratios ($y_i = q_i / s_i$). Allocates proportional effective green splits:
+     $$g_i = \frac{y_i}{Y} \cdot (C_0 - L)$$
+   - **Three-Phase AC Power Physics & Conservation:** Computes balanced three-phase AC active electrical power:
+     $$P = \sqrt{3} \cdot V_{\text{LL}} \cdot I_{\text{L}} \cdot \cos(\phi)$$
+     Enforces Kirchhoff energy balance across the commercial substation bus:
+     $$P_{\text{grid}} + P_{\text{solar}} + P_{\text{bess}} = P_{\text{loads}} + P_{\text{losses}}$$
+     Evaluates distribution feeder thermal ampacity and remaining electrical headroom:
+     $$P_{\text{headroom}} = \sqrt{3} \cdot V_{\text{LL}} \cdot (I_{\text{rated}} - I_{\text{feeder}}) \cdot \cos(\phi)$$
+   - **Air Quality & Anomaly Scoring:** Computes official Central Pollution Control Board (CPCB) continuous piecewise linear AQI interpolation:
+     $$I_p = I_{\text{low}} + \left[ \frac{I_{\text{high}} - I_{\text{low}}}{C_{\text{high}} - C_{\text{low}}} \right] \cdot (C_p - C_{\text{low}})$$
+     Executes Scikit-Learn Isolation Forest anomaly scoring over multi-sensor streams:
+     $$s(x, n) = 2^{-\frac{\mathbb{E}(h(x))}{c(n)}}$$
+     Where $h(x)$ is observation path length in isolation trees and $c(n)$ is average path length of unsuccessful searches in a Binary Search Tree.
+   - **Microscopic Traffic Physics Sandbox:** Integrates Eclipse SUMO 1.20 via Python TraCI implementing car-following kinematics:
+     $$v_{\text{safe}} = v_l(t) + \frac{g(t) - v_l(t) \cdot \tau}{\frac{\bar{v}}{2 b} + \tau}$$
+     Includes a verified kinematic fallback runner executing when SUMO binaries are unavailable.
 
 5. **Tier 5: Machine Learning, Conformal Prediction and Explainability**
    - **Multi-Horizon Forecaster:** XGBoost extreme gradient-boosted tree regressors forecast traffic velocity and commercial building power at 15m, 30m, and 60m forward horizons using cyclical sine/cosine time features, autoregressive lags, and upstream queue states.
@@ -215,7 +222,7 @@ flowchart TD
 
 ---
 
-## 3. Tri-Domain Physical Coupling: Traffic, Energy, and Environmental Dynamics
+## 2. Tri-Domain Physical Coupling: Traffic, Energy, and Environmental Dynamics
 
 Conventional smart city platforms manage traffic signals, electrical substations, and ambient air monitors through isolated operational silos, displaying separate charts on disconnected dashboards. In physical reality, an urban arterial corridor functions as an intimately coupled thermodynamic, hydrodynamic, and electro-mechanical continuum.
 
@@ -405,7 +412,7 @@ The advisory engine recommends:
 
 ---
 
-## 4. Core Architectural Invariants
+## 3. Core Architectural Invariants
 
 Every module, service, API endpoint, and UI component strictly preserves five non-negotiable architectural invariants:
 
@@ -413,11 +420,11 @@ Every module, service, API endpoint, and UI component strictly preserves five no
 2. **State Separation Invariant:** Ground truth observations (`LIVE`/`REPLAY`), physics simulations (`SIMULATION`), and machine learning predictions (`PREDICTED`) are strictly separated into distinct tables. Predictions and simulations never overwrite observed twin current state.
 3. **Strict Non-Actuation Invariant:** The platform is read-only decision support. Recommendations are advisory and require human authorization by certified municipal engineers outside the platform before any field signal or electrical change.
 4. **Mandatory Provenance Invariant:** Every dynamic value returned by APIs or displayed in the UI carries four mandatory metadata tags: `sourceMode` (`LIVE`, `REPLAY`, `SIMULATION`, `PREDICTED`, `STALE`), `observedAt`/`generatedAt`, engineering `unit`, and `qualityStatus` (`VALID`, `SUSPECT`, `CALIBRATED`, `INVALID`).
-5. **Corridor Generalization Invariant:** The platform architecture, schemas, and UI are fully generalized for any municipal arterial corridor deployment worldwide. The 1.8 km Nagar Road reference pilot serves strictly as an empirical demonstration and calibration instance.
+5. **Corridor Generalization Invariant:** The platform architecture, schemas, and UI are fully generalized for any municipal arterial corridor deployment worldwide. Demonstration corridor parameters serve strictly as an empirical reference and calibration instance.
 
 ---
 
-## 5. Complete Technical Stack
+## 4. Complete Technical Stack
 
 | Layer | Component | Approved Technology | Role & Exact Codebase Location |
 | :--- | :--- | :--- | :--- |
@@ -443,46 +450,46 @@ Every module, service, API endpoint, and UI component strictly preserves five no
 
 ---
 
-## 6. Active Future Enhancement Tracks (21 GitHub Issues)
+## 5. Active Enhancement Tracks & Issue Roadmap
 
-The platform is expanding through two prioritized enhancement tracks covering 21 detailed engineering tasks:
+The platform expands through two prioritized enhancement tracks covering 21 detailed engineering tasks:
 
 ### Track 1: Intelligent Traffic Mobility & Adaptive Control (11 Tasks)
 Detailed directory: [docs/tasks/traffic-mobility/](docs/tasks/traffic-mobility/)
 
-| Task ID | Issue | Task Title | Spec Ref | Milestone | Component / Scope |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `TASK-01` | [#2](https://github.com/AshrafGalaxy/Digital_Twin/issues/2) | Canonical Level of Service (LOS) & Hydrodynamic State Engine | Section 7.1 | Milestone 1 | Backend & Telemetry |
-| `TASK-08` | [#3](https://github.com/AshrafGalaxy/Digital_Twin/issues/3) | Real-Time Signal Phase and Timing (SPaT) Controller Feed Adapter | Section 7.3 | Milestone 1 | Backend & Telemetry |
-| `TASK-07` | [#4](https://github.com/AshrafGalaxy/Digital_Twin/issues/4) | Critical Infrastructure Structural Health Monitoring (SHM) Pipeline | Section 10.1 | Milestone 1 | Backend & Telemetry |
-| `TASK-11` | [#5](https://github.com/AshrafGalaxy/Digital_Twin/issues/5) | Location-Agnostic Study Area Onboarding & Network Topology Importer | Section 5 | Milestone 1 | Architecture & Backend |
-| `TASK-02` | [#6](https://github.com/AshrafGalaxy/Digital_Twin/issues/6) | Webster Delay-Minimizing Adaptive Signal Timing Optimizer | Section 9.1 | Milestone 2 | Simulation & Control |
-| `TASK-03` | [#7](https://github.com/AshrafGalaxy/Digital_Twin/issues/7) | Arterial Two-Way Green Wave Progression & Offset Optimizer | Section 9.2 | Milestone 2 | Simulation & Control |
-| `TASK-04` | [#8](https://github.com/AshrafGalaxy/Digital_Twin/issues/8) | SUMO TraCI Multimodal Transit Bus Routes & Priority Simulation | Section 7.2 | Milestone 2 | Simulation & Modeling |
-| `TASK-05` | [#9](https://github.com/AshrafGalaxy/Digital_Twin/issues/9) | Multi-Horizon Quantile Queue Length Forecaster (XGBoost + TreeSHAP) | Section 8.1 | Milestone 3 | Machine Learning |
-| `TASK-06` | [#10](https://github.com/AshrafGalaxy/Digital_Twin/issues/10) | Multimodal Transit Stop Crowd Flow & Dynamic Dwell Time Forecaster | Section 8.2 | Milestone 3 | Machine Learning |
-| `TASK-09` | [#11](https://github.com/AshrafGalaxy/Digital_Twin/issues/11) | Deck.gl 3D Animated Signal Head & Approach Lane Queue Visualizer | Section 7.3, 11 | Milestone 4 | Frontend & UI |
-| `TASK-10` | [#12](https://github.com/AshrafGalaxy/Digital_Twin/issues/12) | Human-in-the-Loop Operator Advisory Dossier & Audit Trail UI | Section 9.1, 9.2 | Milestone 4 | Frontend & UI |
+| Task ID | Issue | Task Title | Spec Ref | Milestone | Scope | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `TASK-01` | [#2](https://github.com/AshrafGalaxy/Digital_Twin/issues/2) | Canonical Level of Service (LOS) & Hydrodynamic State Engine | Section 7.1 | Milestone 1 | Backend & Telemetry | Closed |
+| `TASK-08` | [#3](https://github.com/AshrafGalaxy/Digital_Twin/issues/3) | Real-Time Signal Phase and Timing (SPaT) Controller Feed Adapter | Section 7.3 | Milestone 1 | Backend & Telemetry | Closed |
+| `TASK-07` | [#4](https://github.com/AshrafGalaxy/Digital_Twin/issues/4) | Critical Infrastructure Structural Health Monitoring (SHM) Pipeline | Section 10.1 | Milestone 1 | Backend & Telemetry | Closed |
+| `TASK-11` | [#5](https://github.com/AshrafGalaxy/Digital_Twin/issues/5) | Location-Agnostic Study Area Onboarding & Network Topology Importer | Section 5 | Milestone 1 | Architecture & Backend | Open |
+| `TASK-02` | [#6](https://github.com/AshrafGalaxy/Digital_Twin/issues/6) | Webster Delay-Minimizing Adaptive Signal Timing Optimizer | Section 9.1 | Milestone 2 | Simulation & Control | Closed |
+| `TASK-03` | [#7](https://github.com/AshrafGalaxy/Digital_Twin/issues/7) | Arterial Two-Way Green Wave Progression & Offset Optimizer | Section 9.2 | Milestone 2 | Simulation & Control | Open |
+| `TASK-04` | [#8](https://github.com/AshrafGalaxy/Digital_Twin/issues/8) | SUMO TraCI Multimodal Transit Bus Routes & Priority Simulation | Section 7.2 | Milestone 2 | Simulation & Modeling | Open |
+| `TASK-05` | [#9](https://github.com/AshrafGalaxy/Digital_Twin/issues/9) | Multi-Horizon Quantile Queue Length Forecaster (XGBoost + TreeSHAP) | Section 8.1 | Milestone 3 | Machine Learning | Open |
+| `TASK-06` | [#10](https://github.com/AshrafGalaxy/Digital_Twin/issues/10) | Multimodal Transit Stop Crowd Flow & Dynamic Dwell Time Forecaster | Section 8.2 | Milestone 3 | Machine Learning | Open |
+| `TASK-09` | [#11](https://github.com/AshrafGalaxy/Digital_Twin/issues/11) | Deck.gl 3D Animated Signal Head & Approach Lane Queue Visualizer | Section 7.3, 11 | Milestone 4 | Frontend & UI | Open |
+| `TASK-10` | [#12](https://github.com/AshrafGalaxy/Digital_Twin/issues/12) | Human-in-the-Loop Operator Advisory Dossier & Audit Trail UI | Section 9.1, 9.2 | Milestone 4 | Frontend & UI | Closed |
 
 ### Track 2: Energy Management & Microgrid Optimization (10 Tasks)
 Detailed directory: [docs/tasks/energy-microgrid/](docs/tasks/energy-microgrid/)
 
-| Task ID | Issue | Task Title | Spec Ref | Milestone | Component / Scope |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `ENERGY-01` | [#13](https://github.com/AshrafGalaxy/Digital_Twin/issues/13) | Canonical Electrical Network Topology & Multi-Asset Telemetry Engine | Section 4, 5, 6 | Milestone 5 | Backend & Telemetry |
-| `ENERGY-02` | [#14](https://github.com/AshrafGalaxy/Digital_Twin/issues/14) | Electrical Bus Power Balance & Feeder Thermal Loading Engine | Section 7.1 | Milestone 5 | Backend & Telemetry |
-| `ENERGY-03` | [#15](https://github.com/AshrafGalaxy/Digital_Twin/issues/15) | 2R-2C ETP Building Thermal Network & Dynamic Occupancy Setback Engine | Section 7.2, 7.3 | Milestone 6 | Simulation & Control |
-| `ENERGY-05` | [#16](https://github.com/AshrafGalaxy/Digital_Twin/issues/16) | Solar PV Generation & Irradiance Physical Forecasting Engine | Section 8.2 | Milestone 6 | Machine Learning |
-| `ENERGY-04` | [#17](https://github.com/AshrafGalaxy/Digital_Twin/issues/17) | Multi-Horizon Quantile Facility Load Forecaster (15m to 24h) | Section 8.1 | Milestone 7 | Machine Learning |
-| `ENERGY-06` | [#18](https://github.com/AshrafGalaxy/Digital_Twin/issues/18) | BESS Battery Arbitrage & Time-of-Use Peak Shaving Optimizer | Section 9.1 | Milestone 7 | Optimization & Control |
-| `ENERGY-07` | [#19](https://github.com/AshrafGalaxy/Digital_Twin/issues/19) | Grid Safety Interlocks & OpenADR / Modbus Failsafe Dispatch Gateway | Section 9.2, 9.3 | Milestone 8 | Backend & Telemetry |
-| `ENERGY-08` | [#20](https://github.com/AshrafGalaxy/Digital_Twin/issues/20) | Interactive Microgrid Single-Line Diagram (SLD) & Power Flow Canvas | Section 4, 11 | Milestone 8 | Frontend & UI |
-| `ENERGY-09` | [#21](https://github.com/AshrafGalaxy/Digital_Twin/issues/21) | Building Floorplate 3D/2D Thermal Comfort & Occupancy Visualizer | Section 7.2, 11 | Milestone 8 | Frontend & UI |
-| `ENERGY-10` | [#22](https://github.com/AshrafGalaxy/Digital_Twin/issues/22) | Human-in-the-Loop Demand-Response Advisory Dossier & Audit UI | Section 9.2, 10 | Milestone 8 | Frontend & UI |
+| Task ID | Issue | Task Title | Spec Ref | Milestone | Scope | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `ENERGY-01` | [#13](https://github.com/AshrafGalaxy/Digital_Twin/issues/13) | Canonical Electrical Network Topology & Multi-Asset Telemetry Engine | Section 4, 5, 6 | Milestone 5 | Backend & Telemetry | Closed |
+| `ENERGY-02` | [#14](https://github.com/AshrafGalaxy/Digital_Twin/issues/14) | Electrical Bus Power Balance & Feeder Thermal Loading Engine | Section 7.1 | Milestone 5 | Backend & Telemetry | Closed |
+| `ENERGY-03` | [#15](https://github.com/AshrafGalaxy/Digital_Twin/issues/15) | 2R-2C ETP Building Thermal Network & Dynamic Occupancy Setback Engine | Section 7.2, 7.3 | Milestone 6 | Simulation & Control | Open |
+| `ENERGY-05` | [#16](https://github.com/AshrafGalaxy/Digital_Twin/issues/16) | Solar PV Generation & Irradiance Physical Forecasting Engine | Section 8.2 | Milestone 6 | Machine Learning | Open |
+| `ENERGY-04` | [#17](https://github.com/AshrafGalaxy/Digital_Twin/issues/17) | Multi-Horizon Quantile Facility Load Forecaster (15m to 24h) | Section 8.1 | Milestone 7 | Machine Learning | Open |
+| `ENERGY-06` | [#18](https://github.com/AshrafGalaxy/Digital_Twin/issues/18) | BESS Battery Arbitrage & Time-of-Use Peak Shaving Optimizer | Section 9.1 | Milestone 7 | Optimization & Control | Open |
+| `ENERGY-07` | [#19](https://github.com/AshrafGalaxy/Digital_Twin/issues/19) | Grid Safety Interlocks & OpenADR / Modbus Failsafe Dispatch Gateway | Section 9.2, 9.3 | Milestone 8 | Backend & Telemetry | Open |
+| `ENERGY-08` | [#20](https://github.com/AshrafGalaxy/Digital_Twin/issues/20) | Interactive Microgrid Single-Line Diagram (SLD) & Power Flow Canvas | Section 4, 11 | Milestone 8 | Frontend & UI | Open |
+| `ENERGY-09` | [#21](https://github.com/AshrafGalaxy/Digital_Twin/issues/21) | Building Floorplate 3D/2D Thermal Comfort & Occupancy Visualizer | Section 7.2, 11 | Milestone 8 | Frontend & UI | Open |
+| `ENERGY-10` | [#22](https://github.com/AshrafGalaxy/Digital_Twin/issues/22) | Human-in-the-Loop Demand-Response Advisory Dossier & Audit UI | Section 9.2, 10 | Milestone 8 | Frontend & UI | Closed |
 
 ---
 
-## 7. Quickstart: Running the Platform
+## 6. Quickstart: Running the Platform
 
 ### Option A: Local Development (Windows / PowerShell)
 ```powershell
@@ -507,7 +514,7 @@ docker compose --profile full up -d
 
 ---
 
-## 8. Repository Directory Structure
+## 7. Repository Directory Structure
 
 ```text
 ├── .github/                        # GitHub Actions CI, issue & PR templates
@@ -543,8 +550,9 @@ docker compose --profile full up -d
 ├── ml/                             # XGBoost training pipelines, models, and evaluators
 ├── infrastructure/                 # Docker Compose, Mosquitto, and database configs
 ├── scripts/                        # Development utilities and synthetic stream runners
-├── tests/                          # 25 modular pytest suites (183 hermetic tests)
+├── tests/                          # 25 modular pytest suites (239 hermetic tests)
 ├── CONTRIBUTING.md                 # Developer onboarding and contribution guidelines
+├── SECURITY.md                     # Platform vulnerability reporting and security policy
 ├── AGENTS.md                       # Mandatory operating rules and architectural invariants
 ├── PRD.md                          # Executive Product Requirements Document
 ├── compose.yaml                    # Multi-container Docker Compose configuration
@@ -554,6 +562,6 @@ docker compose --profile full up -d
 
 ---
 
-## 10. License & Ethics Notice
+## 8. License & Ethics Notice
 
 This project is an academic research and engineering prototype. Data from OpenStreetMap is licensed under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/). All external benchmark datasets are cataloged with explicit licenses and restrictions in `data/manifests/DATASET_REGISTRY.md`.
