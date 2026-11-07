@@ -8,9 +8,13 @@ technical line distribution losses, and REST API endpoints.
 """
 
 import math
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
+from backend.core.database import AsyncSessionLocal
 from backend.main import app
 from backend.services.power_balance_service import PowerBalanceService, power_balance_service
 
@@ -142,3 +146,163 @@ def test_api_power_balance_endpoints():
     hist = resp_hist.json()
     assert isinstance(hist, list)
     assert len(hist) >= 1
+
+
+async def _insert_bus(nodes, readings):
+    observed = datetime.now(timezone.utc).isoformat()
+    async with AsyncSessionLocal() as session:
+        for node in nodes:
+            await session.execute(text("""
+                INSERT INTO energy_network_nodes (
+                    node_id, study_area_id, name, node_type, parent_node_id,
+                    nominal_voltage_kv, rated_capacity_kva, rated_current_amps,
+                    phase_count, coordinates, properties
+                ) VALUES (
+                    :node_id, NULL, :name, :node_type, :parent_node_id,
+                    :nominal_voltage_kv, :rated_capacity_kva, :rated_current_amps,
+                    3, NULL, '{}'
+                )
+            """), node)
+        for reading in readings:
+            await session.execute(text("""
+                INSERT INTO energy_asset_telemetry (
+                    asset_id, observed_at, source_mode, active_power_kw,
+                    reactive_power_kvar, apparent_power_kva, power_factor,
+                    voltage_v, current_a, frequency_hz, voltage_unbalance_pct,
+                    current_unbalance_pct, device_metrics_json, quality_status
+                ) VALUES (
+                    :asset_id, :observed_at, 'SIMULATION', :p, 0, :p, 1,
+                    :voltage_v, :current_a, 50.0, 0.4, 1.1, '{}', 'VALID'
+                )
+            """), {**reading, "observed_at": observed})
+        await session.commit()
+
+
+async def _delete_bus(node_ids):
+    async with AsyncSessionLocal() as session:
+        for node_id in node_ids:
+            await session.execute(
+                text("DELETE FROM energy_asset_telemetry WHERE asset_id = :id"),
+                {"id": node_id},
+            )
+        for node_id in reversed(node_ids):
+            await session.execute(
+                text("DELETE FROM energy_network_nodes WHERE node_id = :id"),
+                {"id": node_id},
+            )
+        await session.commit()
+
+
+def test_unknown_substation_is_not_replaced():
+    """An unknown substation id is rejected and does not return another substation."""
+    resp = client.get("/api/v1/energy/power-balance?substation_id=SUB-DOES-NOT-EXIST")
+    assert resp.status_code == 404
+    assert "SUB-NR-22KV" not in resp.text
+
+
+@pytest.mark.asyncio
+async def test_signed_residual_above_share_is_not_valid():
+    """A supply surplus near 1552.73 kW keeps its sign and is not labeled VALID."""
+    substation_id = "SUB-PROOF-SURPLUS"
+    node_ids = [
+        substation_id,
+        "FDR-PROOF-A",
+        "FDR-PROOF-B",
+        "FDR-PROOF-C",
+        "AST-PROOF-PV",
+        "AST-PROOF-BESS",
+        "AST-PROOF-LOAD",
+    ]
+    nodes = [
+        {"node_id": substation_id, "name": "Proof substation", "node_type": "SUBSTATION", "parent_node_id": None, "nominal_voltage_kv": 22.0, "rated_capacity_kva": 15000.0, "rated_current_amps": 400.0},
+        {"node_id": "FDR-PROOF-A", "name": "Proof feeder A", "node_type": "FEEDER", "parent_node_id": substation_id, "nominal_voltage_kv": 11.0, "rated_capacity_kva": 5000.0, "rated_current_amps": 262.43},
+        {"node_id": "FDR-PROOF-B", "name": "Proof feeder B", "node_type": "FEEDER", "parent_node_id": substation_id, "nominal_voltage_kv": 11.0, "rated_capacity_kva": 5000.0, "rated_current_amps": 262.43},
+        {"node_id": "FDR-PROOF-C", "name": "Proof feeder C", "node_type": "FEEDER", "parent_node_id": substation_id, "nominal_voltage_kv": 11.0, "rated_capacity_kva": 5000.0, "rated_current_amps": 262.43},
+        {"node_id": "AST-PROOF-PV", "name": "Proof solar", "node_type": "SOLAR_PV", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 1200.0, "rated_current_amps": 100.0},
+        {"node_id": "AST-PROOF-BESS", "name": "Proof storage", "node_type": "BESS", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 1250.0, "rated_current_amps": 100.0},
+        {"node_id": "AST-PROOF-LOAD", "name": "Proof load", "node_type": "BUILDING_LOAD", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 3000.0, "rated_current_amps": 100.0},
+    ]
+    readings = [
+        {"asset_id": substation_id, "p": 6250.0, "voltage_v": 22000.0, "current_a": 164.0},
+        {"asset_id": "FDR-PROOF-A", "p": 2180.0, "voltage_v": 11000.0, "current_a": 119.86},
+        {"asset_id": "FDR-PROOF-B", "p": 2450.0, "voltage_v": 11000.0, "current_a": 134.03},
+        {"asset_id": "FDR-PROOF-C", "p": 1620.0, "voltage_v": 11000.0, "current_a": 89.79},
+        {"asset_id": "AST-PROOF-PV", "p": 780.0, "voltage_v": 415.0, "current_a": 10.0},
+        {"asset_id": "AST-PROOF-BESS", "p": -250.0, "voltage_v": 415.0, "current_a": 5.0},
+        {"asset_id": "AST-PROOF-LOAD", "p": 5220.0, "voltage_v": 415.0, "current_a": 20.0},
+    ]
+    try:
+        await _insert_bus(nodes, readings)
+        resp = client.get(f"/api/v1/energy/power-balance?substation_id={substation_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["substationId"] == substation_id
+        assert data["pccGridImportKw"] == 6250.0
+        assert data["solarGenerationKw"] == 780.0
+        assert data["bessNetPowerKw"] == -250.0
+        assert data["facilityTotalLoadKw"] == 5220.0
+        assert data["technicalLossesKw"] == 7.27
+        assert data["powerBalanceResidualKw"] == 1552.73
+        assert data["powerBalanceResidualKw"] > 0
+        assert data["residualShare"] > data["residualShareThreshold"]
+        assert data["provenance"]["qualityStatus"] != "VALID"
+        assert data["gridMeterStatus"] == "MEASURED"
+    finally:
+        await _delete_bus(node_ids)
+
+
+@pytest.mark.asyncio
+async def test_zero_grid_meter_is_not_back_solved():
+    """A measured zero import stays zero and the deficit keeps a negative sign."""
+    substation_id = "SUB-PROOF-ZERO"
+    node_ids = [substation_id, "AST-PROOF-ZERO-PV", "AST-PROOF-ZERO-LOAD"]
+    nodes = [
+        {"node_id": substation_id, "name": "Zero meter substation", "node_type": "SUBSTATION", "parent_node_id": None, "nominal_voltage_kv": 22.0, "rated_capacity_kva": 15000.0, "rated_current_amps": 400.0},
+        {"node_id": "AST-PROOF-ZERO-PV", "name": "Zero meter solar", "node_type": "SOLAR_PV", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 200.0, "rated_current_amps": 100.0},
+        {"node_id": "AST-PROOF-ZERO-LOAD", "name": "Zero meter load", "node_type": "BUILDING_LOAD", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 500.0, "rated_current_amps": 100.0},
+    ]
+    readings = [
+        {"asset_id": substation_id, "p": 0.0, "voltage_v": 22000.0, "current_a": 0.0},
+        {"asset_id": "AST-PROOF-ZERO-PV", "p": 100.0, "voltage_v": 415.0, "current_a": 1.0},
+        {"asset_id": "AST-PROOF-ZERO-LOAD", "p": 400.0, "voltage_v": 415.0, "current_a": 2.0},
+    ]
+    try:
+        await _insert_bus(nodes, readings)
+        resp = client.get(f"/api/v1/energy/power-balance?substation_id={substation_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["substationId"] == substation_id
+        assert data["gridMeterStatus"] == "MEASURED"
+        assert data["pccGridImportKw"] == 0.0
+        assert data["powerBalanceResidualKw"] == -300.0
+        assert data["provenance"]["qualityStatus"] != "VALID"
+    finally:
+        await _delete_bus(node_ids)
+
+
+@pytest.mark.asyncio
+async def test_missing_grid_meter_is_not_invented():
+    """A substation with no grid meter is reported missing and is not back-solved."""
+    substation_id = "SUB-PROOF-MISSING"
+    node_ids = [substation_id, "AST-PROOF-MISS-PV", "AST-PROOF-MISS-LOAD"]
+    nodes = [
+        {"node_id": substation_id, "name": "Missing meter substation", "node_type": "SUBSTATION", "parent_node_id": None, "nominal_voltage_kv": 22.0, "rated_capacity_kva": 15000.0, "rated_current_amps": 400.0},
+        {"node_id": "AST-PROOF-MISS-PV", "name": "Missing meter solar", "node_type": "SOLAR_PV", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 200.0, "rated_current_amps": 100.0},
+        {"node_id": "AST-PROOF-MISS-LOAD", "name": "Missing meter load", "node_type": "BUILDING_LOAD", "parent_node_id": substation_id, "nominal_voltage_kv": 0.415, "rated_capacity_kva": 500.0, "rated_current_amps": 100.0},
+    ]
+    readings = [
+        {"asset_id": "AST-PROOF-MISS-PV", "p": 100.0, "voltage_v": 415.0, "current_a": 1.0},
+        {"asset_id": "AST-PROOF-MISS-LOAD", "p": 400.0, "voltage_v": 415.0, "current_a": 2.0},
+    ]
+    try:
+        await _insert_bus(nodes, readings)
+        resp = client.get(f"/api/v1/energy/power-balance?substation_id={substation_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["substationId"] == substation_id
+        assert data["gridMeterStatus"] == "MISSING"
+        assert data["pccGridImportKw"] is None
+        assert data["powerBalanceResidualKw"] == -300.0
+        assert data["provenance"]["qualityStatus"] != "VALID"
+    finally:
+        await _delete_bus(node_ids)

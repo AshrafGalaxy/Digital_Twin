@@ -905,12 +905,15 @@ export interface FeederThermalMargin {
 export interface PowerBalanceResponse {
   substationId: string;
   timestamp: string;
-  pccGridImportKw: number;
+  pccGridImportKw: number | null;
   solarGenerationKw: number;
   bessNetPowerKw: number;
   facilityTotalLoadKw: number;
   technicalLossesKw: number;
   powerBalanceResidualKw: number;
+  residualShare: number;
+  residualShareThreshold: number;
+  gridMeterStatus: 'MEASURED' | 'MISSING';
   maxFeederLoadingRatio: number;
   criticalFeederId?: string;
   thermalAlertStatus: 'NOMINAL' | 'WARNING' | 'CRITICAL_OVERLOAD_RISK';

@@ -54,17 +54,38 @@ class FeederThermalMarginModel(BaseModel):
 class PowerBalanceResponseModel(BaseModel):
     substationId: str
     timestamp: str
-    pccGridImportKw: float
+    pccGridImportKw: Optional[float] = None
     solarGenerationKw: float
     bessNetPowerKw: float
     facilityTotalLoadKw: float
     technicalLossesKw: float
     powerBalanceResidualKw: float
+    residualShare: float
+    residualShareThreshold: float
+    gridMeterStatus: str
     maxFeederLoadingRatio: float
     criticalFeederId: Optional[str] = None
     thermalAlertStatus: str
     feeders: List[FeederThermalMarginModel]
     provenance: Dict[str, Any]
+
+
+def _raise_power_balance_error(exc: Exception, action: str) -> None:
+    if isinstance(exc, LookupError):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No substation is registered for this identifier",
+        ) from exc
+    if isinstance(exc, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    logger.error("%s: %s", action, exc)
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"{action}: {str(exc)}",
+    ) from exc
 
 
 class EnergyTelemetryModel(BaseModel):
@@ -235,11 +256,7 @@ async def get_power_balance(
             session=session
         )
     except Exception as e:
-        logger.error("Failed to compute electrical bus power balance: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to calculate power balance: {str(e)}"
-        )
+        _raise_power_balance_error(e, "Failed to calculate power balance")
 
 
 @router.post("/power-balance/snapshot", response_model=PowerBalanceResponseModel)
@@ -256,11 +273,7 @@ async def create_power_balance_snapshot(
             session=session
         )
     except Exception as e:
-        logger.error("Failed to record power balance snapshot: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to record power balance snapshot: {str(e)}"
-        )
+        _raise_power_balance_error(e, "Failed to record power balance snapshot")
 
 
 @router.get("/feeders/thermal-margins", response_model=List[FeederThermalMarginModel])
@@ -278,11 +291,7 @@ async def get_feeder_thermal_margins(
             session=session
         )
     except Exception as e:
-        logger.error("Failed to retrieve feeder thermal margins: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to query feeder thermal margins: {str(e)}"
-        )
+        _raise_power_balance_error(e, "Failed to query feeder thermal margins")
 
 
 @router.get("/power-balance/history", response_model=List[Dict[str, Any]])

@@ -15,10 +15,28 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.config import settings
+from backend.core.constants import QualityStatus
 from backend.core.database import AsyncSessionLocal, get_active_backend
 from backend.services.energy_topology_service import energy_topology_service
 
 logger = logging.getLogger("digital_twin.energy.power_balance")
+
+
+def _subtree_ids(root_id: str, nodes_by_id: Dict[str, Dict[str, Any]]) -> set:
+    """Node ids in the selected substation, including every descendant."""
+    children: Dict[Optional[str], List[str]] = {}
+    for nid, node in nodes_by_id.items():
+        children.setdefault(node.get("parentNodeId"), []).append(nid)
+    selected: set = set()
+    stack = [root_id]
+    while stack:
+        current = stack.pop()
+        if current in selected:
+            continue
+        selected.add(current)
+        stack.extend(children.get(current, []))
+    return selected
 
 
 class PowerBalanceService:
@@ -115,25 +133,38 @@ class PowerBalanceService:
                 for r in raw_nodes
             }
 
-            # 2. Categorize active power components
-            p_grid_import = 0.0
+            # 2. The requested substation is the only bus that is evaluated.
+            substation_ids = [
+                nid for nid, node in nodes_by_id.items() if node["nodeType"] == "SUBSTATION"
+            ]
+            if substation_id:
+                if substation_id not in substation_ids:
+                    raise LookupError("No substation is registered for this identifier")
+                active_substation_id = substation_id
+            elif len(substation_ids) == 1:
+                active_substation_id = substation_ids[0]
+            elif not substation_ids:
+                raise LookupError("No substation is registered for this identifier")
+            else:
+                raise ValueError("substation_id is required when more than one substation is registered")
+
+            selected_ids = _subtree_ids(active_substation_id, nodes_by_id)
+            grid_telem = telem_by_id.get(active_substation_id)
+            grid_meter_missing = grid_telem is None
+            p_grid_import = 0.0 if grid_meter_missing else float(grid_telem.get("activePowerKw", 0.0))
             p_solar = 0.0
             p_bess_net = 0.0
             p_loads_total = 0.0
-            active_substation_id = substation_id or "SUB-CORRIDOR-22KV-01"
 
-            for nid, node in nodes_by_id.items():
+            for nid in selected_ids:
+                node = nodes_by_id[nid]
                 telem = telem_by_id.get(nid, {})
                 p_val = float(telem.get("activePowerKw", 0.0))
                 ntype = node["nodeType"]
-
-                if ntype == "SUBSTATION":
-                    active_substation_id = nid
-                    p_grid_import += p_val
-                elif ntype == "SOLAR_PV":
+                if ntype == "SOLAR_PV":
                     p_solar += p_val
                 elif ntype == "BESS":
-                    # Discharging is positive source, charging is negative (or load)
+                    # Discharging is a source. Charging is a sink.
                     p_bess_net += p_val
                 elif ntype in ("BUILDING_LOAD", "EV_HUB"):
                     p_loads_total += p_val
@@ -145,117 +176,80 @@ class PowerBalanceService:
             critical_feeder_id: Optional[str] = None
 
             for nid, node in nodes_by_id.items():
-                if node["nodeType"] == "FEEDER":
-                    telem = telem_by_id.get(nid, {})
-                    actual_current = float(telem.get("currentA", 0.0))
-                    rated_current = max(1.0, float(node["ratedCurrentAmps"]))
-                    loading_ratio = round(actual_current / rated_current, 3)
-                    loading_pct = round(loading_ratio * 100.0, 1)
+                if nid not in selected_ids or node["nodeType"] != "FEEDER":
+                    continue
+                telem = telem_by_id.get(nid, {})
+                actual_current = float(telem.get("currentA", 0.0))
+                rated_current = max(1.0, float(node["ratedCurrentAmps"]))
+                loading_ratio = round(actual_current / rated_current, 3)
+                loading_pct = round(loading_ratio * 100.0, 1)
 
-                    if loading_ratio > max_loading_ratio:
-                        max_loading_ratio = loading_ratio
-                        critical_feeder_id = nid
+                if loading_ratio > max_loading_ratio:
+                    max_loading_ratio = loading_ratio
+                    critical_feeder_id = nid
 
-                    status = self.evaluate_feeder_thermal_status(loading_ratio)
-                    v_line = float(telem.get("voltageV", node["nominalVoltageKv"] * 1000.0))
-                    pf = max(0.1, float(telem.get("powerFactor", 0.95)))
+                status = self.evaluate_feeder_thermal_status(loading_ratio)
+                v_line = float(telem.get("voltageV", node["nominalVoltageKv"] * 1000.0))
+                pf = max(0.1, float(telem.get("powerFactor", 0.95)))
 
-                    # Conductor resistance & losses
-                    cable_length_m = float(node["properties"].get("cableLengthMeters", 750.0))
-                    resistance_ohm = round((cable_length_m / 1000.0) * 0.08, 4)
-                    branch_loss_kw = self.calculate_branch_loss_kw(actual_current, resistance_ohm)
-                    total_losses_kw += branch_loss_kw
+                cable_length_m = float(node["properties"].get("cableLengthMeters", 750.0))
+                resistance_ohm = round((cable_length_m / 1000.0) * 0.08, 4)
+                branch_loss_kw = self.calculate_branch_loss_kw(actual_current, resistance_ohm)
+                total_losses_kw += branch_loss_kw
 
-                    headroom_kw = self.calculate_headroom_kw(rated_current, actual_current, v_line, pf)
+                headroom_kw = self.calculate_headroom_kw(rated_current, actual_current, v_line, pf)
 
-                    feeders_data.append({
-                        "feederId": nid,
-                        "name": node["name"],
-                        "voltageKv": node["nominalVoltageKv"],
-                        "currentAmps": round(actual_current, 1),
-                        "ratedCurrentAmps": round(rated_current, 1),
-                        "thermalLoadingRatio": loading_ratio,
-                        "thermalLoadingPct": loading_pct,
-                        "status": status,
-                        "availableHeadroomKw": headroom_kw,
-                        "activePowerKw": float(telem.get("activePowerKw", 0.0)),
-                        "reactivePowerKvar": float(telem.get("reactivePowerKvar", 0.0)),
-                        "apparentPowerKva": float(telem.get("apparentPowerKva", 0.0)),
-                        "powerFactor": pf,
-                        "cableLengthMeters": cable_length_m,
-                        "conductorResistanceOhm": resistance_ohm,
-                        "branchLossKw": branch_loss_kw
-                    })
+                feeders_data.append({
+                    "feederId": nid,
+                    "name": node["name"],
+                    "voltageKv": node["nominalVoltageKv"],
+                    "currentAmps": round(actual_current, 1),
+                    "ratedCurrentAmps": round(rated_current, 1),
+                    "thermalLoadingRatio": loading_ratio,
+                    "thermalLoadingPct": loading_pct,
+                    "status": status,
+                    "availableHeadroomKw": headroom_kw,
+                    "activePowerKw": float(telem.get("activePowerKw", 0.0)),
+                    "reactivePowerKvar": float(telem.get("reactivePowerKvar", 0.0)),
+                    "apparentPowerKva": float(telem.get("apparentPowerKva", 0.0)),
+                    "powerFactor": pf,
+                    "cableLengthMeters": cable_length_m,
+                    "conductorResistanceOhm": resistance_ohm,
+                    "branchLossKw": branch_loss_kw
+                })
 
-            # If no feeders found (e.g. mock or empty DB), generate synthesized nominal feeders
-            if not feeders_data:
-                feeders_data = [
-                    {
-                        "feederId": "FDR-PHOENIX-MAIN-01",
-                        "name": "Commercial Center Primary 415V Bus",
-                        "voltageKv": 0.415,
-                        "currentAmps": 1820.5,
-                        "ratedCurrentAmps": 2200.0,
-                        "thermalLoadingRatio": 0.828,
-                        "thermalLoadingPct": 82.8,
-                        "status": "WARNING",
-                        "availableHeadroomKw": 272.5,
-                        "activePowerKw": 1240.0,
-                        "reactivePowerKvar": 320.0,
-                        "apparentPowerKva": 1280.6,
-                        "powerFactor": 0.968,
-                        "cableLengthMeters": 650.0,
-                        "conductorResistanceOhm": 0.052,
-                        "branchLossKw": 15.5
-                    },
-                    {
-                        "feederId": "FDR-SOLITAIRE-01",
-                        "name": "Commercial Hub Secondary Bus",
-                        "voltageKv": 0.415,
-                        "currentAmps": 915.0,
-                        "ratedCurrentAmps": 1600.0,
-                        "thermalLoadingRatio": 0.572,
-                        "thermalLoadingPct": 57.2,
-                        "status": "NOMINAL",
-                        "availableHeadroomKw": 491.8,
-                        "activePowerKw": 620.0,
-                        "reactivePowerKvar": 180.0,
-                        "apparentPowerKva": 645.6,
-                        "powerFactor": 0.960,
-                        "cableLengthMeters": 850.0,
-                        "conductorResistanceOhm": 0.068,
-                        "branchLossKw": 8.5
-                    }
-                ]
-                total_losses_kw = 24.0
-                max_loading_ratio = 0.828
-                critical_feeder_id = "FDR-PHOENIX-MAIN-01"
+            # Signed residual: positive means supply exceeds load.
+            bess_discharge_kw = p_bess_net if p_bess_net > 0 else 0.0
+            bess_charge_kw = abs(p_bess_net) if p_bess_net < 0 else 0.0
+            total_sources_kw = p_grid_import + p_solar + bess_discharge_kw
+            total_sinks_kw = p_loads_total + total_losses_kw + bess_charge_kw
+            residual_kw = total_sources_kw - total_sinks_kw
+            if abs(residual_kw) < 0.05:
+                residual_kw = 0.0
+            residual_kw = round(residual_kw, 2)
 
-            # 4. Enforce physical conservation residual
-            # P_grid + P_solar + P_bess = P_loads + P_losses + residual
-            total_sources_kw = p_grid_import + p_solar + (p_bess_net if p_bess_net > 0 else 0.0)
-            total_sinks_kw = p_loads_total + total_losses_kw + (abs(p_bess_net) if p_bess_net < 0 else 0.0)
-
-            # If grid import is zero or unmetered, derive grid import by Kirchhoff closure
-            if p_grid_import == 0.0 and total_sinks_kw > 0.0:
-                p_grid_import = max(0.0, round(total_sinks_kw - (p_solar + (p_bess_net if p_bess_net > 0 else 0.0)), 2))
-                total_sources_kw = p_grid_import + p_solar + (p_bess_net if p_bess_net > 0 else 0.0)
-
-            residual_kw = round(abs(total_sources_kw - total_sinks_kw), 2)
-            if residual_kw < 0.05:
-                residual_kw = 0.00
+            throughput_kw = max(total_sources_kw, total_sinks_kw)
+            residual_share = 0.0 if throughput_kw <= 0 else abs(residual_kw) / throughput_kw
+            share_threshold = float(settings.POWER_BALANCE_RESIDUAL_SHARE_THRESHOLD)
+            if grid_meter_missing or residual_share > share_threshold:
+                quality_status = QualityStatus.DEGRADED.value
+            else:
+                quality_status = QualityStatus.VALID.value
 
             overall_thermal_status = self.evaluate_feeder_thermal_status(max_loading_ratio)
 
             return {
                 "substationId": active_substation_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "pccGridImportKw": round(p_grid_import, 2),
+                "pccGridImportKw": None if grid_meter_missing else round(p_grid_import, 2),
                 "solarGenerationKw": round(p_solar, 2),
                 "bessNetPowerKw": round(p_bess_net, 2),
                 "facilityTotalLoadKw": round(p_loads_total, 2),
                 "technicalLossesKw": round(total_losses_kw, 2),
                 "powerBalanceResidualKw": residual_kw,
+                "residualShare": round(residual_share, 4),
+                "residualShareThreshold": share_threshold,
+                "gridMeterStatus": "MISSING" if grid_meter_missing else "MEASURED",
                 "maxFeederLoadingRatio": round(max_loading_ratio, 3),
                 "criticalFeederId": critical_feeder_id,
                 "thermalAlertStatus": overall_thermal_status,
@@ -263,7 +257,7 @@ class PowerBalanceService:
                 "provenance": {
                     "sourceMode": "SIMULATION",
                     "solverMethod": "KIRCHHOFF_POWER_CONSERVATION",
-                    "qualityStatus": "VALID"
+                    "qualityStatus": quality_status
                 }
             }
         finally:
@@ -320,7 +314,7 @@ class PowerBalanceService:
             await session.execute(stmt, {
                 "observed_at": now_utc,
                 "substation_id": snapshot["substationId"],
-                "grid_import_kw": snapshot["pccGridImportKw"],
+                "grid_import_kw": snapshot["pccGridImportKw"] if snapshot["pccGridImportKw"] is not None else 0.0,
                 "solar_generation_kw": snapshot["solarGenerationKw"],
                 "bess_net_power_kw": snapshot["bessNetPowerKw"],
                 "facility_total_load_kw": snapshot["facilityTotalLoadKw"],

@@ -23,6 +23,19 @@ export const FeederThermalLoadingCard: React.FC<FeederThermalLoadingCardProps> =
   const [data, setData] = useState<PowerBalanceResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const residualBalanced = !!data
+    && Math.abs(data.powerBalanceResidualKw) <= 0.05
+    && data.provenance.qualityStatus === 'VALID'
+    && data.gridMeterStatus === 'MEASURED';
+  const residualLabel = !data
+    ? ''
+    : residualBalanced
+      ? 'Balanced'
+      : data.powerBalanceResidualKw > 0.05
+        ? 'Supply exceeds load'
+        : data.powerBalanceResidualKw < -0.05
+          ? 'Load exceeds supply'
+          : 'Not closed';
 
   const loadData = async () => {
     try {
@@ -192,12 +205,12 @@ export const FeederThermalLoadingCard: React.FC<FeederThermalLoadingCardProps> =
                   fontFamily: 'var(--font-mono)',
                   padding: '2px 8px',
                   borderRadius: '10px',
-                  backgroundColor: data.powerBalanceResidualKw <= 0.05 ? 'var(--color-success-subtle)' : 'var(--color-warning-subtle)',
-                  color: data.powerBalanceResidualKw <= 0.05 ? 'var(--color-success)' : 'var(--color-warning)',
+                  backgroundColor: residualBalanced ? 'var(--color-success-subtle)' : 'var(--color-warning-subtle)',
+                  color: residualBalanced ? 'var(--color-success)' : 'var(--color-warning)',
                   fontWeight: 600
                 }}
               >
-                Residual Closure: {data.powerBalanceResidualKw.toFixed(2)} kW ({data.powerBalanceResidualKw <= 0.05 ? 'Balanced' : 'Compensating'})
+                Residual: {data.powerBalanceResidualKw.toFixed(2)} kW ({residualLabel}). Share {(data.residualShare * 100).toFixed(1)}% (limit {(data.residualShareThreshold * 100).toFixed(1)}%). Quality {data.provenance.qualityStatus}.
               </span>
             </div>
 
@@ -212,7 +225,7 @@ export const FeederThermalLoadingCard: React.FC<FeederThermalLoadingCardProps> =
               <div className="metric-box" style={{ padding: '8px 10px' }}>
                 <span className="metric-label" style={{ fontSize: '10px' }}>PCC Grid Import</span>
                 <span className="metric-value" style={{ fontSize: '14px', color: 'var(--color-primary)' }}>
-                  {data.pccGridImportKw.toLocaleString()} <span style={{ fontSize: '10px' }}>kW</span>
+                  {data.pccGridImportKw == null ? 'Meter missing' : <>{data.pccGridImportKw.toLocaleString()} <span style={{ fontSize: '10px' }}>kW</span></>}
                 </span>
               </div>
 
