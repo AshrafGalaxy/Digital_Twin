@@ -397,3 +397,97 @@ def test_api_get_intersection_optimal_timing_custom_intersection():
     assert len(plan["phases"]) == 4
     assert 60 <= plan["targetCycleSec"] <= 150
     assert plan["safetyValidation"]["pedestrianInvariantVerified"] is True
+
+
+def _equal_approaches():
+    return [
+        ApproachDemand("EB", "Eastbound", 400.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("WB", "Westbound", 400.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("NB", "Northbound", 400.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("SB", "Southbound", 400.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+    ]
+
+
+def _two_phase_constraints():
+    return SignalConstraints(
+        min_cycle_sec=40,
+        max_cycle_sec=180,
+        yellow_change_sec=3.0,
+        red_clearance_sec=2.0,
+    )
+
+
+def test_two_phase_critical_ratio_counts_each_phase_once():
+    """Opposing approaches on one phase contribute the larger ratio once, and lost time follows the phase count."""
+    plan = WebsterSignalOptimizer().compute_optimal_timing(
+        intersection_id="INT-TWO-PHASE",
+        approaches=_equal_approaches(),
+        constraints=_two_phase_constraints(),
+        phase_plan=[["EB", "WB"], ["NB", "SB"]],
+    )
+    assert round(plan.critical_flow_ratio_y, 4) == 0.4444
+    assert plan.total_lost_time_sec == 10
+    assert plan.safety_validation["oversaturatedRegime"] is False
+    assert plan.target_cycle_sec != 180
+    assert plan.target_cycle_sec < 180
+    east = next(phase for phase in plan.phases if phase.approach_id == "EB")
+    west = next(phase for phase in plan.phases if phase.approach_id == "WB")
+    assert east.green_sec == west.green_sec
+
+
+def test_heavier_approach_sets_the_phase_ratio():
+    """The lighter opposite movement is not added into the phase ratio."""
+    approaches = [
+        ApproachDemand("EB", "Eastbound", 800.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("WB", "Westbound", 200.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("NB", "Northbound", 400.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("SB", "Southbound", 100.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+    ]
+    plan = WebsterSignalOptimizer().compute_optimal_timing(
+        intersection_id="INT-HEAVIER-PHASE",
+        approaches=approaches,
+        constraints=_two_phase_constraints(),
+        phase_plan=[["EB", "WB"], ["NB", "SB"]],
+    )
+    phase_sum = (800.0 + 400.0) / 1800.0
+    every_approach = (800.0 + 200.0 + 400.0 + 100.0) / 1800.0
+    assert round(plan.critical_flow_ratio_y, 4) == round(phase_sum, 4)
+    assert round(plan.critical_flow_ratio_y, 4) != round(every_approach, 4)
+    assert plan.total_lost_time_sec == 10
+    east = next(phase for phase in plan.phases if phase.approach_id == "EB")
+    west = next(phase for phase in plan.phases if phase.approach_id == "WB")
+    north = next(phase for phase in plan.phases if phase.approach_id == "NB")
+    south = next(phase for phase in plan.phases if phase.approach_id == "SB")
+    assert east.green_sec == west.green_sec
+    assert north.green_sec == south.green_sec
+    assert east.flow_ratio_y > west.flow_ratio_y
+
+
+def test_api_phase_plan_sums_each_phase_once():
+    """The timing route accepts a phase plan and returns the phase-sum ratio."""
+    payload = {
+        "intersectionId": "INT-PHASE-PLAN",
+        "baselineCycleSec": 90,
+        "phasePlan": [["EB", "WB"], ["NB", "SB"]],
+        "constraints": {
+            "minCycleSec": 45,
+            "maxCycleSec": 180,
+            "yellowChangeSec": 3.0,
+            "redClearanceSec": 2.0,
+        },
+        "approaches": [
+            {"approachId": "EB", "description": "Eastbound", "flowVehHr": 400.0, "lanes": 1, "saturationFlowVehHrLane": 1800.0, "minGreenSec": 10.0, "crosswalkWidthMeters": 6.0},
+            {"approachId": "WB", "description": "Westbound", "flowVehHr": 400.0, "lanes": 1, "saturationFlowVehHrLane": 1800.0, "minGreenSec": 10.0, "crosswalkWidthMeters": 6.0},
+            {"approachId": "NB", "description": "Northbound", "flowVehHr": 400.0, "lanes": 1, "saturationFlowVehHrLane": 1800.0, "minGreenSec": 10.0, "crosswalkWidthMeters": 6.0},
+            {"approachId": "SB", "description": "Southbound", "flowVehHr": 400.0, "lanes": 1, "saturationFlowVehHrLane": 1800.0, "minGreenSec": 10.0, "crosswalkWidthMeters": 6.0},
+        ],
+    }
+    res = client.post("/api/v1/traffic/optimizer/webster", json=payload)
+    assert res.status_code == 200
+    body = res.json()
+    assert body["criticalFlowRatioY"] == 0.4444
+    assert body["totalLostTimeSec"] == 10
+    assert body["targetCycleSec"] != 180
+    greens = {phase["approachId"]: phase["greenSec"] for phase in body["phases"]}
+    assert greens["EB"] == greens["WB"]
+    assert greens["NB"] == greens["SB"]

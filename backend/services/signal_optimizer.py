@@ -108,6 +108,32 @@ class TimingPlan:
         }
 
 
+def _phase_groups(approaches: List[ApproachDemand], phase_plan: Optional[List[List[str]]]) -> List[List[int]]:
+    """Indexes of approaches that move together. One approach per phase when no plan is given."""
+    if phase_plan is None:
+        return [[index] for index in range(len(approaches))]
+    if not phase_plan:
+        raise ValueError("A phase plan must contain at least one phase.")
+    index_by_id = {approach.approach_id: index for index, approach in enumerate(approaches)}
+    seen = set()
+    groups: List[List[int]] = []
+    for phase in phase_plan:
+        if not phase:
+            raise ValueError("Each phase must name at least one approach.")
+        members: List[int] = []
+        for approach_id in phase:
+            if approach_id not in index_by_id:
+                raise ValueError("The phase plan names an approach that is not in the demand set.")
+            if approach_id in seen:
+                raise ValueError("An approach cannot move in more than one phase.")
+            seen.add(approach_id)
+            members.append(index_by_id[approach_id])
+        groups.append(members)
+    if any(approach.approach_id not in seen for approach in approaches):
+        raise ValueError("Every approach must belong to exactly one phase.")
+    return groups
+
+
 class WebsterSignalOptimizer:
     """
     Mathematical signal timing optimizer applying Webster's modified delay minimization
@@ -178,20 +204,26 @@ class WebsterSignalOptimizer:
         intersection_id: str,
         approaches: List[ApproachDemand],
         constraints: Optional[SignalConstraints] = None,
-        baseline_cycle_sec: int = 90
+        baseline_cycle_sec: int = 90,
+        phase_plan: Optional[List[List[str]]] = None,
     ) -> TimingPlan:
         """
         Computes optimal cycle length and green splits satisfying Webster's formula,
         pedestrian crosswalk clearance invariants, and saturation constraints.
+        A phase plan lists approaches that move together. Each phase contributes
+        max(q/s) once. Lost time is one clearance interval per phase.
         """
         cfg = constraints or SignalConstraints()
         m = len(approaches)
         if m == 0:
             raise ValueError("At least one approach demand must be provided for signal optimization.")
 
+        groups = _phase_groups(approaches, phase_plan)
+        n_phases = len(groups)
+
         # 1. Approach parameters and flow ratios
         lost_time_per_phase = cfg.yellow_change_sec + cfg.red_clearance_sec
-        total_lost_time = int(math.ceil(lost_time_per_phase * m))
+        total_lost_time = int(math.ceil(lost_time_per_phase * n_phases))
 
         flow_ratios_y: List[float] = []
         ped_clearances: List[float] = []
@@ -212,8 +244,10 @@ class WebsterSignalOptimizer:
             ped_clearances.append(float(t_ped))
             min_required_greens.append(max(t_ped, int(app.min_green_sec)))
 
-        # 2. Critical flow ratio sum Y
-        y_sum = sum(flow_ratios_y)
+        # 2. Critical flow ratio Y is the sum of one ratio per phase: the larger movement.
+        phase_y = [max(flow_ratios_y[index] for index in members) for members in groups]
+        phase_ped = [max(ped_clearances[index] for index in members) for members in groups]
+        y_sum = sum(phase_y)
         # Cap effective Y to 0.85 for Webster optimal cycle calculation
         effective_y = min(0.85, max(0.10, y_sum))
 
@@ -221,8 +255,9 @@ class WebsterSignalOptimizer:
         c_webster = (1.5 * total_lost_time + 5.0) / (1.0 - effective_y)
         target_cycle = max(cfg.min_cycle_sec, min(cfg.max_cycle_sec, int(round(c_webster))))
 
-        # 4. Check available green time vs sum of minimum required greens
-        sum_min_greens = sum(min_required_greens)
+        # 4. Check available green time vs the minimum green of each phase
+        phase_min_greens = [max(min_required_greens[index] for index in members) for members in groups]
+        sum_min_greens = sum(phase_min_greens)
         if target_cycle < sum_min_greens + total_lost_time:
             target_cycle = min(cfg.max_cycle_sec, sum_min_greens + total_lost_time)
 
@@ -230,38 +265,46 @@ class WebsterSignalOptimizer:
         available_green = target_cycle - total_lost_time
         discretionary_green = available_green - sum_min_greens
 
-        # 5. Proportional allocation of green time: g_j = available_green * (y_j / Y)
-        sum_y = max(0.01, sum(flow_ratios_y))
-        final_greens = [max(int(ped_clearances[i]), int(round(available_green * (y / sum_y)))) for i, y in enumerate(flow_ratios_y)]
+        # 5. Proportional allocation of green time across phases: g_j = available_green * (y_j / Y)
+        sum_y = max(0.01, sum(phase_y))
+        final_phase_greens = [
+            max(int(phase_ped[i]), int(round(available_green * (y / sum_y))))
+            for i, y in enumerate(phase_y)
+        ]
 
         # Adjust target cycle if minimums required more time
-        sum_greens = sum(final_greens)
+        sum_greens = sum(final_phase_greens)
         if sum_greens + total_lost_time > target_cycle:
             target_cycle = min(cfg.max_cycle_sec, sum_greens + total_lost_time)
             available_green = target_cycle - total_lost_time
 
-        diff = available_green - sum(final_greens)
+        diff = available_green - sum(final_phase_greens)
 
         if diff > 0:
             # Distribute positive slack to highest demand phases
-            sorted_by_demand = sorted(range(m), key=lambda idx: flow_ratios_y[idx], reverse=True)
+            sorted_by_demand = sorted(range(n_phases), key=lambda idx: phase_y[idx], reverse=True)
             for i in range(diff):
-                final_greens[sorted_by_demand[i % m]] += 1
+                final_phase_greens[sorted_by_demand[i % n_phases]] += 1
         elif diff < 0:
             # Trim excess while strictly preserving pedestrian crosswalk clearance invariant
             while diff < 0:
                 candidates = [
-                    i for i in range(m)
-                    if final_greens[i] > int(ped_clearances[i])
+                    i for i in range(n_phases)
+                    if final_phase_greens[i] > int(phase_ped[i])
                 ]
                 if not candidates:
                     break
                 # Trim from phase with lowest demand
-                trim_idx = min(candidates, key=lambda idx: flow_ratios_y[idx])
-                final_greens[trim_idx] -= 1
+                trim_idx = min(candidates, key=lambda idx: phase_y[idx])
+                final_phase_greens[trim_idx] -= 1
                 diff += 1
 
-        actual_cycle = sum(final_greens) + total_lost_time
+        final_greens = [0] * m
+        for phase_index, members in enumerate(groups):
+            for member in members:
+                final_greens[member] = final_phase_greens[phase_index]
+
+        actual_cycle = sum(final_phase_greens) + total_lost_time
         min_green_ok = all(final_greens[i] >= min_required_greens[i] for i in range(m))
 
         # 8. Compute phase results, delay, and saturation metrics
@@ -269,7 +312,7 @@ class WebsterSignalOptimizer:
         optimal_delays: List[float] = []
         baseline_delays: List[float] = []
 
-        baseline_green_per_phase = max(10, (baseline_cycle_sec - total_lost_time) // m)
+        baseline_green_per_phase = max(10, (baseline_cycle_sec - total_lost_time) // n_phases)
         baseline_split_ratio = baseline_green_per_phase / float(baseline_cycle_sec)
 
         max_observed_sat = 0.0

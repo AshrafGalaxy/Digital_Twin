@@ -305,6 +305,10 @@ class WebsterOptimizationRequest(BaseModel):
     approaches: List[ApproachDemandInput] = Field(..., min_length=2, max_length=8)
     baselineCycleSec: int = Field(90, ge=50, le=180)
     constraints: Optional[SignalConstraintsInput] = None
+    phasePlan: Optional[List[List[str]]] = Field(
+        None,
+        description="Approaches that move together. Each inner list is one phase. Omitted means one phase per approach.",
+    )
 
 
 class PhaseTimingResponse(BaseModel):
@@ -396,12 +400,19 @@ async def optimize_signal_timing(
             red_clearance_sec=payload.constraints.redClearanceSec
         )
 
-    plan = webster_optimizer.compute_optimal_timing(
-        intersection_id=payload.intersectionId,
-        approaches=domain_approaches,
-        constraints=domain_constraints,
-        baseline_cycle_sec=payload.baselineCycleSec
-    )
+    try:
+        plan = webster_optimizer.compute_optimal_timing(
+            intersection_id=payload.intersectionId,
+            approaches=domain_approaches,
+            constraints=domain_constraints,
+            baseline_cycle_sec=payload.baselineCycleSec,
+            phase_plan=payload.phasePlan,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
     # Persist recommendation to timing_recommendations table
     try:
