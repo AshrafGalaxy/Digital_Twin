@@ -9,6 +9,7 @@ prediction intervals, and PREDICTED provenance invariants.
 from datetime import datetime
 from pathlib import Path
 import sys
+import numpy as np
 import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +27,7 @@ from ml.features.energy_features import (
     chronological_energy_split
 )
 from ml.inference.forecaster import CorridorForecaster
+from ml.conformal_calibrator import ConformalPredictionCalibrator
 from backend.services.forecast_service import ForecastService
 
 
@@ -75,6 +77,8 @@ def test_traffic_forecaster_inference_and_provenance():
     assert result["confidenceLower"] <= result["predictedValue"] <= result["confidenceUpper"]
     assert "baselineComparison" in result
     assert result["baselineComparison"]["modelTestMae"] < result["baselineComparison"]["persistenceMae"]
+    assert result["conformalIntervals"]["available"] is False
+    assert result["conformalIntervals"]["interval90"] is None
 
 
 def test_energy_forecaster_inference_and_provenance():
@@ -92,6 +96,39 @@ def test_energy_forecaster_inference_and_provenance():
     assert result["confidenceLower"] <= result["predictedValue"] <= result["confidenceUpper"]
     assert "baselineComparison" in result
     assert result["baselineComparison"]["modelTestMae"] < result["baselineComparison"]["persistenceMae"]
+    assert result["conformalIntervals"]["available"] is False
+    assert result["conformalIntervals"]["interval90"] is None
+
+
+def test_calibration_quantile_is_not_scored_on_its_own_sample():
+    """Finite-sample rank uses the calibration split. Reported coverage uses the later test split."""
+    calibration = np.array([1.0, 1.0, 1.0, 1.0])
+    later = np.array([10.0, 10.0, 10.0, 10.0])
+    n = len(calibration)
+    level = min(1.0, float(np.ceil((n + 1) * 0.90) / n))
+    expected = float(np.quantile(np.abs(calibration), level))
+    fitted = ConformalPredictionCalibrator.calibrate_from_residuals(calibration, alpha=0.10)
+    assert fitted == expected
+
+    same_sample = float(np.mean(np.abs(calibration) <= fitted))
+    intervals = ConformalPredictionCalibrator.get_traffic_intervals(
+        30.0,
+        calibration_residuals=calibration,
+        test_residuals=later,
+    )
+    reported = intervals["interval90"]["empiricalTestCoverage"]
+    assert intervals["available"] is True
+    assert intervals["calibrationSplit"] == "calibration"
+    assert intervals["testSplit"] == "test"
+    assert intervals["calibrationSamples"] == 4
+    assert intervals["testSamples"] == 4
+    assert intervals["interval90"]["margin"] == round(expected, 2)
+    assert reported == 0.0
+    assert reported != same_sample
+
+    missing = ConformalPredictionCalibrator.get_traffic_intervals(30.0)
+    assert missing["available"] is False
+    assert missing["interval90"] is None
 
 
 def test_forecast_state_isolation_invariant():

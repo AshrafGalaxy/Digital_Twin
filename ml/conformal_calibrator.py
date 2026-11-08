@@ -6,25 +6,15 @@ Computes distribution-free prediction intervals with guaranteed finite-sample co
 using non-conformity scores calculated on held-out validation data.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 import numpy as np
 
 
 class ConformalPredictionCalibrator:
     """
     Computes distribution-free conformal prediction intervals for point forecasts.
-    Guarantees that true observed state falls within [predicted - q_alpha, predicted + q_alpha]
-    with probability at least (1 - alpha), subject to exchangeability.
+    Quantiles are fit on a calibration split. Coverage is scored on a later test split.
     """
-
-    # Pre-calibrated empirical non-conformity quantiles from validation sets:
-    # Traffic speed (km/h)
-    TRAFFIC_Q90: float = 4.80
-    TRAFFIC_Q95: float = 5.66
-
-    # Commercial building energy (kW)
-    ENERGY_Q90: float = 125.4
-    ENERGY_Q95: float = 168.2
 
     @classmethod
     def calibrate_from_residuals(
@@ -33,77 +23,117 @@ class ConformalPredictionCalibrator:
         alpha: float = 0.10
     ) -> float:
         """
-        Computes finite-sample corrected conformal quantile threshold:
-        q_alpha = Quantile(residuals, ceil((n+1)(1-alpha)) / n)
+        Finite-sample conformal quantile:
+        q_alpha = Quantile(|residuals|, ceil((n+1)(1-alpha)) / n)
         """
-        n = len(residuals)
+        values = np.abs(np.asarray(residuals, dtype=float))
+        n = int(values.size)
         if n == 0:
-            return 0.0
-        p = min(1.0, np.ceil((n + 1) * (1.0 - alpha)) / n)
-        return float(np.quantile(np.abs(residuals), p))
+            raise ValueError("Calibration split is empty.")
+        level = min(1.0, float(np.ceil((n + 1) * (1.0 - alpha)) / n))
+        return float(np.quantile(values, level))
+
+    @classmethod
+    def empirical_coverage(cls, test_residuals: np.ndarray, quantile: float) -> float:
+        """Fraction of a later test split whose absolute residual is within the calibration quantile."""
+        values = np.abs(np.asarray(test_residuals, dtype=float))
+        if values.size == 0:
+            raise ValueError("Test split is empty.")
+        return float(np.mean(values <= quantile))
+
+    @classmethod
+    def _unavailable(cls, reason: str) -> Dict[str, Any]:
+        return {
+            "available": False,
+            "reason": reason,
+            "calibrationSplit": None,
+            "testSplit": None,
+            "calibrationSamples": 0,
+            "testSamples": 0,
+            "interval90": None,
+            "interval95": None,
+        }
+
+    @classmethod
+    def _intervals_from_splits(
+        cls,
+        predicted: float,
+        calibration_residuals: Optional[np.ndarray],
+        test_residuals: Optional[np.ndarray],
+        lower_bound: float,
+        upper_bound: float,
+        decimals: int,
+    ) -> Dict[str, Any]:
+        if calibration_residuals is None or np.asarray(calibration_residuals).size == 0:
+            return cls._unavailable("Interval unavailable: calibration split is missing.")
+        calibration = np.abs(np.asarray(calibration_residuals, dtype=float))
+        q90 = cls.calibrate_from_residuals(calibration, alpha=0.10)
+        q95 = cls.calibrate_from_residuals(calibration, alpha=0.05)
+        coverage_90 = None
+        coverage_95 = None
+        test_count = 0
+        if test_residuals is not None and np.asarray(test_residuals).size > 0:
+            coverage_90 = round(cls.empirical_coverage(test_residuals, q90), 4)
+            coverage_95 = round(cls.empirical_coverage(test_residuals, q95), 4)
+            test_count = int(np.asarray(test_residuals).size)
+
+        def band(quantile: float, coverage: Optional[float], target: float) -> Dict[str, Any]:
+            return {
+                "lower": round(max(lower_bound, predicted - quantile), decimals),
+                "upper": round(min(upper_bound, predicted + quantile), decimals),
+                "margin": round(quantile, decimals),
+                "coverageTarget": target,
+                "empiricalTestCoverage": coverage,
+                "coverageSplit": "test" if coverage is not None else None,
+                "calibrationSamples": int(calibration.size),
+                "testSamples": test_count,
+            }
+
+        return {
+            "available": True,
+            "reason": None,
+            "calibrationSplit": "calibration",
+            "testSplit": "test" if test_count else None,
+            "calibrationSamples": int(calibration.size),
+            "testSamples": test_count,
+            "interval90": band(q90, coverage_90, 0.90),
+            "interval95": band(q95, coverage_95, 0.95),
+        }
 
     @classmethod
     def get_traffic_intervals(
         cls,
         predicted_speed: float,
         min_speed: float = 5.0,
-        max_speed: float = 55.0
+        max_speed: float = 55.0,
+        calibration_residuals: Optional[np.ndarray] = None,
+        test_residuals: Optional[np.ndarray] = None,
     ) -> Dict[str, Any]:
-        """
-        Returns calibrated 90% and 95% conformal prediction intervals for 15m traffic speed.
-        """
-        lower_90 = max(min_speed, predicted_speed - cls.TRAFFIC_Q90)
-        upper_90 = min(max_speed, predicted_speed + cls.TRAFFIC_Q90)
-
-        lower_95 = max(min_speed, predicted_speed - cls.TRAFFIC_Q95)
-        upper_95 = min(max_speed, predicted_speed + cls.TRAFFIC_Q95)
-
-        return {
-            "interval90": {
-                "lower": round(lower_90, 2),
-                "upper": round(upper_90, 2),
-                "margin": cls.TRAFFIC_Q90,
-                "coverageTarget": 0.90,
-                "empiricalTestCoverage": 0.909
-            },
-            "interval95": {
-                "lower": round(lower_95, 2),
-                "upper": round(upper_95, 2),
-                "margin": cls.TRAFFIC_Q95,
-                "coverageTarget": 0.95,
-                "empiricalTestCoverage": 0.952
-            }
-        }
+        """90% and 95% intervals for a speed forecast. Missing calibration returns no interval."""
+        return cls._intervals_from_splits(
+            predicted_speed,
+            calibration_residuals,
+            test_residuals,
+            min_speed,
+            max_speed,
+            2,
+        )
 
     @classmethod
     def get_energy_intervals(
         cls,
         predicted_kw: float,
         min_kw: float = 800.0,
-        max_kw: float = 7000.0
+        max_kw: float = 7000.0,
+        calibration_residuals: Optional[np.ndarray] = None,
+        test_residuals: Optional[np.ndarray] = None,
     ) -> Dict[str, Any]:
-        """
-        Returns calibrated 90% and 95% conformal prediction intervals for 60m building energy load.
-        """
-        lower_90 = max(min_kw, predicted_kw - cls.ENERGY_Q90)
-        upper_90 = min(max_kw, predicted_kw + cls.ENERGY_Q90)
-
-        lower_95 = max(min_kw, predicted_kw - cls.ENERGY_Q95)
-        upper_95 = min(max_kw, predicted_kw + cls.ENERGY_Q95)
-
-        return {
-            "interval90": {
-                "lower": round(lower_90, 1),
-                "upper": round(upper_90, 1),
-                "margin": cls.ENERGY_Q90,
-                "coverageTarget": 0.90,
-                "empiricalTestCoverage": 0.885
-            },
-            "interval95": {
-                "lower": round(lower_95, 1),
-                "upper": round(upper_95, 1),
-                "margin": cls.ENERGY_Q95,
-                "coverageTarget": 0.95,
-                "empiricalTestCoverage": 0.941
-            }
-        }
+        """90% and 95% intervals for a load forecast. Missing calibration returns no interval."""
+        return cls._intervals_from_splits(
+            predicted_kw,
+            calibration_residuals,
+            test_residuals,
+            min_kw,
+            max_kw,
+            1,
+        )

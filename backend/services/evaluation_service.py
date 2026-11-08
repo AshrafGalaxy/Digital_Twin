@@ -118,13 +118,19 @@ class EvaluationService:
         traffic_30m = calc_metrics(y_test_30m, y_xgb_30m, y_pers_30m)
         traffic_60m = calc_metrics(y_test_60m, y_xgb_60m, y_pers_60m)
 
-        # 2. Conformal Interval Coverage Validation (on chronological holdout test set)
-        calibrator = ConformalPredictionCalibrator()
-        residuals = np.abs(y_test_15m - y_xgb_15m)
-        q90 = float(np.quantile(residuals, 0.90))
-        q95 = float(np.quantile(residuals, 0.95))
-        cov_90 = float(np.mean(residuals <= q90) * 100.0)
-        cov_95 = float(np.mean(residuals <= q95) * 100.0)
+        # Quantiles use the validation split. Coverage uses only the later holdout split.
+        y_val_15m = val_df[TARGET_COLUMN].values
+        X_val = val_df[FEATURE_COLUMNS]
+        if forecaster.traffic_artifact and "model" in forecaster.traffic_artifact:
+            y_hat_val = forecaster.traffic_artifact["model"].predict(X_val)
+        else:
+            y_hat_val = val_df["speed_kmh"].values * 0.95 + 1.2
+        calibration_residuals = np.abs(y_val_15m - y_hat_val)
+        test_residuals = np.abs(y_test_15m - y_xgb_15m)
+        q90 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration_residuals, alpha=0.10)
+        q95 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration_residuals, alpha=0.05)
+        cov_90 = ConformalPredictionCalibrator.empirical_coverage(test_residuals, q90) * 100.0
+        cov_95 = ConformalPredictionCalibrator.empirical_coverage(test_residuals, q95) * 100.0
 
         # 3. Dynamic Empirical Building Energy Benchmark (80/10/10 Chronological Split)
         raw_energy_df = generate_building_energy_history(days=28, seed=42)
@@ -198,6 +204,10 @@ class EvaluationService:
             },
             "buildingEnergy": energy_metrics,
             "conformalCoverage": {
+                "calibrationSplit": "validation",
+                "testSplit": "holdout",
+                "calibrationSamples": int(calibration_residuals.size),
+                "testSamples": int(test_residuals.size),
                 "target90": {
                     "nominalConfidence": 0.90,
                     "empiricalCoveragePct": round(cov_90, 1),

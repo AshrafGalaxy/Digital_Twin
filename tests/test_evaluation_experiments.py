@@ -7,6 +7,7 @@ Verifies baseline superiority, latency constraints (< 50ms), and deterministic r
 
 from pathlib import Path
 import sys
+import numpy as np
 import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,6 +23,7 @@ from scripts.run_evaluation_benchmarks import (
 )
 from backend.core.constants import SourceMode
 from backend.services.rule_engine import rule_engine
+from ml.conformal_calibrator import ConformalPredictionCalibrator
 
 
 def test_e01_traffic_forecast_superiority():
@@ -60,6 +62,25 @@ def test_e06_scenario_intervention_improves_kpis():
     assert res["delay_delta_pct"] < 0.0
     assert res["throughput_delta_pct"] > 0.0
     assert res["queue_delta_pct"] < 0.0
+
+
+def test_holdout_coverage_is_not_the_calibration_quantile_level():
+    """Coverage of a quantile on the same residual array is not reported as test coverage."""
+    calibration = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0])
+    holdout = np.array([8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5, 12.0, 12.5])
+    quantile = ConformalPredictionCalibrator.calibrate_from_residuals(calibration, alpha=0.10)
+    same_sample = float(np.mean(np.abs(calibration) <= quantile))
+    scored = ConformalPredictionCalibrator.get_energy_intervals(
+        4000.0,
+        calibration_residuals=calibration,
+        test_residuals=holdout,
+    )
+    assert scored["available"] is True
+    assert scored["calibrationSamples"] == 10
+    assert scored["testSamples"] == 10
+    assert scored["interval90"]["coverageSplit"] == "test"
+    assert scored["interval90"]["empiricalTestCoverage"] != same_sample
+    assert scored["interval90"]["margin"] != 125.4
 
 
 def test_e07_usability_and_provenance_separation():

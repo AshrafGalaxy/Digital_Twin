@@ -30,27 +30,15 @@ client = TestClient(app)
 
 
 def test_conformal_prediction_intervals():
-    """Verify conformal calibration provides valid 90% and 95% uncertainty intervals."""
-    intervals = ConformalPredictionCalibrator.get_traffic_intervals(25.0)
-    
-    assert "interval90" in intervals
-    assert "interval95" in intervals
-    
-    i90 = intervals["interval90"]
-    assert i90["lower"] < 25.0 < i90["upper"]
-    assert i90["margin"] == 4.80
-    assert i90["coverageTarget"] == 0.90
-    assert i90["empiricalTestCoverage"] >= 0.88
+    """A missing calibration split does not invent a margin or a coverage literal."""
+    missing = ConformalPredictionCalibrator.get_traffic_intervals(25.0)
+    assert missing["available"] is False
+    assert missing["interval90"] is None
+    assert missing["interval95"] is None
 
-    i95 = intervals["interval95"]
-    assert i95["margin"] == 5.66
-    assert i95["upper"] > i90["upper"]
-    assert i95["lower"] < i90["lower"]
-
-    energy_intervals = ConformalPredictionCalibrator.get_energy_intervals(4200.0)
-    e90 = energy_intervals["interval90"]
-    assert e90["lower"] < 4200.0 < e90["upper"]
-    assert e90["margin"] == 125.4
+    missing_load = ConformalPredictionCalibrator.get_energy_intervals(4200.0)
+    assert missing_load["available"] is False
+    assert missing_load["interval90"] is None
 
 
 def test_local_model_explainability():
@@ -145,7 +133,8 @@ def test_api_forecast_conformal_and_explainability():
     data = resp.json()
 
     assert "conformalIntervals" in data
-    assert data["conformalIntervals"]["interval90"]["margin"] == 4.80
+    assert data["conformalIntervals"]["available"] is False
+    assert data["conformalIntervals"]["interval90"] is None
     assert "explanation" in data
     assert len(data["explanation"]["topContributors"]) > 0
 
