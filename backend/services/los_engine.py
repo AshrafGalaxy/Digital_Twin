@@ -8,10 +8,17 @@ volume-to-capacity ratio, and congestion index) and applies pluggable standard p
 """
 
 from datetime import datetime, timezone
+import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from backend.core.config import settings
+
 logger = logging.getLogger("digital_twin.los_engine")
+
+_STUDY_AREA_PATH = Path(__file__).resolve().parents[2] / "data" / "study_area.geojson"
+_custom_thresholds: Optional[List[Dict[str, Any]]] = None
 
 
 class PolicyStandard:
@@ -101,6 +108,24 @@ US_HCM_THRESHOLDS = [
 ]
 
 
+def load_custom_district_thresholds() -> List[Dict[str, Any]]:
+    """District grades come from the study-area configuration, not the US table."""
+    global _custom_thresholds
+    if _custom_thresholds is not None:
+        return _custom_thresholds
+    if not _STUDY_AREA_PATH.is_file():
+        raise ValueError("Study area configuration is missing a custom LOS threshold table.")
+    with _STUDY_AREA_PATH.open(encoding="utf-8") as handle:
+        payload = json.load(handle)
+    features = payload.get("features") or []
+    props = features[0].get("properties", {}) if features else {}
+    table = props.get("customLosThresholds")
+    if not isinstance(table, list) or not table:
+        raise ValueError("Study area configuration is missing a custom LOS threshold table.")
+    _custom_thresholds = table
+    return table
+
+
 class LOSEngine:
     """
     Canonical Level of Service (LOS) and hydrodynamic state calculation engine.
@@ -115,28 +140,46 @@ class LOSEngine:
         speed_kmh: float,
         flow_vph: float,
         capacity_vph: float,
-        free_flow_speed_kmh: float = 50.0
-    ) -> Dict[str, float]:
+        free_flow_speed_kmh: float = 50.0,
+        lanes: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
         Computes universal hydrodynamic continuity properties:
         - Volume-to-Capacity ratio: V/C = q / capacity
-        - Density: k = q / max(v, 1.0) (veh/km)
+        - Density: k = q / v when moving, capped at jam density per lane
+        - A stopped speed is labeled STOPPED and is not replaced by 1 km/h
         - Normalized Congestion Index: CI = min(1.0, max(0.0, 1.0 - v / v_free))
         """
         safe_capacity = max(capacity_vph, 1.0)
         safe_speed = max(0.0, speed_kmh)
         safe_free_flow = max(free_flow_speed_kmh, 1.0)
+        lane_count = lanes if lanes is not None and lanes >= 1 else max(
+            1, int(round(safe_capacity / max(settings.LOS_LANE_CAPACITY_VPH, 1.0)))
+        )
+        jam_density = settings.LOS_JAM_DENSITY_VEH_PER_KM_LANE * lane_count
 
         vc_ratio = round(flow_vph / safe_capacity, 3)
-        density = round(flow_vph / max(safe_speed, 1.0), 2)
+        if safe_speed < settings.LOS_STOPPED_SPEED_KMH:
+            density = jam_density
+            speed_state = "STOPPED"
+        else:
+            raw_density = flow_vph / safe_speed
+            if raw_density > jam_density:
+                density = jam_density
+                speed_state = "STOPPED"
+            else:
+                density = raw_density
+                speed_state = "MOVING"
         ci = round(min(1.0, max(0.0, 1.0 - (safe_speed / safe_free_flow))), 3)
         speed_ratio = round(safe_speed / safe_free_flow, 3)
 
         return {
             "volume_capacity_ratio": vc_ratio,
-            "density_veh_km": density,
+            "density_veh_km": round(density, 2),
             "congestion_index": ci,
-            "speed_ratio": speed_ratio
+            "speed_ratio": speed_ratio,
+            "speed_state": speed_state,
+            "jam_density_veh_km": round(jam_density, 2),
         }
 
     def _grade_by_vc(self, vc_ratio: float, thresholds: List[Dict[str, Any]]) -> str:
@@ -164,7 +207,7 @@ class LOSEngine:
         the worse grade is selected to represent actual commuter delay truthfully.
         """
         policy = policy_standard or self.default_policy
-        thresholds = INDO_HCM_THRESHOLDS if policy == PolicyStandard.INDO_HCM else US_HCM_THRESHOLDS
+        thresholds = self._thresholds_for(policy)
 
         grade_vc = self._grade_by_vc(vc_ratio, thresholds)
         grade_spd = self._grade_by_speed(speed_ratio, thresholds)
@@ -181,6 +224,15 @@ class LOSEngine:
                 break
 
         return worse_grade, condition
+
+    def _thresholds_for(self, policy: str) -> List[Dict[str, Any]]:
+        if policy == PolicyStandard.INDO_HCM:
+            return INDO_HCM_THRESHOLDS
+        if policy == PolicyStandard.US_HCM_6TH:
+            return US_HCM_THRESHOLDS
+        if policy == PolicyStandard.CUSTOM_DISTRICT:
+            return load_custom_district_thresholds()
+        raise ValueError(f"Unknown policy standard: {policy}")
 
     def compute_segment_los(
         self,
@@ -232,6 +284,7 @@ class LOSEngine:
             "freeFlowSpeedKmh": round(free_flow_speed_kmh, 1),
             "volumeCapacityRatio": hydro["volume_capacity_ratio"],
             "densityVehKm": hydro["density_veh_km"],
+            "speedState": hydro["speed_state"],
             "congestionIndex": hydro["congestion_index"],
             "speedRatio": hydro["speed_ratio"],
             "levelOfService": los_grade,
@@ -253,6 +306,7 @@ class LOSEngine:
         Computes corridor-wide aggregate Level of Service and hydrodynamic rollup.
         """
         policy = policy_standard or self.default_policy
+        self._thresholds_for(policy)
         if not segment_records:
             return {
                 "corridorLevelOfService": "C",

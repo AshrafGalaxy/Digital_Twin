@@ -29,6 +29,14 @@
           "Phoenix Marketcity Mall",
           "Viman Nagar Chowk",
           "Somnath Nagar Chowk"
+        ],
+        "customLosThresholds": [
+          {"grade": "A", "max_vc": 0.20, "min_speed_ratio": 0.95, "condition": "District free flow: very low demand and near free-flow speed."},
+          {"grade": "B", "max_vc": 0.40, "min_speed_ratio": 0.80, "condition": "District stable flow: minor speed reduction."},
+          {"grade": "C", "max_vc": 0.60, "min_speed_ratio": 0.65, "condition": "District stable flow: noticeable platoon delay."},
+          {"grade": "D", "max_vc": 0.80, "min_speed_ratio": 0.50, "condition": "District approaching capacity."},
+          {"grade": "E", "max_vc": 1.00, "min_speed_ratio": 0.35, "condition": "District at capacity."},
+          {"grade": "F", "max_vc": 999.0, "min_speed_ratio": 0.0, "condition": "District breakdown flow: demand exceeds the local limit."}
         ]
       },
       "geometry": {

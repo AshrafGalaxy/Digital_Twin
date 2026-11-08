@@ -45,6 +45,7 @@ class SegmentLOSResponse(BaseModel):
     freeFlowSpeedKmh: float
     volumeCapacityRatio: float
     densityVehKm: float
+    speedState: str = "MOVING"
     congestionIndex: float
     speedRatio: float
     levelOfService: str
@@ -202,6 +203,7 @@ async def get_corridor_los(
             freeFlowSpeedKmh=res["freeFlowSpeedKmh"],
             volumeCapacityRatio=res["volumeCapacityRatio"],
             densityVehKm=res["densityVehKm"],
+            speedState=res["speedState"],
             congestionIndex=res["congestionIndex"],
             speedRatio=res["speedRatio"],
             levelOfService=res["levelOfService"],

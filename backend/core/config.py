@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     REPLAY_LOS_QUALITY_SCORE: float = 0.95     # Calibrated historical telemetry replay
     # |residual| / max(supply, demand). Above this share the balance is DEGRADED.
     POWER_BALANCE_RESIDUAL_SHARE_THRESHOLD: float = 0.05
+    # Stopped or jammed density cannot exceed this many vehicles per km per lane.
+    LOS_JAM_DENSITY_VEH_PER_KM_LANE: float = 180.0
+    LOS_LANE_CAPACITY_VPH: float = 1800.0
+    # Speeds below this are stopped. Density is not computed by substituting 1 km/h.
+    LOS_STOPPED_SPEED_KMH: float = 1.0
 
     # API Server
     API_HOST: str = "0.0.0.0"

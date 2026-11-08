@@ -56,18 +56,47 @@ def test_hydrodynamics_congested():
 
 
 def test_hydrodynamics_zero_speed_boundary():
-    """Verifies resilience against ZeroDivisionError when vehicles are stationary (speed = 0)."""
+    """A stopped speed is labeled STOPPED and density stays within jam density."""
     engine = LOSEngine()
     res = engine.compute_hydrodynamics(
         speed_kmh=0.0,
-        flow_vph=500.0,
-        capacity_vph=2400.0,
+        flow_vph=1800.0,
+        capacity_vph=1800.0,
         free_flow_speed_kmh=50.0
     )
-    # Safe speed floor of 1.0 prevents zero division
-    assert res["density_veh_km"] == 500.0
+    moving = engine.compute_hydrodynamics(
+        speed_kmh=36.0,
+        flow_vph=1800.0,
+        capacity_vph=1800.0,
+        free_flow_speed_kmh=50.0
+    )
+    assert res["density_veh_km"] != 1800.0
+    assert res["density_veh_km"] == res["jam_density_veh_km"]
+    assert res["density_veh_km"] <= 200.0
+    assert res["speed_state"] == "STOPPED"
     assert res["speed_ratio"] == 0.0
     assert res["congestion_index"] == 1.0
+    assert moving["density_veh_km"] == 50.0
+    assert moving["speed_state"] == "MOVING"
+
+
+def test_custom_district_policy_is_not_the_us_table():
+    """At vc 0.28 and speed ratio 0.86 the district table is not the US grade, and Indo-HCM stays B."""
+    engine = LOSEngine()
+    grade_custom, _ = engine.classify_los(0.28, 0.86, PolicyStandard.CUSTOM_DISTRICT)
+    grade_us, _ = engine.classify_los(0.28, 0.86, PolicyStandard.US_HCM_6TH)
+    grade_indo, _ = engine.classify_los(0.28, 0.86, PolicyStandard.INDO_HCM)
+    assert grade_us == "A"
+    assert grade_indo == "B"
+    assert grade_custom != grade_us
+    assert grade_custom == "B"
+
+
+def test_unknown_policy_is_rejected():
+    """An unknown policy name is not silently graded with the US table."""
+    engine = LOSEngine()
+    with pytest.raises(ValueError):
+        engine.classify_los(0.28, 0.86, "NOT_A_POLICY")
 
 
 def test_worse_grade_boundary_rule_vc_dominant():
