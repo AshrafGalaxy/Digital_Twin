@@ -8,13 +8,17 @@ Hermetic unit and integration tests for Milestone 9:
 - Non-actuation and provenance invariant verification
 """
 
+import sqlite3
+
 import pytest
 from fastapi.testclient import TestClient
+from backend.core.config import settings
 from backend.main import app
 from backend.services.evaluation_service import (
     EvaluationService,
     score_forecast_holdout,
 )
+from backend.services.report_generator import MunicipalReportGenerator
 
 client = TestClient(app)
 
@@ -69,6 +73,83 @@ def test_missing_artifact_does_not_invent_a_model_score(monkeypatch):
     serialized = str(data)
     assert "0.95 + 1.2" not in serialized
     assert "* 0.94" not in serialized
+
+
+def _empty_state_db(tmp_path):
+    db_path = tmp_path / "empty_state.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("CREATE TABLE entity_current_state (source_mode TEXT)")
+    return db_path
+
+
+def test_empty_current_state_counts_stay_zero(monkeypatch, tmp_path):
+    """A readable empty table reports zero for every source mode."""
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(_empty_state_db(tmp_path)))
+    counts = MunicipalReportGenerator()._query_live_provenance_counts()
+    assert counts == {
+        "LIVE": 0,
+        "REPLAY": 0,
+        "SIMULATION": 0,
+        "PREDICTED": 0,
+        "STALE": 0,
+        "INVALID": 0,
+    }
+
+
+def test_missing_state_database_stays_zero(monkeypatch, tmp_path):
+    """A missing database file does not substitute a baseline count."""
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(tmp_path / "absent.db"))
+    counts = MunicipalReportGenerator()._query_live_provenance_counts()
+    assert counts["LIVE"] == 0
+    assert counts["REPLAY"] == 0
+    assert counts["PREDICTED"] == 0
+    assert counts["SIMULATION"] == 0
+
+
+def test_recorded_source_count_is_kept(monkeypatch, tmp_path):
+    """A real row is counted, and the modes with no rows stay at zero."""
+    db_path = tmp_path / "one_live_row.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("CREATE TABLE entity_current_state (source_mode TEXT)")
+        conn.execute("INSERT INTO entity_current_state (source_mode) VALUES ('LIVE')")
+    monkeypatch.setattr(settings, "SQLITE_DB_PATH", str(db_path))
+    counts = MunicipalReportGenerator()._query_live_provenance_counts()
+    assert counts["LIVE"] == 1
+    assert counts["REPLAY"] == 0
+    assert counts["PREDICTED"] == 0
+    assert counts["SIMULATION"] == 0
+
+
+def test_scenario_runs_do_not_raise_simulation_count(monkeypatch):
+    """Scenario runs stay in their own field and do not fill the simulation count."""
+    monkeypatch.setattr(
+        "backend.services.report_generator.evaluation_service.get_multi_horizon_benchmarks",
+        lambda: {"horizons": {}},
+    )
+    monkeypatch.setattr(
+        "backend.services.report_generator.scenario_service.list_recent_runs",
+        lambda limit=5: [{"id": "run-1"}, {"id": "run-2"}],
+    )
+    monkeypatch.setattr(
+        MunicipalReportGenerator,
+        "_query_live_provenance_counts",
+        lambda self: {
+            "LIVE": 0,
+            "REPLAY": 0,
+            "SIMULATION": 0,
+            "PREDICTED": 0,
+            "STALE": 0,
+            "INVALID": 0,
+        },
+    )
+    report = MunicipalReportGenerator().generate_executive_report()
+    modes = report["provenanceAudit"]["sourceModes"]
+    assert modes["LIVE"] == 0
+    assert modes["REPLAY"] == 0
+    assert modes["SIMULATION"] == 0
+    assert modes["PREDICTED"] == 0
+    assert report["provenanceAudit"]["scenarioRunCount"] == 2
+    assert report["scenarioStudioSummary"]["totalRunsRecorded"] == 2
 
 
 def test_executive_summary_report_json():

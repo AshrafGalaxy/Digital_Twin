@@ -122,6 +122,8 @@ export const PilotEvaluationView: React.FC = () => {
   const be = benchmarks?.buildingEnergy;
   const showNum = (value: unknown, digits = 2) =>
     typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : 'Unavailable';
+  const sourceCount = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : 0;
 
   const renderImprovementBadge = (pct: number | undefined | null) => {
     if (typeof pct !== 'number' || !Number.isFinite(pct)) {
@@ -749,28 +751,28 @@ export const PilotEvaluationView: React.FC = () => {
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>LIVE Observations</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#10B981', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.LIVE ?? 2} Feeds
+                      {sourceCount(report?.provenanceAudit?.sourceModes?.LIVE)} Feeds
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Physical sensors & CAAQMS feed</span>
                   </div>
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>REPLAY Telemetry</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#58A6FF', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.REPLAY ?? 14} Sensors
+                      {sourceCount(report?.provenanceAudit?.sourceModes?.REPLAY)} Sensors
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Chronological corridor telemetry</span>
                   </div>
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>SIMULATION Feeds</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#00D2D3', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.SIMULATION ?? 7} Runs
+                      {sourceCount(report?.provenanceAudit?.sourceModes?.SIMULATION)} Runs
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>SUMO physics (isolated state)</span>
                   </div>
                   <div className="briefing-kpi-card">
                     <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>PREDICTED State</span>
                     <span style={{ fontSize: '18px', fontWeight: 700, color: '#38BDF8', margin: '4px 0' }} className="font-mono">
-                      {report?.provenanceAudit?.sourceModes?.PREDICTED ?? 4} Horizons
+                      {sourceCount(report?.provenanceAudit?.sourceModes?.PREDICTED)} Horizons
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>XGBoost statistical forecasts</span>
                   </div>
@@ -910,25 +912,25 @@ export const PilotEvaluationView: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>LIVE Observations</span>
                 <span className="provenance-badge badge-live">
-                  {report?.provenanceAudit?.sourceModes?.LIVE ?? 2} FEEDS
+                  {sourceCount(report?.provenanceAudit?.sourceModes?.LIVE)} FEEDS
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>REPLAY Telemetry</span>
                 <span className="provenance-badge badge-replay">
-                  {report?.provenanceAudit?.sourceModes?.REPLAY ?? 14} SENSORS
+                  {sourceCount(report?.provenanceAudit?.sourceModes?.REPLAY)} SENSORS
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>SIMULATION Scenarios</span>
                 <span className="provenance-badge badge-simulation">
-                  {report?.provenanceAudit?.sourceModes?.SIMULATION ?? 7} RUNS
+                  {sourceCount(report?.provenanceAudit?.sourceModes?.SIMULATION)} RUNS
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>PREDICTED Machine Learning</span>
                 <span className="provenance-badge badge-predicted">
-                  {report?.provenanceAudit?.sourceModes?.PREDICTED ?? 4} HORIZONS
+                  {sourceCount(report?.provenanceAudit?.sourceModes?.PREDICTED)} HORIZONS
                 </span>
               </div>
             </div>

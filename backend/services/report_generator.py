@@ -44,15 +44,14 @@ class MunicipalReportGenerator:
                         elif sm:
                             counts[sm] = cnt
         except Exception:
-            pass
-
-        # Fallback to calibrated corridor baseline counts if database is freshly seeded
-        if counts["LIVE"] == 0:
-            counts["LIVE"] = 2
-        if counts["REPLAY"] == 0:
-            counts["REPLAY"] = 14
-        if counts["PREDICTED"] == 0:
-            counts["PREDICTED"] = 4
+            return {
+                "LIVE": 0,
+                "REPLAY": 0,
+                "SIMULATION": 0,
+                "PREDICTED": 0,
+                "STALE": 0,
+                "INVALID": 0,
+            }
 
         return counts
 
@@ -73,10 +72,10 @@ class MunicipalReportGenerator:
 
         # 4. Provenance Accounting
         live_counts = self._query_live_provenance_counts()
-        live_counts["SIMULATION"] = max(live_counts.get("SIMULATION", 0), len(scenario_runs) * 2 + 3)
 
         provenance_audit = {
             "sourceModes": live_counts,
+            "scenarioRunCount": len(scenario_runs),
             "stateSeparationInvariantEnforced": True,
             "zeroActuationPolicyEnforced": True
         }
