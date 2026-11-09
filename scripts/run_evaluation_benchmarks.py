@@ -51,7 +51,7 @@ from simulation.kpi_calculator import ScenarioKPICalculator
 def run_experiment_e01_traffic() -> dict:
     """E-01: Traffic Speed Forecasting Benchmark"""
     print("\n--- Running E-01: Traffic Forecasting Benchmark ---")
-    raw_df = generate_corridor_traffic_history(days=14, seed=42)
+    raw_df = generate_corridor_traffic_history(days=21, seed=42)
     feat_df = build_traffic_features(raw_df)
     train_df, val_df, test_df = chronological_split(feat_df, 0.70, 0.15)
 
@@ -89,7 +89,9 @@ def run_experiment_e01_traffic() -> dict:
         "xgboost_mae": round(float(xgb_mae), 3),
         "xgboost_rmse": round(float(xgb_rmse), 3),
         "improvement_over_persistence_pct": round(float(gain_pct), 1),
-        "test_samples": len(test_df)
+        "test_samples": len(test_df),
+        "train_end": pd.Timestamp(train_df["timestamp"].max()).isoformat(),
+        "test_start": pd.Timestamp(test_df["timestamp"].min()).isoformat(),
     }
     print(f"  Persistence MAE:    {pers_mae:.3f} km/h")
     print(f"  Hist Avg MAE:       {hist_mae:.3f} km/h")
@@ -100,7 +102,7 @@ def run_experiment_e01_traffic() -> dict:
 def run_experiment_e02_energy() -> dict:
     """E-02: Building Energy Forecasting Benchmark"""
     print("\n--- Running E-02: Building Energy Forecasting Benchmark ---")
-    raw_df = generate_building_energy_history(days=21, seed=42)
+    raw_df = generate_building_energy_history(days=35, seed=42)
     feat_df = build_energy_features(raw_df)
     train_df, val_df, test_df = chronological_energy_split(feat_df, 0.70, 0.15)
 
@@ -133,7 +135,9 @@ def run_experiment_e02_energy() -> dict:
         "xgboost_mae": round(float(xgb_mae), 2),
         "xgboost_rmse": round(float(xgb_rmse), 2),
         "improvement_over_persistence_pct": round(float(gain_pct), 1),
-        "test_samples": len(test_df)
+        "test_samples": len(test_df),
+        "train_end": pd.Timestamp(train_df["timestamp"].max()).isoformat(),
+        "test_start": pd.Timestamp(test_df["timestamp"].min()).isoformat(),
     }
     print(f"  Persistence MAE:    {pers_mae:.2f} kW")
     print(f"  Same-Hour MAE:      {same_hour_mae:.2f} kW")

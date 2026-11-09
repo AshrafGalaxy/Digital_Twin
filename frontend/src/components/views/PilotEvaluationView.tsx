@@ -120,9 +120,14 @@ export const PilotEvaluationView: React.FC = () => {
   const h60 = benchmarks?.horizons?.['60m'];
   const cov = benchmarks?.conformalCoverage;
   const be = benchmarks?.buildingEnergy;
+  const showNum = (value: unknown, digits = 2) =>
+    typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : 'Unavailable';
 
   const renderImprovementBadge = (pct: number | undefined | null) => {
-    const val = pct ?? 0;
+    if (typeof pct !== 'number' || !Number.isFinite(pct)) {
+      return <span className="text-muted">Unavailable</span>;
+    }
+    const val = pct;
     if (val > 0) {
       return (
         <span className="delta-badge delta-positive" style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
@@ -264,16 +269,16 @@ export const PilotEvaluationView: React.FC = () => {
             <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
               15m Horizon Speed
             </span>
-            {renderImprovementBadge(h15?.improvementPct ?? 24.5)}
+            {renderImprovementBadge(h15?.improvementPct)}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>
-              {h15?.modelMae ?? 2.45}
+              {showNum(h15?.modelMae)}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h15?.persistenceMae ?? 3.25} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h15?.skillScore ?? 0.245}</span>
+            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{showNum(h15?.persistenceMae)} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{showNum(h15?.skillScore, 3)}</span>
           </div>
         </div>
 
@@ -283,16 +288,16 @@ export const PilotEvaluationView: React.FC = () => {
             <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
               30m Horizon Speed
             </span>
-            {renderImprovementBadge(h30?.improvementPct ?? 19.8)}
+            {renderImprovementBadge(h30?.improvementPct)}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: '#34D399', fontFamily: 'var(--font-mono)' }}>
-              {h30?.modelMae ?? 3.12}
+              {h30 ? showNum(h30.modelMae) : 'Unavailable'}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h30?.persistenceMae ?? 3.89} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h30?.skillScore ?? 0.198}</span>
+            {h30 ? 'Scored horizon' : 'No trained model for this horizon'}
           </div>
         </div>
 
@@ -302,16 +307,16 @@ export const PilotEvaluationView: React.FC = () => {
             <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
               60m Horizon Speed
             </span>
-            {renderImprovementBadge(h60?.improvementPct ?? 14.2)}
+            {renderImprovementBadge(h60?.improvementPct)}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: '#00D2D3', fontFamily: 'var(--font-mono)' }}>
-              {h60?.modelMae ?? 3.95}
+              {h60 ? showNum(h60.modelMae) : 'Unavailable'}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>km/h MAE</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            Baseline: <span style={{ fontFamily: 'var(--font-mono)' }}>{h60?.persistenceMae ?? 4.60} km/h</span> • Skill: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399' }}>{h60?.skillScore ?? 0.142}</span>
+            {h60 ? 'Scored horizon' : 'No trained model for this horizon'}
           </div>
         </div>
 
@@ -327,12 +332,12 @@ export const PilotEvaluationView: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '24px', fontWeight: 700, color: '#38BDF8', fontFamily: 'var(--font-mono)' }}>
-              {cov?.target90?.empiricalCoveragePct ?? 90.5}%
+              {showNum(cov?.target90?.empiricalCoveragePct, 1)}%
             </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>at 90% Nominal</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>at 90% nominal</span>
           </div>
           <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-            95% Nominal Coverage: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399', fontWeight: 600 }}>{cov?.target95?.empiricalCoveragePct ?? 95.2}%</span> (±{cov?.target95?.halfWidthKmh ?? 5.66} km/h)
+            95% nominal coverage: <span style={{ fontFamily: 'var(--font-mono)', color: '#34D399', fontWeight: 600 }}>{showNum(cov?.target95?.empiricalCoveragePct, 1)}%</span> (+/- {showNum(cov?.target95?.halfWidthKmh)} km/h)
           </div>
         </div>
       </div>
@@ -378,7 +383,7 @@ export const PilotEvaluationView: React.FC = () => {
                 <TrendingUp size={18} color="var(--color-primary)" />
                 <span className="card-title">Chronological Holdout Model Benchmarks</span>
               </div>
-              <span className="text-muted" style={{ fontSize: '12px' }}>{benchmarks?.splitRatioPct || '80/10/10'} Chronological Split</span>
+              <span className="text-muted" style={{ fontSize: '12px' }}>{benchmarks?.splitRatioPct || 'Unavailable'} chronological split</span>
             </div>
 
             <table className="kpi-compare-table">
@@ -397,47 +402,43 @@ export const PilotEvaluationView: React.FC = () => {
                     <div className="metric-row-name">15-Minute Horizon</div>
                     <div className="metric-row-sub">Arterial EB Corridor Speed</div>
                   </td>
-                  <td className="mono-cell">{h15?.persistenceMae ?? 3.25} km/h</td>
-                  <td className="mono-cell" style={{ color: 'var(--color-primary)' }}>{h15?.modelMae ?? 2.45} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h15?.skillScore ?? 0.245}</td>
+                  <td className="mono-cell">{showNum(h15?.persistenceMae)} km/h</td>
+                  <td className="mono-cell" style={{ color: 'var(--color-primary)' }}>{showNum(h15?.modelMae)} km/h</td>
+                  <td className="mono-cell" style={{ color: '#34D399' }}>{showNum(h15?.skillScore, 3)}</td>
                   <td>
-                    {renderImprovementBadge(h15?.improvementPct ?? 24.5)}
+                    {renderImprovementBadge(h15?.improvementPct)}
                   </td>
                 </tr>
                 <tr>
                   <td>
                     <div className="metric-row-name">30-Minute Horizon</div>
-                    <div className="metric-row-sub">Arterial EB Corridor Speed</div>
+                    <div className="metric-row-sub">{h30 ? 'Scored horizon' : 'No trained model for this horizon'}</div>
                   </td>
-                  <td className="mono-cell">{h30?.persistenceMae ?? 3.89} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.modelMae ?? 3.12} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h30?.skillScore ?? 0.198}</td>
-                  <td>
-                    {renderImprovementBadge(h30?.improvementPct ?? 19.8)}
-                  </td>
+                  <td className="mono-cell">{h30 ? `${showNum(h30.persistenceMae)} km/h` : 'Unavailable'}</td>
+                  <td className="mono-cell">{h30 ? `${showNum(h30.modelMae)} km/h` : 'Unavailable'}</td>
+                  <td className="mono-cell">{h30 ? showNum(h30.skillScore, 3) : 'Unavailable'}</td>
+                  <td>{renderImprovementBadge(h30?.improvementPct)}</td>
                 </tr>
                 <tr>
                   <td>
                     <div className="metric-row-name">60-Minute Horizon</div>
-                    <div className="metric-row-sub">Arterial EB Corridor Speed</div>
+                    <div className="metric-row-sub">{h60 ? 'Scored horizon' : 'No trained model for this horizon'}</div>
                   </td>
-                  <td className="mono-cell">{h60?.persistenceMae ?? 4.60} km/h</td>
-                  <td className="mono-cell" style={{ color: '#00D2D3' }}>{h60?.modelMae ?? 3.95} km/h</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{h60?.skillScore ?? 0.142}</td>
-                  <td>
-                    {renderImprovementBadge(h60?.improvementPct ?? 14.2)}
-                  </td>
+                  <td className="mono-cell">{h60 ? `${showNum(h60.persistenceMae)} km/h` : 'Unavailable'}</td>
+                  <td className="mono-cell">{h60 ? `${showNum(h60.modelMae)} km/h` : 'Unavailable'}</td>
+                  <td className="mono-cell">{h60 ? showNum(h60.skillScore, 3) : 'Unavailable'}</td>
+                  <td>{renderImprovementBadge(h60?.improvementPct)}</td>
                 </tr>
                 <tr>
                   <td>
                     <div className="metric-row-name">60-Minute Commercial Load</div>
-                    <div className="metric-row-sub">{be?.facilityName || 'Commercial Facility BLD-01'} ({be?.unit || 'kW'})</div>
+                    <div className="metric-row-sub">{be?.facilityName || 'Commercial facility'} ({be?.unit || 'kW'})</div>
                   </td>
-                  <td className="mono-cell">{be?.persistenceMae ?? 218.0} {be?.unit || 'kW'}</td>
-                  <td className="mono-cell" style={{ color: '#F59E0B' }}>{be?.modelMae ?? 142.6} {be?.unit || 'kW'}</td>
-                  <td className="mono-cell" style={{ color: '#34D399' }}>{be?.skillScore ?? 0.346}</td>
+                  <td className="mono-cell">{showNum(be?.persistenceMae)} {be?.unit || 'kW'}</td>
+                  <td className="mono-cell">{showNum(be?.modelMae)} {be?.unit || 'kW'}</td>
+                  <td className="mono-cell">{showNum(be?.skillScore, 3)}</td>
                   <td>
-                    {renderImprovementBadge(be?.improvementPct ?? 34.6)}
+                    {renderImprovementBadge(be?.improvementPct)}
                   </td>
                 </tr>
               </tbody>
@@ -446,7 +447,7 @@ export const PilotEvaluationView: React.FC = () => {
             <div className="analytics-notice-box" style={{ marginTop: '16px' }}>
               <HelpCircle size={14} className="text-muted" />
               <span>
-                <strong>Persistence Baseline Contract:</strong> Every forecasting horizon is evaluated against chronological persistence $y(t+h) = y(t)$ without random shuffling to prevent data leakage.
+                <strong>Persistence baseline:</strong> A listed horizon is scored against chronological persistence, the value at time t carried forward. The series is generated, not an observed measurement.
               </span>
             </div>
           </div>
@@ -468,14 +469,14 @@ export const PilotEvaluationView: React.FC = () => {
                     90% Nominal Confidence Interval
                   </span>
                   <span className="mono-cell" style={{ color: 'var(--color-primary)' }}>
-                    {cov?.target90?.empiricalCoveragePct || 90.5}% Coverage
+                    {showNum(cov?.target90?.empiricalCoveragePct, 1)}% coverage
                   </span>
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  Empirical non-conformity threshold: <strong style={{ color: 'var(--text-main)' }}>±{cov?.target90?.halfWidthKmh || 4.80} km/h</strong> around point prediction.
+                  Holdout half-width: <strong style={{ color: 'var(--text-main)' }}>+/- {showNum(cov?.target90?.halfWidthKmh)} km/h</strong> around the point prediction.
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${cov?.target90?.empiricalCoveragePct || 90.5}%`, height: '100%', background: '#3FB950' }} />
+                  <div style={{ width: `${typeof cov?.target90?.empiricalCoveragePct === 'number' ? cov.target90.empiricalCoveragePct : 0}%`, height: '100%', background: '#3FB950' }} />
                 </div>
               </div>
 
@@ -485,23 +486,23 @@ export const PilotEvaluationView: React.FC = () => {
                     95% Nominal Confidence Interval
                   </span>
                   <span className="mono-cell" style={{ color: '#3FB950' }}>
-                    {cov?.target95?.empiricalCoveragePct || 95.2}% Coverage
+                    {showNum(cov?.target95?.empiricalCoveragePct, 1)}% coverage
                   </span>
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  Empirical non-conformity threshold: <strong style={{ color: 'var(--text-main)' }}>±{cov?.target95?.halfWidthKmh || 5.66} km/h</strong> around point prediction.
+                  Holdout half-width: <strong style={{ color: 'var(--text-main)' }}>+/- {showNum(cov?.target95?.halfWidthKmh)} km/h</strong> around the point prediction.
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${cov?.target95?.empiricalCoveragePct || 95.2}%`, height: '100%', background: '#3FB950' }} />
+                  <div style={{ width: `${typeof cov?.target95?.empiricalCoveragePct === 'number' ? cov.target95.empiricalCoveragePct : 0}%`, height: '100%', background: '#3FB950' }} />
                 </div>
               </div>
 
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '12px', marginTop: '16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                  Validation Guarantee
+                  Holdout coverage
                 </span>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
-                  Conformal prediction guarantees distribution-free, finite-sample coverage validity across non-stationary traffic regimes. The empirical test coverage meets or exceeds nominal coverage thresholds without Gaussian assumptions.
+                  Coverage is the share of the later holdout whose absolute residual falls inside the quantile fit on the calibration split. A missing model leaves these figures unavailable.
                 </p>
               </div>
             </div>
@@ -674,7 +675,7 @@ export const PilotEvaluationView: React.FC = () => {
                   <span>2. Multi-Horizon Machine Learning Accuracy vs. Persistence Baselines</span>
                 </h3>
                 <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                  Evaluated strictly on chronological {benchmarks?.splitRatioPct || '80/10/10'} holdout test sets without random temporal shuffling. Error metrics reflect actual corridor speed and commercial load predictions.
+                  Evaluated on the chronological {benchmarks?.splitRatioPct || 'Unavailable'} holdout of a generated series. Only a horizon with a trained model is scored.
                 </p>
 
                 <table className="briefing-table">
@@ -693,54 +694,46 @@ export const PilotEvaluationView: React.FC = () => {
                     <tr>
                       <td style={{ fontWeight: 600 }}>15-Minute Horizon</td>
                       <td>Arterial EB Corridor Speed</td>
-                      <td className="font-mono">{h15?.persistenceMae ?? 3.25} km/h</td>
+                      <td className="font-mono">{showNum(h15?.persistenceMae)} km/h</td>
                       <td className="font-mono" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
-                        {h15?.modelMae ?? 2.45} km/h
+                        {showNum(h15?.modelMae)} km/h
                       </td>
                       <td>
-                        {renderImprovementBadge(h15?.improvementPct ?? 24.5)}
+                        {renderImprovementBadge(h15?.improvementPct)}
                       </td>
-                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct ?? 90.5}% (90% Nom)</td>
-                      <td className="font-mono">{h15?.r2Score ?? 0.884}</td>
+                      <td className="font-mono">{showNum(cov?.target90?.empiricalCoveragePct, 1)}% (90% nominal)</td>
+                      <td className="font-mono">{showNum(h15?.r2Score, 3)}</td>
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>30-Minute Horizon</td>
-                      <td>Arterial EB Corridor Speed</td>
-                      <td className="font-mono">{h30?.persistenceMae ?? 3.89} km/h</td>
-                      <td className="font-mono" style={{ color: '#34D399', fontWeight: 700 }}>
-                        {h30?.modelMae ?? 3.12} km/h
-                      </td>
-                      <td>
-                        {renderImprovementBadge(h30?.improvementPct ?? 19.8)}
-                      </td>
-                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct ?? 90.5}% (90% Nom)</td>
-                      <td className="font-mono">{h30?.r2Score ?? 0.831}</td>
+                      <td>{h30 ? 'Scored horizon' : 'No trained model'}</td>
+                      <td className="font-mono">{h30 ? `${showNum(h30.persistenceMae)} km/h` : 'Unavailable'}</td>
+                      <td className="font-mono">{h30 ? `${showNum(h30.modelMae)} km/h` : 'Unavailable'}</td>
+                      <td>{renderImprovementBadge(h30?.improvementPct)}</td>
+                      <td className="font-mono">Unavailable</td>
+                      <td className="font-mono">{h30 ? showNum(h30.r2Score, 3) : 'Unavailable'}</td>
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>60-Minute Horizon</td>
-                      <td>Arterial EB Corridor Speed</td>
-                      <td className="font-mono">{h60?.persistenceMae ?? 4.60} km/h</td>
-                      <td className="font-mono" style={{ color: '#00D2D3', fontWeight: 700 }}>
-                        {h60?.modelMae ?? 3.95} km/h
-                      </td>
-                      <td>
-                        {renderImprovementBadge(h60?.improvementPct ?? 14.2)}
-                      </td>
-                      <td className="font-mono">{cov?.target95?.empiricalCoveragePct ?? 95.2}% (95% Nom)</td>
-                      <td className="font-mono">{h60?.r2Score ?? 0.762}</td>
+                      <td>{h60 ? 'Scored horizon' : 'No trained model'}</td>
+                      <td className="font-mono">{h60 ? `${showNum(h60.persistenceMae)} km/h` : 'Unavailable'}</td>
+                      <td className="font-mono">{h60 ? `${showNum(h60.modelMae)} km/h` : 'Unavailable'}</td>
+                      <td>{renderImprovementBadge(h60?.improvementPct)}</td>
+                      <td className="font-mono">Unavailable</td>
+                      <td className="font-mono">{h60 ? showNum(h60.r2Score, 3) : 'Unavailable'}</td>
                     </tr>
                     <tr>
                       <td style={{ fontWeight: 600 }}>60-Minute Horizon</td>
-                      <td>{be?.facilityName || 'Commercial Facility Load'}</td>
-                      <td className="font-mono">{be?.persistenceMae ?? 218.0} {be?.unit || 'kW'}</td>
+                      <td>{be?.facilityName || 'Commercial facility load'}</td>
+                      <td className="font-mono">{showNum(be?.persistenceMae)} {be?.unit || 'kW'}</td>
                       <td className="font-mono" style={{ color: '#10B981', fontWeight: 700 }}>
-                        {be?.modelMae ?? 142.6} {be?.unit || 'kW'}
+                        {showNum(be?.modelMae)} {be?.unit || 'kW'}
                       </td>
                       <td>
-                        {renderImprovementBadge(be?.improvementPct ?? 34.6)}
+                        {renderImprovementBadge(be?.improvementPct)}
                       </td>
-                      <td className="font-mono">{cov?.target90?.empiricalCoveragePct ?? 90.5}% (90% Nom)</td>
-                      <td className="font-mono">{be?.r2Score ?? 0.854}</td>
+                      <td className="font-mono">Unavailable</td>
+                      <td className="font-mono">{showNum(be?.r2Score, 3)}</td>
                     </tr>
                   </tbody>
                 </table>

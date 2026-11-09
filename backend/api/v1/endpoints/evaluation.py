@@ -25,8 +25,8 @@ router = APIRouter(tags=["Evaluation, Reports & Exports"])
 @router.get("/analytics/evaluation/benchmarks")
 def get_evaluation_benchmarks(recompute: bool = False):
     """
-    Returns multi-horizon forecasting benchmarks (15m, 30m, 60m)
-    evaluated on the chronological holdout test set vs. persistence baselines.
+    Returns forecasting benchmarks for horizons a saved model was trained to predict.
+    Scores use a generated series and a holdout that starts after the training split.
     """
     return evaluation_service.get_multi_horizon_benchmarks(force_recompute=recompute)
 

@@ -1,11 +1,9 @@
 """
 evaluation_service.py
 
-Multi-horizon evaluation benchmarking service for corridor forecasts (Milestone 9).
-Evaluates XGBoost models against Persistence and Historical Baselines on chronological holdout sets
-across 15-minute, 30-minute, and 60-minute horizons.
-Quantifies MAE, RMSE, MAPE, R2, Skill Scores, and Conformal Prediction Interval coverage.
-Strictly adheres to AGENTS.md Rule 4 (80/10/10 chronological split).
+Benchmark service for the horizons a saved model was actually trained to predict.
+Scores use a generated series with the same length and seed as that fit.
+The holdout split starts after the training split of that series.
 """
 
 from datetime import datetime, timezone
@@ -30,6 +28,60 @@ from ml.features.energy_features import (
 from ml.inference.forecaster import CorridorForecaster
 from ml.conformal_calibrator import ConformalPredictionCalibrator
 
+# These match the saved artifacts. A later training change owns the 80/10/10 contract.
+_SPEED_SERIES_DAYS = 21
+_LOAD_SERIES_DAYS = 35
+_FIT_TRAIN_PCT = 0.70
+_FIT_VAL_PCT = 0.15
+_SERIES_SEED = 42
+
+
+def score_forecast_holdout(y_true, y_pred, y_persistence) -> Dict[str, Any]:
+    """MAE, RMSE, and R-squared on one holdout. R-squared is not floored at zero."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    y_persistence = np.asarray(y_persistence, dtype=float)
+    mae = float(np.mean(np.abs(y_true - y_pred)))
+    rmse = float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
+    mape = float(np.mean(np.abs((y_true - y_pred) / np.maximum(y_true, 1e-5))) * 100.0)
+    pers_mae = float(np.mean(np.abs(y_true - y_persistence)))
+    pers_rmse = float(np.sqrt(np.mean((y_true - y_persistence) ** 2)))
+    ss_res = float(np.sum((y_true - y_pred) ** 2))
+    ss_tot = float(np.sum((y_true - np.mean(y_true)) ** 2))
+    r2 = float(1.0 - (ss_res / max(ss_tot, 1e-5)))
+    skill_score = float(max(-1.0, 1.0 - (mae / max(pers_mae, 1e-5))))
+    improvement_pct = float(((pers_mae - mae) / max(pers_mae, 1e-5)) * 100.0)
+    return {
+        "status": "SCORED",
+        "modelMae": round(mae, 2),
+        "modelRmse": round(rmse, 2),
+        "modelMape": round(mape, 2),
+        "r2Score": round(r2, 3),
+        "persistenceMae": round(pers_mae, 2),
+        "persistenceRmse": round(pers_rmse, 2),
+        "skillScore": round(skill_score, 3),
+        "improvementPct": round(improvement_pct, 1),
+    }
+
+
+def unavailable_model_score(y_true, y_persistence) -> Dict[str, Any]:
+    """Persistence only. No invented model error."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_persistence = np.asarray(y_persistence, dtype=float)
+    pers_mae = float(np.mean(np.abs(y_true - y_persistence)))
+    pers_rmse = float(np.sqrt(np.mean((y_true - y_persistence) ** 2)))
+    return {
+        "status": "MODEL_UNAVAILABLE",
+        "modelMae": None,
+        "modelRmse": None,
+        "modelMape": None,
+        "r2Score": None,
+        "persistenceMae": round(pers_mae, 2),
+        "persistenceRmse": round(pers_rmse, 2),
+        "skillScore": None,
+        "improvementPct": None,
+    }
+
 
 class EvaluationService:
     """Computes and caches multi-horizon empirical benchmark metrics."""
@@ -51,176 +103,121 @@ class EvaluationService:
             return self._cached_benchmarks
 
         now_iso = now_dt.isoformat()
+        forecaster = CorridorForecaster()
 
-        # 1. Traffic Forecast Benchmarking across 15m, 30m, 60m horizons (80/10/10 Chronological Split)
-        raw_df = generate_corridor_traffic_history(days=14, seed=42)
+        raw_df = generate_corridor_traffic_history(days=_SPEED_SERIES_DAYS, seed=_SERIES_SEED)
         feat_df = build_traffic_features(raw_df)
-        train_df, val_df, test_df = chronological_split(feat_df, train_pct=0.80, val_pct=0.10)
-
+        train_df, val_df, test_df = chronological_split(
+            feat_df, train_pct=_FIT_TRAIN_PCT, val_pct=_FIT_VAL_PCT
+        )
         y_test_15m = test_df[TARGET_COLUMN].values
         y_pers = test_df["speed_kmh"].values
-        forecaster = CorridorForecaster()
-        X_test = test_df[FEATURE_COLUMNS]
-
-        # 15m primary model predictions
-        if forecaster.traffic_artifact and "model" in forecaster.traffic_artifact:
-            y_xgb_15m = forecaster.traffic_artifact["model"].predict(X_test)
-        else:
-            y_xgb_15m = y_pers * 0.95 + 1.2
-
-        # 30m & 60m multi-step compound horizon dynamics (grounded without circular np.roll)
-        rng = np.random.RandomState(42)
-        noise_30m = rng.normal(0, 0.8, len(y_test_15m))
-        noise_60m = rng.normal(0, 1.4, len(y_test_15m))
-
-        mean_roll_60m = test_df["speed_roll_mean_60m"].values if "speed_roll_mean_60m" in test_df else y_pers
-
-        # Persistence baseline for any future horizon t+h is current speed y(t)
-        y_pers_15m = y_pers
-        y_pers_30m = y_pers
-        y_pers_60m = y_pers
-
-        # Ground truth targets with progressive compound error dynamics
-        y_test_30m = y_test_15m * 0.97 + rng.normal(0, 0.5, len(y_test_15m))
-        y_test_60m = y_test_15m * 0.94 + rng.normal(0, 0.9, len(y_test_15m))
-
-        # Model multi-step projections combining short-range gradient boosting with mean reversion
-        y_xgb_30m = 0.82 * y_xgb_15m + 0.18 * mean_roll_60m + noise_30m
-        y_xgb_60m = 0.68 * y_xgb_15m + 0.32 * mean_roll_60m + noise_60m
-
-        def calc_metrics(y_true, y_pred, y_pers_base):
-            mae = float(np.mean(np.abs(y_true - y_pred)))
-            rmse = float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
-            mape = float(np.mean(np.abs((y_true - y_pred) / np.maximum(y_true, 1e-5))) * 100.0)
-
-            pers_mae = float(np.mean(np.abs(y_true - y_pers_base)))
-            pers_rmse = float(np.sqrt(np.mean((y_true - y_pers_base) ** 2)))
-
-            ss_res = np.sum((y_true - y_pred) ** 2)
-            ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
-            r2 = float(max(0.0, 1.0 - (ss_res / max(ss_tot, 1e-5))))
-
-            skill_score = float(max(-1.0, 1.0 - (mae / max(pers_mae, 1e-5))))
-            improvement_pct = float(((pers_mae - mae) / max(pers_mae, 1e-5)) * 100.0)
-
-            return {
-                "modelMae": round(mae, 2),
-                "modelRmse": round(rmse, 2),
-                "modelMape": round(mape, 2),
-                "r2Score": round(r2, 3),
-                "persistenceMae": round(pers_mae, 2),
-                "persistenceRmse": round(pers_rmse, 2),
-                "skillScore": round(skill_score, 3),
-                "improvementPct": round(improvement_pct, 1)
-            }
-
-        traffic_15m = calc_metrics(y_test_15m, y_xgb_15m, y_pers_15m)
-        traffic_30m = calc_metrics(y_test_30m, y_xgb_30m, y_pers_30m)
-        traffic_60m = calc_metrics(y_test_60m, y_xgb_60m, y_pers_60m)
-
-        # Quantiles use the validation split. Coverage uses only the later holdout split.
-        y_val_15m = val_df[TARGET_COLUMN].values
-        X_val = val_df[FEATURE_COLUMNS]
-        if forecaster.traffic_artifact and "model" in forecaster.traffic_artifact:
-            y_hat_val = forecaster.traffic_artifact["model"].predict(X_val)
-        else:
-            y_hat_val = val_df["speed_kmh"].values * 0.95 + 1.2
-        calibration_residuals = np.abs(y_val_15m - y_hat_val)
-        test_residuals = np.abs(y_test_15m - y_xgb_15m)
-        q90 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration_residuals, alpha=0.10)
-        q95 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration_residuals, alpha=0.05)
-        cov_90 = ConformalPredictionCalibrator.empirical_coverage(test_residuals, q90) * 100.0
-        cov_95 = ConformalPredictionCalibrator.empirical_coverage(test_residuals, q95) * 100.0
-
-        # 3. Dynamic Empirical Building Energy Benchmark (80/10/10 Chronological Split)
-        raw_energy_df = generate_building_energy_history(days=28, seed=42)
-        feat_energy_df = build_energy_features(raw_energy_df)
-        train_e_df, val_e_df, test_e_df = chronological_energy_split(feat_energy_df, train_pct=0.80, val_pct=0.10)
-
-        y_energy_test = test_e_df[ENERGY_TARGET_COLUMN].values
-        y_energy_pers = test_e_df["active_power_kw"].values
-        X_energy_test = test_e_df[ENERGY_FEATURE_COLUMNS]
-
-        if forecaster.energy_artifact and "model" in forecaster.energy_artifact:
-            y_energy_xgb = forecaster.energy_artifact["model"].predict(X_energy_test)
-        else:
-            y_energy_xgb = y_energy_pers * 0.94 + 50.0
-
-        energy_mae = float(np.mean(np.abs(y_energy_test - y_energy_xgb)))
-        energy_rmse = float(np.sqrt(np.mean((y_energy_test - y_energy_xgb) ** 2)))
-        energy_mape = float(np.mean(np.abs((y_energy_test - y_energy_xgb) / np.maximum(y_energy_test, 1e-5))) * 100.0)
-
-        energy_pers_mae = float(np.mean(np.abs(y_energy_test - y_energy_pers)))
-        energy_pers_rmse = float(np.sqrt(np.mean((y_energy_test - y_energy_pers) ** 2)))
-
-        e_ss_res = np.sum((y_energy_test - y_energy_xgb) ** 2)
-        e_ss_tot = np.sum((y_energy_test - np.mean(y_energy_test)) ** 2)
-        energy_r2 = float(max(0.0, 1.0 - (e_ss_res / max(e_ss_tot, 1e-5))))
-
-        energy_skill_score = float(max(-1.0, 1.0 - (energy_mae / max(energy_pers_mae, 1e-5))))
-        energy_improvement_pct = float(((energy_pers_mae - energy_mae) / max(energy_pers_mae, 1e-5)) * 100.0)
-
-        energy_metrics = {
-            "horizonMinutes": 60,
-            "targetMetric": "commercialActivePowerKw",
-            "unit": "kW",
-            "modelMae": round(energy_mae, 2),
-            "modelRmse": round(energy_rmse, 2),
-            "modelMape": round(energy_mape, 2),
-            "r2Score": round(energy_r2, 3),
-            "persistenceMae": round(energy_pers_mae, 2),
-            "persistenceRmse": round(energy_pers_rmse, 2),
-            "skillScore": round(energy_skill_score, 3),
-            "improvementPct": round(energy_improvement_pct, 1),
-            "facilityId": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
-            "facilityName": "Phoenix Marketcity Commercial Complex"
-        }
-
-        benchmarks = {
-            "evaluatedAt": now_iso,
-            "testSetSamples": len(test_df),
-            "splitRatio": "80% Train / 10% Val / 10% Holdout Test (Chronological)",
-            "splitRatioPct": "80/10/10",
-            "governanceNotice": "BENCHMARK INTEGRITY: Evaluated strictly against chronological out-of-sample holdout sets with persistence baseline comparison.",
-            "horizons": {
-                "15m": {
-                    "horizonMinutes": 15,
-                    "targetMetric": "averageSpeedKmh",
-                    "unit": "km/h",
-                    **traffic_15m
-                },
-                "30m": {
-                    "horizonMinutes": 30,
-                    "targetMetric": "averageSpeedKmh",
-                    "unit": "km/h",
-                    **traffic_30m
-                },
-                "60m": {
-                    "horizonMinutes": 60,
-                    "targetMetric": "averageSpeedKmh",
-                    "unit": "km/h",
-                    **traffic_60m
-                }
-            },
-            "buildingEnergy": energy_metrics,
-            "conformalCoverage": {
+        speed_model = (
+            forecaster.traffic_artifact.get("model")
+            if forecaster.traffic_artifact and "model" in forecaster.traffic_artifact
+            else None
+        )
+        if speed_model is not None:
+            traffic_15m = score_forecast_holdout(
+                y_test_15m,
+                speed_model.predict(test_df[FEATURE_COLUMNS]),
+                y_pers,
+            )
+            calibration_residuals = np.abs(
+                val_df[TARGET_COLUMN].values - speed_model.predict(val_df[FEATURE_COLUMNS])
+            )
+            test_residuals = np.abs(
+                y_test_15m - speed_model.predict(test_df[FEATURE_COLUMNS])
+            )
+            q90 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration_residuals, alpha=0.10)
+            q95 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration_residuals, alpha=0.05)
+            cov_90 = round(ConformalPredictionCalibrator.empirical_coverage(test_residuals, q90) * 100.0, 1)
+            cov_95 = round(ConformalPredictionCalibrator.empirical_coverage(test_residuals, q95) * 100.0, 1)
+            conformal_coverage = {
+                "status": "SCORED",
                 "calibrationSplit": "validation",
                 "testSplit": "holdout",
                 "calibrationSamples": int(calibration_residuals.size),
                 "testSamples": int(test_residuals.size),
                 "target90": {
                     "nominalConfidence": 0.90,
-                    "empiricalCoveragePct": round(cov_90, 1),
+                    "empiricalCoveragePct": cov_90,
                     "halfWidthKmh": round(q90, 2),
-                    "valid": cov_90 >= 88.0
+                    "valid": cov_90 >= 90.0,
                 },
                 "target95": {
                     "nominalConfidence": 0.95,
-                    "empiricalCoveragePct": round(cov_95, 1),
+                    "empiricalCoveragePct": cov_95,
                     "halfWidthKmh": round(q95, 2),
-                    "valid": cov_95 >= 93.0
-                }
+                    "valid": cov_95 >= 95.0,
+                },
             }
+        else:
+            traffic_15m = unavailable_model_score(y_test_15m, y_pers)
+            conformal_coverage = {
+                "status": "MODEL_UNAVAILABLE",
+                "calibrationSplit": None,
+                "testSplit": None,
+                "calibrationSamples": 0,
+                "testSamples": 0,
+                "target90": None,
+                "target95": None,
+            }
+
+        raw_energy_df = generate_building_energy_history(days=_LOAD_SERIES_DAYS, seed=_SERIES_SEED)
+        feat_energy_df = build_energy_features(raw_energy_df)
+        _train_e, _val_e, test_e_df = chronological_energy_split(
+            feat_energy_df, train_pct=_FIT_TRAIN_PCT, val_pct=_FIT_VAL_PCT
+        )
+        y_energy_test = test_e_df[ENERGY_TARGET_COLUMN].values
+        y_energy_pers = test_e_df["active_power_kw"].values
+        load_model = (
+            forecaster.energy_artifact.get("model")
+            if forecaster.energy_artifact and "model" in forecaster.energy_artifact
+            else None
+        )
+        if load_model is not None:
+            energy_score = score_forecast_holdout(
+                y_energy_test,
+                load_model.predict(test_e_df[ENERGY_FEATURE_COLUMNS]),
+                y_energy_pers,
+            )
+        else:
+            energy_score = unavailable_model_score(y_energy_test, y_energy_pers)
+        energy_metrics = {
+            "horizonMinutes": 60,
+            "targetMetric": "commercialActivePowerKw",
+            "unit": "kW",
+            **energy_score,
+            "facilityId": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            "facilityName": "Phoenix Marketcity Commercial Complex",
+        }
+
+        benchmarks = {
+            "evaluatedAt": now_iso,
+            "seriesProvenance": "GENERATED",
+            "generatorSeed": _SERIES_SEED,
+            "testSetSamples": len(test_df),
+            "holdoutStartsAfter": pd.Timestamp(train_df["timestamp"].max()).isoformat(),
+            "testSplitStartsAt": pd.Timestamp(test_df["timestamp"].min()).isoformat(),
+            "splitRatio": "70% Train / 15% Val / 15% Holdout (Chronological, matching the saved fit)",
+            "splitRatioPct": "70/15/15",
+            "governanceNotice": (
+                "BENCHMARK INTEGRITY: Scores use a generated series with the same seed and length "
+                "as the saved fit. They are not observed measurements. The holdout starts after "
+                "the training split of that series. Only a horizon the model was trained to predict is listed."
+            ),
+            "horizons": {
+                "15m": {
+                    "horizonMinutes": 15,
+                    "targetMetric": "averageSpeedKmh",
+                    "unit": "km/h",
+                    "trainedHorizon": True,
+                    **traffic_15m,
+                }
+            },
+            "buildingEnergy": energy_metrics,
+            "conformalCoverage": conformal_coverage,
         }
 
         self._cached_benchmarks = benchmarks

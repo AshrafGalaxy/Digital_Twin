@@ -156,11 +156,9 @@ class MunicipalReportGenerator:
         report = self.generate_executive_report()
         corridor = report["corridor"]
         benchmarks = report["evaluationBenchmarks"]
-        h15 = benchmarks["horizons"]["15m"]
-        h30 = benchmarks["horizons"]["30m"]
-        h60 = benchmarks["horizons"]["60m"]
-        cov = benchmarks["conformalCoverage"]
-        be = benchmarks.get("buildingEnergy", {})
+        horizons = benchmarks.get("horizons", {})
+        cov = benchmarks.get("conformalCoverage") or {}
+        be = benchmarks.get("buildingEnergy") or {}
         latest_run = report["scenarioStudioSummary"]["latestRun"]
 
         md_lines = [
@@ -202,25 +200,49 @@ class MunicipalReportGenerator:
             "",
             "## 3. Multi-Horizon Forecasting Accuracy Benchmarks",
             "",
-            f"Evaluated on a chronological holdout test set ({benchmarks['splitRatio']}):",
+            f"Series provenance: `{benchmarks.get('seriesProvenance', 'GENERATED')}`. "
+            f"Split: {benchmarks.get('splitRatio', 'unspecified')}.",
             "",
-            "| Horizon | Target Metric | Persistence Baseline MAE | XGBoost Model MAE | RMSE | Forecast Skill Score | Improvement vs Persistence |",
+            "| Horizon | Target Metric | Persistence Baseline MAE | Model MAE | RMSE | Skill Score | Improvement vs Persistence |",
             "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
-            f"| **15 Minutes** | Arterial Speed | `{h15['persistenceMae']} km/h` | **`{h15['modelMae']} km/h`** | `{h15['modelRmse']} km/h` | **`{h15['skillScore']}`** | **`+{h15['improvementPct']}%`** |",
-            f"| **30 Minutes** | Arterial Speed | `{h30['persistenceMae']} km/h` | **`{h30['modelMae']} km/h`** | `{h30['modelRmse']} km/h` | **`{h30['skillScore']}`** | **`+{h30['improvementPct']}%`** |",
-            f"| **60 Minutes** | Arterial Speed | `{h60['persistenceMae']} km/h` | **`{h60['modelMae']} km/h`** | `{h60['modelRmse']} km/h` | **`{h60['skillScore']}`** | **`+{h60['improvementPct']}%`** |",
         ]
-
-        if be:
+        for horizon in horizons.values():
+            unit = horizon.get("unit", "")
+            model_mae = horizon.get("modelMae")
+            model_cell = "unavailable" if model_mae is None else f"**`{model_mae} {unit}`**"
+            rmse_cell = "unavailable" if horizon.get("modelRmse") is None else f"`{horizon.get('modelRmse')} {unit}`"
+            skill_cell = "unavailable" if horizon.get("skillScore") is None else f"**`{horizon.get('skillScore')}`**"
+            gain_cell = "unavailable" if horizon.get("improvementPct") is None else f"**`{horizon.get('improvementPct')}%`**"
             md_lines.append(
-                f"| **60 Minutes** | Commercial Load ({be.get('facilityName', 'Phoenix Complex')}) | `{be.get('persistenceMae', 0)} {be.get('unit', 'kW')}` | **`{be.get('modelMae', 0)} {be.get('unit', 'kW')}`** | `{be.get('modelRmse', 0)} {be.get('unit', 'kW')}` | **`{be.get('skillScore', 0)}`** | **`+{be.get('improvementPct', 0)}%`** |"
+                f"| **{horizon.get('horizonMinutes')} Minutes** | {horizon.get('targetMetric')} | "
+                f"`{horizon.get('persistenceMae')} {unit}` | {model_cell} | {rmse_cell} | {skill_cell} | {gain_cell} |"
+            )
+        if be:
+            unit = be.get("unit", "kW")
+            model_mae = be.get("modelMae")
+            model_cell = "unavailable" if model_mae is None else f"**`{model_mae} {unit}`**"
+            rmse_cell = "unavailable" if be.get("modelRmse") is None else f"`{be.get('modelRmse')} {unit}`"
+            skill_cell = "unavailable" if be.get("skillScore") is None else f"**`{be.get('skillScore')}`**"
+            gain_cell = "unavailable" if be.get("improvementPct") is None else f"**`{be.get('improvementPct')}%`**"
+            md_lines.append(
+                f"| **{be.get('horizonMinutes', 60)} Minutes** | Commercial Load ({be.get('facilityName', 'facility')}) | "
+                f"`{be.get('persistenceMae')} {unit}` | {model_cell} | {rmse_cell} | {skill_cell} | {gain_cell} |"
             )
 
+        coverage_lines = ["", "### Conformal Prediction Uncertainty Coverage", ""]
+        target90 = cov.get("target90") if isinstance(cov, dict) else None
+        target95 = cov.get("target95") if isinstance(cov, dict) else None
+        if target90 and target95:
+            coverage_lines.extend([
+                f"- **90% interval:** Holdout coverage is **{target90['empiricalCoveragePct']}%** "
+                f"(half-width +/- {target90['halfWidthKmh']} km/h).",
+                f"- **95% interval:** Holdout coverage is **{target95['empiricalCoveragePct']}%** "
+                f"(half-width +/- {target95['halfWidthKmh']} km/h).",
+            ])
+        else:
+            coverage_lines.append("- Coverage was not computed because the model artifact is unavailable.")
+        md_lines.extend(coverage_lines)
         md_lines.extend([
-            "",
-            "### Conformal Prediction Uncertainty Coverage",
-            f"- **90% Confidence Interval:** Empirical test coverage is **{cov['target90']['empiricalCoveragePct']}%** (half-width ±{cov['target90']['halfWidthKmh']} km/h).",
-            f"- **95% Confidence Interval:** Empirical test coverage is **{cov['target95']['empiricalCoveragePct']}%** (half-width ±{cov['target95']['halfWidthKmh']} km/h).",
             "",
             "---",
             "",
