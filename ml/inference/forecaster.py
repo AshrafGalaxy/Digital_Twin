@@ -20,8 +20,8 @@ import numpy as np
 import pandas as pd
 import joblib
 
-from ml.features.traffic_features import FEATURE_COLUMNS
-from ml.features.energy_features import ENERGY_FEATURE_COLUMNS
+from ml.features.traffic_features import FEATURE_COLUMNS, extract_traffic_features_row
+from ml.features.energy_features import ENERGY_FEATURE_COLUMNS, extract_energy_features_row
 from ml.conformal_calibrator import ConformalPredictionCalibrator
 from ml.explainer import LocalModelExplainer
 
@@ -66,13 +66,14 @@ class CorridorForecaster:
         segment_id: str,
         current_speed: float,
         speed_history: Optional[List[float]] = None,
-        ambient_temp_c: float = 29.5
+        ambient_temp_c: float = 29.5,
+        now_utc: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """
         Generates a 15-minute ahead speed prediction for a road segment.
         Returns point estimate, 80% prediction interval, input quality, and model version.
         """
-        now_utc = datetime.now(timezone.utc)
+        now_utc = now_utc if now_utc is not None else datetime.now(timezone.utc)
         target_utc = now_utc + timedelta(minutes=15)
 
         # Fallback if artifact is not loaded
@@ -101,32 +102,13 @@ class CorridorForecaster:
                 "localityNotice": "Heuristic fallback: demonstration corridor baseline model."
             }
 
-        # Synthesize recent lags if partial history provided
-        hist = speed_history or [current_speed] * 12
-        if len(hist) < 12:
-            hist = [hist[0]] * (12 - len(hist)) + hist
+        # Synthesize recent lags if partial history provided (ending at current observation)
+        hist = list(speed_history) if speed_history is not None else [current_speed] * 13
+        if len(hist) < 13:
+            hist = [hist[0]] * (13 - len(hist)) + hist
 
-        # Construct single-row feature dataframe
-        hour_float = now_utc.hour + now_utc.minute / 60.0
-        row_dict = {
-            "speed_lag_5m": hist[-1],
-            "speed_lag_10m": hist[-2],
-            "speed_lag_15m": hist[-3],
-            "speed_lag_30m": hist[-6],
-            "speed_lag_60m": hist[-12],
-            "speed_roll_mean_30m": float(np.mean(hist[-6:])),
-            "speed_roll_std_30m": float(np.std(hist[-6:])),
-            "speed_roll_mean_60m": float(np.mean(hist[-12:])),
-            "speed_roll_min_60m": float(np.min(hist[-12:])),
-            "speed_roll_max_60m": float(np.max(hist[-12:])),
-            "sin_hour": math.sin(2 * math.pi * hour_float / 24.0),
-            "cos_hour": math.cos(2 * math.pi * hour_float / 24.0),
-            "day_of_week": now_utc.weekday(),
-            "is_weekend": 1 if now_utc.weekday() in [5, 6] else 0,
-            "is_peak_hour": 1 if (8.5 <= hour_float <= 10.5 or 17.5 <= hour_float <= 21.0) else 0,
-            "ambient_temp_c": ambient_temp_c
-        }
-
+        # Construct single-row feature dataframe strictly matching training features
+        row_dict = extract_traffic_features_row(hist, now_utc, ambient_temp_c)
         X_input = pd.DataFrame([row_dict])[FEATURE_COLUMNS]
         
         # Primary prediction & Quantile bounds
@@ -178,12 +160,13 @@ class CorridorForecaster:
         current_kw: float,
         kw_history: Optional[List[float]] = None,
         ambient_temp_c: float = 30.5,
-        contract_kw: Optional[float] = None
+        contract_kw: Optional[float] = None,
+        now_utc: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """
         Generates a 60-minute ahead active power demand forecast for a commercial building.
         """
-        now_utc = datetime.now(timezone.utc)
+        now_utc = now_utc if now_utc is not None else datetime.now(timezone.utc)
         target_utc = now_utc + timedelta(minutes=60)
         contract_demand = contract_kw if contract_kw is not None else FACILITY_CONTRACT_KW.get(building_id, 6800.0)
         peak_threshold = round(contract_demand * 0.85, 1)
@@ -215,27 +198,13 @@ class CorridorForecaster:
                 "sourceLimitation": "Heuristic fallback: demonstration facility baseline model."
             }
 
-        hist = kw_history or [current_kw] * 96
-        if len(hist) < 96:
-            hist = [hist[0]] * (96 - len(hist)) + hist
+        # Synthesize recent lags if partial history provided (ending at current observation)
+        hist = list(kw_history) if kw_history is not None else [current_kw] * 97
+        if len(hist) < 97:
+            hist = [hist[0]] * (97 - len(hist)) + hist
 
-        hour_float = now_utc.hour + now_utc.minute / 60.0
-        row_dict = {
-            "load_lag_1h": hist[-4],
-            "load_lag_2h": hist[-8],
-            "load_lag_3h": hist[-12],
-            "load_lag_24h": hist[-96],
-            "load_roll_mean_6h": float(np.mean(hist[-24:])),
-            "load_roll_max_6h": float(np.max(hist[-24:])),
-            "load_roll_std_6h": float(np.std(hist[-24:])),
-            "sin_hour": math.sin(2 * math.pi * hour_float / 24.0),
-            "cos_hour": math.cos(2 * math.pi * hour_float / 24.0),
-            "day_of_week": now_utc.weekday(),
-            "is_weekend": 1 if now_utc.weekday() in [5, 6] else 0,
-            "is_mall_open": 1 if 10.0 <= hour_float <= 22.0 else 0,
-            "ambient_temp_c": ambient_temp_c
-        }
-
+        # Construct single-row feature dataframe strictly matching training features
+        row_dict = extract_energy_features_row(hist, now_utc, ambient_temp_c)
         X_input = pd.DataFrame([row_dict])[ENERGY_FEATURE_COLUMNS]
 
         pred = float(self.energy_artifact["model"].predict(X_input)[0])

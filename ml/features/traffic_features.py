@@ -7,7 +7,7 @@ Strictly enforces chronological ordering and zero feature leakage.
 
 import math
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
@@ -132,6 +132,41 @@ def build_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
     # 5. Drop rows with NaNs from lags or future target shift
     df = df.dropna().reset_index(drop=True)
     return df
+
+
+def extract_traffic_features_row(
+    hist: List[float],
+    dt: datetime,
+    ambient_temp_c: float
+) -> Dict[str, Any]:
+    """
+    Extracts the single-row feature vector for time step t, strictly matching
+    the training feature engineering pipeline in build_traffic_features().
+    hist is assumed to end at the observation for time t (hist[-1] is S_t).
+    Prior observations (hist[-2], hist[-3], etc.) are used for lags and rolling stats.
+    """
+    if len(hist) < 13:
+        hist = [hist[0]] * (13 - len(hist)) + list(hist)
+
+    hour_float = dt.hour + dt.minute / 60.0
+    return {
+        "speed_lag_5m": float(hist[-2]),
+        "speed_lag_10m": float(hist[-3]),
+        "speed_lag_15m": float(hist[-4]),
+        "speed_lag_30m": float(hist[-7]),
+        "speed_lag_60m": float(hist[-13]),
+        "speed_roll_mean_30m": float(np.mean(hist[-7:-1])),
+        "speed_roll_std_30m": float(np.nan_to_num(np.std(hist[-7:-1], ddof=1), nan=0.0)),
+        "speed_roll_mean_60m": float(np.mean(hist[-13:-1])),
+        "speed_roll_min_60m": float(np.min(hist[-13:-1])),
+        "speed_roll_max_60m": float(np.max(hist[-13:-1])),
+        "sin_hour": math.sin(2 * math.pi * hour_float / 24.0),
+        "cos_hour": math.cos(2 * math.pi * hour_float / 24.0),
+        "day_of_week": dt.weekday(),
+        "is_weekend": 1 if dt.weekday() in [5, 6] else 0,
+        "is_peak_hour": 1 if (8.5 <= hour_float <= 10.5 or 17.5 <= hour_float <= 21.0) else 0,
+        "ambient_temp_c": float(ambient_temp_c)
+    }
 
 
 def chronological_split(

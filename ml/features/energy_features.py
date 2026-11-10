@@ -7,7 +7,7 @@ Strictly enforces chronological ordering and zero feature leakage.
 
 import math
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
@@ -118,9 +118,43 @@ def build_energy_features(df: pd.DataFrame) -> pd.DataFrame:
     df["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
     df["day_of_week"] = df["timestamp"].dt.weekday
     df["is_weekend"] = df["day_of_week"].isin([5, 6]).astype(int)
+    if "is_mall_open" not in df.columns:
+        df["is_mall_open"] = hour_float.apply(lambda h: 1 if 10.0 <= h <= 22.0 else 0)
 
     df = df.dropna().reset_index(drop=True)
     return df
+
+
+def extract_energy_features_row(
+    hist: List[float],
+    dt: datetime,
+    ambient_temp_c: float
+) -> Dict[str, Any]:
+    """
+    Extracts the single-row feature vector for time step t, strictly matching
+    the training feature engineering pipeline in build_energy_features().
+    hist is assumed to end at the observation for time t (hist[-1] is P_t).
+    Prior observations are used for hourly lags (4 steps/hour) and rolling stats.
+    """
+    if len(hist) < 97:
+        hist = [hist[0]] * (97 - len(hist)) + list(hist)
+
+    hour_float = dt.hour + dt.minute / 60.0
+    return {
+        "load_lag_1h": float(hist[-5]),
+        "load_lag_2h": float(hist[-9]),
+        "load_lag_3h": float(hist[-13]),
+        "load_lag_24h": float(hist[-97]),
+        "load_roll_mean_6h": float(np.mean(hist[-25:-1])),
+        "load_roll_max_6h": float(np.max(hist[-25:-1])),
+        "load_roll_std_6h": float(np.nan_to_num(np.std(hist[-25:-1], ddof=1), nan=0.0)),
+        "sin_hour": math.sin(2 * math.pi * hour_float / 24.0),
+        "cos_hour": math.cos(2 * math.pi * hour_float / 24.0),
+        "day_of_week": dt.weekday(),
+        "is_weekend": 1 if dt.weekday() in [5, 6] else 0,
+        "is_mall_open": 1 if 10.0 <= hour_float <= 22.0 else 0,
+        "ambient_temp_c": float(ambient_temp_c)
+    }
 
 
 def chronological_energy_split(
