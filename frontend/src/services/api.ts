@@ -758,11 +758,13 @@ export interface SegmentLOSRecord {
   freeFlowSpeedKmh: number;
   volumeCapacityRatio: number;
   densityVehKm: number;
+  speedState?: string;
   congestionIndex: number;
   speedRatio: number;
   levelOfService: string;
   operationalCondition: string;
   policyStandard: string;
+  lengthMeters?: number | null;
   provenance: {
     sourceMode: string;
     observedAt: string;
@@ -771,11 +773,11 @@ export interface SegmentLOSRecord {
 }
 
 export interface CorridorLOSSummary {
-  corridorLevelOfService: string;
-  averageSpeedKmh: number;
-  averageVolumeCapacityRatio: number;
-  averageDensityVehKm: number;
-  averageCongestionIndex: number;
+  corridorLevelOfService: string | null;
+  averageSpeedKmh: number | null;
+  averageVolumeCapacityRatio: number | null;
+  averageDensityVehKm: number | null;
+  averageCongestionIndex: number | null;
   criticalSegmentId: string | null;
   criticalSegmentCondition: string | null;
   policyStandard: string;

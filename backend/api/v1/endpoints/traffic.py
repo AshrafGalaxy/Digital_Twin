@@ -51,17 +51,18 @@ class SegmentLOSResponse(BaseModel):
     levelOfService: str
     operationalCondition: str
     policyStandard: str
+    lengthMeters: Optional[float] = None
     provenance: ProvenanceInfo
 
 
 class CorridorSummary(BaseModel):
-    corridorLevelOfService: str
-    averageSpeedKmh: float
-    averageVolumeCapacityRatio: float
-    averageDensityVehKm: float
-    averageCongestionIndex: float
-    criticalSegmentId: Optional[str]
-    criticalSegmentCondition: Optional[str]
+    corridorLevelOfService: Optional[str] = None
+    averageSpeedKmh: Optional[float] = None
+    averageVolumeCapacityRatio: Optional[float] = None
+    averageDensityVehKm: Optional[float] = None
+    averageCongestionIndex: Optional[float] = None
+    criticalSegmentId: Optional[str] = None
+    criticalSegmentCondition: Optional[str] = None
     policyStandard: str
     totalSegmentsEvaluated: int
     evaluatedAt: str
@@ -82,16 +83,16 @@ class PolicyStandardInfo(BaseModel):
 
 # Canonical fallback corridor segments to guarantee non-empty responses in hermetic tests
 FALLBACK_SEGMENTS = [
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", "name": "Nagar Road EB Approach", "direction": "EB", "capacity": 2400, "free_flow": 50.0, "default_speed": 42.0, "default_flow": 1200},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02", "name": "Nagar Road EB Central", "direction": "EB", "capacity": 2400, "free_flow": 50.0, "default_speed": 36.0, "default_flow": 1500},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03", "name": "Nagar Road EB Somnath", "direction": "EB", "capacity": 2400, "free_flow": 50.0, "default_speed": 40.0, "default_flow": 1350},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01", "name": "Nagar Road WB Somnath", "direction": "WB", "capacity": 2400, "free_flow": 50.0, "default_speed": 39.0, "default_flow": 1400},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02", "name": "Nagar Road WB Central", "direction": "WB", "capacity": 2400, "free_flow": 50.0, "default_speed": 34.0, "default_flow": 1650},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03", "name": "Nagar Road WB Approach", "direction": "WB", "capacity": 2400, "free_flow": 50.0, "default_speed": 41.0, "default_flow": 1300},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01", "name": "Viman Nagar Northbound", "direction": "NB", "capacity": 1400, "free_flow": 40.0, "default_speed": 28.0, "default_flow": 750},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01", "name": "Viman Nagar Southbound", "direction": "SB", "capacity": 1400, "free_flow": 40.0, "default_speed": 26.0, "default_flow": 820},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01", "name": "Somnath Nagar Northbound", "direction": "NB", "capacity": 1200, "free_flow": 40.0, "default_speed": 31.0, "default_flow": 580},
-    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01", "name": "Somnath Nagar Southbound", "direction": "SB", "capacity": 1200, "free_flow": 40.0, "default_speed": 32.0, "default_flow": 540},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", "name": "Nagar Road EB Approach", "direction": "EB", "capacity": 2400, "free_flow": 50.0, "default_speed": 42.0, "default_flow": 1200, "length_meters": 480.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02", "name": "Nagar Road EB Central", "direction": "EB", "capacity": 2400, "free_flow": 50.0, "default_speed": 36.0, "default_flow": 1500, "length_meters": 1180.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03", "name": "Nagar Road EB Somnath", "direction": "EB", "capacity": 2400, "free_flow": 50.0, "default_speed": 40.0, "default_flow": 1350, "length_meters": 450.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-01", "name": "Nagar Road WB Somnath", "direction": "WB", "capacity": 2400, "free_flow": 50.0, "default_speed": 39.0, "default_flow": 1400, "length_meters": 450.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-02", "name": "Nagar Road WB Central", "direction": "WB", "capacity": 2400, "free_flow": 50.0, "default_speed": 34.0, "default_flow": 1650, "length_meters": 1180.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-WB-03", "name": "Nagar Road WB Approach", "direction": "WB", "capacity": 2400, "free_flow": 50.0, "default_speed": 41.0, "default_flow": 1300, "length_meters": 480.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-NB-01", "name": "Viman Nagar Northbound", "direction": "NB", "capacity": 1400, "free_flow": 40.0, "default_speed": 28.0, "default_flow": 750, "length_meters": 350.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-VN-SB-01", "name": "Viman Nagar Southbound", "direction": "SB", "capacity": 1400, "free_flow": 40.0, "default_speed": 26.0, "default_flow": 820, "length_meters": 350.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-NB-01", "name": "Somnath Nagar Northbound", "direction": "NB", "capacity": 1200, "free_flow": 40.0, "default_speed": 31.0, "default_flow": 580, "length_meters": 320.0},
+    {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-SN-SB-01", "name": "Somnath Nagar Southbound", "direction": "SB", "capacity": 1200, "free_flow": 40.0, "default_speed": 32.0, "default_flow": 540, "length_meters": 320.0},
 ]
 
 
@@ -119,7 +120,7 @@ async def get_corridor_los(
     segments_to_eval = []
     try:
         seg_res = await session.execute(text("""
-            SELECT id, name, direction, free_flow_speed_kmh, capacity_veh_per_hour
+            SELECT id, name, direction, free_flow_speed_kmh, capacity_veh_per_hour, length_meters
             FROM road_segments
             ORDER BY id ASC
         """))
@@ -132,6 +133,7 @@ async def get_corridor_los(
                     "direction": s["direction"],
                     "capacity": float(s["capacity_veh_per_hour"] or 2400.0),
                     "free_flow": float(s["free_flow_speed_kmh"] or 50.0),
+                    "length_meters": float(s["length_meters"] or 500.0),
                     "default_speed": 35.0,
                     "default_flow": 1200.0
                 })
@@ -181,6 +183,8 @@ async def get_corridor_los(
         obs_time = live.get("observedAt", now_iso)
         src_mode = live.get("sourceMode", source_mode)
 
+        length_m = float(seg.get("length_meters") or 500.0)
+
         res = los_engine.compute_segment_los(
             segment_id=seg_id,
             speed_kmh=speed,
@@ -190,7 +194,8 @@ async def get_corridor_los(
             policy_standard=policy_standard,
             source_mode=src_mode,
             quality_score=None,
-            observed_at=obs_time
+            observed_at=obs_time,
+            length_m=length_m
         )
 
         segment_los_list.append(SegmentLOSResponse(
@@ -209,6 +214,7 @@ async def get_corridor_los(
             levelOfService=res["levelOfService"],
             operationalCondition=res["operationalCondition"],
             policyStandard=res["policyStandard"],
+            lengthMeters=res.get("lengthMeters"),
             provenance=ProvenanceInfo(**res["provenance"])
         ))
 

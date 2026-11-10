@@ -244,7 +244,8 @@ class LOSEngine:
         policy_standard: Optional[str] = None,
         source_mode: str = "REPLAY",
         quality_score: Optional[float] = None,
-        observed_at: Optional[str] = None
+        observed_at: Optional[str] = None,
+        length_m: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Comprehensive segment-level LOS computation returning canonical data contracts.
@@ -276,7 +277,7 @@ class LOSEngine:
 
         obs_time = observed_at or datetime.now(timezone.utc).isoformat()
 
-        return {
+        out = {
             "segmentId": segment_id,
             "speedKmh": round(max(0.0, speed_kmh), 1),
             "flowVehHr": round(max(0.0, flow_vph), 1),
@@ -296,6 +297,22 @@ class LOSEngine:
                 "qualityScore": quality_score
             }
         }
+        if length_m is not None:
+            out["lengthMeters"] = round(float(length_m), 1)
+        return out
+
+    @staticmethod
+    def _extract_segment_length(seg: Dict[str, Any]) -> Optional[float]:
+        for key in ("lengthMeters", "length_meters", "length_m", "lengthM", "length"):
+            val = seg.get(key)
+            if val is not None:
+                try:
+                    flt = float(val)
+                    if flt > 0:
+                        return flt
+                except (ValueError, TypeError):
+                    pass
+        return None
 
     def evaluate_corridor_summary(
         self,
@@ -304,35 +321,67 @@ class LOSEngine:
     ) -> Dict[str, Any]:
         """
         Computes corridor-wide aggregate Level of Service and hydrodynamic rollup.
+        Uses length-weighted space-mean speed (V_sms = sum(L_i) / sum(L_i / v_i))
+        and length-weighted volume/capacity, density, and congestion index.
         """
         policy = policy_standard or self.default_policy
         self._thresholds_for(policy)
+        now_iso = datetime.now(timezone.utc).isoformat()
         if not segment_records:
             return {
-                "corridorLevelOfService": "C",
-                "averageSpeedKmh": 35.0,
-                "averageVolumeCapacityRatio": 0.50,
-                "averageDensityVehKm": 40.0,
-                "averageCongestionIndex": 0.30,
+                "corridorLevelOfService": None,
+                "averageSpeedKmh": None,
+                "averageVolumeCapacityRatio": None,
+                "averageDensityVehKm": None,
+                "averageCongestionIndex": None,
                 "criticalSegmentId": None,
+                "criticalSegmentCondition": None,
                 "policyStandard": policy,
                 "totalSegmentsEvaluated": 0,
-                "evaluatedAt": datetime.now(timezone.utc).isoformat()
+                "evaluatedAt": now_iso
             }
 
-        avg_speed = round(sum(s["speedKmh"] for s in segment_records) / len(segment_records), 1)
-        avg_vc = round(sum(s["volumeCapacityRatio"] for s in segment_records) / len(segment_records), 3)
-        avg_density = round(sum(s["densityVehKm"] for s in segment_records) / len(segment_records), 2)
-        avg_ci = round(sum(s["congestionIndex"] for s in segment_records) / len(segment_records), 3)
+        valid_length_segments = []
+        for s in segment_records:
+            l_val = self._extract_segment_length(s)
+            if l_val is not None:
+                valid_length_segments.append((s, l_val))
 
-        # Average free flow speed
-        avg_free_flow = sum(s.get("freeFlowSpeedKmh", 50.0) for s in segment_records) / len(segment_records)
-        speed_ratio = round(avg_speed / max(avg_free_flow, 1.0), 3)
+        critical_seg = max(segment_records, key=lambda s: s.get("volumeCapacityRatio", 0.0))
+
+        if not valid_length_segments:
+            return {
+                "corridorLevelOfService": None,
+                "averageSpeedKmh": None,
+                "averageVolumeCapacityRatio": None,
+                "averageDensityVehKm": None,
+                "averageCongestionIndex": None,
+                "criticalSegmentId": critical_seg.get("segmentId"),
+                "criticalSegmentCondition": critical_seg.get("operationalCondition"),
+                "policyStandard": policy,
+                "totalSegmentsEvaluated": len(segment_records),
+                "evaluatedAt": now_iso
+            }
+
+        total_length_m = sum(l_val for _, l_val in valid_length_segments)
+
+        # Space-mean speed: V_sms = sum(L_i) / sum(L_i / v_i) for segments whose speed is above 0.
+        # A stopped segment contributes its length to the numerator and does not divide by zero.
+        tt_denom = sum(l_val / s["speedKmh"] for s, l_val in valid_length_segments if s.get("speedKmh", 0.0) > 0)
+        if tt_denom > 0:
+            avg_speed = round(total_length_m / tt_denom, 1)
+        else:
+            avg_speed = 0.0
+
+        avg_vc = round(sum(s.get("volumeCapacityRatio", 0.0) * l_val for s, l_val in valid_length_segments) / total_length_m, 3)
+        avg_density = round(sum(s.get("densityVehKm", 0.0) * l_val for s, l_val in valid_length_segments) / total_length_m, 2)
+        avg_ci = round(sum(s.get("congestionIndex", 0.0) * l_val for s, l_val in valid_length_segments) / total_length_m, 3)
+
+        # Length-weighted free flow speed
+        avg_free_flow = sum(s.get("freeFlowSpeedKmh", 50.0) * l_val for s, l_val in valid_length_segments) / total_length_m
+        speed_ratio = round(avg_speed / max(avg_free_flow, 1.0), 3) if avg_speed is not None else 0.0
 
         corridor_los, condition = self.classify_los(avg_vc, speed_ratio, policy)
-
-        # Find the most congested segment (highest V/C or lowest speed)
-        critical_seg = max(segment_records, key=lambda s: s["volumeCapacityRatio"])
 
         return {
             "corridorLevelOfService": corridor_los,
@@ -344,7 +393,7 @@ class LOSEngine:
             "criticalSegmentCondition": critical_seg.get("operationalCondition"),
             "policyStandard": policy,
             "totalSegmentsEvaluated": len(segment_records),
-            "evaluatedAt": datetime.now(timezone.utc).isoformat()
+            "evaluatedAt": now_iso
         }
 
 

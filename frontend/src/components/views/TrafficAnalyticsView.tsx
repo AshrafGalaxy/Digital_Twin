@@ -286,19 +286,32 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
               <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Corridor Aggregate Condition ({policyStandard === 'INDO_HCM' ? 'IRC:106' : 'US HCM'})
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                <span className={`los-badge los-${corridorLosData.corridorSummary.corridorLevelOfService.toLowerCase()}`}>
-                  LOS {corridorLosData.corridorSummary.corridorLevelOfService}
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text)' }}>
-                  Avg Speed: {corridorLosData.corridorSummary.averageSpeedKmh} km/h
-                </span>
-                <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                  | Avg V/C: {corridorLosData.corridorSummary.averageVolumeCapacityRatio.toFixed(2)}
-                </span>
-                <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                  | Avg Density: {corridorLosData.corridorSummary.averageDensityVehKm} veh/km
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                {corridorLosData.corridorSummary.corridorLevelOfService ? (
+                  <>
+                    <span className={`los-badge los-${corridorLosData.corridorSummary.corridorLevelOfService.toLowerCase()}`}>
+                      LOS {corridorLosData.corridorSummary.corridorLevelOfService}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text)' }}>
+                      Avg Speed: {corridorLosData.corridorSummary.averageSpeedKmh != null ? `${corridorLosData.corridorSummary.averageSpeedKmh} km/h` : 'N/A'}
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                      | Avg V/C: {corridorLosData.corridorSummary.averageVolumeCapacityRatio != null ? corridorLosData.corridorSummary.averageVolumeCapacityRatio.toFixed(2) : 'N/A'}
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                      | Avg Density: {corridorLosData.corridorSummary.averageDensityVehKm != null ? `${corridorLosData.corridorSummary.averageDensityVehKm} veh/km` : 'N/A'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="los-badge" style={{ background: 'rgba(100, 116, 139, 0.2)', color: '#94A3B8' }}>
+                      LOS N/A
+                    </span>
+                    <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                      No segment telemetry available for corridor evaluation
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -189,27 +189,63 @@ def test_compute_segment_los_contract():
 
 
 def test_corridor_summary_evaluation():
-    """Verifies evaluate_corridor_summary computes correct corridor aggregates."""
+    """Verifies evaluate_corridor_summary computes correct corridor aggregates using space-mean speed."""
     engine = LOSEngine()
     segments = [
-        engine.compute_segment_los("SEG-1", 45.0, 800.0, 2400.0, 50.0),
-        engine.compute_segment_los("SEG-2", 20.0, 1900.0, 2400.0, 50.0),
-        engine.compute_segment_los("SEG-3", 35.0, 1200.0, 2400.0, 50.0),
+        engine.compute_segment_los("SEG-1", 45.0, 800.0, 2400.0, 50.0, length_m=500.0),
+        engine.compute_segment_los("SEG-2", 20.0, 1900.0, 2400.0, 50.0, length_m=500.0),
+        engine.compute_segment_los("SEG-3", 35.0, 1200.0, 2400.0, 50.0, length_m=500.0),
     ]
 
     summary = engine.evaluate_corridor_summary(segments, PolicyStandard.INDO_HCM)
     assert summary["totalSegmentsEvaluated"] == 3
     assert summary["criticalSegmentId"] == "SEG-2"  # Highest V/C
-    assert summary["averageSpeedKmh"] == round((45.0 + 20.0 + 35.0) / 3, 1)
+    # Harmonic space-mean speed across equal lengths: 3 / (1/45 + 1/20 + 1/35) = 29.8 km/h
+    assert summary["averageSpeedKmh"] == 29.8
     assert summary["corridorLevelOfService"] in ("A", "B", "C", "D", "E", "F")
 
 
+def test_corridor_summary_space_mean_speed_two_link():
+    """
+    Verifies length-weighted space-mean speed calculation for two unequal segments:
+    50m link @ 10 km/h and 1000m link @ 50 km/h yields 42.0 km/h (not 30.0 km/h arithmetic).
+    """
+    engine = LOSEngine()
+    seg_short = engine.compute_segment_los("SEG-SHORT", 10.0, 500.0, 2000.0, 50.0, length_m=50.0)
+    seg_long = engine.compute_segment_los("SEG-LONG", 50.0, 1000.0, 2000.0, 50.0, length_m=1000.0)
+
+    summary = engine.evaluate_corridor_summary([seg_short, seg_long], PolicyStandard.INDO_HCM)
+    # Total distance: 1.05 km, Total time: (0.05/10) + (1.00/50) = 0.005 + 0.02 = 0.025 hr -> 42.0 km/h
+    assert summary["averageSpeedKmh"] == 42.0
+
+
+def test_corridor_summary_zero_speed_resilience():
+    """Verifies that stopped segments (0 km/h) are handled gracefully without ZeroDivisionError."""
+    engine = LOSEngine()
+    seg_stopped = engine.compute_segment_los("SEG-STOPPED", 0.0, 0.0, 2000.0, 50.0, length_m=200.0)
+    seg_moving = engine.compute_segment_los("SEG-MOVING", 40.0, 800.0, 2000.0, 50.0, length_m=800.0)
+
+    summary = engine.evaluate_corridor_summary([seg_stopped, seg_moving], PolicyStandard.INDO_HCM)
+    assert summary["totalSegmentsEvaluated"] == 2
+    # Moving link travel time: 0.8 km / 40 km/h = 0.02 hr. Total length: 1.0 km -> 50.0 km/h effective space mean
+    assert summary["averageSpeedKmh"] == 50.0
+
+    # All segments stopped
+    summary_all_stopped = engine.evaluate_corridor_summary([seg_stopped], PolicyStandard.INDO_HCM)
+    assert summary_all_stopped["averageSpeedKmh"] == 0.0
+
+
 def test_corridor_summary_empty():
-    """Verifies graceful handling of empty segment list in corridor summary."""
+    """Verifies graceful and honest handling of empty segment list in corridor summary (no fabricated metrics)."""
     engine = LOSEngine()
     summary = engine.evaluate_corridor_summary([], PolicyStandard.INDO_HCM)
     assert summary["totalSegmentsEvaluated"] == 0
     assert summary["criticalSegmentId"] is None
+    assert summary["corridorLevelOfService"] is None
+    assert summary["averageSpeedKmh"] is None
+    assert summary["averageVolumeCapacityRatio"] is None
+    assert summary["averageDensityVehKm"] is None
+    assert summary["averageCongestionIndex"] is None
 
 
 # ============================================================================
