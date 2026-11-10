@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 import hashlib
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlalchemy import text
 
 from backend.core.database import AsyncSessionLocal
@@ -31,7 +32,7 @@ from backend.schemas.recommendations import (
     RecommendationStatus,
     SafetyConstraintChecklist
 )
-from backend.services.rule_engine import AdvisoryRuleEngine, SafetyBoundRejected, rule_engine
+from backend.services.rule_engine import AdvisoryRuleEngine, SafetyBoundRejected, rule_engine, safety_bound_failure
 
 client = TestClient(app)
 
@@ -498,4 +499,81 @@ def test_api_authorize_rejects_failed_saturation_bound():
     assert resp.status_code == 409
     assert "saturation cap" in resp.json()["detail"]
     missing = client.get("/api/v1/recommendations/REC-UNSAFE-SAT-API/dispatch-order")
+    assert missing.status_code == 404
+
+
+def test_safety_bound_failure_rejects_none():
+    """Verifies that safety_bound_failure(None) refuses authorization explicitly."""
+    failure = safety_bound_failure(None)
+    assert failure is not None
+    assert "absent" in failure.lower() or "refused" in failure.lower()
+
+
+def test_safety_bound_failure_rejects_failed_min_green():
+    """Verifies that a checklist with minGreenSatisfied false is refused with minimum green in detail."""
+    checklist = SafetyConstraintChecklist(
+        pedestrianPhaseSafe=True,
+        maxWaitThresholdSafe=True,
+        emergencyPreemptionClear=True,
+        minGreenSatisfied=False
+    )
+    failure = safety_bound_failure(checklist)
+    assert failure is not None
+    assert "minimum green" in failure
+
+
+def test_safety_constraint_checklist_requires_all_fields():
+    """Verifies that SafetyConstraintChecklist cannot be instantiated with missing fields defaulting to true."""
+    with pytest.raises(ValidationError):
+        SafetyConstraintChecklist()
+
+
+def test_authorize_rejects_missing_safety_checklist():
+    """Verifies that AdvisoryRuleEngine refuses authorization when safetyChecklist is absent (None)."""
+    engine = AdvisoryRuleEngine()
+    source = engine.get_recommendation("REC-TRF-20260920-001")
+    assert source is not None
+    no_checklist = source.model_copy(update={
+        "recommendationId": "REC-NO-CHECKLIST-01",
+        "safetyChecklist": None,
+    })
+    engine.add_custom_recommendation(no_checklist)
+    req = AuthorizeAdvisoryRequest(
+        primaryOfficer=OfficerCredentials(officerName="Officer One", badgeId="B-1"),
+        concurringOfficer=OfficerCredentials(officerName="Officer Two", badgeId="B-2"),
+        shiftId="SHIFT-A",
+        decision=RecommendationStatus.ACKNOWLEDGED,
+        notes="Attempting authorization without checklist.",
+    )
+    with pytest.raises(SafetyBoundRejected) as rejected:
+        engine.authorize_advisory("REC-NO-CHECKLIST-01", req)
+    assert "absent" in rejected.value.detail.lower()
+    assert engine.get_dispatch_order("REC-NO-CHECKLIST-01") is None
+
+
+def test_api_authorize_rejects_missing_safety_checklist():
+    """POST /authorize returns 409 Conflict when stored recommendation lacks a safety checklist."""
+    source = rule_engine.get_recommendation("REC-TRF-20260920-001")
+    assert source is not None
+    no_checklist = source.model_copy(update={
+        "recommendationId": "REC-NO-CHECKLIST-API",
+        "safetyChecklist": None,
+    })
+    rule_engine.add_custom_recommendation(no_checklist)
+    payload = {
+        "primaryOfficer": {"officerName": "Officer One", "badgeId": "B-1"},
+        "concurringOfficer": {"officerName": "Officer Two", "badgeId": "B-2"},
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED",
+        "notes": "Attempting authorization without checklist via API.",
+        "concurringToken": _analyst_session_token(),
+    }
+    resp = client.post(
+        "/api/v1/recommendations/REC-NO-CHECKLIST-API/authorize",
+        json=payload,
+        headers=_get_traffic_auth_header(),
+    )
+    assert resp.status_code == 409
+    assert "absent" in resp.json()["detail"].lower()
+    missing = client.get("/api/v1/recommendations/REC-NO-CHECKLIST-API/dispatch-order")
     assert missing.status_code == 404

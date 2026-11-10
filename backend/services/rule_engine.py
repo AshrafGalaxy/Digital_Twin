@@ -42,9 +42,9 @@ class SafetyBoundRejected(Exception):
 
 
 def safety_bound_failure(checklist: Optional[SafetyConstraintChecklist]) -> Optional[str]:
-    """Returns a refusal sentence when any statutory bound on the checklist is false."""
+    """Returns a refusal sentence when the checklist is absent or any statutory bound is false."""
     if checklist is None:
-        return None
+        return "Authorization refused. Safety checklist is absent. Statutory bounds must be explicitly evaluated."
     failed: List[str] = []
     if not checklist.pedestrianPhaseSafe:
         failed.append("pedestrian clearance")
@@ -109,7 +109,8 @@ class AdvisoryRuleEngine:
             safetyChecklist=SafetyConstraintChecklist(
                 pedestrianPhaseSafe=True,
                 maxWaitThresholdSafe=True,
-                emergencyPreemptionClear=True
+                emergencyPreemptionClear=True,
+                minGreenSatisfied=True
             ),
             topFeatures=[],
             isFixture=True,
@@ -166,7 +167,8 @@ class AdvisoryRuleEngine:
             safetyChecklist=SafetyConstraintChecklist(
                 pedestrianPhaseSafe=True,
                 maxWaitThresholdSafe=True,
-                emergencyPreemptionClear=True
+                emergencyPreemptionClear=True,
+                minGreenSatisfied=True
             ),
             topFeatures=[],
             isFixture=True,

@@ -278,6 +278,12 @@ export const AdvisoryCard: React.FC<AdvisoryCardProps> = ({
                 Emergency Preemption Clear
               </span>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <CheckCircle2 size={13} color={advisory.safetyChecklist.minGreenSatisfied ? '#3FB950' : '#F85149'} />
+              <span style={{ color: 'var(--color-text-secondary)' }}>
+                Minimum Green Satisfied
+              </span>
+            </div>
           </div>
         </div>
       )}

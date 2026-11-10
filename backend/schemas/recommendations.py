@@ -69,10 +69,10 @@ class ConformalPredictedImpact(BaseModel):
 
 
 class SafetyConstraintChecklist(BaseModel):
-    pedestrianPhaseSafe: bool = Field(default=True, description="Statutory walk phase preserved (>= 14s)")
-    maxWaitThresholdSafe: bool = Field(default=True, description="Cross-street waiting time bounded (< 90s)")
-    emergencyPreemptionClear: bool = Field(default=True, description="No conflicting emergency vehicle preemption")
-    minGreenSatisfied: bool = Field(default=True, description="Every phase green meets max(min green, pedestrian clearance)")
+    pedestrianPhaseSafe: bool = Field(..., description="Statutory walk phase preserved (>= 14s)")
+    maxWaitThresholdSafe: bool = Field(..., description="Cross-street waiting time bounded (< 90s)")
+    emergencyPreemptionClear: bool = Field(..., description="No conflicting emergency vehicle preemption")
+    minGreenSatisfied: bool = Field(..., description="Every phase green meets max(min green, pedestrian clearance)")
 
 
 class FeatureAttribution(BaseModel):
