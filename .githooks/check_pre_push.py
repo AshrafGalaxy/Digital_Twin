@@ -53,10 +53,26 @@ def run_frontend_build() -> bool:
         return False
 
 
+def run_markdown_math_check() -> bool:
+    print("[GIT HOOK] Executing Markdown & LaTeX math integrity check (scripts/verify_markdown_math.py)...")
+    try:
+        res = subprocess.run([sys.executable, "scripts/verify_markdown_math.py"])
+        if res.returncode != 0:
+            print("[GIT HOOK ERROR] Markdown or LaTeX math integrity check failed. Push aborted.")
+            return False
+        return True
+    except Exception as e:
+        print(f"[GIT HOOK ERROR] Failed to execute markdown math checker: {e}")
+        return False
+
+
 def main() -> int:
     print("=" * 60)
     print("[GIT HOOK] Pre-Push Quality & Hermetic Verification Gate")
     print("=" * 60)
+
+    if not run_markdown_math_check():
+        return 1
 
     if not run_tests():
         return 1

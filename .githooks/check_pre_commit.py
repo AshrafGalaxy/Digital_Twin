@@ -95,6 +95,17 @@ def check_staged_content() -> bool:
                 print("Per AGENTS.md Section 2.6, emojis are strictly prohibited in UI components.")
                 has_error = True
 
+            # Rule: Zero shell escape corruption or ASCII control characters (AGENTS.md Section 2.11)
+            if ext in TEXT_EXTENSIONS:
+                if "\x07" in added_text or "\x0c" in added_text:
+                    print(f"[GIT HOOK ERROR] Illegal ASCII control character (BEL or FF) in '{current_file}':")
+                    print(f"  Line: '{added_text.strip()}'")
+                    has_error = True
+                if ext == ".md" and re.search(r"\\[A-Z]+-[A-Z0-9-]+\\", added_text):
+                    print(f"[GIT HOOK ERROR] Corrupted shell-escaped identifier in '{current_file}':")
+                    print(f"  Line: '{added_text.strip()}'")
+                    has_error = True
+
     return not has_error
 
 
@@ -151,7 +162,14 @@ def main() -> int:
     ok_content = check_staged_content()
     ok_types = check_frontend_types(staged_files)
 
-    if not (ok_files and ok_content and ok_types):
+    md_staged = [f for f in staged_files if f.lower().endswith(".md")]
+    ok_md = True
+    if md_staged:
+        res = subprocess.run([sys.executable, "scripts/verify_markdown_math.py", "--files"] + md_staged)
+        if res.returncode != 0:
+            ok_md = False
+
+    if not (ok_files and ok_content and ok_types and ok_md):
         return 1
 
     return 0

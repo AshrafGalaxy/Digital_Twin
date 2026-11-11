@@ -41,6 +41,13 @@
     - **4. Verification Evidence:** Exact test commands, passing test counts, production build result, commit SHA, and pre-push gate result. Do not claim a check that did not run.
     - **5. Operational Summary:** Concrete decision-support and operator-facing capabilities delivered.
     - **Formatting:** No emojis, and no em dashes or en dashes, in the dossier comment.
+11. **Mathematical Notation, LaTeX Integrity, & Issue Publication Contract:**
+    - **Issue & Comment Publication Hygiene:** All `gh issue create`, `gh issue edit`, and `gh issue comment` commands must pass body text through a temporary file via `-F <file>` (or `--body-file <file>`) and delete the file immediately after. Strictly prohibit passing multi-line markdown or code blocks inline via `--body "..."` on the command line. Shell escape artifacts (such as orphaned backslashes `\IDENTIFIER\`, escaped backticks, literal tabs `\	ests`, form-feeds `\rontend`, and ASCII bells `\^Gvailable`) are strictly prohibited in issues, PRs, comments, and repository files.
+    - **LaTeX Math Integrity:** Wherever LaTeX math notation is written in documentation (`.md`), specifications, code, or GitHub issues:
+      - Math delimiters (`$...$`, `$$...$$`, ````math ... ````) must be balanced and syntactically valid.
+      - In GitHub Flavored Markdown, raw underscores inside math blocks trigger italic HTML parsing; write complex multi-subscript equations inside fenced ````math```` blocks or as readable plain-text arithmetic to prevent parser corruption.
+      - Mathematical formulas must never be broken, incomplete, or unparseable.
+    - **Pre-Push Math & Markdown Gate:** The pre-push hook must execute `python scripts/verify_markdown_math.py` across all repository documentation and abort the push if any broken math delimiter, invalid brace structure, or corrupted shell escape character is detected.
 
 ---
 
@@ -104,3 +111,4 @@ A contribution is complete only when:
 - [ ] Commit messages strictly adhere to the structured technical format (<60 char header with technical architectural scope, direct bullets of file changes, invariants adherence, test verification pass count, and tracking issue reference). Strictly prohibit domain names (`traffic`, `energy`), physical domain nouns (never use 'road', 'roads', 'substation', 'power station', 'feeder'), persona labels (never use 'officer', 'operator', 'analyst'; use 'session', 'client', 'actor'), UI feature nouns (never use 'map' or 'maps'; use 'view', 'workspace', 'canvas'), geographic identifiers, phase tags, or informal milestone prefixes.
 - [ ] Remote publication is serial: one commit per push. The next commit starts only after the previous run shows success on Backend & Simulation Tests, Frontend TypeScript & Vite Build, and GIS Assets & Catalog Integrity.
 - [ ] Issue tracking verified: the GitHub issue has a posted solution dossier comment (header and scope, architectural resolution, implementation files, verification counts, and operational summary) in the Section 10 template. A `Closes #<id>` trailer alone does not satisfy this item.
+- [ ] Markdown and mathematical notation integrity verified: contains zero broken LaTeX expressions, zero unbalanced math delimiters, and zero shell escaping artifacts (verified by `python scripts/verify_markdown_math.py`).
