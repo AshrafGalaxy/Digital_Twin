@@ -92,46 +92,84 @@ def generate_corridor_traffic_history(
     return pd.DataFrame(records)
 
 
+def _build_single_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Transforms a single entity's 5-minute traffic records into feature matrices.
+    Reindexes onto a contiguous 5-minute grid so gaps are not treated as contiguous lags.
+    """
+    if len(df) == 0:
+        return pd.DataFrame()
+
+    df = df.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.sort_values("timestamp").drop_duplicates(subset=["timestamp"]).reset_index(drop=True)
+
+    # Reindex onto a contiguous 5-minute grid to prevent time gaps from bridging lags
+    full_grid = pd.DataFrame({
+        "timestamp": pd.date_range(
+            start=df["timestamp"].min(),
+            end=df["timestamp"].max(),
+            freq="5min"
+        )
+    })
+    merged = pd.merge(full_grid, df, on="timestamp", how="left")
+
+    # Preserve entity identifier if present
+    if "segment_id" in df.columns and len(df["segment_id"].dropna()) > 0:
+        merged["segment_id"] = df["segment_id"].dropna().iloc[0]
+
+    # 1. Target: 15-min forward speed (shift by -3 for 5-minute interval series)
+    merged[TARGET_COLUMN] = merged["speed_kmh"].shift(-3)
+
+    # 2. Lags (prior observations only)
+    merged["speed_lag_5m"] = merged["speed_kmh"].shift(1)
+    merged["speed_lag_10m"] = merged["speed_kmh"].shift(2)
+    merged["speed_lag_15m"] = merged["speed_kmh"].shift(3)
+    merged["speed_lag_30m"] = merged["speed_kmh"].shift(6)
+    merged["speed_lag_60m"] = merged["speed_kmh"].shift(12)
+
+    # 3. Rolling Statistics over past observations (excluding current target)
+    merged["speed_roll_mean_30m"] = merged["speed_kmh"].rolling(window=6, closed="left").mean()
+    merged["speed_roll_std_30m"] = merged["speed_kmh"].rolling(window=6, closed="left").std().fillna(0.0)
+    merged["speed_roll_mean_60m"] = merged["speed_kmh"].rolling(window=12, closed="left").mean()
+    merged["speed_roll_min_60m"] = merged["speed_kmh"].rolling(window=12, closed="left").min()
+    merged["speed_roll_max_60m"] = merged["speed_kmh"].rolling(window=12, closed="left").max()
+
+    # 4. Calendar Cyclical Features
+    hour_float = merged["timestamp"].dt.hour + merged["timestamp"].dt.minute / 60.0
+    merged["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
+    merged["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
+    merged["day_of_week"] = merged["timestamp"].dt.weekday
+    merged["is_weekend"] = merged["day_of_week"].isin([5, 6]).astype(int)
+
+    # Peak hour flag (08:30-10:30 or 17:30-21:00)
+    merged["is_peak_hour"] = hour_float.apply(
+        lambda h: 1 if (8.5 <= h <= 10.5 or 17.5 <= h <= 21.0) else 0
+    )
+
+    # 5. Drop rows with NaNs from lags, gaps, or future target shift
+    merged = merged.dropna().reset_index(drop=True)
+    return merged
+
+
 def build_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Transforms raw 5-minute traffic records into feature matrices.
     Target: speed shifted 3 steps (15 minutes) into the future.
     Features: calculated strictly using observations at or prior to time t.
+    Guarantees entity isolation and drops invalid lags across time gaps (§4 of AGENTS.md).
     """
-    df = df.copy().sort_values("timestamp").reset_index(drop=True)
-
-    # 1. Target: 15-min forward speed (shift by -3 for 5-minute interval series)
-    df[TARGET_COLUMN] = df["speed_kmh"].shift(-3)
-
-    # 2. Lags (prior observations only)
-    df["speed_lag_5m"] = df["speed_kmh"].shift(1)
-    df["speed_lag_10m"] = df["speed_kmh"].shift(2)
-    df["speed_lag_15m"] = df["speed_kmh"].shift(3)
-    df["speed_lag_30m"] = df["speed_kmh"].shift(6)
-    df["speed_lag_60m"] = df["speed_kmh"].shift(12)
-
-    # 3. Rolling Statistics over past observations (excluding current target)
-    df["speed_roll_mean_30m"] = df["speed_kmh"].rolling(window=6, closed="left").mean()
-    df["speed_roll_std_30m"] = df["speed_kmh"].rolling(window=6, closed="left").std().fillna(0.0)
-    df["speed_roll_mean_60m"] = df["speed_kmh"].rolling(window=12, closed="left").mean()
-    df["speed_roll_min_60m"] = df["speed_kmh"].rolling(window=12, closed="left").min()
-    df["speed_roll_max_60m"] = df["speed_kmh"].rolling(window=12, closed="left").max()
-
-    # 4. Calendar Cyclical Features
-    hour_float = df["timestamp"].dt.hour + df["timestamp"].dt.minute / 60.0
-    df["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
-    df["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
-    df["day_of_week"] = df["timestamp"].dt.weekday
-    df["is_weekend"] = df["day_of_week"].isin([5, 6]).astype(int)
-    
-    # Peak hour flag (08:30-10:30 or 17:30-21:00)
-    df["is_peak_hour"] = hour_float.apply(
-        lambda h: 1 if (8.5 <= h <= 10.5 or 17.5 <= h <= 21.0) else 0
-    )
-
-    # 5. Drop rows with NaNs from lags or future target shift
-    df = df.dropna().reset_index(drop=True)
-    return df
+    if "segment_id" in df.columns:
+        groups = []
+        for _, group_df in df.groupby("segment_id", as_index=False):
+            res = _build_single_traffic_features(group_df)
+            if len(res) > 0:
+                groups.append(res)
+        if not groups:
+            return pd.DataFrame(columns=FEATURE_COLUMNS + [TARGET_COLUMN, "timestamp", "speed_kmh"])
+        return pd.concat(groups, ignore_index=True).sort_values(["timestamp", "segment_id"]).reset_index(drop=True)
+    else:
+        return _build_single_traffic_features(df)
 
 
 def extract_traffic_features_row(
@@ -172,18 +210,23 @@ def extract_traffic_features_row(
 def chronological_split(
     df: pd.DataFrame,
     train_pct: float = 0.70,
-    val_pct: float = 0.15
+    val_pct: float = 0.15,
+    embargo_steps: int = 3
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Splits time-ordered data chronologically into train, validation, and test splits.
-    Guarantees no future lookahead or temporal leakage.
+    Enforces an embargo/purge gap of at least embargo_steps between splits
+    to guarantee that training and validation target labels do not leak into subsequent splits.
     """
     n = len(df)
     train_idx = int(n * train_pct)
     val_idx = int(n * (train_pct + val_pct))
 
-    train_df = df.iloc[:train_idx].copy()
-    val_df = df.iloc[train_idx:val_idx].copy()
+    train_end = max(0, train_idx - embargo_steps)
+    val_end = max(train_idx, val_idx - embargo_steps)
+
+    train_df = df.iloc[:train_end].copy()
+    val_df = df.iloc[train_idx:val_end].copy()
     test_df = df.iloc[val_idx:].copy()
 
     return train_df, val_df, test_df

@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 import sys
 import numpy as np
+import pandas as pd
 import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,11 +37,11 @@ from backend.services.forecast_service import ForecastService
 
 
 def test_traffic_chronological_split_no_leakage():
-    """Verifies that traffic data is split strictly chronologically with zero temporal overlap."""
+    """Verifies that traffic data is split strictly chronologically with embargo purge gap."""
     raw_df = generate_corridor_traffic_history(days=7, seed=42)
     featured_df = build_traffic_features(raw_df)
 
-    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.70, val_pct=0.15)
+    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.70, val_pct=0.15, embargo_steps=3)
 
     assert len(train_df) > 0
     assert len(val_df) > 0
@@ -50,13 +51,17 @@ def test_traffic_chronological_split_no_leakage():
     assert train_df["timestamp"].max() < val_df["timestamp"].min()
     assert val_df["timestamp"].max() < test_df["timestamp"].min()
 
+    # Embargo verification: last training label (shifted by 15m) strictly prior to first validation feature
+    assert train_df["timestamp"].max() + pd.Timedelta(minutes=15) < val_df["timestamp"].min()
+    assert val_df["timestamp"].max() + pd.Timedelta(minutes=15) < test_df["timestamp"].min()
+
 
 def test_energy_chronological_split_no_leakage():
-    """Verifies that building energy data is split strictly chronologically."""
+    """Verifies that building energy data is split strictly chronologically with embargo purge gap."""
     raw_df = generate_building_energy_history(days=10, seed=42)
     featured_df = build_energy_features(raw_df)
 
-    train_df, val_df, test_df = chronological_energy_split(featured_df, train_pct=0.70, val_pct=0.15)
+    train_df, val_df, test_df = chronological_energy_split(featured_df, train_pct=0.70, val_pct=0.15, embargo_steps=4)
 
     assert len(train_df) > 0
     assert len(val_df) > 0
@@ -64,6 +69,61 @@ def test_energy_chronological_split_no_leakage():
 
     assert train_df["timestamp"].max() < val_df["timestamp"].min()
     assert val_df["timestamp"].max() < test_df["timestamp"].min()
+
+    # Embargo verification: last training label (shifted by 60m) strictly prior to first validation feature
+    assert train_df["timestamp"].max() + pd.Timedelta(minutes=60) < val_df["timestamp"].min()
+    assert val_df["timestamp"].max() + pd.Timedelta(minutes=60) < test_df["timestamp"].min()
+
+
+def test_traffic_features_entity_isolation():
+    """
+    Verifies that build_traffic_features groups by segment_id so that multiple entities
+    sharing identical timestamps do not interleave or exchange lag values.
+    """
+    timestamps = pd.date_range("2026-09-20 08:00", periods=20, freq="5min")
+    records_a = [
+        {"timestamp": ts, "segment_id": "SEG-01", "speed_kmh": 20.0 + i, "ambient_temp_c": 28.0}
+        for i, ts in enumerate(timestamps)
+    ]
+    records_b = [
+        {"timestamp": ts, "segment_id": "SEG-02", "speed_kmh": 50.0 + i, "ambient_temp_c": 28.0}
+        for i, ts in enumerate(timestamps)
+    ]
+    interleaved_df = pd.DataFrame(records_a + records_b).sort_values("timestamp").reset_index(drop=True)
+
+    featured = build_traffic_features(interleaved_df)
+    assert len(featured) > 0
+
+    # Filter for SEG-02 rows: speed_lag_5m must reflect SEG-02 speeds (>= 50), never SEG-01 speeds
+    seg_b_featured = featured[featured["segment_id"] == "SEG-02"]
+    assert len(seg_b_featured) > 0
+    assert (seg_b_featured["speed_lag_5m"] >= 50.0).all()
+
+    # Filter for SEG-01 rows: speed_lag_5m must reflect SEG-01 speeds (<= 40), never SEG-02 speeds
+    seg_a_featured = featured[featured["segment_id"] == "SEG-01"]
+    assert len(seg_a_featured) > 0
+    assert (seg_a_featured["speed_lag_5m"] <= 40.0).all()
+
+
+def test_traffic_features_time_gap_handling():
+    """
+    Verifies that time gaps (e.g. 2 hours) drop invalid bridged lags rather than
+    assigning hours-old values to speed_lag_5m.
+    """
+    # 20 observations before gap, 2-hour gap, then 20 observations after gap
+    ts_pre = pd.date_range("2026-09-20 08:00", periods=20, freq="5min")
+    ts_post = pd.date_range("2026-09-20 12:00", periods=20, freq="5min")
+
+    records_pre = [{"timestamp": ts, "segment_id": "SEG-01", "speed_kmh": 25.0, "ambient_temp_c": 28.0} for ts in ts_pre]
+    records_post = [{"timestamp": ts, "segment_id": "SEG-01", "speed_kmh": 45.0, "ambient_temp_c": 28.0} for ts in ts_post]
+    gap_df = pd.DataFrame(records_pre + records_post)
+
+    featured = build_traffic_features(gap_df)
+    # The first row at 12:00 must NOT have speed_lag_5m == 25.0 (which was from 09:35, 2h25m prior)
+    post_rows = featured[featured["timestamp"] >= pd.Timestamp("2026-09-20 12:00")]
+    assert len(post_rows) > 0
+    # All valid post-gap rows must only have lags formed from post-gap speeds (45.0)
+    assert (post_rows["speed_lag_5m"] == 45.0).all()
 
 
 def test_traffic_forecaster_inference_and_provenance():

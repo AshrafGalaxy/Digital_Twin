@@ -90,39 +90,77 @@ def generate_building_energy_history(
     return pd.DataFrame(records)
 
 
+def _build_single_energy_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Transforms a single entity's 15-minute building load records into feature matrices.
+    Reindexes onto a contiguous 15-minute grid so gaps are not treated as contiguous lags.
+    """
+    if len(df) == 0:
+        return pd.DataFrame()
+
+    df = df.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.sort_values("timestamp").drop_duplicates(subset=["timestamp"]).reset_index(drop=True)
+
+    # Reindex onto a contiguous 15-minute grid to prevent time gaps from bridging lags
+    full_grid = pd.DataFrame({
+        "timestamp": pd.date_range(
+            start=df["timestamp"].min(),
+            end=df["timestamp"].max(),
+            freq="15min"
+        )
+    })
+    merged = pd.merge(full_grid, df, on="timestamp", how="left")
+
+    # Preserve entity identifier if present
+    if "building_id" in df.columns and len(df["building_id"].dropna()) > 0:
+        merged["building_id"] = df["building_id"].dropna().iloc[0]
+
+    # Target: 60-min forward active power (4 steps for 15-minute series)
+    merged[ENERGY_TARGET_COLUMN] = merged["active_power_kw"].shift(-4)
+
+    # Lags (4 steps = 1h, 8 steps = 2h, 12 steps = 3h, 96 steps = 24h)
+    merged["load_lag_1h"] = merged["active_power_kw"].shift(4)
+    merged["load_lag_2h"] = merged["active_power_kw"].shift(8)
+    merged["load_lag_3h"] = merged["active_power_kw"].shift(12)
+    merged["load_lag_24h"] = merged["active_power_kw"].shift(96)
+
+    # Rolling statistics over prior 6 hours (24 steps of 15m)
+    merged["load_roll_mean_6h"] = merged["active_power_kw"].rolling(window=24, closed="left").mean()
+    merged["load_roll_max_6h"] = merged["active_power_kw"].rolling(window=24, closed="left").max()
+    merged["load_roll_std_6h"] = merged["active_power_kw"].rolling(window=24, closed="left").std().fillna(0.0)
+
+    # Calendar cyclical features
+    hour_float = merged["timestamp"].dt.hour + merged["timestamp"].dt.minute / 60.0
+    merged["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
+    merged["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
+    merged["day_of_week"] = merged["timestamp"].dt.weekday
+    merged["is_weekend"] = merged["day_of_week"].isin([5, 6]).astype(int)
+    if "is_mall_open" not in merged.columns or merged["is_mall_open"].isna().any():
+        merged["is_mall_open"] = hour_float.apply(lambda h: 1 if 10.0 <= h <= 22.0 else 0)
+
+    merged = merged.dropna().reset_index(drop=True)
+    return merged
+
+
 def build_energy_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Transforms raw 15-minute building load records into feature matrices.
     Target: active power shifted 4 steps (60 minutes) into the future.
     Features: calculated strictly using observations at or prior to time t.
+    Guarantees entity isolation and drops invalid lags across time gaps (§4 of AGENTS.md).
     """
-    df = df.copy().sort_values("timestamp").reset_index(drop=True)
-
-    # Target: 60-min forward active power (4 steps for 15-minute series)
-    df[ENERGY_TARGET_COLUMN] = df["active_power_kw"].shift(-4)
-
-    # Lags (4 steps = 1h, 8 steps = 2h, 12 steps = 3h, 96 steps = 24h)
-    df["load_lag_1h"] = df["active_power_kw"].shift(4)
-    df["load_lag_2h"] = df["active_power_kw"].shift(8)
-    df["load_lag_3h"] = df["active_power_kw"].shift(12)
-    df["load_lag_24h"] = df["active_power_kw"].shift(96)
-
-    # Rolling statistics over prior 6 hours (24 steps of 15m)
-    df["load_roll_mean_6h"] = df["active_power_kw"].rolling(window=24, closed="left").mean()
-    df["load_roll_max_6h"] = df["active_power_kw"].rolling(window=24, closed="left").max()
-    df["load_roll_std_6h"] = df["active_power_kw"].rolling(window=24, closed="left").std().fillna(0.0)
-
-    # Calendar cyclical features
-    hour_float = df["timestamp"].dt.hour + df["timestamp"].dt.minute / 60.0
-    df["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
-    df["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
-    df["day_of_week"] = df["timestamp"].dt.weekday
-    df["is_weekend"] = df["day_of_week"].isin([5, 6]).astype(int)
-    if "is_mall_open" not in df.columns:
-        df["is_mall_open"] = hour_float.apply(lambda h: 1 if 10.0 <= h <= 22.0 else 0)
-
-    df = df.dropna().reset_index(drop=True)
-    return df
+    if "building_id" in df.columns:
+        groups = []
+        for _, group_df in df.groupby("building_id", as_index=False):
+            res = _build_single_energy_features(group_df)
+            if len(res) > 0:
+                groups.append(res)
+        if not groups:
+            return pd.DataFrame(columns=ENERGY_FEATURE_COLUMNS + [ENERGY_TARGET_COLUMN, "timestamp", "active_power_kw"])
+        return pd.concat(groups, ignore_index=True).sort_values(["timestamp", "building_id"]).reset_index(drop=True)
+    else:
+        return _build_single_energy_features(df)
 
 
 def extract_energy_features_row(
@@ -160,13 +198,23 @@ def extract_energy_features_row(
 def chronological_energy_split(
     df: pd.DataFrame,
     train_pct: float = 0.70,
-    val_pct: float = 0.15
+    val_pct: float = 0.15,
+    embargo_steps: int = 4
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Splits building load time-series chronologically into train, validation, and test splits.
+    Enforces an embargo/purge gap of at least embargo_steps between splits
+    to guarantee that training and validation target labels do not leak into subsequent splits.
     """
     n = len(df)
     train_idx = int(n * train_pct)
     val_idx = int(n * (train_pct + val_pct))
 
-    return df.iloc[:train_idx].copy(), df.iloc[train_idx:val_idx].copy(), df.iloc[val_idx:].copy()
+    train_end = max(0, train_idx - embargo_steps)
+    val_end = max(train_idx, val_idx - embargo_steps)
+
+    train_df = df.iloc[:train_end].copy()
+    val_df = df.iloc[train_idx:val_end].copy()
+    test_df = df.iloc[val_idx:].copy()
+
+    return train_df, val_df, test_df
