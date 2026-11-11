@@ -55,10 +55,11 @@ def evaluate_energy_baselines(
     train_df = train_df.copy()
     train_df["hour"] = train_df["timestamp"].dt.hour
     hist_map = train_df.groupby(["hour", "is_weekend"])[ENERGY_TARGET_COLUMN].mean().to_dict()
+    train_mean = float(train_df[ENERGY_TARGET_COLUMN].mean()) if len(train_df) > 0 else 0.0
 
     test_hours = test_df["timestamp"].dt.hour.values
     test_weekends = test_df["is_weekend"].values
-    y_pred_same_hour = np.array([hist_map.get((h, w), np.mean(y_true)) for h, w in zip(test_hours, test_weekends)])
+    y_pred_same_hour = np.array([hist_map.get((h, w), train_mean) for h, w in zip(test_hours, test_weekends)])
 
     same_hour_mae = float(mean_absolute_error(y_true, y_pred_same_hour))
     same_hour_rmse = float(root_mean_squared_error(y_true, y_pred_same_hour))

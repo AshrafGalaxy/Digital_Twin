@@ -19,6 +19,7 @@ if str(BASE_DIR) not in sys.path:
 
 from ml.features.traffic_features import (
     FEATURE_COLUMNS,
+    TARGET_COLUMN,
     generate_corridor_traffic_history,
     build_traffic_features,
     extract_traffic_features_row,
@@ -26,6 +27,7 @@ from ml.features.traffic_features import (
 )
 from ml.features.energy_features import (
     ENERGY_FEATURE_COLUMNS,
+    ENERGY_TARGET_COLUMN,
     generate_building_energy_history,
     build_energy_features,
     extract_energy_features_row,
@@ -320,6 +322,90 @@ def test_inference_rolling_std_uses_ddof_1():
     assert abs(features["speed_roll_std_30m"] - expected_std_ddof_1) < 1e-4
     assert abs(features["speed_roll_std_30m"] - 5.4772) < 1e-3
     assert features["speed_roll_std_30m"] != 5.0
+
+
+def test_traffic_baseline_fallback_uses_train_mean_not_test_labels():
+    """
+    Verifies BUG-51: evaluate_baselines must fall back to the training target mean
+    when an hour is absent from the historical map, never leaking test labels.
+    """
+    from ml.training.train_traffic_model import evaluate_baselines
+
+    # Train dataset covering only hour 8 on weekday (mean = 25.0)
+    train_df = pd.DataFrame({
+        "timestamp": pd.date_range("2026-09-21 08:00", periods=5, freq="5min"),  # Monday
+        "is_weekend": [0, 0, 0, 0, 0],
+        TARGET_COLUMN: [20.0, 25.0, 30.0, 25.0, 25.0],  # Mean = 25.0
+        "speed_kmh": [20.0, 25.0, 30.0, 25.0, 25.0]
+    })
+
+    # Test dataset has hour 14 (missing from train_df historical map)
+    # Test case 1: test targets are 100.0
+    test_df_1 = pd.DataFrame({
+        "timestamp": pd.date_range("2026-09-21 14:00", periods=3, freq="5min"),
+        "is_weekend": [0, 0, 0],
+        TARGET_COLUMN: [100.0, 100.0, 100.0],
+        "speed_kmh": [100.0, 100.0, 100.0]
+    })
+    res_1 = evaluate_baselines(train_df, test_df_1)
+
+    # Test case 2: test targets are 0.0
+    test_df_2 = pd.DataFrame({
+        "timestamp": pd.date_range("2026-09-21 14:00", periods=3, freq="5min"),
+        "is_weekend": [0, 0, 0],
+        TARGET_COLUMN: [0.0, 0.0, 0.0],
+        "speed_kmh": [0.0, 0.0, 0.0]
+    })
+    res_2 = evaluate_baselines(train_df, test_df_2)
+
+    # Historical average prediction for missing hour 14 must equal train_mean (25.0) in both cases
+    # For test_df_1: true=100.0, pred=25.0 -> MAE = 75.0
+    assert res_1["historical_average"]["mae"] == 75.0
+
+    # For test_df_2: true=0.0, pred=25.0 -> MAE = 25.0
+    assert res_2["historical_average"]["mae"] == 25.0
+
+
+def test_energy_baseline_fallback_uses_train_mean_not_test_labels():
+    """
+    Verifies BUG-51: evaluate_energy_baselines must fall back to the training target mean
+    when an hour is absent from the same-hour map, never leaking test labels.
+    """
+    from ml.training.train_energy_model import evaluate_energy_baselines
+
+    # Train dataset covering only hour 9 on weekday (mean = 3000.0 kW)
+    train_df = pd.DataFrame({
+        "timestamp": pd.date_range("2026-09-21 09:00", periods=4, freq="15min"),  # Monday
+        "is_weekend": [0, 0, 0, 0],
+        ENERGY_TARGET_COLUMN: [2800.0, 3000.0, 3200.0, 3000.0],  # Mean = 3000.0
+        "active_power_kw": [2800.0, 3000.0, 3200.0, 3000.0]
+    })
+
+    # Test dataset has hour 15 (missing from train_df map)
+    # Test case 1: test targets are 5000.0 kW
+    test_df_1 = pd.DataFrame({
+        "timestamp": pd.date_range("2026-09-21 15:00", periods=4, freq="15min"),
+        "is_weekend": [0, 0, 0, 0],
+        ENERGY_TARGET_COLUMN: [5000.0, 5000.0, 5000.0, 5000.0],
+        "active_power_kw": [5000.0, 5000.0, 5000.0, 5000.0]
+    })
+    res_1 = evaluate_energy_baselines(train_df, test_df_1)
+
+    # Test case 2: test targets are 1000.0 kW
+    test_df_2 = pd.DataFrame({
+        "timestamp": pd.date_range("2026-09-21 15:00", periods=4, freq="15min"),
+        "is_weekend": [0, 0, 0, 0],
+        ENERGY_TARGET_COLUMN: [1000.0, 1000.0, 1000.0, 1000.0],
+        "active_power_kw": [1000.0, 1000.0, 1000.0, 1000.0]
+    })
+    res_2 = evaluate_energy_baselines(train_df, test_df_2)
+
+    # Pred is train_mean (3000.0 kW) in both cases
+    # For test_df_1: true=5000.0, pred=3000.0 -> MAE = 2000.0
+    assert res_1["same_hour_average"]["mae"] == 2000.0
+
+    # For test_df_2: true=1000.0, pred=3000.0 -> MAE = 2000.0
+    assert res_2["same_hour_average"]["mae"] == 2000.0
 
 
 if __name__ == "__main__":
