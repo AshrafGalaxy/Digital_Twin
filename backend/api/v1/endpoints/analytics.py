@@ -104,8 +104,7 @@ async def get_feature_drift(
 
     stmt = text("""
         SELECT observed_at AS timestamp, segment_id,
-               average_speed_kmh AS speed_kmh,
-               28.5 AS ambient_temp_c
+               average_speed_kmh AS speed_kmh
         FROM traffic_observations
         WHERE observed_at >= :cutoff_time
         ORDER BY observed_at ASC
@@ -115,21 +114,56 @@ async def get_feature_drift(
     rows = res.fetchall()
 
     detector = FeatureDriftDetector()
-    if len(rows) >= 15:
-        records = [
-            {
-                "timestamp": pd.to_datetime(r[0]),
-                "segment_id": r[1],
-                "speed_kmh": float(r[2]),
-                "ambient_temp_c": float(r[3])
-            }
-            for r in rows
-        ]
-        raw_df = pd.DataFrame(records)
-        featured_df = build_traffic_features(raw_df)
-        return detector.evaluate_drift(featured_df)
-    else:
-        # Baseline reference sample evaluation when live window is warming up
-        sample_df = detector.reference_df.sample(min(150, len(detector.reference_df)), random_state=42)
-        return detector.evaluate_drift(sample_df)
+    if len(rows) < 15:
+        return {
+            "overallStatus": "INSUFFICIENT_DATA",
+            "status": "INSUFFICIENT_DATA",
+            "maxPsi": None,
+            "qualityFlag": "insufficient_data",
+            "driftedFeaturesCount": 0,
+            "warningFeaturesCount": 0,
+            "driftedFeatures": [],
+            "warningFeatures": [],
+            "recommendation": "Insufficient telemetry observations in lookback window (< 15 rows) to evaluate feature drift.",
+            "perFeatureMetrics": {}
+        }
 
+    # Query ambient temperature from environmental observations if available
+    env_stmt = text("""
+        SELECT temperature_c
+        FROM environment_observations
+        WHERE observed_at >= :cutoff_time AND temperature_c IS NOT NULL
+        ORDER BY observed_at DESC
+        LIMIT 1
+    """)
+    env_res = await session.execute(env_stmt, {"cutoff_time": cutoff_time})
+    env_row = env_res.fetchone()
+    ambient_temp = float(env_row[0]) if env_row and env_row[0] is not None else None
+
+    records = []
+    for r in rows:
+        rec = {
+            "timestamp": pd.to_datetime(r[0]),
+            "segment_id": r[1],
+            "speed_kmh": float(r[2]),
+        }
+        if ambient_temp is not None:
+            rec["ambient_temp_c"] = ambient_temp
+        records.append(rec)
+
+    raw_df = pd.DataFrame(records)
+    featured_df = build_traffic_features(raw_df)
+    if len(featured_df) < 15:
+        return {
+            "overallStatus": "INSUFFICIENT_DATA",
+            "status": "INSUFFICIENT_DATA",
+            "maxPsi": None,
+            "qualityFlag": "insufficient_data",
+            "driftedFeaturesCount": 0,
+            "warningFeaturesCount": 0,
+            "driftedFeatures": [],
+            "warningFeatures": [],
+            "recommendation": "Insufficient feature-engineered observations in window (< 15 rows) to evaluate drift.",
+            "perFeatureMetrics": {}
+        }
+    return detector.evaluate_drift(featured_df)

@@ -18,13 +18,17 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 GOLD_DIR = ROOT_DIR / "data" / "gold" / "features"
 
 
+# Discrete features where continuous 2-sample KS test assumptions do not hold
+DISCRETE_FEATURES = {"is_peak_hour", "is_weekend", "day_of_week"}
+
+
 class FeatureDriftDetector:
     """
     Evaluates covariate and concept drift by comparing streaming evaluation windows
     against the authoritative Gold feature baseline.
     """
 
-    # PSI standard regulatory boundaries
+    # PSI standard regulatory boundaries (§4 of AGENTS.md)
     PSI_STABLE_THRESHOLD: float = 0.10
     PSI_WARNING_THRESHOLD: float = 0.25
 
@@ -52,25 +56,28 @@ class FeatureDriftDetector:
         current: np.ndarray,
         num_buckets: int = 10,
         epsilon: float = 1e-4
-    ) -> float:
+    ) -> Optional[float]:
         """
         Computes the Population Stability Index (PSI) between reference and current feature arrays.
+        Returns None when arrays have fewer than 10 observations or quantile bins cannot partition into >= 3 edges.
         """
         ref_clean = reference[~np.isnan(reference)]
         curr_clean = current[~np.isnan(current)]
 
         if len(ref_clean) < 10 or len(curr_clean) < 10:
-            return 0.0
+            return None
 
         # Create quantile bins on reference distribution
         percentiles = np.linspace(0, 100, num_buckets + 1)
         bins = np.percentile(ref_clean, percentiles)
-        bins[0] = -np.inf
-        bins[-1] = np.inf
-        # Ensure unique bin edges
+        # Ensure unique bin edges on reference first to avoid empty buckets from duplicate percentiles
         bins = np.unique(bins)
         if len(bins) < 3:
-            return 0.0
+            return None
+
+        # Expand outer edges to capture out-of-range observations in current
+        bins[0] = -np.inf
+        bins[-1] = np.inf
 
         ref_counts, _ = np.histogram(ref_clean, bins=bins)
         curr_counts, _ = np.histogram(curr_clean, bins=bins)
@@ -93,8 +100,22 @@ class FeatureDriftDetector:
     ) -> Dict[str, Any]:
         """
         Evaluates PSI and KS 2-sample tests across all specified features.
-        Returns detailed per-feature metrics and overall drift status.
+        Returns detailed per-feature metrics and overall drift status conforming to AGENTS.md §4.
         """
+        if len(current_df) < 15:
+            return {
+                "overallStatus": "INSUFFICIENT_DATA",
+                "status": "INSUFFICIENT_DATA",
+                "maxPsi": None,
+                "qualityFlag": "insufficient_data",
+                "driftedFeaturesCount": 0,
+                "warningFeaturesCount": 0,
+                "driftedFeatures": [],
+                "warningFeatures": [],
+                "recommendation": "Insufficient telemetry observations in lookback window (< 15 rows) to evaluate feature drift.",
+                "perFeatureMetrics": {}
+            }
+
         if feature_columns is None:
             feature_columns = [
                 "speed_lag_5m", "speed_lag_15m", "speed_lag_60m",
@@ -105,6 +126,7 @@ class FeatureDriftDetector:
         max_psi = 0.0
         drifted_features = []
         warning_features = []
+        valid_evaluations_count = 0
 
         for col in feature_columns:
             if col not in self.reference_df.columns or col not in current_df.columns:
@@ -117,43 +139,71 @@ class FeatureDriftDetector:
                 continue
 
             psi = self.calculate_psi(ref_vals, curr_vals)
-            ks_res = stats.ks_2samp(ref_vals, curr_vals)
 
-            if psi >= self.PSI_WARNING_THRESHOLD:
-                status = "SIGNIFICANT_DRIFT"
+            # Continuous 2-sample KS test: skip on discrete flags or binary features
+            is_discrete = col in DISCRETE_FEATURES or len(np.unique(ref_vals)) <= 2
+            if not is_discrete and len(ref_vals) >= 5 and len(curr_vals) >= 5:
+                ks_res = stats.ks_2samp(ref_vals, curr_vals)
+                ks_stat: Optional[float] = round(float(ks_res.statistic), 4)
+                ks_pval: Optional[float] = round(float(ks_res.pvalue), 6)
+            else:
+                ks_stat = None
+                ks_pval = None
+
+            if psi is None:
+                status = "INSUFFICIENT_DATA"
+            elif psi >= self.PSI_WARNING_THRESHOLD:
+                status = "DRIFT"
                 drifted_features.append(col)
+                valid_evaluations_count += 1
+                if psi > max_psi:
+                    max_psi = psi
             elif psi >= self.PSI_STABLE_THRESHOLD:
-                status = "MODERATE_DRIFT"
+                status = "WARNING"
                 warning_features.append(col)
+                valid_evaluations_count += 1
+                if psi > max_psi:
+                    max_psi = psi
             else:
                 status = "STABLE"
-
-            if psi > max_psi:
-                max_psi = psi
+                valid_evaluations_count += 1
+                if psi > max_psi:
+                    max_psi = psi
 
             feature_results[col] = {
-                "psi": round(psi, 4),
-                "ksStatistic": round(float(ks_res.statistic), 4),
-                "ksPValue": round(float(ks_res.pvalue), 6),
+                "psi": round(psi, 4) if psi is not None else None,
+                "ksStatistic": ks_stat,
+                "ksPValue": ks_pval,
                 "status": status
             }
 
         if len(drifted_features) > 0:
-            overall_status = "DRIFT_DETECTED"
-            recommendation = f"Significant distribution drift detected in {len(drifted_features)} features ({', '.join(drifted_features)}). Flag predictions as suspect and schedule model retraining."
+            overall_status = "DRIFT"
+            recommendation = (
+                f"Significant distribution drift detected in {len(drifted_features)} features "
+                f"({', '.join(drifted_features)}). Flag predictions as suspect and schedule model retraining."
+            )
             quality_flag = "suspect"
         elif len(warning_features) > 0:
-            overall_status = "EARLY_WARNING"
-            recommendation = f"Moderate distribution drift in {len(warning_features)} features ({', '.join(warning_features)}). Continue monitoring."
+            overall_status = "WARNING"
+            recommendation = (
+                f"Moderate distribution drift in {len(warning_features)} features "
+                f"({', '.join(warning_features)}). Continue monitoring."
+            )
             quality_flag = "valid"
-        else:
+        elif valid_evaluations_count > 0:
             overall_status = "STABLE"
             recommendation = "Feature distributions match Gold baseline reference within standard stability thresholds (PSI < 0.10)."
             quality_flag = "valid"
+        else:
+            overall_status = "INSUFFICIENT_DATA"
+            recommendation = "Insufficient valid feature data to evaluate distribution drift."
+            quality_flag = "insufficient_data"
 
         return {
             "overallStatus": overall_status,
-            "maxPsi": round(max_psi, 4),
+            "status": overall_status,
+            "maxPsi": round(max_psi, 4) if valid_evaluations_count > 0 else None,
             "qualityFlag": quality_flag,
             "driftedFeaturesCount": len(drifted_features),
             "warningFeaturesCount": len(warning_features),

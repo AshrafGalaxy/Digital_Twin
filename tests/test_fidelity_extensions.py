@@ -189,11 +189,11 @@ def test_feature_drift_detector():
     assert stable_eval["qualityFlag"] == "valid"
     assert stable_eval["maxPsi"] < 0.15
 
-    # Artificially shifted sample -> DRIFT_DETECTED
+    # Artificially shifted sample -> DRIFT
     shifted_sample = sample_ref.copy()
     shifted_sample["speed_lag_5m"] = shifted_sample["speed_lag_5m"] + 30.0
     drift_eval = detector.evaluate_drift(shifted_sample)
-    assert drift_eval["overallStatus"] == "DRIFT_DETECTED"
+    assert drift_eval["overallStatus"] == "DRIFT"
     assert drift_eval["qualityFlag"] == "suspect"
     assert drift_eval["maxPsi"] >= 0.25
     assert "speed_lag_5m" in drift_eval["driftedFeatures"]
@@ -208,4 +208,4 @@ def test_analytics_drift_api_endpoint():
     assert "maxPsi" in data
     assert "qualityFlag" in data
     assert "perFeatureMetrics" in data
-    assert data["overallStatus"] in ["STABLE", "EARLY_WARNING", "DRIFT_DETECTED"]
+    assert data["overallStatus"] in ["STABLE", "WARNING", "DRIFT", "INSUFFICIENT_DATA"]
