@@ -197,8 +197,8 @@ def extract_energy_features_row(
 
 def chronological_energy_split(
     df: pd.DataFrame,
-    train_pct: float = 0.70,
-    val_pct: float = 0.15,
+    train_pct: float = 0.80,
+    val_pct: float = 0.10,
     embargo_steps: int = 4
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """

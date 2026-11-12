@@ -53,7 +53,7 @@ def run_experiment_e01_traffic() -> dict:
     print("\n--- Running E-01: Traffic Forecasting Benchmark ---")
     raw_df = generate_corridor_traffic_history(days=21, seed=42)
     feat_df = build_traffic_features(raw_df)
-    train_df, val_df, test_df = chronological_split(feat_df, 0.70, 0.15)
+    train_df, val_df, test_df = chronological_split(feat_df, 0.80, 0.10)
 
     y_test = test_df[TARGET_COLUMN].values
     
@@ -104,7 +104,7 @@ def run_experiment_e02_energy() -> dict:
     print("\n--- Running E-02: Building Energy Forecasting Benchmark ---")
     raw_df = generate_building_energy_history(days=35, seed=42)
     feat_df = build_energy_features(raw_df)
-    train_df, val_df, test_df = chronological_energy_split(feat_df, 0.70, 0.15)
+    train_df, val_df, test_df = chronological_energy_split(feat_df, 0.80, 0.10)
 
     y_test = test_df[ENERGY_TARGET_COLUMN].values
 
@@ -150,7 +150,7 @@ def run_experiment_e03_ablation() -> dict:
     print("\n--- Running E-03: Feature Ablation Experiment ---")
     raw_df = generate_corridor_traffic_history(days=14, seed=42)
     feat_df = build_traffic_features(raw_df)
-    train_df, val_df, test_df = chronological_split(feat_df, 0.70, 0.15)
+    train_df, val_df, test_df = chronological_split(feat_df, 0.80, 0.10)
 
     all_feats = FEATURE_COLUMNS
     y_train = train_df[TARGET_COLUMN].values

@@ -77,9 +77,9 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
     featured_df = build_energy_features(raw_df)
     print(f"[+] Total feature rows: {len(featured_df)}")
 
-    # 1. Chronological Split (70% train, 15% val, 15% test)
-    train_df, val_df, test_df = chronological_energy_split(featured_df, train_pct=0.70, val_pct=0.15)
-    print(f"[+] Split sizes — Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
+    # 1. Chronological Split (80% train, 10% val, 10% test)
+    train_df, val_df, test_df = chronological_energy_split(featured_df, train_pct=0.80, val_pct=0.10)
+    print(f"[+] Split sizes - Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
 
     X_train = train_df[ENERGY_FEATURE_COLUMNS]
     y_train = train_df[ENERGY_TARGET_COLUMN]
@@ -93,8 +93,8 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
     # 2. Baseline Evaluation
     baseline_metrics = evaluate_energy_baselines(train_df, test_df)
     persist_mae = baseline_metrics["persistence"]["mae"]
-    print(f"[+] Baseline (Persistence)  — Test MAE: {persist_mae:.2f} kW, RMSE: {baseline_metrics['persistence']['rmse']:.2f} kW")
-    print(f"[+] Baseline (Same-Hour)    — Test MAE: {baseline_metrics['same_hour_average']['mae']:.2f} kW, RMSE: {baseline_metrics['same_hour_average']['rmse']:.2f} kW")
+    print(f"[+] Baseline (Persistence)  - Test MAE: {persist_mae:.2f} kW, RMSE: {baseline_metrics['persistence']['rmse']:.2f} kW")
+    print(f"[+] Baseline (Same-Hour)    - Test MAE: {baseline_metrics['same_hour_average']['mae']:.2f} kW, RMSE: {baseline_metrics['same_hour_average']['rmse']:.2f} kW")
 
     # 3. Train Primary XGBoost Regressor
     print("[+] Training primary XGBoost regressor (energy-xgb-v1)...")
@@ -141,7 +141,7 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
     test_rmse = float(root_mean_squared_error(y_test, y_pred_test))
     improvement_pct = ((persist_mae - test_mae) / persist_mae) * 100.0
 
-    print(f"[+] Primary XGBoost Model   — Test MAE: {test_mae:.2f} kW, RMSE: {test_rmse:.2f} kW")
+    print(f"[+] Primary XGBoost Model   - Test MAE: {test_mae:.2f} kW, RMSE: {test_rmse:.2f} kW")
     print(f"[+] Improvement over Persistence Baseline: +{improvement_pct:.1f}%")
 
     # 6. Feature Importances
@@ -185,15 +185,15 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
             run_name="energy-xgb-v1-60m-load",
             parameters={
                 "model_type": "XGBRegressor",
-                "n_estimators": 140,
+                "n_estimators": 160,
                 "max_depth": 5,
                 "learning_rate": 0.05,
                 "horizon_minutes": 60,
                 "training_days": days,
                 "random_seed": seed,
-                "train_pct": 0.70,
-                "val_pct": 0.15,
-                "test_pct": 0.15
+                "train_pct": 0.80,
+                "val_pct": 0.10,
+                "test_pct": 0.10
             },
             metrics={
                 "test_mae": round(test_mae, 2),

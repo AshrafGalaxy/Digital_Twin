@@ -28,11 +28,11 @@ from ml.features.energy_features import (
 from ml.inference.forecaster import CorridorForecaster
 from ml.conformal_calibrator import ConformalPredictionCalibrator
 
-# These match the saved artifacts. A later training change owns the 80/10/10 contract.
+# Synchronized with the saved 80/10/10 artifact fits.
 _SPEED_SERIES_DAYS = 21
 _LOAD_SERIES_DAYS = 35
-_FIT_TRAIN_PCT = 0.70
-_FIT_VAL_PCT = 0.15
+_FIT_TRAIN_PCT = 0.80
+_FIT_VAL_PCT = 0.10
 _SERIES_SEED = 42
 
 
@@ -200,8 +200,8 @@ class EvaluationService:
             "testSetSamples": len(test_df),
             "holdoutStartsAfter": pd.Timestamp(train_df["timestamp"].max()).isoformat(),
             "testSplitStartsAt": pd.Timestamp(test_df["timestamp"].min()).isoformat(),
-            "splitRatio": "70% Train / 15% Val / 15% Holdout (Chronological, matching the saved fit)",
-            "splitRatioPct": "70/15/15",
+            "splitRatio": "80% Train / 10% Val / 10% Holdout (Chronological, matching the saved fit)",
+            "splitRatioPct": "80/10/10",
             "governanceNotice": (
                 "BENCHMARK INTEGRITY: Scores use a generated series with the same seed and length "
                 "as the saved fit. They are not observed measurements. The holdout starts after "

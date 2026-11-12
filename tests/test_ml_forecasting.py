@@ -39,17 +39,20 @@ from backend.services.forecast_service import ForecastService
 
 
 def test_traffic_chronological_split_no_leakage():
-    """Verifies that traffic data is split strictly chronologically with embargo purge gap."""
+    """Verifies that traffic data is split strictly chronologically on an 80/10/10 split with embargo purge gap."""
     raw_df = generate_corridor_traffic_history(days=7, seed=42)
     featured_df = build_traffic_features(raw_df)
 
-    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.70, val_pct=0.15, embargo_steps=3)
+    train_df, val_df, test_df = chronological_split(featured_df)
 
-    assert len(train_df) > 0
-    assert len(val_df) > 0
-    assert len(test_df) > 0
+    n = len(featured_df)
+    assert len(train_df) == int(n * 0.80) - 3
+    assert len(val_df) == int(n * 0.90) - int(n * 0.80) - 3
+    assert len(test_df) == n - int(n * 0.90)
 
-    # Strict chronological boundary verification
+    # Strict chronological index and timestamp monotonicity
+    assert train_df.index.max() < val_df.index.min()
+    assert val_df.index.max() < test_df.index.min()
     assert train_df["timestamp"].max() < val_df["timestamp"].min()
     assert val_df["timestamp"].max() < test_df["timestamp"].min()
 
@@ -59,22 +62,40 @@ def test_traffic_chronological_split_no_leakage():
 
 
 def test_energy_chronological_split_no_leakage():
-    """Verifies that building energy data is split strictly chronologically with embargo purge gap."""
+    """Verifies that building energy data is split strictly chronologically on an 80/10/10 split with embargo purge gap."""
     raw_df = generate_building_energy_history(days=10, seed=42)
     featured_df = build_energy_features(raw_df)
 
-    train_df, val_df, test_df = chronological_energy_split(featured_df, train_pct=0.70, val_pct=0.15, embargo_steps=4)
+    train_df, val_df, test_df = chronological_energy_split(featured_df)
 
-    assert len(train_df) > 0
-    assert len(val_df) > 0
-    assert len(test_df) > 0
+    n = len(featured_df)
+    assert len(train_df) == int(n * 0.80) - 4
+    assert len(val_df) == int(n * 0.90) - int(n * 0.80) - 4
+    assert len(test_df) == n - int(n * 0.90)
 
+    assert train_df.index.max() < val_df.index.min()
+    assert val_df.index.max() < test_df.index.min()
     assert train_df["timestamp"].max() < val_df["timestamp"].min()
     assert val_df["timestamp"].max() < test_df["timestamp"].min()
 
     # Embargo verification: last training label (shifted by 60m) strictly prior to first validation feature
     assert train_df["timestamp"].max() + pd.Timedelta(minutes=60) < val_df["timestamp"].min()
     assert val_df["timestamp"].max() + pd.Timedelta(minutes=60) < test_df["timestamp"].min()
+
+
+def test_saved_artifacts_reflect_consistent_booster_counts():
+    """Verifies BUG-52: fitted booster count matches logged n_estimators (150 traffic, 160 energy)."""
+    forecaster = CorridorForecaster()
+    if forecaster.traffic_artifact is not None:
+        assert forecaster.traffic_artifact["model"].n_estimators == 150
+        assert len(forecaster.traffic_artifact["model"].get_booster().get_dump()) == 150
+    if forecaster.energy_artifact is not None:
+        assert forecaster.energy_artifact["model"].n_estimators == 160
+        assert len(forecaster.energy_artifact["model"].get_booster().get_dump()) == 160
+
+    energy_src = (BASE_DIR / "ml" / "training" / "train_energy_model.py").read_text(encoding="utf-8")
+    assert '"n_estimators": 160' in energy_src
+    assert '"n_estimators": 140' not in energy_src
 
 
 def test_traffic_features_entity_isolation():

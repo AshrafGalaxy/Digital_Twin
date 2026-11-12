@@ -65,8 +65,8 @@ def run_ablation_study(seed: int = 42) -> Dict[str, Any]:
         raw_df = generate_corridor_traffic_history(days=21, seed=seed)
         featured_df = build_traffic_features(raw_df)
 
-    # Chronological Split (70/15/15)
-    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.70, val_pct=0.15)
+    # Chronological Split (80/10/10)
+    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.80, val_pct=0.10)
     y_train = train_df[TARGET_COLUMN].values
     y_val = val_df[TARGET_COLUMN].values
     y_test = test_df[TARGET_COLUMN].values
@@ -75,7 +75,7 @@ def run_ablation_study(seed: int = 42) -> Dict[str, Any]:
     y_persist = test_df["speed_kmh"].values
     persist_mae = float(mean_absolute_error(y_test, y_persist))
     persist_rmse = float(root_mean_squared_error(y_test, y_persist))
-    print(f"[+] Baseline (Persistence) — MAE: {persist_mae:.3f} km/h, RMSE: {persist_rmse:.3f} km/h")
+    print(f"[+] Baseline (Persistence) - MAE: {persist_mae:.3f} km/h, RMSE: {persist_rmse:.3f} km/h")
 
     ablation_results = {}
 
@@ -136,7 +136,7 @@ def run_ablation_study(seed: int = 42) -> Dict[str, Any]:
 > **Status:** Research Experiment Complete  
 > **Reference:** `DATA_AND_ML_PLAN.md` (§18.1 E-03)  
 > **Target:** 15-Minute Forward Average Speed (`averageVehicleSpeed`, km/h)  
-> **Evaluation Split:** Chronological Holdout (70% Train, 15% Validation, 15% Future Test)  
+> **Evaluation Split:** Chronological Holdout (80% Train, 10% Validation, 10% Future Test)  
 > **Baseline Persistence MAE:** {persist_mae:.3f} km/h (RMSE: {persist_rmse:.3f} km/h)
 
 ---

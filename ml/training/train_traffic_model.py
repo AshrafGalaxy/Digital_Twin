@@ -78,9 +78,9 @@ def train_traffic_forecaster(days: int = 21, seed: int = 42) -> Dict[str, Any]:
     featured_df = build_traffic_features(raw_df)
     print(f"[+] Total feature rows: {len(featured_df)}")
 
-    # 1. Chronological Split (70% train, 15% val, 15% test)
-    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.70, val_pct=0.15)
-    print(f"[+] Split sizes — Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
+    # 1. Chronological Split (80% train, 10% val, 10% test)
+    train_df, val_df, test_df = chronological_split(featured_df, train_pct=0.80, val_pct=0.10)
+    print(f"[+] Split sizes - Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
 
     X_train = train_df[FEATURE_COLUMNS]
     y_train = train_df[TARGET_COLUMN]
@@ -94,8 +94,8 @@ def train_traffic_forecaster(days: int = 21, seed: int = 42) -> Dict[str, Any]:
     # 2. Baseline Evaluation
     baseline_metrics = evaluate_baselines(train_df, test_df)
     persist_mae = baseline_metrics["persistence"]["mae"]
-    print(f"[+] Baseline (Persistence)  — Test MAE: {persist_mae:.3f} km/h, RMSE: {baseline_metrics['persistence']['rmse']:.3f} km/h")
-    print(f"[+] Baseline (Historical)   — Test MAE: {baseline_metrics['historical_average']['mae']:.3f} km/h, RMSE: {baseline_metrics['historical_average']['rmse']:.3f} km/h")
+    print(f"[+] Baseline (Persistence)  - Test MAE: {persist_mae:.3f} km/h, RMSE: {baseline_metrics['persistence']['rmse']:.3f} km/h")
+    print(f"[+] Baseline (Historical)   - Test MAE: {baseline_metrics['historical_average']['mae']:.3f} km/h, RMSE: {baseline_metrics['historical_average']['rmse']:.3f} km/h")
 
     # 3. Train Primary XGBoost Regressor (Mean Estimate)
     print("[+] Training primary XGBoost regressor (traffic-xgb-v1)...")
@@ -142,7 +142,7 @@ def train_traffic_forecaster(days: int = 21, seed: int = 42) -> Dict[str, Any]:
     test_rmse = float(root_mean_squared_error(y_test, y_pred_test))
     improvement_pct = ((persist_mae - test_mae) / persist_mae) * 100.0
 
-    print(f"[+] Primary XGBoost Model   — Test MAE: {test_mae:.3f} km/h, RMSE: {test_rmse:.3f} km/h")
+    print(f"[+] Primary XGBoost Model   - Test MAE: {test_mae:.3f} km/h, RMSE: {test_rmse:.3f} km/h")
     print(f"[+] Improvement over Persistence Baseline: +{improvement_pct:.1f}%")
 
     # 6. Feature Importances
@@ -192,9 +192,9 @@ def train_traffic_forecaster(days: int = 21, seed: int = 42) -> Dict[str, Any]:
                 "horizon_minutes": 15,
                 "training_days": days,
                 "random_seed": seed,
-                "train_pct": 0.70,
-                "val_pct": 0.15,
-                "test_pct": 0.15
+                "train_pct": 0.80,
+                "val_pct": 0.10,
+                "test_pct": 0.10
             },
             metrics={
                 "test_mae": round(test_mae, 3),
