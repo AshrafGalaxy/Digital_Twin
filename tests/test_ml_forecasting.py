@@ -7,8 +7,10 @@ prediction intervals, and PREDICTED provenance invariants.
 """
 
 from datetime import datetime
+import math
 from pathlib import Path
 import sys
+import joblib
 import numpy as np
 import pandas as pd
 import pytest
@@ -150,7 +152,7 @@ def test_traffic_features_time_gap_handling():
 
 
 def test_traffic_forecaster_inference_and_provenance():
-    """Verifies that CorridorForecaster generates valid 15-min speed forecasts with confidence bounds."""
+    """Verifies that CorridorForecaster serves 15-min speed forecasts with saved 80%/90% conformal bounds."""
     forecaster = CorridorForecaster()
     result = forecaster.predict_traffic_speed(
         segment_id="urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
@@ -164,12 +166,26 @@ def test_traffic_forecaster_inference_and_provenance():
     assert result["confidenceLower"] <= result["predictedValue"] <= result["confidenceUpper"]
     assert "baselineComparison" in result
     assert result["baselineComparison"]["modelTestMae"] < result["baselineComparison"]["persistenceMae"]
-    assert result["conformalIntervals"]["available"] is False
-    assert result["conformalIntervals"]["interval90"] is None
+
+    conformal = result["conformalIntervals"]
+    assert conformal["available"] is True
+    assert conformal["calibrationSplit"] == "validation"
+    assert conformal["testSplit"] == "test"
+    assert conformal["calibrationSamples"] > 0
+    assert conformal["testSamples"] > 0
+    for key, target in (("interval80", 0.80), ("interval90", 0.90)):
+        band = conformal[key]
+        assert band is not None
+        assert band["coverageTarget"] == target
+        assert band["lower"] <= result["predictedValue"] <= band["upper"]
+        assert band["margin"] > 0.0
+        assert band["coverageSplit"] == "test"
+        assert 0.0 <= band["empiricalTestCoverage"] <= 1.0
+    assert conformal["interval90"]["margin"] >= conformal["interval80"]["margin"]
 
 
 def test_energy_forecaster_inference_and_provenance():
-    """Verifies that CorridorForecaster generates valid 60-min building energy forecasts with confidence bounds."""
+    """Verifies that CorridorForecaster serves 60-min energy forecasts with saved 80%/90% conformal bounds."""
     forecaster = CorridorForecaster()
     result = forecaster.predict_building_energy(
         building_id="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
@@ -183,21 +199,40 @@ def test_energy_forecaster_inference_and_provenance():
     assert result["confidenceLower"] <= result["predictedValue"] <= result["confidenceUpper"]
     assert "baselineComparison" in result
     assert result["baselineComparison"]["modelTestMae"] < result["baselineComparison"]["persistenceMae"]
-    assert result["conformalIntervals"]["available"] is False
-    assert result["conformalIntervals"]["interval90"] is None
+
+    conformal = result["conformalIntervals"]
+    assert conformal["available"] is True
+    assert conformal["calibrationSplit"] == "validation"
+    assert conformal["testSplit"] == "test"
+    assert conformal["calibrationSamples"] > 0
+    assert conformal["testSamples"] > 0
+    for key, target in (("interval80", 0.80), ("interval90", 0.90)):
+        band = conformal[key]
+        assert band is not None
+        assert band["coverageTarget"] == target
+        assert band["lower"] <= result["predictedValue"] <= band["upper"]
+        assert band["margin"] > 0.0
+        assert band["coverageSplit"] == "test"
+        assert 0.0 <= band["empiricalTestCoverage"] <= 1.0
+    assert conformal["interval90"]["margin"] >= conformal["interval80"]["margin"]
 
 
 def test_calibration_quantile_is_not_scored_on_its_own_sample():
-    """Finite-sample rank uses the calibration split. Reported coverage uses the later test split."""
-    calibration = np.array([1.0, 1.0, 1.0, 1.0])
-    later = np.array([10.0, 10.0, 10.0, 10.0])
+    """Finite-sample rank uses discrete order statistics on calibration split; coverage uses later test split."""
+    calibration = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+    later = np.array([12.0, 12.0, 12.0, 12.0, 12.0])
     n = len(calibration)
-    level = min(1.0, float(np.ceil((n + 1) * 0.90) / n))
-    expected = float(np.quantile(np.abs(calibration), level))
-    fitted = ConformalPredictionCalibrator.calibrate_from_residuals(calibration, alpha=0.10)
-    assert fitted == expected
+    rank_80 = math.ceil((n + 1) * 0.80)
+    rank_90 = math.ceil((n + 1) * 0.90)
+    expected_80 = float(np.sort(np.abs(calibration))[rank_80 - 1])
+    expected_90 = float(np.sort(np.abs(calibration))[rank_90 - 1])
 
-    same_sample = float(np.mean(np.abs(calibration) <= fitted))
+    fitted_80 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration, alpha=0.20)
+    fitted_90 = ConformalPredictionCalibrator.calibrate_from_residuals(calibration, alpha=0.10)
+    assert fitted_80 == expected_80 == 9.0
+    assert fitted_90 == expected_90 == 10.0
+
+    same_sample = float(np.mean(np.abs(calibration) <= fitted_90))
     intervals = ConformalPredictionCalibrator.get_traffic_intervals(
         30.0,
         calibration_residuals=calibration,
@@ -207,15 +242,78 @@ def test_calibration_quantile_is_not_scored_on_its_own_sample():
     assert intervals["available"] is True
     assert intervals["calibrationSplit"] == "calibration"
     assert intervals["testSplit"] == "test"
-    assert intervals["calibrationSamples"] == 4
-    assert intervals["testSamples"] == 4
-    assert intervals["interval90"]["margin"] == round(expected, 2)
+    assert intervals["calibrationSamples"] == 10
+    assert intervals["testSamples"] == 5
+    assert intervals["interval80"]["margin"] == round(expected_80, 2)
+    assert intervals["interval90"]["margin"] == round(expected_90, 2)
     assert reported == 0.0
     assert reported != same_sample
 
     missing = ConformalPredictionCalibrator.get_traffic_intervals(30.0)
     assert missing["available"] is False
+    assert missing["interval80"] is None
     assert missing["interval90"] is None
+
+
+def test_conformal_discrete_order_statistic_and_small_sample_unavailability():
+    """Verifies discrete order statistics (no interpolation) and ceil((n+1)*(1-alpha)) > n rejection."""
+    # n = 8: ceil((8 + 1) * 0.90) = ceil(8.1) = 9 > 8 -> 90% level invalid -> unavailable
+    small_cal = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    assert ConformalPredictionCalibrator.calibrate_from_residuals(small_cal, alpha=0.20) == 8.0
+    with pytest.raises(ValueError, match="Insufficient calibration samples"):
+        ConformalPredictionCalibrator.calibrate_from_residuals(small_cal, alpha=0.10)
+
+    unavailable = ConformalPredictionCalibrator.get_traffic_intervals(
+        28.0,
+        calibration_residuals=small_cal,
+        test_residuals=np.array([1.0, 2.0]),
+    )
+    assert unavailable["available"] is False
+    assert unavailable["interval80"] is None
+    assert unavailable["interval90"] is None
+    assert "ceil((n+1)*(1-alpha))" in unavailable["reason"]
+
+
+def test_forecaster_returns_unavailable_when_artifact_lacks_calibration():
+    """Artifacts without stored conformal calibration must return available=False with null bands."""
+    forecaster = CorridorForecaster()
+    assert forecaster.traffic_artifact is not None
+    assert forecaster.energy_artifact is not None
+
+    forecaster.traffic_artifact = {k: v for k, v in forecaster.traffic_artifact.items() if k != "conformal_calibration"}
+    forecaster.energy_artifact = {k: v for k, v in forecaster.energy_artifact.items() if k != "conformal_calibration"}
+
+    t_res = forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 25.0)
+    e_res = forecaster.predict_building_energy("urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01", 4000.0)
+
+    assert t_res["conformalIntervals"]["available"] is False
+    assert t_res["conformalIntervals"]["interval80"] is None
+    assert t_res["conformalIntervals"]["interval90"] is None
+    assert e_res["conformalIntervals"]["available"] is False
+    assert e_res["conformalIntervals"]["interval80"] is None
+    assert e_res["conformalIntervals"]["interval90"] is None
+
+
+def test_saved_model_artifacts_persist_calibration_quantiles_and_test_coverage():
+    """Saved joblib artifacts persist validation 80%/90% quantiles and chronological test coverage."""
+    models_dir = BASE_DIR / "artifacts" / "models"
+    for filename in ("traffic_xgb_v1.joblib", "energy_xgb_v1.joblib"):
+        artifact = joblib.load(models_dir / filename)
+        cal = artifact.get("conformal_calibration")
+        assert isinstance(cal, dict)
+        assert cal["available"] is True
+        assert cal["calibrationSplit"] == "validation"
+        assert cal["testSplit"] == "test"
+        assert cal["calibrationSamples"] > 0
+        assert cal["testSamples"] > 0
+        assert cal["quantiles"]["80"]["alpha"] == 0.20
+        assert cal["quantiles"]["90"]["alpha"] == 0.10
+        assert cal["quantiles"]["90"]["quantile"] >= cal["quantiles"]["80"]["quantile"] > 0.0
+        for level in ("80", "90"):
+            cov = cal["empiricalCoverage"][level]
+            assert cov["coverageSplit"] == "test"
+            assert cov["testSamples"] == cal["testSamples"]
+            assert 0.0 <= cov["empiricalTestCoverage"] <= 1.0
 
 
 def test_forecast_state_isolation_invariant():

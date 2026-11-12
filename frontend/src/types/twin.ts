@@ -157,7 +157,22 @@ export interface ConformalInterval {
   upper: number;
   margin: number;
   coverageTarget: number;
-  empiricalTestCoverage: number;
+  empiricalTestCoverage: number | null;
+  empiricalTestCoveragePct?: number | null;
+  coverageSplit?: string | null;
+  calibrationSamples?: number;
+  testSamples?: number;
+}
+
+export interface ConformalIntervalsPayload {
+  available: boolean;
+  reason?: string | null;
+  calibrationSplit?: string | null;
+  testSplit?: string | null;
+  calibrationSamples?: number;
+  testSamples?: number;
+  interval80: ConformalInterval | null;
+  interval90: ConformalInterval | null;
 }
 
 export interface FeatureContribution {
@@ -182,10 +197,7 @@ export interface TrafficForecast {
   predictedValue: number;
   confidenceLower: number;
   confidenceUpper: number;
-  conformalIntervals?: {
-    interval90: ConformalInterval;
-    interval95: ConformalInterval;
-  };
+  conformalIntervals?: ConformalIntervalsPayload;
   explanation?: LocalExplanation;
   unit: string;
   modelVersion: string;
@@ -209,10 +221,7 @@ export interface EnergyForecast {
   predictedValue: number;
   confidenceLower: number;
   confidenceUpper: number;
-  conformalIntervals?: {
-    interval90: ConformalInterval;
-    interval95: ConformalInterval;
-  };
+  conformalIntervals?: ConformalIntervalsPayload;
   explanation?: LocalExplanation;
   unit: string;
   modelVersion: string;

@@ -9,8 +9,75 @@ import {
   Clock,
   ShieldAlert
 } from 'lucide-react';
-import { TrafficForecast, EnergyForecast } from '../types/twin';
+import { TrafficForecast, EnergyForecast, ConformalIntervalsPayload, ConformalInterval } from '../types/twin';
 import { fetchTrafficForecast, fetchEnergyForecast } from '../services/api';
+
+interface ConformalCalibrationBoxProps {
+  conformalIntervals?: ConformalIntervalsPayload;
+  unit: string;
+  decimals: number;
+}
+
+const ConformalCalibrationBox: React.FC<ConformalCalibrationBoxProps> = ({
+  conformalIntervals,
+  unit,
+  decimals,
+}) => {
+  if (!conformalIntervals) {
+    return null;
+  }
+
+  if (!conformalIntervals.available) {
+    return (
+      <div className="forecast-conformal-box">
+        <div className="conformal-header">
+          <span className="conformal-badge">CONFORMAL CALIBRATION</span>
+          <span className="conformal-target">Unavailable</span>
+        </div>
+        <div className="conformal-margin">
+          {conformalIntervals.reason || 'Model artifact lacks holdout conformal calibration data.'}
+        </div>
+      </div>
+    );
+  }
+
+  const levels: Array<{ label: string; band: ConformalInterval | null }> = [
+    { label: '80% Marginal', band: conformalIntervals.interval80 },
+    { label: '90% Marginal', band: conformalIntervals.interval90 },
+  ];
+
+  return (
+    <div className="forecast-conformal-box">
+      <div className="conformal-header">
+        <span className="conformal-badge">CONFORMAL CALIBRATION</span>
+        <span className="conformal-target">Marginal Test Coverage</span>
+      </div>
+      {levels.map(({ label, band }) => {
+        if (!band) {
+          return null;
+        }
+        const lowerText = typeof band.lower === 'number' ? band.lower.toFixed(decimals) : '--';
+        const upperText = typeof band.upper === 'number' ? band.upper.toFixed(decimals) : '--';
+        const marginText = typeof band.margin === 'number' ? `+/-${band.margin.toFixed(decimals)} ${unit}` : '';
+        const covPct = typeof band.empiricalTestCoverage === 'number'
+          ? `${(band.empiricalTestCoverage * 100).toFixed(1)}% holdout test coverage`
+          : 'holdout coverage unrecorded';
+        return (
+          <div key={label} className="conformal-range">
+            <span className="conformal-margin">{label}: </span>
+            [{lowerText} - {upperText} {unit}]
+            <span className="conformal-margin">
+              {' '}({marginText ? `${marginText}, ` : ''}{covPct})
+            </span>
+          </div>
+        );
+      })}
+      <div className="conformal-margin" style={{ fontSize: '11px', marginTop: '2px' }}>
+        Calibrated on validation residuals ({conformalIntervals.calibrationSamples ?? 0} val / {conformalIntervals.testSamples ?? 0} test); marginal empirical rate, not a per-step guarantee.
+      </div>
+    </div>
+  );
+};
 
 interface ForecastPanelProps {
   entityType: 'RoadSegment' | 'Building';
@@ -139,7 +206,12 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <div className="forecast-label">80% Interval</div>
+              <div
+                className="forecast-label"
+                title="Uncalibrated p10-p90 quantile regression bounds; see Conformal Calibration below for validation-calibrated marginal intervals."
+              >
+                Quantile Band (p10 - p90)
+              </div>
               <div className="forecast-interval-val">
                 [{typeof trafficForecast.confidenceLower === 'number' ? trafficForecast.confidenceLower.toFixed(1) : '--'} - {typeof trafficForecast.confidenceUpper === 'number' ? trafficForecast.confidenceUpper.toFixed(1) : '--'}]
                 <span className="forecast-unit"> km/h</span>
@@ -160,24 +232,11 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
         </div>
 
         {/* Conformal Prediction Uncertainty Calibration */}
-        {trafficForecast.conformalIntervals && trafficForecast.conformalIntervals.interval90 && (
-          <div className="forecast-conformal-box">
-            <div className="conformal-header">
-              <span className="conformal-badge">CONFORMAL CALIBRATION</span>
-              <span className="conformal-target">90% Coverage Guarantee</span>
-            </div>
-            <div className="conformal-range">
-              [{typeof trafficForecast.conformalIntervals.interval90.lower === 'number' ? trafficForecast.conformalIntervals.interval90.lower.toFixed(1) : '--'} - {typeof trafficForecast.conformalIntervals.interval90.upper === 'number' ? trafficForecast.conformalIntervals.interval90.upper.toFixed(1) : '--'} km/h]
-              <span className="conformal-margin">
-                {' '}
-                ({typeof trafficForecast.conformalIntervals.interval90.margin === 'number' ? `±${trafficForecast.conformalIntervals.interval90.margin.toFixed(1)} km/h` : ''}
-                {typeof trafficForecast.conformalIntervals.interval90.empiricalTestCoverage === 'number'
-                  ? `, ${(trafficForecast.conformalIntervals.interval90.empiricalTestCoverage * 100).toFixed(1)}% test coverage`
-                  : ''})
-              </span>
-            </div>
-          </div>
-        )}
+        <ConformalCalibrationBox
+          conformalIntervals={trafficForecast.conformalIntervals}
+          unit="km/h"
+          decimals={1}
+        />
 
         {/* TreeSHAP Local Feature Explainability */}
         {trafficForecast.explanation?.topContributors && trafficForecast.explanation.topContributors.length > 0 && (
@@ -274,7 +333,12 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <div className="forecast-label">80% Confidence Interval</div>
+              <div
+                className="forecast-label"
+                title="Uncalibrated p10-p90 quantile regression bounds; see Conformal Calibration below for validation-calibrated marginal intervals."
+              >
+                Quantile Band (p10 - p90)
+              </div>
               <div className="forecast-interval-val">
                 [{typeof energyForecast.confidenceLower === 'number' ? energyForecast.confidenceLower.toFixed(0) : '--'} - {typeof energyForecast.confidenceUpper === 'number' ? energyForecast.confidenceUpper.toFixed(0) : '--'}]
                 <span className="forecast-unit"> kW</span>
@@ -293,24 +357,11 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
         </div>
 
         {/* Conformal Prediction Uncertainty Calibration */}
-        {energyForecast.conformalIntervals && energyForecast.conformalIntervals.interval90 && (
-          <div className="forecast-conformal-box">
-            <div className="conformal-header">
-              <span className="conformal-badge">CONFORMAL CALIBRATION</span>
-              <span className="conformal-target">90% Coverage Guarantee</span>
-            </div>
-            <div className="conformal-range">
-              [{typeof energyForecast.conformalIntervals.interval90.lower === 'number' ? energyForecast.conformalIntervals.interval90.lower.toFixed(0) : '--'} - {typeof energyForecast.conformalIntervals.interval90.upper === 'number' ? energyForecast.conformalIntervals.interval90.upper.toFixed(0) : '--'} kW]
-              <span className="conformal-margin">
-                {' '}
-                ({typeof energyForecast.conformalIntervals.interval90.margin === 'number' ? `±${energyForecast.conformalIntervals.interval90.margin.toFixed(0)} kW` : ''}
-                {typeof energyForecast.conformalIntervals.interval90.empiricalTestCoverage === 'number'
-                  ? `, ${(energyForecast.conformalIntervals.interval90.empiricalTestCoverage * 100).toFixed(1)}% test coverage`
-                  : ''})
-              </span>
-            </div>
-          </div>
-        )}
+        <ConformalCalibrationBox
+          conformalIntervals={energyForecast.conformalIntervals}
+          unit="kW"
+          decimals={0}
+        />
 
         {/* TreeSHAP Local Feature Explainability */}
         {energyForecast.explanation?.topContributors && energyForecast.explanation.topContributors.length > 0 && (

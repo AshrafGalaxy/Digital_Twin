@@ -22,6 +22,7 @@ import joblib
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
+from ml.conformal_calibrator import ConformalPredictionCalibrator
 from ml.features.energy_features import (
     ENERGY_FEATURE_COLUMNS,
     ENERGY_TARGET_COLUMN,
@@ -135,14 +136,30 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
     )
     p90_model.fit(X_train, y_train, verbose=False)
 
-    # 5. Evaluate on Test Set
+    # 5. Evaluate on Test Set & Fit Split Conformal Calibration on Validation Residuals
+    y_pred_val = xgb_model.predict(X_val)
     y_pred_test = xgb_model.predict(X_test)
     test_mae = float(mean_absolute_error(y_test, y_pred_test))
     test_rmse = float(root_mean_squared_error(y_test, y_pred_test))
     improvement_pct = ((persist_mae - test_mae) / persist_mae) * 100.0
 
+    val_residuals = y_val.values - y_pred_val
+    test_residuals = y_test.values - y_pred_test
+    conformal_calibration = ConformalPredictionCalibrator.fit_calibration_summary(
+        calibration_residuals=val_residuals,
+        test_residuals=test_residuals,
+        calibration_split="validation",
+        test_split="test",
+    )
+
     print(f"[+] Primary XGBoost Model   - Test MAE: {test_mae:.2f} kW, RMSE: {test_rmse:.2f} kW")
     print(f"[+] Improvement over Persistence Baseline: +{improvement_pct:.1f}%")
+    if conformal_calibration.get("available"):
+        q80 = conformal_calibration["quantiles"]["80"]["quantile"]
+        q90 = conformal_calibration["quantiles"]["90"]["quantile"]
+        cov80 = conformal_calibration["empiricalCoverage"]["80"]["empiricalTestCoveragePct"]
+        cov90 = conformal_calibration["empiricalCoverage"]["90"]["empiricalTestCoveragePct"]
+        print(f"[+] Conformal Calibration   - 80%: +/-{q80:.1f} kW ({cov80}% test), 90%: +/-{q90:.1f} kW ({cov90}% test)")
 
     # 6. Feature Importances
     importances = dict(zip(ENERGY_FEATURE_COLUMNS, [round(float(v), 4) for v in xgb_model.feature_importances_]))
@@ -161,6 +178,7 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
         "model_p90": p90_model,
         "features": ENERGY_FEATURE_COLUMNS,
         "feature_importances": sorted_importances,
+        "conformal_calibration": conformal_calibration,
         "metrics": {
             "test_mae": round(test_mae, 2),
             "test_rmse": round(test_rmse, 2),
@@ -200,7 +218,17 @@ def train_energy_forecaster(days: int = 35, seed: int = 42) -> Dict[str, Any]:
                 "test_rmse": round(test_rmse, 2),
                 "improvement_vs_persistence_pct": round(improvement_pct, 1),
                 "baseline_persistence_mae": round(persist_mae, 2),
-                "baseline_same_hour_mae": round(baseline_metrics["same_hour_average"]["mae"], 2)
+                "baseline_same_hour_mae": round(baseline_metrics["same_hour_average"]["mae"], 2),
+                **(
+                    {
+                        "conformal_q80": round(conformal_calibration["quantiles"]["80"]["quantile"], 2),
+                        "conformal_q90": round(conformal_calibration["quantiles"]["90"]["quantile"], 2),
+                        "conformal_test_cov80_pct": conformal_calibration["empiricalCoverage"]["80"]["empiricalTestCoveragePct"],
+                        "conformal_test_cov90_pct": conformal_calibration["empiricalCoverage"]["90"]["empiricalTestCoveragePct"],
+                    }
+                    if conformal_calibration.get("available")
+                    else {}
+                ),
             },
             tags={
                 "domain": "ENERGY",

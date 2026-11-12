@@ -33,11 +33,12 @@ def test_conformal_prediction_intervals():
     """A missing calibration split does not invent a margin or a coverage literal."""
     missing = ConformalPredictionCalibrator.get_traffic_intervals(25.0)
     assert missing["available"] is False
+    assert missing["interval80"] is None
     assert missing["interval90"] is None
-    assert missing["interval95"] is None
 
     missing_load = ConformalPredictionCalibrator.get_energy_intervals(4200.0)
     assert missing_load["available"] is False
+    assert missing_load["interval80"] is None
     assert missing_load["interval90"] is None
 
 
@@ -133,8 +134,10 @@ def test_api_forecast_conformal_and_explainability():
     data = resp.json()
 
     assert "conformalIntervals" in data
-    assert data["conformalIntervals"]["available"] is False
-    assert data["conformalIntervals"]["interval90"] is None
+    assert data["conformalIntervals"]["available"] is True
+    assert data["conformalIntervals"]["interval80"] is not None
+    assert data["conformalIntervals"]["interval90"] is not None
+    assert data["conformalIntervals"]["interval90"]["coverageSplit"] == "test"
     assert "explanation" in data
     assert len(data["explanation"]["topContributors"]) > 0
 
@@ -142,6 +145,9 @@ def test_api_forecast_conformal_and_explainability():
     assert energy_resp.status_code == 200
     e_data = energy_resp.json()
     assert "conformalIntervals" in e_data
+    assert e_data["conformalIntervals"]["available"] is True
+    assert e_data["conformalIntervals"]["interval80"] is not None
+    assert e_data["conformalIntervals"]["interval90"] is not None
     assert "explanation" in e_data
 
 

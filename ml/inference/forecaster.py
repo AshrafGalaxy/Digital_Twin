@@ -90,6 +90,7 @@ class CorridorForecaster:
                 "predictedValue": round(pred, 2),
                 "confidenceLower": round(max(8.0, pred - 3.5), 2),
                 "confidenceUpper": round(min(52.0, pred + 3.5), 2),
+                "conformalIntervals": ConformalPredictionCalibrator.get_traffic_intervals(pred),
                 "unit": "km/h",
                 "modelVersion": "traffic-heuristic-fallback",
                 "inputQualityStatus": "DEGRADED",
@@ -122,7 +123,10 @@ class CorridorForecaster:
         p90 = float(np.clip(p90, pred + 0.5, 56.0))
 
         # Conformal prediction intervals & local feature attributions
-        conformal = ConformalPredictionCalibrator.get_traffic_intervals(pred)
+        conformal = ConformalPredictionCalibrator.get_traffic_intervals(
+            pred,
+            calibration=self.traffic_artifact.get("conformal_calibration"),
+        )
         explanation = LocalModelExplainer.explain_prediction(
             self.traffic_artifact["model"],
             X_input,
@@ -183,6 +187,7 @@ class CorridorForecaster:
                 "predictedValue": round(pred, 1),
                 "confidenceLower": round(pred * 0.92, 1),
                 "confidenceUpper": round(pred * 1.08, 1),
+                "conformalIntervals": ConformalPredictionCalibrator.get_energy_intervals(pred),
                 "unit": "kW",
                 "modelVersion": "energy-heuristic-fallback",
                 "inputQualityStatus": "DEGRADED",
@@ -219,7 +224,10 @@ class CorridorForecaster:
         is_peak_alert = pred >= peak_threshold
 
         # Conformal prediction intervals & local feature attributions
-        conformal = ConformalPredictionCalibrator.get_energy_intervals(pred)
+        conformal = ConformalPredictionCalibrator.get_energy_intervals(
+            pred,
+            calibration=self.energy_artifact.get("conformal_calibration"),
+        )
         explanation = LocalModelExplainer.explain_prediction(
             self.energy_artifact["model"],
             X_input,
