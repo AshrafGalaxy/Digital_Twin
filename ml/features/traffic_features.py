@@ -7,9 +7,15 @@ Strictly enforces chronological ordering and zero feature leakage.
 
 import math
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
+
+from ml.features.civil_time import (
+    is_traffic_peak_hour,
+    series_to_civil_time,
+    to_civil_datetime,
+)
 
 
 FEATURE_COLUMNS = [
@@ -38,12 +44,13 @@ def generate_corridor_traffic_history(
     segment_id: str = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
     days: int = 14,
     interval_minutes: int = 5,
-    seed: int = 42
+    seed: int = 42,
+    utc_offset_minutes: Optional[int] = None,
 ) -> pd.DataFrame:
     """
-    Generates a realistic 5-minute interval historical traffic series for the Viman Nagar EB corridor.
-    Models diurnal rhythm, morning rush (08:30-10:30), heavy evening rush (18:00-20:30),
-    weekend Phoenix Mall traffic surges, and realistic speed variance.
+    Generates a 5-minute interval historical corridor traffic series stamped in UTC.
+    Diurnal patterns evaluate on local civil time using the configured corridor offset:
+    morning rush (08:30-11:00), heavy evening rush (17:30-21:00), weekend surges, and variance.
     """
     rng = np.random.default_rng(seed)
     n_steps = (days * 24 * 60) // interval_minutes
@@ -52,24 +59,25 @@ def generate_corridor_traffic_history(
     records = []
     for step in range(n_steps):
         dt = start_time + timedelta(minutes=step * interval_minutes)
-        hour = dt.hour + (dt.minute / 60.0)
-        day_of_week = dt.weekday()
+        civil_dt = to_civil_datetime(dt, utc_offset_minutes)
+        hour = civil_dt.hour + (civil_dt.minute / 60.0)
+        day_of_week = civil_dt.weekday()
         is_weekend = 1 if day_of_week in [5, 6] else 0
 
-        # Base free-flow speed on Nagar Road EB is 48.0 km/h
+        # Base free-flow speed on corridor segment is 48.0 km/h
         base_speed = 46.0
 
-        # Diurnal pattern
+        # Diurnal pattern evaluated in local civil time
         # Night (00:00 to 06:00): near free-flow (44 - 49 km/h)
         if 0 <= hour < 6:
             mean_speed = 46.5
         # Morning rush (08:30 to 11:00): moderate congestion (26 - 34 km/h)
         elif 8.5 <= hour <= 11.0:
             mean_speed = 28.5 if not is_weekend else 38.0
-        # Evening rush (17:30 to 21:00): severe congestion near Phoenix Mall (14 - 24 km/h)
+        # Evening rush (17:30 to 21:00): severe congestion near commercial hub (14 - 24 km/h)
         elif 17.5 <= hour <= 21.0:
             mean_speed = 18.0 if not is_weekend else 20.5
-        # Weekend mall rush (13:00 to 17:30)
+        # Weekend commercial rush (13:00 to 17:30)
         elif is_weekend and 13.0 <= hour < 17.5:
             mean_speed = 24.0
         # Midday off-peak
@@ -79,7 +87,7 @@ def generate_corridor_traffic_history(
         # Stochastic fluctuations
         speed = float(np.clip(mean_speed + rng.normal(0, 3.5), 8.0, 52.0))
 
-        # Ambient temperature in Pune (22°C to 36°C)
+        # Ambient diurnal temperature curve (22C to 36C)
         temp_c = 24.0 + 8.0 * math.sin((hour - 8.0) * math.pi / 12.0) + rng.normal(0, 0.8)
 
         records.append({
@@ -92,7 +100,10 @@ def generate_corridor_traffic_history(
     return pd.DataFrame(records)
 
 
-def _build_single_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
+def _build_single_traffic_features(
+    df: pd.DataFrame,
+    utc_offset_minutes: Optional[int] = None,
+) -> pd.DataFrame:
     """
     Transforms a single entity's 5-minute traffic records into feature matrices.
     Reindexes onto a contiguous 5-minute grid so gaps are not treated as contiguous lags.
@@ -101,7 +112,10 @@ def _build_single_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    try:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+    except (ValueError, TypeError):
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     df = df.sort_values("timestamp").drop_duplicates(subset=["timestamp"]).reset_index(drop=True)
 
     # Reindex onto a contiguous 5-minute grid to prevent time gaps from bridging lags
@@ -135,47 +149,50 @@ def _build_single_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
     merged["speed_roll_min_60m"] = merged["speed_kmh"].rolling(window=12, closed="left").min()
     merged["speed_roll_max_60m"] = merged["speed_kmh"].rolling(window=12, closed="left").max()
 
-    # 4. Calendar Cyclical Features
-    hour_float = merged["timestamp"].dt.hour + merged["timestamp"].dt.minute / 60.0
+    # 4. Calendar Cyclical Features evaluated in corridor local civil time
+    civil_ts = series_to_civil_time(merged["timestamp"], utc_offset_minutes)
+    hour_float = civil_ts.dt.hour + civil_ts.dt.minute / 60.0
     merged["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
     merged["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
-    merged["day_of_week"] = merged["timestamp"].dt.weekday
+    merged["day_of_week"] = civil_ts.dt.weekday
     merged["is_weekend"] = merged["day_of_week"].isin([5, 6]).astype(int)
 
-    # Peak hour flag (08:30-10:30 or 17:30-21:00)
-    merged["is_peak_hour"] = hour_float.apply(
-        lambda h: 1 if (8.5 <= h <= 10.5 or 17.5 <= h <= 21.0) else 0
-    )
+    # Peak hour flag aligned with generator (08:30-11:00 or 17:30-21:00 local civil time)
+    merged["is_peak_hour"] = hour_float.apply(is_traffic_peak_hour)
 
     # 5. Drop rows with NaNs from lags, gaps, or future target shift
     merged = merged.dropna().reset_index(drop=True)
     return merged
 
 
-def build_traffic_features(df: pd.DataFrame) -> pd.DataFrame:
+def build_traffic_features(
+    df: pd.DataFrame,
+    utc_offset_minutes: Optional[int] = None,
+) -> pd.DataFrame:
     """
     Transforms raw 5-minute traffic records into feature matrices.
     Target: speed shifted 3 steps (15 minutes) into the future.
     Features: calculated strictly using observations at or prior to time t.
-    Guarantees entity isolation and drops invalid lags across time gaps (§4 of AGENTS.md).
+    Guarantees entity isolation and drops invalid lags across time gaps (Section 4 of AGENTS.md).
     """
     if "segment_id" in df.columns:
         groups = []
         for _, group_df in df.groupby("segment_id", as_index=False):
-            res = _build_single_traffic_features(group_df)
+            res = _build_single_traffic_features(group_df, utc_offset_minutes=utc_offset_minutes)
             if len(res) > 0:
                 groups.append(res)
         if not groups:
             return pd.DataFrame(columns=FEATURE_COLUMNS + [TARGET_COLUMN, "timestamp", "speed_kmh"])
         return pd.concat(groups, ignore_index=True).sort_values(["timestamp", "segment_id"]).reset_index(drop=True)
     else:
-        return _build_single_traffic_features(df)
+        return _build_single_traffic_features(df, utc_offset_minutes=utc_offset_minutes)
 
 
 def extract_traffic_features_row(
     hist: List[float],
     dt: datetime,
-    ambient_temp_c: float
+    ambient_temp_c: float,
+    utc_offset_minutes: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Extracts the single-row feature vector for time step t, strictly matching
@@ -186,7 +203,8 @@ def extract_traffic_features_row(
     if len(hist) < 13:
         hist = [hist[0]] * (13 - len(hist)) + list(hist)
 
-    hour_float = dt.hour + dt.minute / 60.0
+    civil_dt = to_civil_datetime(dt, utc_offset_minutes)
+    hour_float = civil_dt.hour + civil_dt.minute / 60.0
     return {
         "speed_lag_5m": float(hist[-2]),
         "speed_lag_10m": float(hist[-3]),
@@ -200,9 +218,9 @@ def extract_traffic_features_row(
         "speed_roll_max_60m": float(np.max(hist[-13:-1])),
         "sin_hour": math.sin(2 * math.pi * hour_float / 24.0),
         "cos_hour": math.cos(2 * math.pi * hour_float / 24.0),
-        "day_of_week": dt.weekday(),
-        "is_weekend": 1 if dt.weekday() in [5, 6] else 0,
-        "is_peak_hour": 1 if (8.5 <= hour_float <= 10.5 or 17.5 <= hour_float <= 21.0) else 0,
+        "day_of_week": civil_dt.weekday(),
+        "is_weekend": 1 if civil_dt.weekday() in [5, 6] else 0,
+        "is_peak_hour": is_traffic_peak_hour(hour_float),
         "ambient_temp_c": float(ambient_temp_c)
     }
 

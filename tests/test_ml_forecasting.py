@@ -6,7 +6,7 @@ Tests chronological splitting, zero leakage, baseline comparisons,
 prediction intervals, and PREDICTED provenance invariants.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import math
 from pathlib import Path
 import sys
@@ -525,6 +525,150 @@ def test_energy_baseline_fallback_uses_train_mean_not_test_labels():
 
     # For test_df_2: true=1000.0, pred=3000.0 -> MAE = 2000.0
     assert res_2["same_hour_average"]["mae"] == 2000.0
+
+
+def test_hour_features_respect_configured_civil_offset(monkeypatch):
+    """
+    Verifies BUG-54: sin_hour, cos_hour, is_peak_hour, and is_mall_open evaluate
+    relative to the configured corridor civil UTC offset across traffic and energy pipelines.
+    """
+    from backend.core.config import settings
+
+    hist_traffic = [32.0] * 13
+    hist_energy = [3500.0] * 97
+
+    # Default pilot reference: UTC+05:30 (+330 min)
+    # 08:30 UTC == 14:00 local civil time -> midday off-peak (NOT morning rush)
+    dt_midday_civil_utc = datetime(2026, 9, 21, 8, 30, tzinfo=timezone.utc)
+    t_midday = extract_traffic_features_row(hist_traffic, dt_midday_civil_utc, ambient_temp_c=32.0)
+    assert t_midday["is_peak_hour"] == 0
+    assert abs(t_midday["sin_hour"] - math.sin(2 * math.pi * 14.0 / 24.0)) < 1e-6
+    assert abs(t_midday["cos_hour"] - math.cos(2 * math.pi * 14.0 / 24.0)) < 1e-6
+
+    # 03:00 UTC == 08:30 local civil time -> morning rush peak
+    dt_morning_civil_utc = datetime(2026, 9, 21, 3, 0, tzinfo=timezone.utc)
+    t_morning = extract_traffic_features_row(hist_traffic, dt_morning_civil_utc, ambient_temp_c=27.0)
+    assert t_morning["is_peak_hour"] == 1
+    assert abs(t_morning["sin_hour"] - math.sin(2 * math.pi * 8.5 / 24.0)) < 1e-6
+
+    # 18:00 UTC == 23:30 local civil time -> commercial facility closed (0), even though 18:00 UTC is afternoon
+    dt_late_night_civil_utc = datetime(2026, 9, 21, 18, 0, tzinfo=timezone.utc)
+    e_night = extract_energy_features_row(hist_energy, dt_late_night_civil_utc, ambient_temp_c=25.0)
+    assert e_night["is_mall_open"] == 0
+    assert abs(e_night["sin_hour"] - math.sin(2 * math.pi * 23.5 / 24.0)) < 1e-6
+
+    # Dynamically changing central config offset must shift hour features accordingly (08:30 UTC -> 08:30 under UTC+0)
+    monkeypatch.setattr(settings, "CORRIDOR_UTC_OFFSET_MINUTES", 0)
+    t_utc0 = extract_traffic_features_row(hist_traffic, dt_midday_civil_utc, ambient_temp_c=32.0)
+    assert t_utc0["is_peak_hour"] == 1
+    assert abs(t_utc0["sin_hour"] - math.sin(2 * math.pi * 8.5 / 24.0)) < 1e-6
+
+
+def test_localized_and_utc_equivalents_produce_identical_features_and_forecasts():
+    """
+    Verifies BUG-54: 18:00 local civil time evaluates identically whether passed as
+    localized UTC+05:30 or UTC equivalent (12:30 UTC), including across midnight boundaries.
+    """
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    instant_utc = datetime(2026, 9, 21, 12, 30, tzinfo=timezone.utc)
+    instant_ist = datetime(2026, 9, 21, 18, 0, tzinfo=ist_tz)
+
+    hist_t = [22.0] * 13
+    t_from_utc = extract_traffic_features_row(hist_t, instant_utc, ambient_temp_c=30.0)
+    t_from_ist = extract_traffic_features_row(hist_t, instant_ist, ambient_temp_c=30.0)
+    assert t_from_utc["is_peak_hour"] == 1
+    assert t_from_utc == t_from_ist
+
+    hist_e = [4300.0] * 97
+    e_from_utc = extract_energy_features_row(hist_e, instant_utc, ambient_temp_c=30.0)
+    e_from_ist = extract_energy_features_row(hist_e, instant_ist, ambient_temp_c=30.0)
+    assert e_from_utc["is_mall_open"] == 1
+    assert e_from_utc == e_from_ist
+
+    # Across UTC Friday -> IST Saturday midnight rollover (2026-09-18 20:00 UTC == 2026-09-19 01:30+05:30)
+    rollover_utc = datetime(2026, 9, 18, 20, 0, tzinfo=timezone.utc)
+    rollover_ist = datetime(2026, 9, 19, 1, 30, tzinfo=ist_tz)
+    r_utc = extract_traffic_features_row(hist_t, rollover_utc, ambient_temp_c=24.0)
+    r_ist = extract_traffic_features_row(hist_t, rollover_ist, ambient_temp_c=24.0)
+    assert r_utc == r_ist
+    assert r_utc["day_of_week"] == 5  # Saturday in corridor civil time
+    assert r_utc["is_weekend"] == 1
+
+    # Forecaster end-to-end equivalence
+    forecaster = CorridorForecaster()
+    f_utc = forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 22.0, now_utc=instant_utc)
+    f_ist = forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 22.0, now_utc=instant_ist)
+    assert f_utc["predictedValue"] == f_ist["predictedValue"]
+    assert f_utc["generatedAt"] == f_ist["generatedAt"]
+
+
+def test_morning_rush_boundary_harmonized_across_generator_and_features():
+    """
+    Verifies BUG-54: morning rush 08:30 - 11:00 local civil time matches between
+    data generators, build_traffic_features, and extract_traffic_features_row.
+    """
+    # 10:45 IST (05:15 UTC) and 11:00 IST (05:30 UTC) are inside morning rush; 11:05 IST is off-peak
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    dt_1045 = datetime(2026, 9, 21, 10, 45, tzinfo=ist_tz)
+    dt_1100 = datetime(2026, 9, 21, 11, 0, tzinfo=ist_tz)
+    dt_1105 = datetime(2026, 9, 21, 11, 5, tzinfo=ist_tz)
+
+    assert extract_traffic_features_row([30.0] * 13, dt_1045, 29.0)["is_peak_hour"] == 1
+    assert extract_traffic_features_row([30.0] * 13, dt_1100, 29.0)["is_peak_hour"] == 1
+    assert extract_traffic_features_row([30.0] * 13, dt_1105, 29.0)["is_peak_hour"] == 0
+
+    raw_df = generate_corridor_traffic_history(days=7, seed=42)
+    featured_df = build_traffic_features(raw_df)
+    civil_ts = featured_df["timestamp"].dt.tz_convert(ist_tz)
+    civil_hours = civil_ts.dt.hour + civil_ts.dt.minute / 60.0
+
+    in_late_morning_rush = featured_df[(civil_hours >= 10.55) & (civil_hours <= 11.0)]
+    assert len(in_late_morning_rush) > 0
+    assert (in_late_morning_rush["is_peak_hour"] == 1).all()
+
+    # Generated weekday speeds in 10:30-11:00 local civil window reflect morning rush (~28.5 km/h),
+    # significantly lower than midday off-peak (12:00-14:00 local civil, ~37.0 km/h).
+    weekday_rush = in_late_morning_rush[in_late_morning_rush["is_weekend"] == 0]["speed_kmh"].mean()
+    weekday_midday = featured_df[
+        (featured_df["is_weekend"] == 0) & (civil_hours >= 12.0) & (civil_hours <= 14.0)
+    ]["speed_kmh"].mean()
+    assert weekday_rush < 33.0
+    assert weekday_midday > weekday_rush + 4.0
+
+
+def test_training_and_inference_feature_parity_across_civil_transitions():
+    """
+    Verifies BUG-54: build_traffic_features and build_energy_features match online row extractors
+    even when localized timestamps (+05:30) and UTC timestamps are queried across midnight.
+    """
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    raw_t = generate_corridor_traffic_history(days=3, seed=99)
+    feat_t = build_traffic_features(raw_t)
+
+    # Check multiple steps including late-night UTC / early-morning civil rollover
+    for idx in (40, 120, 240, 285):
+        ts_utc = raw_t["timestamp"].iloc[idx]
+        matched = feat_t[feat_t["timestamp"] == ts_utc]
+        assert len(matched) == 1
+        row = matched.iloc[0]
+        hist = raw_t["speed_kmh"].iloc[: idx + 1].tolist()
+        for dt_input in (ts_utc, ts_utc.to_pydatetime().astimezone(ist_tz)):
+            extracted = extract_traffic_features_row(hist, dt_input, raw_t["ambient_temp_c"].iloc[idx])
+            for col in FEATURE_COLUMNS:
+                assert abs(float(extracted[col]) - float(row[col])) < 1e-4
+
+    raw_e = generate_building_energy_history(days=6, seed=99)
+    feat_e = build_energy_features(raw_e)
+    for idx in (120, 180, 250):
+        ts_utc = raw_e["timestamp"].iloc[idx]
+        matched = feat_e[feat_e["timestamp"] == ts_utc]
+        assert len(matched) == 1
+        row = matched.iloc[0]
+        hist = raw_e["active_power_kw"].iloc[: idx + 1].tolist()
+        for dt_input in (ts_utc, ts_utc.to_pydatetime().astimezone(ist_tz)):
+            extracted = extract_energy_features_row(hist, dt_input, raw_e["ambient_temp_c"].iloc[idx])
+            for col in ENERGY_FEATURE_COLUMNS:
+                assert abs(float(extracted[col]) - float(row[col])) < 1e-4
 
 
 if __name__ == "__main__":

@@ -7,9 +7,15 @@ Strictly enforces chronological ordering and zero feature leakage.
 
 import math
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
+
+from ml.features.civil_time import (
+    is_commercial_mall_open,
+    series_to_civil_time,
+    to_civil_datetime,
+)
 
 
 ENERGY_FEATURE_COLUMNS = [
@@ -35,13 +41,13 @@ def generate_building_energy_history(
     building_id: str = "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
     days: int = 28,
     interval_minutes: int = 15,
-    seed: int = 42
+    seed: int = 42,
+    utc_offset_minutes: Optional[int] = None,
 ) -> pd.DataFrame:
     """
-    Generates a 15-minute interval historical load profile for Phoenix Marketcity commercial building.
-    Models base nighttime load (~1,400 kW), retail/HVAC ramp up (10:00 to 14:00),
-    afternoon cooling peak (3,800 - 5,400 kW), weekend entertainment crowd surges,
-    and temperature-driven chiller demand.
+    Generates a 15-minute interval historical commercial building load profile stamped in UTC.
+    Diurnal temperature, operating hours (10:00-22:00), and weekend occupancy evaluate on
+    corridor local civil time via the configured UTC offset.
     """
     rng = np.random.default_rng(seed)
     n_steps = (days * 24 * 60) // interval_minutes
@@ -50,22 +56,23 @@ def generate_building_energy_history(
     records = []
     for step in range(n_steps):
         dt = start_time + timedelta(minutes=step * interval_minutes)
-        hour = dt.hour + (dt.minute / 60.0)
-        day_of_week = dt.weekday()
+        civil_dt = to_civil_datetime(dt, utc_offset_minutes)
+        hour = civil_dt.hour + (civil_dt.minute / 60.0)
+        day_of_week = civil_dt.weekday()
         is_weekend = 1 if day_of_week in [5, 6] else 0
 
-        # Ambient temperature (diurnal curve: min 23°C at 05:00, max 35°C at 14:30)
+        # Ambient temperature (diurnal curve in civil time: min 23C at 05:00, max 35C at 14:30)
         temp_c = 24.0 + 9.5 * math.sin((hour - 8.5) * math.pi / 12.0) + rng.normal(0, 0.6)
 
-        # Base load (security, data center, lighting, base ventilation): 1,200 kW
+        # Base load (security, data center, lighting, base ventilation): 1,250 kW
         base_kw = 1250.0
 
-        # Commercial operating hours: 10:00 to 22:00
+        # Commercial operating hours in local civil time: 10:00 to 22:00
         if 10.0 <= hour <= 22.0:
             is_mall_open = 1
             # HVAC & retail lighting load
             operational_load = 2200.0 + (1200.0 * (1 if is_weekend else 0.75))
-            # Temperature-dependent chiller load (+90 kW per degree above 28°C)
+            # Temperature-dependent chiller load
             cooling_load = max(0.0, (temp_c - 27.0) * 115.0)
         elif 8.0 <= hour < 10.0 or 22.0 < hour <= 23.5:
             is_mall_open = 0
@@ -90,7 +97,10 @@ def generate_building_energy_history(
     return pd.DataFrame(records)
 
 
-def _build_single_energy_features(df: pd.DataFrame) -> pd.DataFrame:
+def _build_single_energy_features(
+    df: pd.DataFrame,
+    utc_offset_minutes: Optional[int] = None,
+) -> pd.DataFrame:
     """
     Transforms a single entity's 15-minute building load records into feature matrices.
     Reindexes onto a contiguous 15-minute grid so gaps are not treated as contiguous lags.
@@ -99,7 +109,10 @@ def _build_single_energy_features(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    try:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+    except (ValueError, TypeError):
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     df = df.sort_values("timestamp").drop_duplicates(subset=["timestamp"]).reset_index(drop=True)
 
     # Reindex onto a contiguous 15-minute grid to prevent time gaps from bridging lags
@@ -130,43 +143,48 @@ def _build_single_energy_features(df: pd.DataFrame) -> pd.DataFrame:
     merged["load_roll_max_6h"] = merged["active_power_kw"].rolling(window=24, closed="left").max()
     merged["load_roll_std_6h"] = merged["active_power_kw"].rolling(window=24, closed="left").std().fillna(0.0)
 
-    # Calendar cyclical features
-    hour_float = merged["timestamp"].dt.hour + merged["timestamp"].dt.minute / 60.0
+    # Calendar cyclical features evaluated in corridor local civil time
+    civil_ts = series_to_civil_time(merged["timestamp"], utc_offset_minutes)
+    hour_float = civil_ts.dt.hour + civil_ts.dt.minute / 60.0
     merged["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
     merged["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
-    merged["day_of_week"] = merged["timestamp"].dt.weekday
+    merged["day_of_week"] = civil_ts.dt.weekday
     merged["is_weekend"] = merged["day_of_week"].isin([5, 6]).astype(int)
     if "is_mall_open" not in merged.columns or merged["is_mall_open"].isna().any():
-        merged["is_mall_open"] = hour_float.apply(lambda h: 1 if 10.0 <= h <= 22.0 else 0)
+        merged["is_mall_open"] = hour_float.apply(is_commercial_mall_open)
 
     merged = merged.dropna().reset_index(drop=True)
     return merged
 
 
-def build_energy_features(df: pd.DataFrame) -> pd.DataFrame:
+def build_energy_features(
+    df: pd.DataFrame,
+    utc_offset_minutes: Optional[int] = None,
+) -> pd.DataFrame:
     """
     Transforms raw 15-minute building load records into feature matrices.
     Target: active power shifted 4 steps (60 minutes) into the future.
     Features: calculated strictly using observations at or prior to time t.
-    Guarantees entity isolation and drops invalid lags across time gaps (§4 of AGENTS.md).
+    Guarantees entity isolation and drops invalid lags across time gaps (Section 4 of AGENTS.md).
     """
     if "building_id" in df.columns:
         groups = []
         for _, group_df in df.groupby("building_id", as_index=False):
-            res = _build_single_energy_features(group_df)
+            res = _build_single_energy_features(group_df, utc_offset_minutes=utc_offset_minutes)
             if len(res) > 0:
                 groups.append(res)
         if not groups:
             return pd.DataFrame(columns=ENERGY_FEATURE_COLUMNS + [ENERGY_TARGET_COLUMN, "timestamp", "active_power_kw"])
         return pd.concat(groups, ignore_index=True).sort_values(["timestamp", "building_id"]).reset_index(drop=True)
     else:
-        return _build_single_energy_features(df)
+        return _build_single_energy_features(df, utc_offset_minutes=utc_offset_minutes)
 
 
 def extract_energy_features_row(
     hist: List[float],
     dt: datetime,
-    ambient_temp_c: float
+    ambient_temp_c: float,
+    utc_offset_minutes: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Extracts the single-row feature vector for time step t, strictly matching
@@ -177,7 +195,8 @@ def extract_energy_features_row(
     if len(hist) < 97:
         hist = [hist[0]] * (97 - len(hist)) + list(hist)
 
-    hour_float = dt.hour + dt.minute / 60.0
+    civil_dt = to_civil_datetime(dt, utc_offset_minutes)
+    hour_float = civil_dt.hour + civil_dt.minute / 60.0
     return {
         "load_lag_1h": float(hist[-5]),
         "load_lag_2h": float(hist[-9]),
@@ -188,9 +207,9 @@ def extract_energy_features_row(
         "load_roll_std_6h": float(np.nan_to_num(np.std(hist[-25:-1], ddof=1), nan=0.0)),
         "sin_hour": math.sin(2 * math.pi * hour_float / 24.0),
         "cos_hour": math.cos(2 * math.pi * hour_float / 24.0),
-        "day_of_week": dt.weekday(),
-        "is_weekend": 1 if dt.weekday() in [5, 6] else 0,
-        "is_mall_open": 1 if 10.0 <= hour_float <= 22.0 else 0,
+        "day_of_week": civil_dt.weekday(),
+        "is_weekend": 1 if civil_dt.weekday() in [5, 6] else 0,
+        "is_mall_open": is_commercial_mall_open(hour_float),
         "ambient_temp_c": float(ambient_temp_c)
     }
 

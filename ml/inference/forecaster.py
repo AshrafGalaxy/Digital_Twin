@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import joblib
 
+from ml.features.civil_time import ensure_utc_datetime, get_corridor_utc_offset_minutes
 from ml.features.traffic_features import FEATURE_COLUMNS, extract_traffic_features_row
 from ml.features.energy_features import ENERGY_FEATURE_COLUMNS, extract_energy_features_row
 from ml.conformal_calibrator import ConformalPredictionCalibrator
@@ -67,14 +68,16 @@ class CorridorForecaster:
         current_speed: float,
         speed_history: Optional[List[float]] = None,
         ambient_temp_c: float = 29.5,
-        now_utc: Optional[datetime] = None
+        now_utc: Optional[datetime] = None,
+        utc_offset_minutes: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Generates a 15-minute ahead speed prediction for a road segment.
-        Returns point estimate, 80% prediction interval, input quality, and model version.
+        Returns point estimate, quantile bounds, conformal intervals, and PREDICTED provenance.
         """
-        now_utc = now_utc if now_utc is not None else datetime.now(timezone.utc)
+        now_utc = ensure_utc_datetime(now_utc)
         target_utc = now_utc + timedelta(minutes=15)
+        offset_minutes = get_corridor_utc_offset_minutes(utc_offset_minutes)
 
         # Fallback if artifact is not loaded
         if not self.traffic_artifact:
@@ -108,8 +111,13 @@ class CorridorForecaster:
         if len(hist) < 13:
             hist = [hist[0]] * (13 - len(hist)) + hist
 
-        # Construct single-row feature dataframe strictly matching training features
-        row_dict = extract_traffic_features_row(hist, now_utc, ambient_temp_c)
+        # Construct single-row feature dataframe strictly matching training features in civil time
+        row_dict = extract_traffic_features_row(
+            hist,
+            now_utc,
+            ambient_temp_c,
+            utc_offset_minutes=offset_minutes,
+        )
         X_input = pd.DataFrame([row_dict])[FEATURE_COLUMNS]
         
         # Primary prediction & Quantile bounds
@@ -165,13 +173,15 @@ class CorridorForecaster:
         kw_history: Optional[List[float]] = None,
         ambient_temp_c: float = 30.5,
         contract_kw: Optional[float] = None,
-        now_utc: Optional[datetime] = None
+        now_utc: Optional[datetime] = None,
+        utc_offset_minutes: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Generates a 60-minute ahead active power demand forecast for a commercial building.
         """
-        now_utc = now_utc if now_utc is not None else datetime.now(timezone.utc)
+        now_utc = ensure_utc_datetime(now_utc)
         target_utc = now_utc + timedelta(minutes=60)
+        offset_minutes = get_corridor_utc_offset_minutes(utc_offset_minutes)
         contract_demand = contract_kw if contract_kw is not None else FACILITY_CONTRACT_KW.get(building_id, 6800.0)
         peak_threshold = round(contract_demand * 0.85, 1)
 
@@ -208,8 +218,13 @@ class CorridorForecaster:
         if len(hist) < 97:
             hist = [hist[0]] * (97 - len(hist)) + hist
 
-        # Construct single-row feature dataframe strictly matching training features
-        row_dict = extract_energy_features_row(hist, now_utc, ambient_temp_c)
+        # Construct single-row feature dataframe strictly matching training features in civil time
+        row_dict = extract_energy_features_row(
+            hist,
+            now_utc,
+            ambient_temp_c,
+            utc_offset_minutes=offset_minutes,
+        )
         X_input = pd.DataFrame([row_dict])[ENERGY_FEATURE_COLUMNS]
 
         pred = float(self.energy_artifact["model"].predict(X_input)[0])
