@@ -283,38 +283,50 @@ class WebsterSignalOptimizer:
         discretionary_green = available_green - sum_min_greens
 
         # 5. Proportional allocation of green time across phases: g_j = available_green * (y_j / Y)
+        # When available_green >= sum_min_greens, floor every phase at phase_min_greens
+        # (max(pedestrian_clearance, min_green_sec)). If the cycle cap cannot hold statutory
+        # minimum greens, fall back to pedestrian crosswalk clearance invariants.
         sum_y = max(0.01, sum(phase_y))
-        final_phase_greens = [
-            max(int(phase_ped[i]), int(round(available_green * (y / sum_y))))
-            for i, y in enumerate(phase_y)
-        ]
 
-        # Adjust target cycle if minimums required more time
-        sum_greens = sum(final_phase_greens)
-        if sum_greens + total_lost_time > target_cycle:
-            target_cycle = min(cfg.max_cycle_sec, sum_greens + total_lost_time)
-            available_green = target_cycle - total_lost_time
+        def _allocate_phase_greens(c_sec: int) -> List[int]:
+            avail = c_sec - total_lost_time
+            floors = (
+                [int(g) for g in phase_min_greens]
+                if avail >= sum_min_greens
+                else [int(p) for p in phase_ped]
+            )
+            greens = [
+                max(floors[i], int(round(avail * (y / sum_y))))
+                for i, y in enumerate(phase_y)
+            ]
+            d = avail - sum(greens)
+            if d > 0:
+                sbd = sorted(range(n_phases), key=lambda idx: phase_y[idx], reverse=True)
+                for i in range(d):
+                    greens[sbd[i % n_phases]] += 1
+            elif d < 0:
+                while d < 0:
+                    cands = [i for i in range(n_phases) if greens[i] > floors[i]]
+                    if not cands:
+                        break
+                    trim_idx = min(cands, key=lambda idx: phase_y[idx])
+                    greens[trim_idx] -= 1
+                    d += 1
+            return greens
 
-        diff = available_green - sum(final_phase_greens)
+        final_phase_greens = _allocate_phase_greens(target_cycle)
 
-        if diff > 0:
-            # Distribute positive slack to highest demand phases
-            sorted_by_demand = sorted(range(n_phases), key=lambda idx: phase_y[idx], reverse=True)
-            for i in range(diff):
-                final_phase_greens[sorted_by_demand[i % n_phases]] += 1
-        elif diff < 0:
-            # Trim excess while strictly preserving pedestrian crosswalk clearance invariant
-            while diff < 0:
-                candidates = [
-                    i for i in range(n_phases)
-                    if final_phase_greens[i] > int(phase_ped[i])
-                ]
-                if not candidates:
+        # Expand target cycle if saturation exceeds cap under heavy congestion
+        if y_sum < 0.85:
+            while target_cycle < cfg.max_cycle_sec:
+                max_sat = max(
+                    phase_y[i] / max(1e-6, final_phase_greens[i] / float(target_cycle))
+                    for i in range(n_phases)
+                )
+                if max_sat <= cfg.max_saturation_cap + 0.03:
                     break
-                # Trim from phase with lowest demand
-                trim_idx = min(candidates, key=lambda idx: phase_y[idx])
-                final_phase_greens[trim_idx] -= 1
-                diff += 1
+                target_cycle += 1
+                final_phase_greens = _allocate_phase_greens(target_cycle)
 
         final_greens = [0] * m
         for phase_index, members in enumerate(groups):

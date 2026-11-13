@@ -564,3 +564,64 @@ def test_api_phase_plan_sums_each_phase_once():
     greens = {phase["approachId"]: phase["greenSec"] for phase in body["phases"]}
     assert greens["EB"] == greens["WB"]
     assert greens["NB"] == greens["SB"]
+
+
+def test_allocation_honors_approach_minimum_green_above_ped_clearance():
+    """
+    BUG-56: Verifies that phase allocation floors against approach min_green_sec
+    rather than pedestrian clearance alone. When min_green_sec exceeds ped_clearance,
+    proportional allocation must not assign green time below min_green_sec and then
+    spuriously reject the plan.
+    """
+    optimizer = WebsterSignalOptimizer()
+    approaches = [
+        ApproachDemand("APP-MAJ-1", "Major Arterial 1", 1200.0, lanes=2, min_green_sec=15.0, crosswalk_width_m=14.0),
+        ApproachDemand("APP-MAJ-2", "Major Arterial 2", 1100.0, lanes=2, min_green_sec=15.0, crosswalk_width_m=14.0),
+        ApproachDemand("APP-MIN-1", "Minor Street 1", 100.0, lanes=1, min_green_sec=20.0, crosswalk_width_m=14.0),
+        ApproachDemand("APP-MIN-2", "Minor Street 2", 80.0, lanes=1, min_green_sec=20.0, crosswalk_width_m=14.0),
+    ]
+    # For crosswalk_width_m = 14.0 and walking_speed = 1.2 m/s, ped_clearance = ceil(14/1.2) = 12s.
+    # Approach min_green_sec = 20.0s > ped_clearance 12s.
+    plan = optimizer.compute_optimal_timing(
+        intersection_id="INT-MIN-GREEN-ABOVE-PED",
+        approaches=approaches,
+        baseline_cycle_sec=90,
+    )
+
+    # All phases must satisfy min_green_sec
+    min_greens = {phase.approach_id: phase.green_sec for phase in plan.phases}
+    assert min_greens["APP-MIN-1"] >= 20
+    assert min_greens["APP-MIN-2"] >= 20
+    assert min_greens["APP-MAJ-1"] >= 15
+    assert min_greens["APP-MAJ-2"] >= 15
+
+    # Verification certificate must be satisfied and plan accepted
+    assert plan.safety_validation["minGreenSatisfied"] is True
+    assert plan.safety_validation["pedestrianInvariantVerified"] is True
+    assert plan.status == "REQUIRES_HUMAN_APPROVAL"
+
+
+def test_two_phase_plan_honors_highest_min_green_in_group():
+    """
+    BUG-56: Verifies that when approaches are grouped into a phase plan,
+    the phase receives at least the maximum min_green_sec among group members.
+    """
+    optimizer = WebsterSignalOptimizer()
+    approaches = [
+        ApproachDemand("EB", "Eastbound", 300.0, lanes=1, min_green_sec=15.0, crosswalk_width_m=6.0),
+        ApproachDemand("WB", "Westbound", 250.0, lanes=1, min_green_sec=25.0, crosswalk_width_m=6.0),
+        ApproachDemand("NB", "Northbound", 200.0, lanes=1, min_green_sec=15.0, crosswalk_width_m=6.0),
+        ApproachDemand("SB", "Southbound", 180.0, lanes=1, min_green_sec=15.0, crosswalk_width_m=6.0),
+    ]
+    plan = optimizer.compute_optimal_timing(
+        intersection_id="INT-GROUP-MIN-GREEN",
+        approaches=approaches,
+        phase_plan=[["EB", "WB"], ["NB", "SB"]],
+    )
+    greens = {phase.approach_id: phase.green_sec for phase in plan.phases}
+    # Phase 1 includes EB (15s) and WB (25s) -> phase must be >= 25s
+    assert greens["EB"] == greens["WB"]
+    assert greens["EB"] >= 25
+    assert plan.safety_validation["minGreenSatisfied"] is True
+    assert plan.status == "REQUIRES_HUMAN_APPROVAL"
+
