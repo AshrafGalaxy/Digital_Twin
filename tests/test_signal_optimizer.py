@@ -162,6 +162,79 @@ def test_webster_overflow_term_uses_arrival_flow():
     assert delay == 30.64
 
 
+def test_webster_delay_continuity_across_saturation_one():
+    """
+    Delay must increase monotonically and transition continuously across x = 1.0.
+    The former raw Webster overflow term produced a ~42x cliff drop between
+    x = 0.999 and x = 1.0; this test enforces the corrected smooth behaviour.
+    """
+    # Fixed parameters: cycle=90, split=0.40, saturation_flow=0.50 veh/s.
+    # capacity = 0.50 * 0.40 = 0.20 veh/s. flow = x * capacity.
+    cap = 0.20
+    xs = [0.50, 0.75, 0.85, 0.90, 0.95, 0.99, 0.999, 1.0, 1.001, 1.01, 1.10]
+    delays = [
+        WebsterSignalOptimizer.calculate_webster_delay(
+            cycle_sec=90.0,
+            split_ratio=0.40,
+            flow_vps=round(x * cap, 6),
+            saturation_flow_vps=0.50,
+        )
+        for x in xs
+    ]
+
+    # Strictly monotonically non-decreasing across all sample points.
+    for i in range(len(delays) - 1):
+        assert delays[i] <= delays[i + 1], (
+            f"Monotonicity violated: delay at x={xs[i]} ({delays[i]}) "
+            f"> delay at x={xs[i + 1]} ({delays[i + 1]})"
+        )
+
+    # The step across the saturation boundary must be small (< 1.0 s), not a cliff.
+    delay_at_0999 = WebsterSignalOptimizer.calculate_webster_delay(
+        cycle_sec=90.0, split_ratio=0.40, flow_vps=round(0.999 * cap, 6), saturation_flow_vps=0.50
+    )
+    delay_at_1000 = WebsterSignalOptimizer.calculate_webster_delay(
+        cycle_sec=90.0, split_ratio=0.40, flow_vps=round(1.000 * cap, 6), saturation_flow_vps=0.50
+    )
+    assert abs(delay_at_1000 - delay_at_0999) < 1.0, (
+        f"Discontinuity at x=1.0: delay jumped {abs(delay_at_1000 - delay_at_0999):.2f} s"
+    )
+
+    # Delay at x=0.75 should still round to the classical 30.64 s (preserved by clamping).
+    delay_at_075 = WebsterSignalOptimizer.calculate_webster_delay(
+        cycle_sec=90.0, split_ratio=0.40, flow_vps=0.15, saturation_flow_vps=0.50
+    )
+    assert delay_at_075 == 30.64, (
+        f"Undersaturated classical value changed: got {delay_at_075}, expected 30.64"
+    )
+
+
+def test_webster_delay_monotonic_grid_saturation():
+    """
+    Fine-grained monotonicity sweep: delay must never decrease as x increases
+    across the undersaturated-to-oversaturated transition zone [0.90, 1.10].
+    """
+    cap = 0.20
+    xs = [round(0.90 + i * 0.002, 3) for i in range(101)]  # 0.90 .. 1.10 in steps of 0.002
+    delays = [
+        WebsterSignalOptimizer.calculate_webster_delay(
+            cycle_sec=90.0,
+            split_ratio=0.40,
+            flow_vps=round(x * cap, 6),
+            saturation_flow_vps=0.50,
+        )
+        for x in xs
+    ]
+    violations = [
+        (xs[i], xs[i + 1], delays[i], delays[i + 1])
+        for i in range(len(delays) - 1)
+        if delays[i] > delays[i + 1]
+    ]
+    assert len(violations) == 0, (
+        f"Monotonicity violations found near saturation: {violations[:5]}"
+    )
+
+
 def test_oversaturated_delay_is_not_a_single_cap():
     """A worse degree of saturation must not collapse onto the same 180 second cap."""
     milder = WebsterSignalOptimizer.calculate_webster_delay(90.0, 0.40, 0.30, 0.50)

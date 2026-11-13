@@ -172,12 +172,20 @@ class WebsterSignalOptimizer:
         cycle_sec: float,
         split_ratio: float,
         flow_vps: float,
-        saturation_flow_vps: float
+        saturation_flow_vps: float,
+        period_sec: float = 900.0,
     ) -> float:
         """
         Delay per vehicle.
-        Undersaturated (x < 1): D = C * (1 - lambda)^2 / (2 * (1 - lambda * x)) + x^2 / (2 * q * (1 - x)).
-        Oversaturated (x >= 1): the same uniform term with x held at 1, plus the Akcelik time-dependent term.
+
+        Undersaturated (x < 1): d1 = C * (1 - lambda)^2 / (2 * (1 - lambda * x)).
+        Overflow d2 for x < 1 uses continuous transition clamping that asymptotically
+        approaches the Akcelik boundary value as x -> 1.0, eliminating the
+        discontinuous cliff produced by the raw Webster steady-state overflow term.
+
+        Oversaturated (x >= 1): d1 uses x clamped to 1 in the denominator;
+        d2 is the Akcelik time-dependent overflow delay.
+
         Valid results are not clamped to 180 seconds.
         """
         if split_ratio <= 0.0 or cycle_sec <= 0.0 or saturation_flow_vps <= 0.0:
@@ -191,12 +199,21 @@ class WebsterSignalOptimizer:
         if x < 1.0:
             denom = 2.0 * (1.0 - (split_ratio * x))
             d1 = (cycle_sec * ((1.0 - split_ratio) ** 2)) / denom if denom > 1e-9 else 0.0
-            d2 = WebsterSignalOptimizer.webster_overflow_delay(x, flow_vps)
+            w = WebsterSignalOptimizer.webster_overflow_delay(x, flow_vps)
+            # Continuous transition clamping: soft-clamp w toward the Akcelik
+            # boundary value d2_crit so that d2(x->1^-) == d2(x=1) with no cliff.
+            # Formula: d2 = w / (1 + (w / d2_crit)^p)^(1/p), p = 4.0.
+            d2_crit = WebsterSignalOptimizer.akcelik_overflow_delay(1.0, capacity_vps, period_sec)
+            if d2_crit > 0.0 and w > 0.0:
+                _p = 4.0
+                d2 = w / ((1.0 + (w / d2_crit) ** _p) ** (1.0 / _p))
+            else:
+                d2 = w
             return round(max(0.0, d1 + d2), 2)
 
         denom = 2.0 * (1.0 - split_ratio)
         d1 = (cycle_sec * ((1.0 - split_ratio) ** 2)) / denom if denom > 1e-9 else 0.0
-        d2 = WebsterSignalOptimizer.akcelik_overflow_delay(x, capacity_vps)
+        d2 = WebsterSignalOptimizer.akcelik_overflow_delay(x, capacity_vps, period_sec)
         return round(max(0.0, d1 + d2), 2)
 
     def compute_optimal_timing(
