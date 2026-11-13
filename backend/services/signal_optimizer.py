@@ -323,7 +323,7 @@ class WebsterSignalOptimizer:
                     phase_y[i] / max(1e-6, final_phase_greens[i] / float(target_cycle))
                     for i in range(n_phases)
                 )
-                if max_sat <= cfg.max_saturation_cap + 0.03:
+                if max_sat <= cfg.max_saturation_cap:
                     break
                 target_cycle += 1
                 final_phase_greens = _allocate_phase_greens(target_cycle)
@@ -413,7 +413,7 @@ class WebsterSignalOptimizer:
             estimated_delay_reduction_pct=delay_reduction_pct,
             safety_validation={
                 "maxSaturation": round(max_observed_sat, 3),
-                "saturationCapSatisfied": bool(max_observed_sat <= cfg.max_saturation_cap + 0.05),
+                "saturationCapSatisfied": bool(max_observed_sat <= cfg.max_saturation_cap),
                 "pedestrianInvariantVerified": ped_invariants_met,
                 "minGreenSatisfied": min_green_ok,
                 "cycleBounded": bool(cfg.min_cycle_sec <= actual_cycle <= cfg.max_cycle_sec),

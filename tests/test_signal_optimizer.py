@@ -625,3 +625,45 @@ def test_two_phase_plan_honors_highest_min_green_in_group():
     assert plan.safety_validation["minGreenSatisfied"] is True
     assert plan.status == "REQUIRES_HUMAN_APPROVAL"
 
+
+def test_saturation_cap_certificate_exact_boundary():
+    """
+    BUG-57: Verifies that the saturation safety certificate enforces max_saturation_cap
+    without an unconfigured +0.05 relaxation buffer.
+    """
+    optimizer = WebsterSignalOptimizer()
+
+    # Pass case: flow=280 yields saturation = 0.848 <= 0.850 -> saturationCapSatisfied is True
+    approaches_pass = [
+        ApproachDemand("A", "Approach A", 280.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("B", "Approach B", 280.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("C", "Approach C", 280.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("D", "Approach D", 280.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+    ]
+    plan_pass = optimizer.compute_optimal_timing(
+        intersection_id="INT-SAT-EXACT-PASS",
+        approaches=approaches_pass,
+        constraints=SignalConstraints(max_saturation_cap=0.85, max_cycle_sec=60),
+    )
+    assert plan_pass.safety_validation["maxSaturation"] <= 0.850
+    assert plan_pass.safety_validation["saturationCapSatisfied"] is True
+
+    # Fail case: flow=290 yields saturation = 0.879 > 0.850.
+    # The previous buggy code added +0.05 and certified 0.879 <= 0.90 as True.
+    # The corrected code strictly reports False.
+    approaches_fail = [
+        ApproachDemand("A", "Approach A", 290.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("B", "Approach B", 290.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("C", "Approach C", 290.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+        ApproachDemand("D", "Approach D", 290.0, lanes=1, saturation_flow_vph_lane=1800.0, min_green_sec=10.0, crosswalk_width_m=6.0),
+    ]
+    plan_fail = optimizer.compute_optimal_timing(
+        intersection_id="INT-SAT-EXACT-FAIL",
+        approaches=approaches_fail,
+        constraints=SignalConstraints(max_saturation_cap=0.85, max_cycle_sec=60),
+    )
+    assert plan_fail.safety_validation["maxSaturation"] > 0.850
+    assert plan_fail.safety_validation["maxSaturation"] < 0.900
+    assert plan_fail.safety_validation["saturationCapSatisfied"] is False
+
+
