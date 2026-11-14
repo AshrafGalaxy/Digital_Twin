@@ -45,11 +45,16 @@ class LocalModelExplainer:
         model: Any,
         input_df: pd.DataFrame,
         feature_names: List[str],
-        top_k: int = 5
+        top_k: int = 5,
+        displayed_prediction: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         Computes TreeSHAP attributions for a single-row feature dataframe.
-        Returns base value, predicted value, and top positive/negative feature contributions.
+        TreeSHAP attributions sum to the unclipped booster output:
+          raw_booster_output = baseValue + sum(contributions)
+        If the displayed prediction is clipped to physical limits, matchesDisplayedPrediction
+        indicates whether the attributions sum to the displayed value or raw booster output.
+        Returns base value, predicted value, reference target, and top feature contributions.
         """
         try:
             dmat = xgb.DMatrix(input_df[feature_names])
@@ -58,6 +63,8 @@ class LocalModelExplainer:
 
             feature_contribs = contribs[:-1]
             base_value = float(contribs[-1])
+            unclipped_sum = float(base_value + np.sum(feature_contribs))
+            raw_pred = float(booster.predict(dmat)[0])
 
             attributions = []
             for fname, val in zip(feature_names, feature_contribs):
@@ -72,8 +79,17 @@ class LocalModelExplainer:
             # Sort by absolute impact magnitude
             attributions.sort(key=lambda x: abs(x["contribution"]), reverse=True)
 
+            matches_displayed = (
+                displayed_prediction is None
+                or abs(unclipped_sum - float(displayed_prediction)) < 0.05
+            )
+
             return {
                 "baseValue": round(base_value, 2),
+                "rawPredictedValue": round(raw_pred, 2),
+                "unclippedAttributionSum": round(unclipped_sum, 2),
+                "referenceTarget": "raw_booster_output",
+                "matchesDisplayedPrediction": matches_displayed,
                 "topContributors": attributions[:top_k],
                 "allAttributions": attributions
             }
@@ -81,5 +97,7 @@ class LocalModelExplainer:
             return {
                 "baseValue": 0.0,
                 "topContributors": [],
+                "referenceTarget": "error",
+                "matchesDisplayedPrediction": False,
                 "error": str(e)
             }

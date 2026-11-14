@@ -83,6 +83,8 @@ class CorridorForecaster:
         if not self.traffic_artifact:
             # Calibrated deterministic heuristic baseline
             pred = max(10.0, min(50.0, current_speed * 0.95))
+            c_lower = round(max(8.0, pred - 3.5), 2)
+            c_upper = round(min(52.0, pred + 3.5), 2)
             return {
                 "entityId": segment_id,
                 "targetMetric": "averageSpeedKmh",
@@ -91,8 +93,12 @@ class CorridorForecaster:
                 "targetTimestamp": target_utc.isoformat(),
                 "horizonMinutes": 15,
                 "predictedValue": round(pred, 2),
-                "confidenceLower": round(max(8.0, pred - 3.5), 2),
-                "confidenceUpper": round(min(52.0, pred + 3.5), 2),
+                "confidenceLower": c_lower,
+                "confidenceUpper": c_upper,
+                "rawPredictedValue": round(pred, 2),
+                "rawConfidenceLower": c_lower,
+                "rawConfidenceUpper": c_upper,
+                "boundClipped": False,
                 "conformalIntervals": ConformalPredictionCalibrator.get_traffic_intervals(pred),
                 "unit": "km/h",
                 "modelVersion": "traffic-heuristic-fallback",
@@ -121,14 +127,27 @@ class CorridorForecaster:
         X_input = pd.DataFrame([row_dict])[FEATURE_COLUMNS]
         
         # Primary prediction & Quantile bounds
-        pred = float(self.traffic_artifact["model"].predict(X_input)[0])
-        p10 = float(self.traffic_artifact["model_p10"].predict(X_input)[0])
-        p90 = float(self.traffic_artifact["model_p90"].predict(X_input)[0])
+        raw_pred = float(self.traffic_artifact["model"].predict(X_input)[0])
+        raw_p10 = float(self.traffic_artifact["model_p10"].predict(X_input)[0])
+        raw_p90 = float(self.traffic_artifact["model_p90"].predict(X_input)[0])
 
-        # Clamp to physical bounds (5 km/h to 55 km/h)
-        pred = float(np.clip(pred, 5.0, 55.0))
-        p10 = float(np.clip(p10, 4.0, pred - 0.5))
-        p90 = float(np.clip(p90, pred + 0.5, 56.0))
+        # Physical feasibility clamp: corridor arterial speed bounds (5.0 to 55.0 km/h)
+        pred = float(np.clip(raw_pred, 5.0, 55.0))
+        # Ensure quantile bounds respect domain physical feasibility (0 to 120 km/h)
+        p10 = float(np.clip(raw_p10, 0.0, 120.0))
+        p90 = float(np.clip(raw_p90, 0.0, 120.0))
+
+        # Enforce quantile monotonicity: p10 <= pred <= p90
+        p10_monotone = min(p10, pred)
+        p90_monotone = max(p90, pred)
+
+        bound_clipped = bool(
+            raw_pred != pred
+            or raw_p10 != p10_monotone
+            or raw_p90 != p90_monotone
+        )
+        p10 = p10_monotone
+        p90 = p90_monotone
 
         # Conformal prediction intervals & local feature attributions
         conformal = ConformalPredictionCalibrator.get_traffic_intervals(
@@ -139,7 +158,8 @@ class CorridorForecaster:
             self.traffic_artifact["model"],
             X_input,
             FEATURE_COLUMNS,
-            top_k=5
+            top_k=5,
+            displayed_prediction=pred,
         )
 
         return {
@@ -152,6 +172,10 @@ class CorridorForecaster:
             "predictedValue": round(pred, 2),
             "confidenceLower": round(p10, 2),
             "confidenceUpper": round(p90, 2),
+            "rawPredictedValue": round(raw_pred, 2),
+            "rawConfidenceLower": round(raw_p10, 2),
+            "rawConfidenceUpper": round(raw_p90, 2),
+            "boundClipped": bound_clipped,
             "conformalIntervals": conformal,
             "explanation": explanation,
             "unit": "km/h",
@@ -187,6 +211,8 @@ class CorridorForecaster:
 
         if not self.energy_artifact:
             pred = max(1200.0, current_kw * 1.02)
+            c_lower = round(pred * 0.92, 1)
+            c_upper = round(pred * 1.08, 1)
             return {
                 "entityId": building_id,
                 "targetMetric": "activePowerKw",
@@ -195,8 +221,12 @@ class CorridorForecaster:
                 "targetTimestamp": target_utc.isoformat(),
                 "horizonMinutes": 60,
                 "predictedValue": round(pred, 1),
-                "confidenceLower": round(pred * 0.92, 1),
-                "confidenceUpper": round(pred * 1.08, 1),
+                "confidenceLower": c_lower,
+                "confidenceUpper": c_upper,
+                "rawPredictedValue": round(pred, 1),
+                "rawConfidenceLower": c_lower,
+                "rawConfidenceUpper": c_upper,
+                "boundClipped": False,
                 "conformalIntervals": ConformalPredictionCalibrator.get_energy_intervals(pred),
                 "unit": "kW",
                 "modelVersion": "energy-heuristic-fallback",
@@ -227,13 +257,26 @@ class CorridorForecaster:
         )
         X_input = pd.DataFrame([row_dict])[ENERGY_FEATURE_COLUMNS]
 
-        pred = float(self.energy_artifact["model"].predict(X_input)[0])
-        p10 = float(self.energy_artifact["model_p10"].predict(X_input)[0])
-        p90 = float(self.energy_artifact["model_p90"].predict(X_input)[0])
+        raw_pred = float(self.energy_artifact["model"].predict(X_input)[0])
+        raw_p10 = float(self.energy_artifact["model_p10"].predict(X_input)[0])
+        raw_p90 = float(self.energy_artifact["model_p90"].predict(X_input)[0])
 
-        pred = float(np.clip(pred, 1000.0, 6500.0))
-        p10 = float(np.clip(p10, 950.0, pred - 20.0))
-        p90 = float(np.clip(p90, pred + 20.0, 6800.0))
+        # Physical feasibility clamp for commercial building load (500 kW to 10000 kW)
+        pred = float(np.clip(raw_pred, 500.0, 10000.0))
+        p10 = float(np.clip(raw_p10, 0.0, 15000.0))
+        p90 = float(np.clip(raw_p90, 0.0, 15000.0))
+
+        # Enforce quantile monotonicity: p10 <= pred <= p90
+        p10_monotone = min(p10, pred)
+        p90_monotone = max(p90, pred)
+
+        bound_clipped = bool(
+            raw_pred != pred
+            or raw_p10 != p10_monotone
+            or raw_p90 != p90_monotone
+        )
+        p10 = p10_monotone
+        p90 = p90_monotone
 
         # Dynamic Peak load alert if forecast exceeds 85% of building contract capacity
         is_peak_alert = pred >= peak_threshold
@@ -247,7 +290,8 @@ class CorridorForecaster:
             self.energy_artifact["model"],
             X_input,
             ENERGY_FEATURE_COLUMNS,
-            top_k=5
+            top_k=5,
+            displayed_prediction=pred,
         )
 
         return {
@@ -260,6 +304,10 @@ class CorridorForecaster:
             "predictedValue": round(pred, 1),
             "confidenceLower": round(p10, 1),
             "confidenceUpper": round(p90, 1),
+            "rawPredictedValue": round(raw_pred, 1),
+            "rawConfidenceLower": round(raw_p10, 1),
+            "rawConfidenceUpper": round(raw_p90, 1),
+            "boundClipped": bound_clipped,
             "conformalIntervals": conformal,
             "explanation": explanation,
             "unit": "kW",

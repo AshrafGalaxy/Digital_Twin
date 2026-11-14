@@ -144,14 +144,26 @@ def _build_single_energy_features(
     merged["load_roll_std_6h"] = merged["active_power_kw"].rolling(window=24, closed="left").std().fillna(0.0)
 
     # Calendar cyclical features evaluated in corridor local civil time
-    civil_ts = series_to_civil_time(merged["timestamp"], utc_offset_minutes)
-    hour_float = civil_ts.dt.hour + civil_ts.dt.minute / 60.0
+    civil_dt = pd.DatetimeIndex(series_to_civil_time(merged["timestamp"], utc_offset_minutes))
+    hour_float = pd.Series(civil_dt.hour + civil_dt.minute / 60.0, index=merged.index)
     merged["sin_hour"] = np.sin(2 * np.pi * hour_float / 24.0)
     merged["cos_hour"] = np.cos(2 * np.pi * hour_float / 24.0)
-    merged["day_of_week"] = civil_ts.dt.weekday
+    merged["day_of_week"] = civil_dt.weekday
     merged["is_weekend"] = merged["day_of_week"].isin([5, 6]).astype(int)
     if "is_mall_open" not in merged.columns or merged["is_mall_open"].isna().any():
-        merged["is_mall_open"] = hour_float.apply(is_commercial_mall_open)
+        derived_open = hour_float.apply(is_commercial_mall_open).astype(int)
+        merged["is_mall_open"] = (
+            merged["is_mall_open"].fillna(derived_open).astype(int)
+            if "is_mall_open" in merged.columns
+            else derived_open
+        )
+    if "ambient_temp_c" not in merged.columns or merged["ambient_temp_c"].isna().any():
+        derived_temp = 24.0 + 9.5 * np.sin((hour_float - 8.5) * np.pi / 12.0)
+        merged["ambient_temp_c"] = (
+            merged["ambient_temp_c"].fillna(derived_temp)
+            if "ambient_temp_c" in merged.columns
+            else derived_temp
+        )
 
     merged = merged.dropna().reset_index(drop=True)
     return merged

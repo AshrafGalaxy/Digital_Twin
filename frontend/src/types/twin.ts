@@ -184,7 +184,12 @@ export interface FeatureContribution {
 
 export interface LocalExplanation {
   baseValue: number;
+  rawPredictedValue?: number;
+  unclippedAttributionSum?: number;
+  referenceTarget?: string;
+  matchesDisplayedPrediction?: boolean;
   topContributors: FeatureContribution[];
+  allAttributions?: FeatureContribution[];
 }
 
 export interface TrafficForecast {
@@ -197,6 +202,10 @@ export interface TrafficForecast {
   predictedValue: number;
   confidenceLower: number;
   confidenceUpper: number;
+  rawPredictedValue?: number;
+  rawConfidenceLower?: number;
+  rawConfidenceUpper?: number;
+  boundClipped?: boolean;
   conformalIntervals?: ConformalIntervalsPayload;
   explanation?: LocalExplanation;
   unit: string;
@@ -221,6 +230,10 @@ export interface EnergyForecast {
   predictedValue: number;
   confidenceLower: number;
   confidenceUpper: number;
+  rawPredictedValue?: number;
+  rawConfidenceLower?: number;
+  rawConfidenceUpper?: number;
+  boundClipped?: boolean;
   conformalIntervals?: ConformalIntervalsPayload;
   explanation?: LocalExplanation;
   unit: string;

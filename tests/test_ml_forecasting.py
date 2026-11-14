@@ -37,6 +37,7 @@ from ml.features.energy_features import (
 )
 from ml.inference.forecaster import CorridorForecaster
 from ml.conformal_calibrator import ConformalPredictionCalibrator
+from ml.explainer import LocalModelExplainer
 from backend.services.forecast_service import ForecastService
 
 
@@ -619,8 +620,8 @@ def test_morning_rush_boundary_harmonized_across_generator_and_features():
 
     raw_df = generate_corridor_traffic_history(days=7, seed=42)
     featured_df = build_traffic_features(raw_df)
-    civil_ts = featured_df["timestamp"].dt.tz_convert(ist_tz)
-    civil_hours = civil_ts.dt.hour + civil_ts.dt.minute / 60.0
+    civil_ts = pd.DatetimeIndex(featured_df["timestamp"]).tz_convert(ist_tz)
+    civil_hours = pd.Series(civil_ts.hour + civil_ts.minute / 60.0, index=featured_df.index)
 
     in_late_morning_rush = featured_df[(civil_hours >= 10.55) & (civil_hours <= 11.0)]
     assert len(in_late_morning_rush) > 0
@@ -669,6 +670,142 @@ def test_training_and_inference_feature_parity_across_civil_transitions():
             extracted = extract_energy_features_row(hist, dt_input, raw_e["ambient_temp_c"].iloc[idx])
             for col in ENERGY_FEATURE_COLUMNS:
                 assert abs(float(extracted[col]) - float(row[col])) < 1e-4
+
+
+def test_raw_quantile_bounds_preservation_and_clipping_flag():
+    """
+    Verifies BUG-61: raw quantile predictions are preserved in confidenceLower and confidenceUpper
+    without artificial margin forcing (pred - 0.5 or pred - 20.0), and boundClipped is accurately flagged.
+    """
+    forecaster = CorridorForecaster()
+    traffic_res = forecaster.predict_traffic_speed(
+        segment_id="urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+        current_speed=26.5
+    )
+    assert "rawConfidenceLower" in traffic_res
+    assert "rawConfidenceUpper" in traffic_res
+    assert "rawPredictedValue" in traffic_res
+    assert "boundClipped" in traffic_res
+    assert isinstance(traffic_res["boundClipped"], bool)
+    assert traffic_res["confidenceLower"] <= traffic_res["predictedValue"] <= traffic_res["confidenceUpper"]
+
+    # When raw p10 is close to point prediction, verify it is NOT forced down to pred - 0.5 without clipping
+    class MockBooster:
+        def __init__(self, val: float):
+            self.val = val
+        def predict(self, X):
+            return np.array([self.val])
+
+    mock_art = {
+        "model": MockBooster(25.0),
+        "model_p10": MockBooster(24.8),  # 24.8 is > 25.0 - 0.5 = 24.5
+        "model_p90": MockBooster(25.2),  # 25.2 is < 25.0 + 0.5 = 25.5
+        "conformal_calibration": None,
+        "metrics": {"test_mae": 2.0, "persistence_mae": 3.0, "improvement_vs_persistence_pct": 33.3},
+        "model_id": "mock-traffic",
+        "locality_caveat": "test"
+    }
+    saved_art = forecaster.traffic_artifact
+    try:
+        forecaster.traffic_artifact = mock_art
+        res = forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:TEST-01", 25.0)
+        # In the bug, p10 was clipped to pred - 0.5 = 24.5. Here it must remain 24.8!
+        assert res["confidenceLower"] == 24.8
+        assert res["confidenceUpper"] == 25.2
+        assert res["boundClipped"] is False
+        assert res["rawConfidenceLower"] == 24.8
+        assert res["rawConfidenceUpper"] == 25.2
+        assert res["rawPredictedValue"] == 25.0
+    finally:
+        forecaster.traffic_artifact = saved_art
+
+    energy_res = forecaster.predict_building_energy(
+        building_id="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+        current_kw=4250.0
+    )
+    assert "rawConfidenceLower" in energy_res
+    assert "rawConfidenceUpper" in energy_res
+    assert "rawPredictedValue" in energy_res
+    assert "boundClipped" in energy_res
+    assert isinstance(energy_res["boundClipped"], bool)
+    assert energy_res["confidenceLower"] <= energy_res["predictedValue"] <= energy_res["confidenceUpper"]
+
+
+def test_local_model_explainer_raw_booster_reference_and_additivity():
+    """
+    Verifies BUG-61: TreeSHAP local feature attributions explicitly document referenceTarget == 'raw_booster_output',
+    unclippedAttributionSum matches baseValue + sum(contributions), and matchesDisplayedPrediction detects clamping.
+    """
+    forecaster = CorridorForecaster()
+    now_utc = datetime.now(timezone.utc)
+    row_dict = extract_traffic_features_row([25.0] * 13, now_utc, 30.0, 330)
+    X_input = pd.DataFrame([row_dict])[FEATURE_COLUMNS]
+
+    model = forecaster.traffic_artifact["model"]
+    raw_pred = float(model.predict(X_input)[0])
+
+    # Unclipped explanation
+    exp = LocalModelExplainer.explain_prediction(
+        model,
+        X_input,
+        FEATURE_COLUMNS,
+        top_k=5,
+        displayed_prediction=raw_pred
+    )
+    assert exp["referenceTarget"] == "raw_booster_output"
+    assert "rawPredictedValue" in exp
+    assert "unclippedAttributionSum" in exp
+    assert exp["matchesDisplayedPrediction"] is True
+
+    # Attribution additivity: baseValue + sum(contributions) == unclippedAttributionSum
+    all_contribs_sum = sum(c["contribution"] for c in exp["allAttributions"])
+    expected_sum = round(exp["baseValue"] + all_contribs_sum, 2)
+    assert abs(exp["unclippedAttributionSum"] - expected_sum) < 0.05
+    assert abs(exp["rawPredictedValue"] - raw_pred) < 0.05
+
+    # Clamped explanation where displayed prediction deviates from unclipped raw booster output
+    clamped_exp = LocalModelExplainer.explain_prediction(
+        model,
+        X_input,
+        FEATURE_COLUMNS,
+        top_k=5,
+        displayed_prediction=raw_pred + 15.0
+    )
+    assert clamped_exp["matchesDisplayedPrediction"] is False
+    assert clamped_exp["referenceTarget"] == "raw_booster_output"
+
+
+def test_build_energy_features_from_timestamps_alone():
+    """
+    Verifies BUG-61: build_energy_features deterministically derives the commercial open-hours flag
+    and ambient temperature from timestamps alone without requiring pre-existing columns.
+    """
+    start_time = datetime(2026, 8, 20, 0, 0, tzinfo=timezone.utc)
+    records = []
+    for step in range(200):
+        dt = start_time + timedelta(minutes=step * 15)
+        records.append({
+            "timestamp": dt,
+            "active_power_kw": 2500.0 + (step % 20) * 40.0
+        })
+    raw_df = pd.DataFrame(records)
+
+    featured_df = build_energy_features(raw_df)
+    assert len(featured_df) > 0
+    for col in ENERGY_FEATURE_COLUMNS:
+        assert col in featured_df.columns
+        assert not featured_df[col].isna().any()
+
+    # Commercial operating hours in corridor civil time (+05:30): 10:00 to 22:00
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    civil_ts = pd.DatetimeIndex(featured_df["timestamp"]).tz_convert(ist_tz)
+    civil_hours = civil_ts.hour + civil_ts.minute / 60.0
+
+    open_mask = (civil_hours >= 10.0) & (civil_hours <= 22.0)
+    closed_mask = (civil_hours < 10.0) | (civil_hours > 22.0)
+
+    assert (featured_df.loc[open_mask, "is_mall_open"] == 1).all()
+    assert (featured_df.loc[closed_mask, "is_mall_open"] == 0).all()
 
 
 if __name__ == "__main__":
