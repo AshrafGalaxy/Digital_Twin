@@ -271,6 +271,19 @@ class SHMTelemetryService:
                 metrics = excluded.metrics,
                 quality_status = excluded.quality_status,
                 freshness_seconds = 0.0
+            WHERE (
+                (
+                    EXCLUDED.source_mode IN ('LIVE', 'REPLAY')
+                    AND entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                )
+                OR (
+                    (
+                        EXCLUDED.source_mode IN ('LIVE', 'REPLAY')
+                        OR entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+                    )
+                    AND EXCLUDED.observed_at >= entity_current_state.observed_at
+                )
+            )
         """)
 
         await session.execute(

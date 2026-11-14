@@ -387,3 +387,145 @@ async def test_empty_telemetry_catalog_does_not_invent_readings():
     assert "520.5" not in raw
     assert "3.42" not in raw
     assert "-1.18" not in raw
+
+
+@pytest.mark.asyncio
+async def test_simulation_packet_does_not_overwrite_observed_structural_current_state():
+    """Non-Negotiable Invariant #2: SIMULATION structural telemetry cannot overwrite LIVE/REPLAY current state."""
+    struct_id = "urn:ngsi-ld:StructuralAsset:PROOF:STR-01"
+    now_utc = datetime.now(timezone.utc)
+    t_live = (now_utc - timedelta(seconds=60)).isoformat()
+    t_sim = now_utc.isoformat()
+
+    live_metrics = {
+        "vibrationPpvMms": 2.5,
+        "strainMicrostrain": 450.0,
+        "resonantFreqHz": 4.20,
+        "resonantBaselineHz": 4.25,
+        "resonantDriftPct": -1.18,
+        "temperatureCelsius": 27.5,
+        "hcvAxleLoadTonnes": 7.0,
+        "integrityStatus": "NOMINAL",
+        "activeAlerts": [],
+        "spanId": "SPAN-PROOF-01",
+        "structureName": "Proof Test Structure",
+    }
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            text("""
+                INSERT INTO entity_current_state (
+                    entity_id, entity_type, source_mode, observed_at, updated_at,
+                    metrics, quality_status, freshness_seconds
+                ) VALUES (
+                    :entity_id, 'StructuralAsset', 'LIVE', :observed_at, :updated_at,
+                    :metrics, 'VALID', 0.0
+                )
+                ON CONFLICT(entity_id) DO UPDATE SET
+                    source_mode = excluded.source_mode,
+                    observed_at = excluded.observed_at,
+                    metrics = excluded.metrics
+            """),
+            {
+                "entity_id": struct_id,
+                "observed_at": t_live,
+                "updated_at": t_live,
+                "metrics": json.dumps(live_metrics),
+            },
+        )
+        await session.commit()
+
+    sim_packet = _nominal_packet(
+        structureId=struct_id,
+        observedAt=t_sim,
+        strain={"value": 780.0, "unit": "microstrain", "qualityScore": 0.70},
+        provenance={"sourceMode": "SIMULATION", "sensorType": "SYNTHETIC_GENERATOR"},
+    )
+    resp = client.post("/api/v1/shm/telemetry", json=sim_packet, headers=_auth_header())
+    assert resp.status_code == 201
+    assert resp.json()["sourceMode"] == "SIMULATION"
+
+    async with AsyncSessionLocal() as session:
+        row = (await session.execute(
+            text("SELECT source_mode, observed_at, metrics FROM entity_current_state WHERE entity_id = :id"),
+            {"id": struct_id},
+        )).fetchone()
+        assert row is not None
+        assert row[0] == "LIVE"
+        assert row[1] == t_live
+        stored_metrics = json.loads(row[2]) if isinstance(row[2], str) else row[2]
+        assert stored_metrics["strainMicrostrain"] == 450.0
+
+        await session.execute(text("DELETE FROM entity_current_state WHERE entity_id = :id"), {"id": struct_id})
+        await session.execute(text("DELETE FROM shm_telemetry WHERE structure_id = :id"), {"id": struct_id})
+        await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_out_of_order_structural_packet_does_not_overwrite_newer_current_state():
+    """An out-of-order historical structural telemetry packet cannot overwrite newer current state."""
+    struct_id = "urn:ngsi-ld:StructuralAsset:PROOF:STR-ORDER-01"
+    now_utc = datetime.now(timezone.utc)
+    t_newer = now_utc.isoformat()
+    t_older = (now_utc - timedelta(minutes=10)).isoformat()
+
+    newer_metrics = {
+        "vibrationPpvMms": 3.0,
+        "strainMicrostrain": 520.0,
+        "resonantFreqHz": 4.15,
+        "resonantBaselineHz": 4.25,
+        "resonantDriftPct": -2.35,
+        "temperatureCelsius": 28.0,
+        "hcvAxleLoadTonnes": 8.0,
+        "integrityStatus": "NOMINAL",
+        "activeAlerts": [],
+        "spanId": "SPAN-PROOF-ORDER",
+        "structureName": "Proof Order Structure",
+    }
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            text("""
+                INSERT INTO entity_current_state (
+                    entity_id, entity_type, source_mode, observed_at, updated_at,
+                    metrics, quality_status, freshness_seconds
+                ) VALUES (
+                    :entity_id, 'StructuralAsset', 'LIVE', :observed_at, :updated_at,
+                    :metrics, 'VALID', 0.0
+                )
+                ON CONFLICT(entity_id) DO UPDATE SET
+                    source_mode = excluded.source_mode,
+                    observed_at = excluded.observed_at,
+                    metrics = excluded.metrics
+            """),
+            {
+                "entity_id": struct_id,
+                "observed_at": t_newer,
+                "updated_at": t_newer,
+                "metrics": json.dumps(newer_metrics),
+            },
+        )
+        await session.commit()
+
+    older_packet = _nominal_packet(
+        structureId=struct_id,
+        observedAt=t_older,
+        strain={"value": 680.0, "unit": "microstrain", "qualityScore": 0.99},
+        provenance={"sourceMode": "LIVE", "sensorType": "FBG_OPTICAL_PIEZO"},
+    )
+    resp = client.post("/api/v1/shm/telemetry", json=older_packet, headers=_auth_header())
+    assert resp.status_code == 201
+
+    async with AsyncSessionLocal() as session:
+        row = (await session.execute(
+            text("SELECT observed_at, metrics FROM entity_current_state WHERE entity_id = :id"),
+            {"id": struct_id},
+        )).fetchone()
+        assert row is not None
+        assert row[0] == t_newer
+        stored_metrics = json.loads(row[1]) if isinstance(row[1], str) else row[1]
+        assert stored_metrics["strainMicrostrain"] == 520.0
+
+        await session.execute(text("DELETE FROM entity_current_state WHERE entity_id = :id"), {"id": struct_id})
+        await session.execute(text("DELETE FROM shm_telemetry WHERE structure_id = :id"), {"id": struct_id})
+        await session.commit()
