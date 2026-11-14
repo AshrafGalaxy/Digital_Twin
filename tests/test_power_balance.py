@@ -202,7 +202,7 @@ def test_unknown_substation_is_not_replaced():
 
 @pytest.mark.asyncio
 async def test_signed_residual_above_share_is_not_valid():
-    """A supply surplus near 1552.73 kW keeps its sign and is not labeled VALID."""
+    """A supply surplus near 1554.09 kW keeps its sign and is not labeled VALID."""
     substation_id = "SUB-PROOF-SURPLUS"
     node_ids = [
         substation_id,
@@ -241,8 +241,8 @@ async def test_signed_residual_above_share_is_not_valid():
         assert data["solarGenerationKw"] == 780.0
         assert data["bessNetPowerKw"] == -250.0
         assert data["facilityTotalLoadKw"] == 5220.0
-        assert data["technicalLossesKw"] == 7.27
-        assert data["powerBalanceResidualKw"] == 1552.73
+        assert data["technicalLossesKw"] == 5.91
+        assert data["powerBalanceResidualKw"] == 1554.09
         assert data["powerBalanceResidualKw"] > 0
         assert data["residualShare"] > data["residualShareThreshold"]
         assert data["provenance"]["qualityStatus"] != "VALID"
@@ -306,3 +306,55 @@ async def test_missing_grid_meter_is_not_invented():
         assert data["provenance"]["qualityStatus"] != "VALID"
     finally:
         await _delete_bus(node_ids)
+
+
+def test_headroom_uses_explicit_voltage_over_registry():
+    """calculate_headroom_kw uses line_voltage_v when explicitly provided."""
+    svc = PowerBalanceService()
+    rated = 262.43
+    actual = 130.0
+    # With telemetry voltage 11 kV explicitly supplied
+    headroom_11kv = svc.calculate_headroom_kw(
+        rated_current_amps=rated,
+        actual_current_amps=actual,
+        line_voltage_v=11000.0,
+        power_factor=0.95,
+    )
+    # With low-voltage fallback 415 V (no telemetry, no registry hint)
+    headroom_415v = svc.calculate_headroom_kw(
+        rated_current_amps=rated,
+        actual_current_amps=actual,
+        line_voltage_v=None,
+        power_factor=0.95,
+    )
+    assert headroom_11kv > 0.0
+    assert headroom_415v > 0.0
+    # 11 kV feeder must report far greater headroom than 415 V LV circuit
+    ratio = headroom_11kv / headroom_415v
+    assert ratio > 20.0, f"Expected 11kV/415V headroom ratio > 20, got {ratio:.2f}"
+
+
+def test_headroom_registry_fallback_matches_explicit_voltage():
+    """calculate_headroom_kw nominal_voltage_kv fallback matches explicit line_voltage_v."""
+    svc = PowerBalanceService()
+    rated = 262.43
+    actual = 130.0
+    nominal_kv = 11.0
+    # Explicit voltage passed as line_voltage_v
+    h_explicit = svc.calculate_headroom_kw(
+        rated_current_amps=rated,
+        actual_current_amps=actual,
+        line_voltage_v=nominal_kv * 1000.0,
+        power_factor=0.95,
+    )
+    # Same voltage passed via nominal_voltage_kv fallback (no line_voltage_v)
+    h_registry = svc.calculate_headroom_kw(
+        rated_current_amps=rated,
+        actual_current_amps=actual,
+        line_voltage_v=None,
+        power_factor=0.95,
+        nominal_voltage_kv=nominal_kv,
+    )
+    assert h_explicit == h_registry, (
+        f"Registry fallback headroom {h_registry} kW must equal explicit {h_explicit} kW"
+    )

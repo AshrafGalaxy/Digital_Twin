@@ -83,15 +83,25 @@ class PowerBalanceService:
         self,
         rated_current_amps: float,
         actual_current_amps: float,
-        line_voltage_v: float = DEFAULT_LINE_VOLTAGE_V,
-        power_factor: float = 0.95
+        line_voltage_v: Optional[float] = None,
+        power_factor: float = 0.95,
+        nominal_voltage_kv: Optional[float] = None,
     ) -> float:
         """
         Calculates available active power capacity headroom before reaching thermal ampacity rating:
         Headroom = sqrt(3) * V_line * max(0, I_rated - I_actual) * PF / 1000 (in kW)
+        When line_voltage_v is omitted or <= 0, falls back to nominal_voltage_kv * 1000.0,
+        and finally to DEFAULT_LINE_VOLTAGE_V (415.0 V).
         """
+        if line_voltage_v is not None and line_voltage_v > 0.0:
+            v_line = line_voltage_v
+        elif nominal_voltage_kv is not None and nominal_voltage_kv > 0.0:
+            v_line = nominal_voltage_kv * 1000.0
+        else:
+            v_line = self.DEFAULT_LINE_VOLTAGE_V
+
         delta_i = max(0.0, rated_current_amps - actual_current_amps)
-        headroom_kw = (math.sqrt(3.0) * line_voltage_v * delta_i * power_factor) / 1000.0
+        headroom_kw = (math.sqrt(3.0) * v_line * delta_i * power_factor) / 1000.0
         return round(headroom_kw, 1)
 
     async def calculate_power_balance(
@@ -189,15 +199,21 @@ class PowerBalanceService:
                     critical_feeder_id = nid
 
                 status = self.evaluate_feeder_thermal_status(loading_ratio)
-                v_line = float(telem.get("voltageV", node["nominalVoltageKv"] * 1000.0))
-                pf = max(0.1, float(telem.get("powerFactor", 0.95)))
+                v_line = float(telem.get("voltageV") or (node["nominalVoltageKv"] * 1000.0))
+                pf = max(0.1, float(telem.get("powerFactor") or 0.95))
 
                 cable_length_m = float(node["properties"].get("cableLengthMeters", 750.0))
-                resistance_ohm = round((cable_length_m / 1000.0) * 0.08, 4)
+                resistance_ohm = round((cable_length_m / 1000.0) * self.DEFAULT_FEEDER_RESISTANCE_OHM, 4)
                 branch_loss_kw = self.calculate_branch_loss_kw(actual_current, resistance_ohm)
                 total_losses_kw += branch_loss_kw
 
-                headroom_kw = self.calculate_headroom_kw(rated_current, actual_current, v_line, pf)
+                headroom_kw = self.calculate_headroom_kw(
+                    rated_current,
+                    actual_current,
+                    line_voltage_v=v_line,
+                    power_factor=pf,
+                    nominal_voltage_kv=node["nominalVoltageKv"],
+                )
 
                 feeders_data.append({
                     "feederId": nid,
