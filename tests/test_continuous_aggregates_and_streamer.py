@@ -165,6 +165,8 @@ async def test_continuous_aggregator_seed_and_compute():
         assert "segmentId" in first
         assert "avgSpeedKmh" in first
         assert "totalFlowVeh" in first
+        assert "sourceMode" in first
+        assert first["sourceMode"] in ("SIMULATION", "REPLAY", "LIVE")
         assert "avgOccupancyPercent" in first
         assert "avgQueueLengthMeters" in first
         assert "avgCongestionIndex" in first
@@ -437,4 +439,117 @@ async def test_simulation_tick_does_not_overwrite_observed_current_state():
                 }
             )
             await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_rollup_computes_quarter_hour_vehicle_count():
+    """A steady flow rate of 400 veh/h over a 15-minute bucket stores total_flow_veh = 100.0."""
+    from datetime import timedelta
+    seg_id = "urn:ngsi-ld:RoadSegment:TEST:SEG-ROLLUP-FLOW"
+    sensor_id = "TEST-SENSOR-FLOW-01"
+    now_utc = datetime.now(timezone.utc)
+    minute = (now_utc.minute // 15) * 15
+    bucket_dt = now_utc.replace(minute=minute, second=0, microsecond=0)
+
+    async with persistence_manager.session_factory() as session:
+        try:
+            for i in range(4):
+                obs_time = (bucket_dt + timedelta(seconds=i * 60)).isoformat()
+                await session.execute(
+                    text("""
+                        INSERT INTO traffic_observations (
+                            observed_at, sensor_id, segment_id, source_mode,
+                            average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
+                            queue_length_meters, congestion_index
+                        ) VALUES (
+                            :obs_time, :sensor_id, :segment_id, 'REPLAY',
+                            45.0, 400.0, 25.0, 10.0, 0.20
+                        )
+                    """),
+                    {"obs_time": obs_time, "sensor_id": sensor_id, "segment_id": seg_id}
+                )
+            await session.commit()
+
+            rows = await continuous_aggregator.compute_and_materialize_rollups(session, hours_back=2)
+            assert rows > 0
+
+            rollups = await continuous_aggregator.get_traffic_rollups(session, segment_id=seg_id, hours_ago=2)
+            assert len(rollups) >= 1
+            matching = [r for r in rollups if r["segmentId"] == seg_id]
+            assert len(matching) >= 1
+            target = matching[0]
+            # 400 veh/h * 0.25 h = 100.0 vehicles (not 400.0)
+            assert target["totalFlowVeh"] == 100.0
+            assert target["sourceMode"] == "REPLAY"
+            assert target["sampleCount"] == 4
+        finally:
+            await session.execute(text("DELETE FROM traffic_observations WHERE segment_id = :seg_id"), {"seg_id": seg_id})
+            await session.execute(text("DELETE FROM traffic_15m_aggregates WHERE segment_id = :seg_id"), {"seg_id": seg_id})
+            await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_rollup_computes_true_85th_percentile_speed():
+    """85th percentile speed is computed from actual sample distribution, not by multiplying mean by 1.08."""
+    from datetime import timedelta
+    seg_id = "urn:ngsi-ld:RoadSegment:TEST:SEG-ROLLUP-SPEED"
+    sensor_id = "TEST-SENSOR-SPEED-01"
+    now_utc = datetime.now(timezone.utc)
+    minute = (now_utc.minute // 15) * 15
+    bucket_dt = now_utc.replace(minute=minute, second=0, microsecond=0)
+
+    # 8 sample speeds: [20, 30, 40, 50, 60, 70, 80, 90]
+    # Mean = 55.0. Mean * 1.08 would be 59.4 km/h.
+    # True continuous percentile (PERCENTILE_CONT 0.85):
+    # k = (8 - 1) * 0.85 = 5.95 -> index 5 (70.0) * 0.05 + index 6 (80.0) * 0.95 = 79.5 km/h.
+    sample_speeds = [20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0]
+
+    async with persistence_manager.session_factory() as session:
+        try:
+            for i, spd in enumerate(sample_speeds):
+                obs_time = (bucket_dt + timedelta(seconds=i * 30)).isoformat()
+                await session.execute(
+                    text("""
+                        INSERT INTO traffic_observations (
+                            observed_at, sensor_id, segment_id, source_mode,
+                            average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
+                            queue_length_meters, congestion_index
+                        ) VALUES (
+                            :obs_time, :sensor_id, :segment_id, 'REPLAY',
+                            :spd, 500.0, 30.0, 15.0, 0.30
+                        )
+                    """),
+                    {"obs_time": obs_time, "sensor_id": sensor_id, "segment_id": seg_id, "spd": spd}
+                )
+            await session.commit()
+
+            await continuous_aggregator.compute_and_materialize_rollups(session, hours_back=2)
+
+            rollups = await continuous_aggregator.get_traffic_rollups(session, segment_id=seg_id, hours_ago=2)
+            matching = [r for r in rollups if r["segmentId"] == seg_id]
+            assert len(matching) >= 1
+            target = matching[0]
+
+            assert target["avgSpeedKmh"] == 55.0
+            # Must match continuous 85th percentile 79.5 km/h (distinct from 55.0 * 1.08 = 59.4 km/h)
+            assert target["p85SpeedKmh"] == 79.5
+            assert target["p85SpeedKmh"] > 70.0
+        finally:
+            await session.execute(text("DELETE FROM traffic_observations WHERE segment_id = :seg_id"), {"seg_id": seg_id})
+            await session.execute(text("DELETE FROM traffic_15m_aggregates WHERE segment_id = :seg_id"), {"seg_id": seg_id})
+            await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_seeded_historical_rollups_have_simulation_provenance():
+    """Seeded synthetic historical rollups carry provenance distinction (source_mode = 'SIMULATION')."""
+    async with persistence_manager.session_factory() as session:
+        rollups = await continuous_aggregator.get_traffic_rollups(
+            session, source_mode="SIMULATION", hours_ago=24, limit=100
+        )
+        assert len(rollups) > 0
+        for r in rollups:
+            assert r["sourceMode"] == "SIMULATION"
+            # Quarter-hour scaled volume should be <= 700 veh (not unscaled 2200)
+            assert r["totalFlowVeh"] <= 700.0
 

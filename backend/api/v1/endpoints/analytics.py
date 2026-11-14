@@ -23,6 +23,7 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 class TrafficRollupRecord(BaseModel):
     bucket15m: str = Field(..., description="ISO timestamp of the 15-minute window bucket")
     segmentId: str = Field(..., description="URN of the road segment")
+    sourceMode: str = Field(default="REPLAY", description="Provenance source mode (REPLAY, SIMULATION, LIVE)")
     sampleCount: int = Field(..., description="Number of raw observations in this bucket")
     avgSpeedKmh: float = Field(..., description="Average vehicle speed (km/h)")
     p85SpeedKmh: float = Field(..., description="85th percentile speed (km/h)")
@@ -49,6 +50,7 @@ class RollupComputeResponse(BaseModel):
 @router.get("/rollups/traffic", response_model=TrafficRollupsResponse)
 async def get_traffic_rollups(
     segment_id: Optional[str] = Query(None, description="Filter by RoadSegment URN"),
+    source_mode: Optional[str] = Query(None, description="Filter by provenance source mode (e.g. REPLAY, SIMULATION)"),
     hours_ago: int = Query(12, ge=1, le=168, description="History window in hours"),
     limit: int = Query(100, ge=1, le=1000, description="Max records to return"),
     session: AsyncSession = Depends(get_db)
@@ -60,6 +62,7 @@ async def get_traffic_rollups(
     records = await continuous_aggregator.get_traffic_rollups(
         session=session,
         segment_id=segment_id,
+        source_mode=source_mode,
         hours_ago=hours_ago,
         limit=limit
     )

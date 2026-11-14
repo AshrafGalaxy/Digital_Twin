@@ -313,6 +313,7 @@ SQLITE_TABLE_DDL = [
     CREATE TABLE IF NOT EXISTS traffic_15m_aggregates (
         bucket_15m TIMESTAMP NOT NULL,
         segment_id TEXT NOT NULL,
+        source_mode TEXT NOT NULL DEFAULT 'REPLAY',
         sample_count INTEGER NOT NULL DEFAULT 1,
         avg_speed_kmh REAL NOT NULL,
         p85_speed_kmh REAL,
@@ -322,7 +323,7 @@ SQLITE_TABLE_DDL = [
         max_queue_length_meters REAL NOT NULL,
         avg_congestion_index REAL NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (bucket_15m, segment_id)
+        PRIMARY KEY (bucket_15m, segment_id, source_mode)
     );
     """,
     # 20. Spatial Road Segment Map (Phase 8A)
@@ -616,7 +617,7 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_quarantine_rejection_reason ON quarantine_observations(rejection_reason);",
     "CREATE INDEX IF NOT EXISTS idx_quarantine_quarantined_at ON quarantine_observations(quarantined_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(entity_id);",
-    "CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC, source_mode);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_road_sumo_edge ON spatial_road_segment_map(sumo_edge_id);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_inter_sumo_junc ON spatial_intersection_map(sumo_junction_id);",
     "CREATE INDEX IF NOT EXISTS idx_spatial_signal_tls ON spatial_signal_controller_map(sumo_tls_id);",
@@ -649,6 +650,13 @@ async def _migrate_sqlite(session: AsyncSession) -> int:
         tables_count += 1
     for stmt in SQLITE_INDEX_DDL:
         await session.execute(text(stmt))
+    try:
+        check = await session.execute(text("PRAGMA table_info(traffic_15m_aggregates)"))
+        cols = [r[1] for r in check.fetchall()]
+        if cols and "source_mode" not in cols:
+            await session.execute(text("ALTER TABLE traffic_15m_aggregates ADD COLUMN source_mode TEXT NOT NULL DEFAULT 'REPLAY'"))
+    except Exception:
+        pass
     await session.commit()
     return tables_count
 
@@ -1457,7 +1465,7 @@ async def _seed_energy_network_nodes(session: AsyncSession, is_pg: bool) -> int:
 async def _seed_initial_energy_telemetry(session: AsyncSession, is_pg: bool) -> int:
     import math
     now_utc = datetime.now(timezone.utc)
-    sample_records = [
+    sample_records: List[Dict[str, Any]] = [
         {"asset_id": "SUB-NR-22KV", "p": 6250.0, "q": 1950.0, "v": 22000.0, "metrics": {"powerDirection": "IMPORT", "feederLoadingAvgPct": 56.4}},
         {"asset_id": "FDR-NR-RETAIL-11KV", "p": 2180.0, "q": 680.0, "v": 11000.0, "metrics": {"feederLoadingPct": 45.6}},
         {"asset_id": "FDR-NR-ENTERPRISE-11KV", "p": 2450.0, "q": 720.0, "v": 11000.0, "metrics": {"feederLoadingPct": 51.1}},
@@ -1525,7 +1533,7 @@ async def init_db_schema() -> Dict[str, Any]:
             check_res = await session.execute(text("SELECT COUNT(*) FROM study_areas"))
             study_count = check_res.scalar() or 0
 
-            seeded_assets = {}
+            seeded_assets: Dict[str, Any] = {}
             if study_count == 0:
                 logger.info("Database empty. Seeding authoritative corridor assets...")
                 await _seed_study_area(session, is_pg)

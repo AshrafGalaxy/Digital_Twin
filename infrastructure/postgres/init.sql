@@ -316,6 +316,7 @@ CREATE INDEX IF NOT EXISTS idx_quarantine_entity_id ON quarantine_observations(e
 CREATE TABLE IF NOT EXISTS traffic_15m_aggregates (
     bucket_15m TIMESTAMPTZ NOT NULL,
     segment_id VARCHAR(128) NOT NULL,
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'REPLAY',
     sample_count INTEGER NOT NULL DEFAULT 1,
     avg_speed_kmh NUMERIC(6, 2) NOT NULL,
     p85_speed_kmh NUMERIC(6, 2),
@@ -325,9 +326,9 @@ CREATE TABLE IF NOT EXISTS traffic_15m_aggregates (
     max_queue_length_meters NUMERIC(8, 2) NOT NULL,
     avg_congestion_index NUMERIC(4, 3) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (bucket_15m, segment_id)
+    PRIMARY KEY (bucket_15m, segment_id, source_mode)
 );
-CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC);
+CREATE INDEX IF NOT EXISTS idx_traffic_15m_seg_time ON traffic_15m_aggregates (segment_id, bucket_15m DESC, source_mode);
 
 -- 20. Spatial Road Segment Map (Phase 8A)
 CREATE TABLE IF NOT EXISTS spatial_road_segment_map (
