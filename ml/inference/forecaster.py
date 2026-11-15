@@ -162,6 +162,10 @@ class CorridorForecaster:
             displayed_prediction=pred,
         )
 
+        quality_status = "VALID"
+        if not explanation.get("available", True) or explanation.get("error"):
+            quality_status = "DEGRADED"
+
         return {
             "entityId": segment_id,
             "targetMetric": "averageSpeedKmh",
@@ -180,7 +184,7 @@ class CorridorForecaster:
             "explanation": explanation,
             "unit": "km/h",
             "modelVersion": self.traffic_artifact.get("model_id", "traffic-xgb-v1"),
-            "inputQualityStatus": "VALID",
+            "inputQualityStatus": quality_status,
             "baselineComparison": {
                 "persistenceValue": round(current_speed, 2),
                 "modelTestMae": self.traffic_artifact["metrics"]["test_mae"],
@@ -294,6 +298,10 @@ class CorridorForecaster:
             displayed_prediction=pred,
         )
 
+        quality_status = "VALID"
+        if not explanation.get("available", True) or explanation.get("error"):
+            quality_status = "DEGRADED"
+
         return {
             "entityId": building_id,
             "targetMetric": "activePowerKw",
@@ -312,7 +320,7 @@ class CorridorForecaster:
             "explanation": explanation,
             "unit": "kW",
             "modelVersion": self.energy_artifact.get("model_id", "energy-xgb-v1"),
-            "inputQualityStatus": "VALID",
+            "inputQualityStatus": quality_status,
             "contractDemandKw": contract_demand,
             "isPeakDemandAlert": is_peak_alert,
             "peakThresholdKw": peak_threshold,

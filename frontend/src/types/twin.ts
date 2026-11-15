@@ -183,13 +183,15 @@ export interface FeatureContribution {
 }
 
 export interface LocalExplanation {
-  baseValue: number;
+  available?: boolean;
+  baseValue: number | null;
   rawPredictedValue?: number;
   unclippedAttributionSum?: number;
   referenceTarget?: string;
   matchesDisplayedPrediction?: boolean;
   topContributors: FeatureContribution[];
   allAttributions?: FeatureContribution[];
+  error?: string;
 }
 
 export interface TrafficForecast {

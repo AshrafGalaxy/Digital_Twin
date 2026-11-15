@@ -26,6 +26,9 @@ class LocalModelExplainer:
         "speed_lag_60m": "Historical 60m Lag",
         "speed_roll_mean_30m": "30m Moving Average",
         "speed_roll_std_30m": "Speed Volatility",
+        "speed_roll_mean_60m": "60m Average Speed",
+        "speed_roll_min_60m": "60m Minimum Speed",
+        "speed_roll_max_60m": "60m Free-Flow Speed Ceiling",
         "sin_hour": "Time-of-Day Cyclical",
         "cos_hour": "Diurnal Rhythm",
         "is_peak_hour": "Peak Rush Hour Period",
@@ -34,8 +37,11 @@ class LocalModelExplainer:
         "ambient_temp_c": "Ambient Temperature",
         "load_lag_1h": "Previous Hour Load",
         "load_lag_2h": "2-Hour Prior Load",
+        "load_lag_3h": "3-Hour Prior Load",
         "load_lag_24h": "Same-Time Yesterday Load",
         "load_roll_mean_6h": "6h Average Load",
+        "load_roll_max_6h": "6h Peak Electrical Demand",
+        "load_roll_std_6h": "6h Load Volatility",
         "is_mall_open": "Commercial Mall Operating Hours"
     }
 
@@ -85,6 +91,7 @@ class LocalModelExplainer:
             )
 
             return {
+                "available": True,
                 "baseValue": round(base_value, 2),
                 "rawPredictedValue": round(raw_pred, 2),
                 "unclippedAttributionSum": round(unclipped_sum, 2),
@@ -95,9 +102,10 @@ class LocalModelExplainer:
             }
         except Exception as e:
             return {
-                "baseValue": 0.0,
+                "available": False,
+                "baseValue": None,
                 "topContributors": [],
-                "referenceTarget": "error",
+                "referenceTarget": "raw_booster_output",
                 "matchesDisplayedPrediction": False,
                 "error": str(e)
             }

@@ -12,6 +12,7 @@ Comprehensive test suite verifying analytical and fidelity extensions:
 """
 
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -269,3 +270,69 @@ def test_analytics_drift_api_endpoint():
     assert "qualityFlag" in data
     assert "perFeatureMetrics" in data
     assert data["overallStatus"] in ["STABLE", "WARNING", "DRIFT", "INSUFFICIENT_DATA"]
+
+
+def test_local_model_explainer_error_contract_returns_none_base_value():
+    """Verify that an explainer error returns available: False, baseValue: None, and no fabricated 0.0."""
+    import pandas as pd
+    mock_model = MagicMock()
+    mock_model.get_booster.side_effect = RuntimeError("TreeSHAP attribution extraction failed")
+
+    dummy_df = pd.DataFrame([{col: 1.0 for col in LocalModelExplainer.FEATURE_FRIENDLY_NAMES}])
+    features = list(LocalModelExplainer.FEATURE_FRIENDLY_NAMES.keys())[:5]
+
+    res = LocalModelExplainer.explain_prediction(mock_model, dummy_df, features)
+    assert res["available"] is False
+    assert res["baseValue"] is None
+    assert res["topContributors"] == []
+    assert "error" in res
+    assert "TreeSHAP attribution extraction failed" in res["error"]
+
+
+def test_feature_friendly_names_completeness():
+    """Verify that all six newly added friendly names and all training feature columns resolve to display names."""
+    from ml.features.traffic_features import FEATURE_COLUMNS
+    from ml.features.energy_features import ENERGY_FEATURE_COLUMNS
+
+    expected_names = {
+        "load_lag_3h": "3-Hour Prior Load",
+        "load_roll_max_6h": "6h Peak Electrical Demand",
+        "load_roll_std_6h": "6h Load Volatility",
+        "speed_roll_mean_60m": "60m Average Speed",
+        "speed_roll_min_60m": "60m Minimum Speed",
+        "speed_roll_max_60m": "60m Free-Flow Speed Ceiling",
+    }
+
+    for feat_id, expected_title in expected_names.items():
+        assert feat_id in LocalModelExplainer.FEATURE_FRIENDLY_NAMES
+        assert LocalModelExplainer.FEATURE_FRIENDLY_NAMES[feat_id] == expected_title
+
+    # Every feature in FEATURE_COLUMNS and ENERGY_FEATURE_COLUMNS must have a friendly name
+    for feat in FEATURE_COLUMNS:
+        assert feat in LocalModelExplainer.FEATURE_FRIENDLY_NAMES, f"Traffic feature '{feat}' missing friendly name"
+
+    for feat in ENERGY_FEATURE_COLUMNS:
+        assert feat in LocalModelExplainer.FEATURE_FRIENDLY_NAMES, f"Energy feature '{feat}' missing friendly name"
+
+
+def test_forecaster_degrades_quality_on_explainer_failure():
+    """Verify that predict_traffic_speed and predict_building_energy reflect DEGRADED quality when attributions fail."""
+    forecaster = CorridorForecaster()
+
+    failing_explanation = {
+        "available": False,
+        "baseValue": None,
+        "topContributors": [],
+        "error": "Simulated TreeSHAP failure",
+    }
+
+    with patch.object(LocalModelExplainer, "explain_prediction", return_value=failing_explanation):
+        traffic_res = forecaster.predict_traffic_speed("urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", 22.0)
+        assert traffic_res["inputQualityStatus"] == "DEGRADED"
+        assert traffic_res["explanation"]["available"] is False
+        assert traffic_res["explanation"]["baseValue"] is None
+
+        energy_res = forecaster.predict_building_energy("urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01", 1500.0)
+        assert energy_res["inputQualityStatus"] == "DEGRADED"
+        assert energy_res["explanation"]["available"] is False
+        assert energy_res["explanation"]["baseValue"] is None
