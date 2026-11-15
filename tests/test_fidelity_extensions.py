@@ -12,6 +12,7 @@ Comprehensive test suite verifying analytical and fidelity extensions:
 """
 
 from datetime import datetime, timezone
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
@@ -61,10 +62,13 @@ def test_local_model_explainability():
 
 
 def test_environmental_anomaly_detector():
-    """Verify Isolation Forest and Z-score anomaly detector flags acute pollution spikes."""
+    """Verify Isolation Forest and Z-score anomaly detector flags acute pollution spikes and labels synthetic provenance."""
     detector = EnvironmentalAnomalyDetector()
+    assert detector.source_mode == "SIMULATION"
+    assert detector.is_synthetic_baseline is True
+    assert detector.baseline_source == "SYNTHETIC_GENERATOR"
 
-    # Normal ambient reading
+    # Normal ambient reading (omitting ambientTempC triggers degraded imputation flag)
     normal_res = detector.evaluate_reading(
         sensor_id="urn:ngsi-ld:EnvironmentSensor:PUNE:ENV-VN-AIR-01",
         pm25=42.0,
@@ -73,6 +77,12 @@ def test_environmental_anomaly_detector():
     )
     assert not normal_res["isAnomaly"]
     assert normal_res["severity"] == "NORMAL"
+    assert normal_res["sourceMode"] == "SIMULATION"
+    assert normal_res["isSyntheticBaseline"] is True
+    assert normal_res["baselineSource"] == "SYNTHETIC_GENERATOR"
+    assert normal_res["inputQualityStatus"] == "DEGRADED"
+    assert normal_res["hasImputedFeatures"] is True
+    assert "ambientTempC" in normal_res["imputedFeatures"]
 
     # Acute spike (PM2.5 = 185 ug/m3)
     spike_res = detector.evaluate_reading(
@@ -85,6 +95,50 @@ def test_environmental_anomaly_detector():
     assert spike_res["severity"] == "CRITICAL"
     assert spike_res["zScore"] > 3.0
     assert len(spike_res["reasons"]) > 0
+    assert spike_res["sourceMode"] == "SIMULATION"
+
+
+def test_environmental_anomaly_detector_calibrated_empirical_observations():
+    """Verify BUG-62: anomaly detector fitted on empirical observations emits CALIBRATED provenance and VALID quality."""
+    rng = np.random.default_rng(42)
+    empirical_data = rng.normal(loc=[50.0, 90.0, 115.0, 30.0], scale=[10.0, 15.0, 20.0, 3.0], size=(100, 4))
+    calibrated_detector = EnvironmentalAnomalyDetector(empirical_observations=empirical_data)
+
+    assert calibrated_detector.source_mode == "CALIBRATED"
+    assert calibrated_detector.is_synthetic_baseline is False
+    assert calibrated_detector.baseline_source == "EMPIRICAL_OBSERVATIONS"
+    assert abs(calibrated_detector.pm25_mean - 50.0) < 3.0
+
+    # Fully populated reading has VALID inputQualityStatus and no imputed features
+    res = calibrated_detector.evaluate_reading(
+        sensor_id="urn:ngsi-ld:EnvironmentSensor:PUNE:ENV-VN-AIR-01",
+        pm25=48.0,
+        pm10=88.0,
+        aqi=110.0,
+        ambient_temp_c=29.5
+    )
+    assert res["sourceMode"] == "CALIBRATED"
+    assert res["isSyntheticBaseline"] is False
+    assert res["baselineSource"] == "EMPIRICAL_OBSERVATIONS"
+    assert res["inputQualityStatus"] == "VALID"
+    assert res["hasImputedFeatures"] is False
+    assert res["imputedFeatures"] == []
+    assert not res["isAnomaly"]
+
+
+def test_environmental_anomaly_detector_missing_features_degraded_flagging():
+    """Verify BUG-62: reading with only PM2.5 does not silently invent features without explicit DEGRADED flagging."""
+    detector = EnvironmentalAnomalyDetector()
+    res = detector.evaluate_reading(
+        sensor_id="urn:ngsi-ld:EnvironmentSensor:PUNE:ENV-VN-AIR-02",
+        pm25=55.0
+    )
+    assert res["hasImputedFeatures"] is True
+    assert res["inputQualityStatus"] == "DEGRADED"
+    assert set(res["imputedFeatures"]) == {"pm10", "aqi", "ambientTempC"}
+    assert res["telemetrySnapshot"]["pm10"] == detector.pm10_mean
+    assert res["telemetrySnapshot"]["aqi"] == detector.aqi_mean
+    assert res["telemetrySnapshot"]["ambientTempC"] == detector.temp_mean
 
 
 def test_rule_engine_environmental_anomaly_advisory():
