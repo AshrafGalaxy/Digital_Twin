@@ -54,7 +54,7 @@ FEATURE_CONFIGS = {
 }
 
 
-def run_ablation_study(seed: int = 42) -> Dict[str, Any]:
+def run_ablation_study(seed: int = 42, update_benchmarks_file: bool = True) -> Dict[str, Any]:
     """Runs systematic feature ablation study comparing 4 feature subsets."""
     parquet_path = GOLD_DIR / "traffic_features_v1.parquet"
     if parquet_path.exists():
@@ -110,26 +110,43 @@ def run_ablation_study(seed: int = 42) -> Dict[str, Any]:
         }
         print(f"    -> Test MAE: {mae:.3f} km/h, RMSE: {rmse:.3f} km/h (+{imp_pct:.1f}% vs baseline)")
 
-    # 1. Update artifacts/evaluation_benchmarks.json
-    benchmarks = {}
-    if BENCHMARKS_FILE.exists():
-        try:
-            with open(BENCHMARKS_FILE, "r", encoding="utf-8") as f:
-                benchmarks = json.load(f)
-        except Exception:
-            benchmarks = {}
+    # 1. Prepare E-03 payload
+    cfg2_mae = ablation_results["Config-2 (Lags + Rolling Stats)"]["testMaeKmh"]
+    cfg3_mae = ablation_results["Config-3 (Lags + Rolling + Calendar)"]["testMaeKmh"]
+    cyclical_gain_pct = round(((cfg2_mae - cfg3_mae) / cfg2_mae) * 100.0, 1)
 
-    benchmarks["E-03"] = {
+    e03_payload = {
         "experimentId": "E-03",
         "title": "Traffic Feature Ablation Study",
         "executedAt": datetime.now(timezone.utc).isoformat(),
         "baselinePersistenceMae": round(persist_mae, 3),
-        "configurations": ablation_results
+        "configurations": ablation_results,
+        "without_cyclical_delta_pct": cyclical_gain_pct,
     }
-    with open(BENCHMARKS_FILE, "w", encoding="utf-8") as f:
-        json.dump(benchmarks, f, indent=2)
 
-    # 2. Write Markdown Research Report
+    # 2. Update artifacts/evaluation_benchmarks.json if requested
+    if update_benchmarks_file:
+        benchmarks = {}
+        if BENCHMARKS_FILE.exists():
+            try:
+                with open(BENCHMARKS_FILE, "r", encoding="utf-8") as f:
+                    benchmarks = json.load(f)
+            except Exception:
+                benchmarks = {}
+
+        benchmarks["E-03"] = e03_payload
+        if "experiments" not in benchmarks or not isinstance(benchmarks["experiments"], dict):
+            benchmarks["experiments"] = {}
+        benchmarks["experiments"]["E-03_feature_ablation"] = e03_payload
+
+        BENCHMARKS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        temp_benchmarks = BENCHMARKS_FILE.with_suffix(".tmp")
+        with open(temp_benchmarks, "w", encoding="utf-8") as f:
+            json.dump(benchmarks, f, indent=2)
+        temp_benchmarks.replace(BENCHMARKS_FILE)
+        print(f"[OK] Updated benchmarks file: {BENCHMARKS_FILE}")
+
+    # 3. Write Markdown Research Report
     report_md = f"""# Experiment E-03: Traffic Feature Ablation Study
 ## Digital Twin-Enabled Smart City Analytics Platform
 
@@ -173,8 +190,7 @@ Moving from simple autoregressive lags to rolling statistics, diurnal calendar s
         f.write(report_md)
 
     print(f"[OK] Saved research report to: {report_path}")
-    print(f"[OK] Updated benchmarks file: {BENCHMARKS_FILE}")
-    return benchmarks["E-03"]
+    return e03_payload
 
 
 if __name__ == "__main__":

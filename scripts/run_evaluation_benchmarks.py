@@ -48,6 +48,17 @@ from simulation.runner import SUMOCorridorRunner
 from simulation.kpi_calculator import ScenarioKPICalculator
 
 
+def verify_required_artifacts() -> None:
+    """Verifies that all required trained model artifacts exist and are loadable."""
+    forecaster = CorridorForecaster()
+    if not forecaster.traffic_artifact or "model" not in forecaster.traffic_artifact:
+        print("[ERROR] Required model artifact 'traffic_xgb_v1.joblib' is missing or unreadable.", file=sys.stderr)
+        sys.exit(1)
+    if not forecaster.energy_artifact or "model" not in forecaster.energy_artifact:
+        print("[ERROR] Required model artifact 'energy_xgb_v1.joblib' is missing or unreadable.", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_experiment_e01_traffic() -> dict:
     """E-01: Traffic Speed Forecasting Benchmark"""
     print("\n--- Running E-01: Traffic Forecasting Benchmark ---")
@@ -63,8 +74,8 @@ def run_experiment_e01_traffic() -> dict:
     pers_rmse = root_mean_squared_error(y_test, y_pers)
 
     # Historical average baseline (by hour of day)
-    test_hours = test_df["timestamp"].dt.hour
-    train_hours = train_df["timestamp"].dt.hour
+    test_hours = pd.Series(pd.DatetimeIndex(test_df["timestamp"]).hour, index=test_df.index)
+    train_hours = pd.DatetimeIndex(train_df["timestamp"]).hour
     train_df_tmp = train_df.copy()
     train_df_tmp["hour"] = train_hours
     hourly_avg = train_df_tmp.groupby("hour")[TARGET_COLUMN].mean().to_dict()
@@ -74,6 +85,9 @@ def run_experiment_e01_traffic() -> dict:
 
     # XGBoost Regressor
     forecaster = CorridorForecaster()
+    if not forecaster.traffic_artifact or "model" not in forecaster.traffic_artifact:
+        print("[ERROR] Required model artifact 'traffic_xgb_v1.joblib' is missing or unreadable.", file=sys.stderr)
+        sys.exit(1)
     X_test = test_df[FEATURE_COLUMNS]
     y_xgb = forecaster.traffic_artifact["model"].predict(X_test)
     xgb_mae = mean_absolute_error(y_test, y_xgb)
@@ -120,6 +134,9 @@ def run_experiment_e02_energy() -> dict:
 
     # XGBoost Regressor
     forecaster = CorridorForecaster()
+    if not forecaster.energy_artifact or "model" not in forecaster.energy_artifact:
+        print("[ERROR] Required model artifact 'energy_xgb_v1.joblib' is missing or unreadable.", file=sys.stderr)
+        sys.exit(1)
     X_test = test_df[ENERGY_FEATURE_COLUMNS]
     y_xgb = forecaster.energy_artifact["model"].predict(X_test)
     xgb_mae = mean_absolute_error(y_test, y_xgb)
@@ -146,50 +163,10 @@ def run_experiment_e02_energy() -> dict:
 
 
 def run_experiment_e03_ablation() -> dict:
-    """E-03: Feature Group Ablation Study"""
+    """E-03: Feature Group Ablation Study (delegated to authoritative implementation)."""
     print("\n--- Running E-03: Feature Ablation Experiment ---")
-    raw_df = generate_corridor_traffic_history(days=14, seed=42)
-    feat_df = build_traffic_features(raw_df)
-    train_df, val_df, test_df = chronological_split(feat_df, 0.80, 0.10)
-
-    all_feats = FEATURE_COLUMNS
-    y_train = train_df[TARGET_COLUMN].values
-    y_test = test_df[TARGET_COLUMN].values
-
-    def train_and_eval(features: list) -> float:
-        model = xgb.XGBRegressor(n_estimators=100, max_depth=4, learning_rate=0.05, random_state=42, n_jobs=1)
-        model.fit(train_df[features], y_train)
-        preds = model.predict(test_df[features])
-        return float(mean_absolute_error(y_test, preds))
-
-    full_mae = train_and_eval(all_feats)
-
-    # 1. Omit Lag features
-    no_lags = [f for f in all_feats if not f.startswith("speed_lag_")]
-    no_lags_mae = train_and_eval(no_lags)
-
-    # 2. Omit Rolling features
-    no_rolling = [f for f in all_feats if not f.startswith("speed_roll_")]
-    no_rolling_mae = train_and_eval(no_rolling)
-
-    # 3. Omit Cyclical calendar features
-    no_cyclical = [f for f in all_feats if not (f.startswith("sin_") or f.startswith("cos_"))]
-    no_cyclical_mae = train_and_eval(no_cyclical)
-
-    result = {
-        "all_features_mae": round(full_mae, 3),
-        "without_lags_mae": round(no_lags_mae, 3),
-        "without_lags_delta_pct": round(((no_lags_mae - full_mae) / full_mae) * 100.0, 1),
-        "without_rolling_mae": round(no_rolling_mae, 3),
-        "without_rolling_delta_pct": round(((no_rolling_mae - full_mae) / full_mae) * 100.0, 1),
-        "without_cyclical_mae": round(no_cyclical_mae, 3),
-        "without_cyclical_delta_pct": round(((no_cyclical_mae - full_mae) / full_mae) * 100.0, 1),
-    }
-    print(f"  All Features MAE:       {full_mae:.3f} km/h")
-    print(f"  Without Lags:           {no_lags_mae:.3f} km/h ({result['without_lags_delta_pct']:+.1f}%)")
-    print(f"  Without Rolling Stats:  {no_rolling_mae:.3f} km/h ({result['without_rolling_delta_pct']:+.1f}%)")
-    print(f"  Without Cyclical Time:  {no_cyclical_mae:.3f} km/h ({result['without_cyclical_delta_pct']:+.1f}%)")
-    return result
+    from ml.training.ablation_study import run_ablation_study
+    return run_ablation_study(seed=42, update_benchmarks_file=False)
 
 
 def run_experiment_e04_latency() -> dict:
@@ -289,21 +266,46 @@ def main():
     print(" Viman Nagar <-> Somnath Nagar Corridor Pilot (Pune)")
     print("=================================================================")
 
-    benchmarks = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "experiments": {
-            "E-01_traffic_forecast": run_experiment_e01_traffic(),
-            "E-02_energy_forecast": run_experiment_e02_energy(),
-            "E-03_feature_ablation": run_experiment_e03_ablation(),
-            "E-04_pipeline_latency": run_experiment_e04_latency(),
-            "E-06_simulation_scenarios": run_experiment_e06_scenarios(),
-        }
-    }
+    verify_required_artifacts()
 
     out_path = BASE_DIR / "artifacts" / "evaluation_benchmarks.json"
+    existing_benchmarks = {}
+    if out_path.exists():
+        try:
+            with open(out_path, "r", encoding="utf-8") as f:
+                existing_benchmarks = json.load(f)
+        except Exception:
+            existing_benchmarks = {}
+
+    e01_traffic = run_experiment_e01_traffic()
+    e02_energy = run_experiment_e02_energy()
+    e03_ablation = run_experiment_e03_ablation()
+    e04_latency = run_experiment_e04_latency()
+    e06_scenarios = run_experiment_e06_scenarios()
+
+    existing_experiments = existing_benchmarks.get("experiments", {})
+    if not isinstance(existing_experiments, dict):
+        existing_experiments = {}
+
+    benchmarks = {
+        **existing_benchmarks,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "experiments": {
+            **existing_experiments,
+            "E-01_traffic_forecast": e01_traffic,
+            "E-02_energy_forecast": e02_energy,
+            "E-03_feature_ablation": e03_ablation,
+            "E-04_pipeline_latency": e04_latency,
+            "E-06_simulation_scenarios": e06_scenarios,
+        },
+        "E-03": e03_ablation
+    }
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as f:
+    temp_path = out_path.with_suffix(".tmp")
+    with open(temp_path, "w", encoding="utf-8") as f:
         json.dump(benchmarks, f, indent=2)
+    temp_path.replace(out_path)
 
     print("\n=================================================================")
     print(f"[OK] Evaluation benchmark results written to: {out_path}")
