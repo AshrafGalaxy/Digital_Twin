@@ -290,8 +290,10 @@ export const ScenarioStudioView: React.FC = () => {
 
           {/* Template Selector */}
           <div className="control-group" style={{ marginBottom: '16px' }}>
-            <label className="control-label">Approved Intervention Template</label>
+            <label className="control-label" htmlFor="template-selector">Approved Intervention Template</label>
             <select
+              id="template-selector"
+              aria-label="Approved Intervention Template"
               className="control-select"
               value={selectedTemplateId}
               onChange={(e) => handleSelectTemplate(e.target.value)}
@@ -464,6 +466,8 @@ export const ScenarioStudioView: React.FC = () => {
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="number"
+                id="random-seed-input"
+                aria-label="Random Seed Value"
                 min="1"
                 max="999999"
                 value={randomSeed}
@@ -749,10 +753,12 @@ export const ScenarioStudioView: React.FC = () => {
                     </div>
 
                     <div style={{ marginBottom: '12px' }}>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      <label htmlFor="reviewer-name-input" style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                         Authorized Reviewer Name / Identity
                       </label>
                       <input
+                        id="reviewer-name-input"
+                        aria-label="Authorized Reviewer Name or Identity"
                         type="text"
                         className="control-input"
                         value={reviewerName}
@@ -763,10 +769,12 @@ export const ScenarioStudioView: React.FC = () => {
                     </div>
 
                     <div style={{ marginBottom: '12px' }}>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      <label htmlFor="proposal-notes-textarea" style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                         Operational Justification Notes
                       </label>
                       <textarea
+                        id="proposal-notes-textarea"
+                        aria-label="Operational Justification Notes"
                         className="control-input"
                         value={proposalNotes}
                         onChange={(e) => setProposalNotes(e.target.value)}

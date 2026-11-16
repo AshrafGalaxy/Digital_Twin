@@ -205,6 +205,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           </span>
           <select
             className="analytics-select"
+            aria-label="Selected Road Segment"
             value={selectedSegmentId}
             onChange={(e) => setSelectedSegmentId(e.target.value)}
           >
@@ -334,6 +335,7 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {/* Intersection Selector */}
             <select
+              aria-label="Selected Intersection Controller"
               style={{
                 background: 'var(--bg-surface-elevated)',
                 border: '1px solid var(--border-color)',

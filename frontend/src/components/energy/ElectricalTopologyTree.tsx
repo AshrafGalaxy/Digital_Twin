@@ -137,13 +137,10 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <div
-        onClick={() => onSelectNode(node)}
-        role="button"
-        tabIndex={0}
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: '6px',
           padding: '8px 12px',
           borderRadius: 'var(--radius-sm, 6px)',
           border: isSelected
@@ -153,125 +150,144 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             ? 'rgba(47, 129, 247, 0.12)'
             : 'var(--bg-surface-elevated, rgba(15, 15, 18, 0.6))',
           boxShadow: isSelected ? '0 0 10px rgba(47, 129, 247, 0.18)' : 'none',
-          cursor: 'pointer',
           marginBottom: '6px',
           marginLeft: `${level * 16}px`,
           transition: 'all var(--transition-fast)'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-          {hasChildren ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--color-text-muted)',
-                cursor: 'pointer',
-                padding: '2px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-              title={isExpanded ? 'Collapse branch' : 'Expand branch'}
-            >
-              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            </button>
-          ) : (
-            <div style={{ width: '18px' }} />
-          )}
-
-          <div
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
             style={{
-              padding: '5px',
-              borderRadius: 'var(--radius-sm, 4px)',
-              backgroundColor: 'var(--bg-app, #000000)',
-              border: '1px solid var(--color-border, #16171B)',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--color-text-muted)',
+              cursor: 'pointer',
+              padding: '2px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               flexShrink: 0
             }}
+            title={isExpanded ? 'Collapse branch' : 'Expand branch'}
+            aria-label={isExpanded ? `Collapse ${node.name} branch` : `Expand ${node.name} branch`}
           >
-            {getNodeIcon(node.nodeType)}
-          </div>
+            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+        ) : (
+          <div style={{ width: '18px', flexShrink: 0 }} />
+        )}
 
-          <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: isSelected ? 'var(--color-primary-hover, #58A6FF)' : 'var(--color-text, #F0F6FC)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {node.name}
-              </span>
-              {getNodeTypeBadge(node.nodeType)}
-            </div>
-
+        <button
+          type="button"
+          onClick={() => onSelectNode(node)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            minWidth: 0,
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            textAlign: 'left',
+            color: 'inherit',
+            font: 'inherit'
+          }}
+          aria-label={`Select ${node.name} topology node`}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
             <div
               style={{
+                padding: '5px',
+                borderRadius: 'var(--radius-sm, 4px)',
+                backgroundColor: 'var(--bg-app, #000000)',
+                border: '1px solid var(--color-border, #16171B)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                fontSize: '11px',
-                color: 'var(--color-text-muted)',
-                fontFamily: 'var(--font-mono)',
-                marginTop: '2px'
+                justifyContent: 'center',
+                flexShrink: 0
               }}
             >
-              <span>{node.nominalVoltageKv} kV</span>
-              <span>•</span>
-              <span>{node.ratedCapacityKva.toLocaleString()} kVA</span>
-              {node.nodeType === 'FEEDER' && (
-                <>
-                  <span>•</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Activity size={11} color="var(--color-primary)" />
-                    Load: {loadingPct.toFixed(1)}%
-                  </span>
-                </>
-              )}
+              {getNodeIcon(node.nodeType)}
+            </div>
+
+            <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: isSelected ? 'var(--color-primary-hover, #58A6FF)' : 'var(--color-text, #F0F6FC)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {node.name}
+                </span>
+                {getNodeTypeBadge(node.nodeType)}
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '11px',
+                  color: 'var(--color-text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                  marginTop: '2px'
+                }}
+              >
+                <span>{node.nominalVoltageKv} kV</span>
+                <span>•</span>
+                <span>{node.ratedCapacityKva.toLocaleString()} kVA</span>
+                {node.nodeType === 'FEEDER' && (
+                  <>
+                    <span>•</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Activity size={11} color="var(--color-primary)" />
+                      Load: {loadingPct.toFixed(1)}%
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-          <span
-            className="font-mono"
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: isGeneration
-                ? 'var(--color-success, #3FB950)'
-                : activeKw < 0
-                ? '#818CF8'
-                : 'var(--color-warning, #D29922)'
-            }}
-          >
-            {activeKw > 0 && !isGeneration ? '+' : ''}
-            {activeKw.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+            <span
+              className="font-mono"
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: isGeneration
+                  ? 'var(--color-success, #3FB950)'
+                  : activeKw < 0
+                  ? '#818CF8'
+                  : 'var(--color-warning, #D29922)'
+              }}
+            >
+              {activeKw > 0 && !isGeneration ? '+' : ''}
+              {activeKw.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kW
+            </span>
 
-          {node.nodeType === 'FEEDER' && (
-            <div className="progress-bar-bg" style={{ width: '70px', height: '5px' }}>
-              <div
-                className="progress-bar-fill"
-                style={{
-                  width: `${Math.min(100, Math.max(2, loadingPct))}%`,
-                  backgroundColor: loadingColor
-                }}
-              />
-            </div>
-          )}
-        </div>
+            {node.nodeType === 'FEEDER' && (
+              <div className="progress-bar-bg" style={{ width: '70px', height: '5px' }}>
+                <div
+                  className="progress-bar-fill"
+                  style={{
+                    width: `${Math.min(100, Math.max(2, loadingPct))}%`,
+                    backgroundColor: loadingColor
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </button>
       </div>
 
       {hasChildren && isExpanded && (
