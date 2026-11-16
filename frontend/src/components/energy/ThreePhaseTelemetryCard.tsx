@@ -79,7 +79,11 @@ export const ThreePhaseTelemetryCard: React.FC<ThreePhaseTelemetryCardProps> = (
             >
               <Zap size={16} color="var(--color-primary-hover, #58A6FF)" />
             </span>
-            <h2 className="card-title" style={{ fontSize: '16px', margin: 0 }}>
+            <h2
+              className="card-title"
+              title={selectedNode.name}
+              style={{ fontSize: '16px', margin: 0, wordBreak: 'break-word', whiteSpace: 'normal', maxWidth: '100%' }}
+            >
               {selectedNode.name}
             </h2>
           </div>

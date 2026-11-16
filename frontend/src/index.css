@@ -1659,7 +1659,8 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .corridor-state-pill {
@@ -2302,6 +2303,9 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   pointer-events: auto;
   white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
@@ -2316,6 +2320,9 @@ body {
   font-weight: 700;
   color: #F0F6FC;
   letter-spacing: 0.2px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .junction-subtitle {

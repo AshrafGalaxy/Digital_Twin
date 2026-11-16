@@ -977,11 +977,13 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
 
         const label = document.createElement('div');
         label.className = 'junction-label-pill';
+        label.title = `${ix.name} (${ix.controlType}) - Click to inspect`;
 
         const title = document.createElement('span');
         title.className = 'junction-title';
         const cleanName = ix.name.includes('(') ? ix.name.split('(')[0].trim() : ix.name;
         title.textContent = cleanName;
+        title.title = ix.name;
         label.appendChild(title);
 
         const sub = document.createElement('span');
