@@ -38,7 +38,9 @@ export const DEFAULT_PREFERENCES: PlatformPreferences = {
 export const STORAGE_KEY = 'digital_twin_platform_preferences';
 
 export const applyTheme = (theme: 'dark' | 'light') => {
-  document.documentElement.setAttribute('data-theme', theme);
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     const parsed = saved ? JSON.parse(saved) : DEFAULT_PREFERENCES;

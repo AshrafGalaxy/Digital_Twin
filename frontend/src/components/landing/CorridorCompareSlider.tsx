@@ -173,7 +173,25 @@ export const CorridorCompareSlider: React.FC = () => {
           onMouseDown={handleMouseDown}
           onTouchStart={handleMouseDown}
         >
-          <div className="compare-handle-knob" aria-label="Drag to compare">
+          <div
+            className="compare-handle-knob"
+            role="slider"
+            tabIndex={0}
+            aria-label="Drag to compare before and after corridor state"
+            aria-valuenow={Math.round(sliderPosition)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuetext={`${Math.round(sliderPosition)}% digital twin view`}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSliderPosition((prev) => Math.max(0, prev - 5));
+              } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSliderPosition((prev) => Math.min(100, prev + 5));
+              }
+            }}
+          >
             <ChevronLeft size={14} />
             <ChevronRight size={14} />
           </div>

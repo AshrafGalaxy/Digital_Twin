@@ -128,14 +128,18 @@ export const App: React.FC = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.theme === 'light' || parsed.theme === 'dark') {
-          document.documentElement.setAttribute('data-theme', parsed.theme);
+          if (typeof document !== 'undefined' && document.documentElement) {
+            document.documentElement.setAttribute('data-theme', parsed.theme);
+          }
           return parsed.theme;
         }
       }
     } catch {
       // Fallback
     }
-    document.documentElement.setAttribute('data-theme', 'dark');
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
     return 'dark';
   });
 

@@ -8525,6 +8525,14 @@ body {
   align-items: center;
   justify-content: center;
   color: #38BDF8;
+  cursor: ew-resize;
+  outline: none;
+}
+
+.compare-handle-knob:focus-visible {
+  outline: 2px solid #38BDF8;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.35);
 }
 
 /* Comparison Specifications Summary Grid */
