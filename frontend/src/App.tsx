@@ -42,7 +42,44 @@ import {
 } from './services/api';
 import { AdminProvisioningModal } from './components/admin/AdminProvisioningModal';
 
+function getStoredAuthUser(): AuthUser | null {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null;
+  }
+  const saved = localStorage.getItem('digital_twin_auth_user');
+  if (!saved) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(saved);
+    // An authentic municipal session MUST have a valid cryptographic JWT token
+    if (!parsed || !parsed.token || typeof parsed.token !== 'string') {
+      localStorage.removeItem('digital_twin_auth_user');
+      localStorage.removeItem('municipal_role');
+      return null;
+    }
+    // Verify token expiry from JWT payload
+    const parts = parsed.token.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (payload.exp && Date.now() / 1000 > payload.exp) {
+        localStorage.removeItem('digital_twin_auth_user');
+        localStorage.removeItem('municipal_role');
+        return null;
+      }
+    }
+    return parsed;
+  } catch {
+    localStorage.removeItem('digital_twin_auth_user');
+    localStorage.removeItem('municipal_role');
+    return null;
+  }
+}
+
 export const App: React.FC = () => {
+  // Municipal Authentication & Session State with localStorage persistence & cryptographic JWT validation
+  const [authUser, setAuthUser] = useState<AuthUser | null>(getStoredAuthUser);
+
   const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup'>(() => {
     const rawHash = window.location.hash.replace('#', '');
     return rawHash === 'signup' || rawHash === 'get-started' ? 'signup' : 'signin';
@@ -56,6 +93,11 @@ export const App: React.FC = () => {
     if (rawHash === 'auth' || rawHash === 'signin' || rawHash === 'signup' || rawHash === 'get-started') {
       return 'auth';
     }
+    if (rawHash === 'landing') {
+      return 'landing';
+    }
+
+    const initialUser = getStoredAuthUser();
     const validTabs: TabId[] = [
       'landing',
       'provisioning',
@@ -69,19 +111,34 @@ export const App: React.FC = () => {
       'evaluation',
       'health'
     ];
+
     if (validTabs.includes(rawHash as TabId)) {
-      return rawHash as TabId;
+      if (!initialUser) {
+        // Intercept unauthenticated direct navigation to operational twin consoles
+        return 'auth';
+      }
+      const allowed = ROLE_ALLOWED_TABS[initialUser.role] || ['landing', 'provisioning', 'auth', 'operations'];
+      if (allowed.includes(rawHash as TabId)) {
+        return rawHash as TabId;
+      }
+      return allowed.find((t) => t !== 'landing' && t !== 'auth' && t !== 'provisioning') || 'operations';
     }
+
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('tab') || params.get('view');
     if (viewParam === 'landing') return 'landing';
     if (viewParam === 'provisioning' || viewParam === 'request-access') return 'provisioning';
     if (viewParam === 'auth' || viewParam === 'signin' || viewParam === 'signup' || viewParam === 'get-started') return 'auth';
-    if (viewParam && validTabs.includes(viewParam as TabId)) return viewParam as TabId;
+    if (viewParam && validTabs.includes(viewParam as TabId)) {
+      if (!initialUser) return 'auth';
+      const allowed = ROLE_ALLOWED_TABS[initialUser.role] || ['landing', 'provisioning', 'auth', 'operations'];
+      if (allowed.includes(viewParam as TabId)) return viewParam as TabId;
+      return allowed.find((t) => t !== 'landing' && t !== 'auth' && t !== 'provisioning') || 'operations';
+    }
     return 'landing';
   });
 
-  // Keep URL hash synchronized with activeTab
+  // Keep URL hash synchronized with activeTab and intercept unauthenticated route changes
   useEffect(() => {
     if (window.location.hash.replace('#', '') !== activeTab) {
       window.location.hash = activeTab;
@@ -102,6 +159,19 @@ export const App: React.FC = () => {
         setActiveTab('auth');
         return;
       }
+      if (rawHash === 'landing') {
+        setActiveTab('landing');
+        return;
+      }
+
+      // Intercept direct hash navigation for unauthenticated visitors
+      if (!authUser) {
+        setAuthInitialMode('signin');
+        setActiveTab('auth');
+        window.location.hash = 'auth';
+        return;
+      }
+
       const validTabs: TabId[] = [
         'landing',
         'provisioning',
@@ -116,12 +186,19 @@ export const App: React.FC = () => {
         'health'
       ];
       if (validTabs.includes(rawHash as TabId)) {
-        setActiveTab(rawHash as TabId);
+        const allowed = ROLE_ALLOWED_TABS[authUser.role] || ['landing', 'provisioning', 'auth', 'operations'];
+        if (allowed.includes(rawHash as TabId)) {
+          setActiveTab(rawHash as TabId);
+        } else {
+          const fallback = allowed.find((t) => t !== 'landing' && t !== 'auth' && t !== 'provisioning') || 'operations';
+          setActiveTab(fallback);
+          window.location.hash = fallback;
+        }
       }
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [activeTab]);
+  }, [activeTab, authUser]);
   const [currentTheme, setCurrentTheme] = useState<'dark' | 'light'>(() => {
     try {
       const saved = localStorage.getItem('digital_twin_platform_preferences');
@@ -174,46 +251,6 @@ export const App: React.FC = () => {
   const [liveSensorsCount, setLiveSensorsCount] = useState<number>(10);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
   const lastWsMessageRef = useRef<number>(Date.now());
-
-  // Municipal Authentication & Session State with localStorage persistence & cryptographic JWT validation
-  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
-    const saved = localStorage.getItem('digital_twin_auth_user');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // An authentic municipal session MUST have a valid cryptographic JWT token
-        if (!parsed || !parsed.token || typeof parsed.token !== 'string') {
-          localStorage.removeItem('digital_twin_auth_user');
-          localStorage.removeItem('municipal_role');
-          return null;
-        }
-        // Verify token expiry from JWT payload
-        try {
-          const parts = parsed.token.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            if (payload.exp && Date.now() / 1000 > payload.exp) {
-              localStorage.removeItem('digital_twin_auth_user');
-              localStorage.removeItem('municipal_role');
-              return null;
-            }
-          }
-        } catch {
-          // If token claims cannot be parsed, treat as invalid
-          localStorage.removeItem('digital_twin_auth_user');
-          localStorage.removeItem('municipal_role');
-          return null;
-        }
-        return parsed;
-      } catch {
-        localStorage.removeItem('digital_twin_auth_user');
-        localStorage.removeItem('municipal_role');
-        return null;
-      }
-    }
-    // Default to unauthenticated visitor state (no hardcoded mock)
-    return null;
-  });
 
   const userRole: MunicipalRole = authUser?.role || 'Civic Observer';
 
@@ -533,10 +570,6 @@ export const App: React.FC = () => {
         {activeTab === 'landing' && (
           <LandingPageView
             onLaunchConsole={(targetTab) => {
-              if (targetTab === 'evaluation') {
-                setActiveTab('evaluation');
-                return;
-              }
               if (authUser) {
                 setActiveTab(targetTab || 'operations');
               } else {
