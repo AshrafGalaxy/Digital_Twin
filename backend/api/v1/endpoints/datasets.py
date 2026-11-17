@@ -89,42 +89,49 @@ async def get_dataset_manifests():
 async def get_dataset_manifest_by_id(dataset_id: str):
     """
     Returns the comprehensive, machine-readable manifest for a specific dataset ID or filename key.
-    Enforces AGENTS.md §7.3 schema invariants.
+    Enforces AGENTS.md §7.3 schema invariants and strict directory containment.
     """
+    clean_id = dataset_id.strip()
+
+    # Reject directory traversal attempts and path separators immediately
+    if (
+        ".." in clean_id
+        or "/" in clean_id
+        or "\\" in clean_id
+        or "%2f" in clean_id.lower()
+        or "%5c" in clean_id.lower()
+        or "%2e" in clean_id.lower()
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset manifest for '{dataset_id}' not found in catalog."
+        )
+
     manifests_dir = _get_manifests_dir()
     catalog_path = manifests_dir / "catalog.json"
 
     target_json_filename: Optional[str] = None
+    clean_id_lower = clean_id.lower()
 
-    # First check catalog.json for matching ID or manifestId
+    # Check catalog.json for strictly registered datasets
     if catalog_path.exists():
         try:
             with open(catalog_path, "r", encoding="utf-8") as f:
                 catalog = json.load(f)
                 for item in catalog.get("datasets", []):
-                    clean_id = dataset_id.strip().lower()
+                    item_id = str(item.get("id", "")).strip().lower()
+                    manifest_id = str(item.get("manifestId", "")).strip().lower()
+                    manifest_json = str(item.get("manifestJson", "")).strip().lower()
                     if (
-                        item.get("id", "").lower() == clean_id
-                        or item.get("manifestId", "").lower() == clean_id
-                        or item.get("manifestJson", "").lower() == clean_id
-                        or item.get("manifestJson", "").lower() == f"{clean_id}.json"
+                        item_id == clean_id_lower
+                        or manifest_id == clean_id_lower
+                        or manifest_json == clean_id_lower
+                        or manifest_json == f"{clean_id_lower}.json"
                     ):
                         target_json_filename = item.get("manifestJson")
                         break
         except Exception:
             pass
-
-    # Direct filename match fallback
-    if not target_json_filename:
-        candidates = [
-            f"{dataset_id}.json",
-            dataset_id if dataset_id.endswith(".json") else "",
-            f"manifest_{dataset_id.lower().replace('-', '_')}.json"
-        ]
-        for candidate in candidates:
-            if candidate and (manifests_dir / candidate).exists():
-                target_json_filename = candidate
-                break
 
     if not target_json_filename:
         raise HTTPException(
@@ -132,8 +139,18 @@ async def get_dataset_manifest_by_id(dataset_id: str):
             detail=f"Dataset manifest for '{dataset_id}' not found in catalog."
         )
 
-    file_path = manifests_dir / target_json_filename
-    if not file_path.exists():
+    canonical_manifests_dir = manifests_dir.resolve()
+    file_path = (manifests_dir / target_json_filename).resolve()
+
+    try:
+        file_path.relative_to(canonical_manifests_dir)
+    except ValueError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset manifest for '{dataset_id}' not found in catalog."
+        )
+
+    if not file_path.is_file():
         raise HTTPException(
             status_code=404,
             detail=f"Manifest file '{target_json_filename}' could not be located."

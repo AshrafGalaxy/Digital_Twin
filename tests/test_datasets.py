@@ -119,3 +119,33 @@ def test_get_nonexistent_manifest_returns_404():
     response = client.get("/api/v1/datasets/manifests/NON_EXISTENT_DATASET_XYZ")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
+
+
+def test_directory_traversal_attempts_return_404(tmp_path):
+    """
+    Verifies that crafted IDs attempting directory traversal or accessing files outside
+    data/manifests/ are strictly rejected with HTTP 404 (BUG-18).
+    """
+    # 1. Traversal sequences
+    traversal_ids = [
+        "../package.json",
+        "..%2fpackage.json",
+        "..%5cpackage.json",
+        "..%2F..%2Fpyproject.toml",
+        "..\\..\\pyproject.toml",
+        "nested/manifest.json",
+        "%2e%2e%2fcatalog.json"
+    ]
+    for tid in traversal_ids:
+        resp = client.get(f"/api/v1/datasets/manifests/{tid}")
+        assert resp.status_code == 404, f"Expected 404 for traversal ID '{tid}', got {resp.status_code}"
+
+    # 2. Probe file outside data/manifests
+    probe_file = tmp_path / "probe_outside_manifest.json"
+    probe_file.write_text('{"secret": "leaked_probe_value"}', encoding="utf-8")
+
+    # Attempt to query probe filename directly or via relative path
+    resp_probe = client.get(f"/api/v1/datasets/manifests/{probe_file.name}")
+    assert resp_probe.status_code == 404
+    assert "leaked_probe_value" not in resp_probe.text
+
