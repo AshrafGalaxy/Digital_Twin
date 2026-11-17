@@ -8,6 +8,8 @@ Verifies administrative RBAC enforcement (analyst/auditor clearance required).
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from backend.core.database import persistence_manager
 from backend.main import app
 
 
@@ -149,3 +151,106 @@ def test_magic_link_invalid_token(client):
     """
     redeem_resp = client.post("/api/v1/auth/magic-link", json={"token": "completely-invalid-nonexistent-token"})
     assert redeem_resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_magic_link_unparseable_expiry_is_rejected(client):
+    """
+    Verifies BUG-27: when a magic token's expires_at cannot be parsed (e.g. 'not-a-date'),
+    the redeem endpoint must fail closed, mark the token EXPIRED, and return HTTP 401.
+    """
+    admin_headers = _get_admin_auth_header(client)
+
+    # 1. Create an inquiry
+    submit_resp = client.post("/api/v1/inquiries/request-access", json={
+        "organization": "Corridor Audit Group",
+        "work_email": "badparse.proof@example.com",
+        "contact_name": "Audit Verification Agent",
+        "jurisdiction": "Central Corridor Zone",
+        "domain": "Corridor Operations",
+        "infrastructure_scale": "5-10 Nodes",
+        "message": "Testing fail-closed unparseable expiration behavior."
+    })
+    assert submit_resp.status_code == 201
+    inquiry_id = submit_resp.json()["inquiry_id"]
+
+    # 2. Approve inquiry to generate magic token
+    approve_resp = client.post(
+        f"/api/v1/inquiries/{inquiry_id}/approve",
+        json={"assigned_role": "Civic Observer", "expiry_days": 7},
+        headers=admin_headers
+    )
+    assert approve_resp.status_code == 200
+    token = approve_resp.json()["magic_token"]
+
+    # 3. Corrupt expires_at in the database to 'not-a-date'
+    async with persistence_manager.session_factory() as session:
+        await session.execute(
+            text("UPDATE magic_access_tokens SET expires_at = 'not-a-date' WHERE token = :token"),
+            {"token": token}
+        )
+        await session.commit()
+
+    # 4. Attempt redemption: must fail closed with HTTP 401
+    redeem_resp = client.post("/api/v1/auth/magic-link", json={"token": token})
+    assert redeem_resp.status_code == 401
+    assert "expired" in redeem_resp.json()["detail"].lower()
+
+    # 5. Verify database status is set to EXPIRED
+    async with persistence_manager.session_factory() as session:
+        res = await session.execute(
+            text("SELECT status FROM magic_access_tokens WHERE token = :token"),
+            {"token": token}
+        )
+        row = res.mappings().first()
+        assert row is not None
+        assert row["status"] == "EXPIRED"
+
+
+@pytest.mark.asyncio
+async def test_magic_link_past_expiry_is_rejected(client):
+    """
+    Verifies that a magic token with a past ISO timestamp returns HTTP 401 and marks token EXPIRED.
+    """
+    admin_headers = _get_admin_auth_header(client)
+
+    submit_resp = client.post("/api/v1/inquiries/request-access", json={
+        "organization": "Corridor Audit Group",
+        "work_email": "pastexpiry.proof@example.com",
+        "contact_name": "Audit Past Expiry Agent",
+        "jurisdiction": "Central Corridor Zone",
+        "domain": "Corridor Operations",
+        "infrastructure_scale": "5-10 Nodes",
+        "message": "Testing past expiration behavior."
+    })
+    assert submit_resp.status_code == 201
+    inquiry_id = submit_resp.json()["inquiry_id"]
+
+    approve_resp = client.post(
+        f"/api/v1/inquiries/{inquiry_id}/approve",
+        json={"assigned_role": "Civic Observer", "expiry_days": 7},
+        headers=admin_headers
+    )
+    assert approve_resp.status_code == 200
+    token = approve_resp.json()["magic_token"]
+
+    # Set expires_at in the past
+    async with persistence_manager.session_factory() as session:
+        await session.execute(
+            text("UPDATE magic_access_tokens SET expires_at = '2000-01-01T00:00:00+00:00' WHERE token = :token"),
+            {"token": token}
+        )
+        await session.commit()
+
+    redeem_resp = client.post("/api/v1/auth/magic-link", json={"token": token})
+    assert redeem_resp.status_code == 401
+    assert "expired" in redeem_resp.json()["detail"].lower()
+
+    async with persistence_manager.session_factory() as session:
+        res = await session.execute(
+            text("SELECT status FROM magic_access_tokens WHERE token = :token"),
+            {"token": token}
+        )
+        row = res.mappings().first()
+        assert row is not None
+        assert row["status"] == "EXPIRED"

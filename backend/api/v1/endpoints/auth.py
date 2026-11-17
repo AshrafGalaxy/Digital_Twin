@@ -469,17 +469,21 @@ async def redeem_magic_link(
             detail=f"This magic access link is {row['status'].lower()}."
         )
 
-    # Check expiration
-    expires_at = row["expires_at"]
-    if isinstance(expires_at, str):
+    # Check expiration (fail closed on missing, invalid, or unparseable expiry)
+    raw_expires_at = row["expires_at"]
+    expires_at = None
+    if isinstance(raw_expires_at, datetime):
+        expires_at = raw_expires_at
+    elif isinstance(raw_expires_at, str):
         try:
-            expires_at = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+            expires_at = datetime.fromisoformat(raw_expires_at.replace("Z", "+00:00"))
         except Exception:
-            expires_at = now_utc + timedelta(days=1)
+            expires_at = None
+
     if expires_at and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-    if expires_at and expires_at < now_utc:
+    if expires_at is None or expires_at < now_utc:
         await session.execute(
             text("UPDATE magic_access_tokens SET status = 'EXPIRED' WHERE token = :token"),
             {"token": payload.token.strip()}
