@@ -53,13 +53,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div
           role="alert"
+          className="error-boundary-fallback"
           style={{
-            margin: 'var(--space-3, 12px) 0',
+            position: 'relative',
+            zIndex: 50,
+            margin: 'var(--space-4, 16px)',
+            maxWidth: '540px',
             padding: 'var(--space-4, 16px)',
             borderRadius: 'var(--radius-md, 8px)',
             background: 'var(--bg-surface-elevated, #161B22)',
             border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-            boxShadow: 'var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.3))'
+            boxShadow: 'var(--shadow-lg, 0 14px 38px rgba(1, 4, 9, 0.65))'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>

@@ -343,9 +343,17 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     const targetStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
     currentMap.setStyle(targetStyle);
 
-    currentMap.once('style.load', () => {
-      setStyleRevision(prev => prev + 1);
-    });
+    const handleStyleData = () => {
+      if (currentMap.isStyleLoaded()) {
+        currentMap.off('styledata', handleStyleData);
+        setStyleRevision(prev => prev + 1);
+      }
+    };
+    currentMap.on('styledata', handleStyleData);
+
+    return () => {
+      currentMap.off('styledata', handleStyleData);
+    };
   }, [basemapMode, mapLoaded]);
 
   // Dynamically synchronize basemap with current visual theme
@@ -360,6 +368,10 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     if (!currentMap) return;
 
     const applyTheme = () => {
+      if (!currentMap.isStyleLoaded()) {
+        currentMap.once('styledata', applyTheme);
+        return;
+      }
       if (currentMap.getLayer('study-area-line')) {
         currentMap.setPaintProperty('study-area-line', 'line-color', currentTheme === 'light' ? '#006B6F' : '#388BFD');
       }
@@ -372,8 +384,12 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     if (currentMap.isStyleLoaded()) {
       applyTheme();
     } else {
-      currentMap.once('load', applyTheme);
+      currentMap.once('styledata', applyTheme);
     }
+
+    return () => {
+      currentMap.off('styledata', applyTheme);
+    };
   }, [currentTheme]);
 
   // Render Study Area, Assets, and 3D Extrusions when data is ready
@@ -382,6 +398,11 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     if (!currentMap) return;
 
     const onMapLoad = () => {
+      if (!currentMap.isStyleLoaded()) {
+        currentMap.once('styledata', onMapLoad);
+        return;
+      }
+
       // 0. Register directional flow arrow image if not already present
       if (!currentMap.hasImage('flow-arrow')) {
         const arrowImg = createFlowArrowImage();
@@ -1051,6 +1072,10 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
 
     if (!mapLoaded) return;
     onMapLoad();
+
+    return () => {
+      currentMap.off('styledata', onMapLoad);
+    };
   }, [mapLoaded, styleRevision, studyAreaGeoJson, roadSegments, intersections, liveStates, selectedEntity, compareEntity, onSelectEntity, onSelectCompareEntity, is3DMode, currentTheme, corridorGeoJson]);
 
   const setViewMode = (mode: '2d' | '3d' | 'table') => {
