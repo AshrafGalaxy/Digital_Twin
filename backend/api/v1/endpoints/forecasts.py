@@ -6,8 +6,11 @@ prediction intervals, model versions, and baseline accuracy comparisons.
 All outputs are strictly tagged as PREDICTED provenance.
 """
 
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 
 try:
     from services.forecast_service import ForecastService
@@ -41,7 +44,8 @@ def get_traffic_forecast(
         forecast = forecast_service.get_traffic_forecast(segment_id, current_speed=current_speed)
         return forecast
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Traffic forecast generation failed: {str(e)}")
+        logger.error("Traffic forecast generation failed for segment %s: %s", segment_id, e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate traffic forecast.")
 
 
 @router.get("/energy/{building_id}", response_model=EnergyForecastResponse)
@@ -57,7 +61,8 @@ def get_energy_forecast(
         forecast = forecast_service.get_energy_forecast(building_id, current_kw=current_kw)
         return forecast
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Energy forecast generation failed: {str(e)}")
+        logger.error("Energy forecast generation failed for building %s: %s", building_id, e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate energy forecast.")
 
 
 @router.get("/models", response_model=List[ModelVersionInfo])

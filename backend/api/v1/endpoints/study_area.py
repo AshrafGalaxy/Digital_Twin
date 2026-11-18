@@ -5,9 +5,12 @@ Endpoints for querying the authoritative study-area boundary geometry.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict
 from fastapi import APIRouter, HTTPException
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/study-area", tags=["Study Area"])
 
@@ -24,4 +27,5 @@ async def get_study_area_geojson():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed reading study area file: {str(exc)}")
+        logger.error("Failed reading study area file at %s: %s", path, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load study area geometry.")

@@ -6,9 +6,12 @@ in compliance with AGENTS.md §7 (Data Provenance & Locality Honesty) and DATA_A
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/datasets", tags=["Data Governance & Manifests"])
 
@@ -82,7 +85,8 @@ async def get_dataset_manifests():
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed loading dataset manifests: {str(exc)}")
+        logger.error("Failed loading dataset manifests: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load dataset manifests.")
 
 
 @router.get("/manifests/{dataset_id}", response_model=Dict[str, Any])
@@ -160,7 +164,8 @@ async def get_dataset_manifest_by_id(dataset_id: str):
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as exc:
+        logger.error("Error reading manifest '%s': %s", target_json_filename, exc, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Error reading manifest '{target_json_filename}': {str(exc)}"
+            detail="Failed to read dataset manifest."
         )

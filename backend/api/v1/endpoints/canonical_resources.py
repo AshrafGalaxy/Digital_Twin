@@ -7,12 +7,15 @@ Provides direct endpoints for /roads, /intersections, /entities/{id}, /observati
 """
 
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 try:
     from core.database import get_db_session
@@ -221,7 +224,8 @@ async def execute_scenario_run(request: RunScenarioRequest):
         )
         return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
+        logger.error("Simulation failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Simulation execution failed.")
 
 @router.get("/scenario-runs/{run_id}", response_model=Dict[str, Any])
 async def get_scenario_run_status(run_id: str):

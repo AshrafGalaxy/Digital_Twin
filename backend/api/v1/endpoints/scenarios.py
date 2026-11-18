@@ -5,8 +5,11 @@ API router endpoints for scenario templates, execution, and comparative KPI anal
 All endpoints strictly tag outputs with SIMULATION provenance and never mutate authoritative current state.
 """
 
+import logging
 from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 
 try:
     from services.scenario_service import ScenarioService
@@ -52,7 +55,8 @@ def run_scenario(request: RunScenarioRequest):
         )
         return run_record
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Simulation execution failed: {str(e)}")
+        logger.error("Simulation execution failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Simulation execution failed.")
 
 
 @router.get("/runs", response_model=List[ScenarioRunResponse])
@@ -102,4 +106,5 @@ def propose_advisory(run_id: str, request: ProposeAdvisoryRequest = ProposeAdvis
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Scenario run '{run_id}' not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to propose advisory: {str(e)}")
+        logger.error("Failed to propose advisory for run %s: %s", run_id, e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to propose advisory.")
