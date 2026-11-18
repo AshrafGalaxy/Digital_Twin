@@ -1,0 +1,15 @@
+# ==========================================
+# Mosquitto Access Control List (ACL)
+# Digital Twin Corridor Telemetry Transport
+# ==========================================
+
+# Backend consumer: read access to observation and corridor topics
+user twin_service
+topic read corridor/#
+topic read nagartwin/#
+topic readwrite $SYS/#
+
+# Telemetry ingestion clients: write access restricted to observation topics
+user twin_ingest
+topic write corridor/+/observations
+topic write nagartwin/+/+/+/+

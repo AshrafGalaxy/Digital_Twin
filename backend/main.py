@@ -53,6 +53,9 @@ mqtt_consumer = MQTTConsumer(broadcast_callback=manager.broadcast)
 async def lifespan(app: FastAPI):
     logger.info("Initializing Digital Twin backend in %s mode...", settings.ENVIRONMENT)
     
+    # 0. Production Security Hardening Gate (SEC-12, BUG-30)
+    settings.validate_production_security()
+
     # 1. Multi-Storage Persistence: Initialize schema and seed corridor assets (P4-A)
     migration_res = await init_db_schema()
     backend_name = get_active_backend()

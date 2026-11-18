@@ -9,6 +9,7 @@ from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSECURE_FALLBACK_JWT_SECRET = "pune-dt-corridor-key-2026-viman-nagar"
+INSECURE_DEFAULT_MQTT_PASSWORD = "twin_secret_dev"
 
 
 class Settings(BaseSettings):
@@ -76,6 +77,21 @@ class Settings(BaseSettings):
     @property
     def is_development(self) -> bool:
         return not self.is_production
+
+    def validate_production_security(self) -> None:
+        """
+        Validates critical security settings for production mode.
+        Fails fast if insecure fallback secrets or default passwords are used.
+        """
+        if self.is_production:
+            if not self.MQTT_PASSWORD or self.MQTT_PASSWORD == INSECURE_DEFAULT_MQTT_PASSWORD:
+                raise RuntimeError(
+                    "Production environment refuses startup with insecure or default MQTT_PASSWORD."
+                )
+            if not self.MQTT_USERNAME:
+                raise RuntimeError(
+                    "Production environment requires a configured MQTT_USERNAME."
+                )
 
     @property
     def cors_origins_list(self) -> List[str]:
