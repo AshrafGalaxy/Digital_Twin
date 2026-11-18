@@ -4,9 +4,9 @@ import { SourceMode } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 
 interface CorridorMetricsCardProps {
-  averageSpeed: number;
-  congestionIndex: number;
-  energyDemandKw: number;
+  averageSpeed: number | null;
+  congestionIndex: number | null;
+  energyDemandKw: number | null;
   activeSensors: number;
   sourceMode: SourceMode;
 }
@@ -19,7 +19,9 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
   sourceMode
 }) => {
   // Determine overall corridor state per UI_UX_SPEC §7.6
-  const corridorState = congestionIndex > 0.6
+  const corridorState = congestionIndex === null
+    ? { label: 'AWAITING', color: '#94A3B8', bg: 'rgba(148, 163, 184, 0.15)' }
+    : congestionIndex > 0.6
     ? { label: 'STRESSED', color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.15)' }
     : congestionIndex > 0.3
     ? { label: 'ELEVATED', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' }
@@ -60,8 +62,16 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Avg Arterial Speed
           </span>
           <div>
-            <span className="metric-value font-mono">{averageSpeed.toFixed(1)}</span>
-            <span className="metric-unit">km/h</span>
+            {typeof averageSpeed === 'number' ? (
+              <>
+                <span className="metric-value font-mono">{averageSpeed.toFixed(1)}</span>
+                <span className="metric-unit">km/h</span>
+              </>
+            ) : (
+              <span className="metric-value font-mono" style={{ fontSize: '13px', color: '#8B949E' }}>
+                Awaiting
+              </span>
+            )}
           </div>
         </div>
 
@@ -71,11 +81,17 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Congestion Index
           </span>
           <div>
-            <span className="metric-value font-mono" style={{
-              color: congestionIndex > 0.6 ? '#F43F5E' : congestionIndex > 0.3 ? '#F59E0B' : '#10B981'
-            }}>
-              {(congestionIndex * 100).toFixed(0)}%
-            </span>
+            {typeof congestionIndex === 'number' ? (
+              <span className="metric-value font-mono" style={{
+                color: congestionIndex > 0.6 ? '#F43F5E' : congestionIndex > 0.3 ? '#F59E0B' : '#10B981'
+              }}>
+                {(congestionIndex * 100).toFixed(0)}%
+              </span>
+            ) : (
+              <span className="metric-value font-mono" style={{ fontSize: '13px', color: '#8B949E' }}>
+                Awaiting
+              </span>
+            )}
           </div>
         </div>
 
@@ -85,8 +101,16 @@ export const CorridorMetricsCard: React.FC<CorridorMetricsCardProps> = ({
             Commercial Energy
           </span>
           <div>
-            <span className="metric-value font-mono">{energyDemandKw.toFixed(0)}</span>
-            <span className="metric-unit">kW</span>
+            {typeof energyDemandKw === 'number' ? (
+              <>
+                <span className="metric-value font-mono">{energyDemandKw.toFixed(0)}</span>
+                <span className="metric-unit">kW</span>
+              </>
+            ) : (
+              <span className="metric-value font-mono" style={{ fontSize: '13px', color: '#8B949E' }}>
+                Awaiting
+              </span>
+            )}
           </div>
         </div>
 

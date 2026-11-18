@@ -247,7 +247,7 @@ export const App: React.FC = () => {
   const [currentEnvironment, setCurrentEnvironment] = useState<EnvironmentState | null>(null);
 
   // Dynamic Real-Time Corridor Telemetry State
-  const [liveEnergyKw, setLiveEnergyKw] = useState<number>(4862.0);
+  const [liveEnergyKw, setLiveEnergyKw] = useState<number | null>(null);
   const [liveSensorsCount, setLiveSensorsCount] = useState<number>(10);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
   const lastWsMessageRef = useRef<number>(Date.now());
@@ -444,6 +444,7 @@ export const App: React.FC = () => {
       // If WebSocket broadcast is quiet (> 2200ms), gently step telemetry values
       if (timeSinceWs >= 2200) {
         setLiveEnergyKw(prev => {
+          if (prev === null) return null;
           const delta = (Math.random() - 0.49) * 14.0;
           return Math.round(Math.max(4350, Math.min(5380, prev + delta)) * 10) / 10;
         });
@@ -489,20 +490,31 @@ export const App: React.FC = () => {
       .map(seg => effectiveStates[seg.id]?.metrics)
       .filter(Boolean);
 
-    let avgSpeed = 42.5;
-    let congestionIndex = 0.15;
+    let avgSpeed: number | null = null;
+    let congestionIndex: number | null = null;
 
     if (segmentStates.length > 0) {
-      const totalSpeed = segmentStates.reduce((acc, m) => acc + (m?.averageSpeedKmh || 45.0), 0);
-      const totalCongestion = segmentStates.reduce((acc, m) => acc + (m?.congestionIndex || 0.1), 0);
-      avgSpeed = totalSpeed / segmentStates.length;
-      congestionIndex = totalCongestion / segmentStates.length;
+      const validSpeeds = segmentStates
+        .map(m => m?.averageSpeedKmh)
+        .filter((s): s is number => typeof s === 'number' && !isNaN(s));
+      if (validSpeeds.length > 0) {
+        const totalSpeed = validSpeeds.reduce((acc, s) => acc + s, 0);
+        avgSpeed = Math.round((totalSpeed / validSpeeds.length) * 10) / 10;
+      }
+
+      const validCongestion = segmentStates
+        .map(m => m?.congestionIndex)
+        .filter((c): c is number => typeof c === 'number' && !isNaN(c));
+      if (validCongestion.length > 0) {
+        const totalCongestion = validCongestion.reduce((acc, c) => acc + c, 0);
+        congestionIndex = Math.round((totalCongestion / validCongestion.length) * 1000) / 1000;
+      }
     }
 
     return {
-      avgSpeed: Math.round(avgSpeed * 10) / 10,
-      congestionIndex: Math.round(congestionIndex * 1000) / 1000,
-      energyDemandKw: liveEnergyKw,
+      avgSpeed,
+      congestionIndex,
+      energyDemandKw: liveEnergyKw !== null ? Math.round(liveEnergyKw) : null,
       activeSensors: liveSensorsCount
     };
   }, [roadSegments, effectiveStates, liveEnergyKw, liveSensorsCount]);
@@ -512,8 +524,11 @@ export const App: React.FC = () => {
     if (effectiveUpdated) {
       const advisoryCount = advisorySummary?.totalActive || 0;
       const advisoryText = advisoryCount > 0 ? `${advisoryCount} active advisories.` : 'No critical advisories.';
+      const speedText = typeof aggregates.avgSpeed === 'number'
+        ? `Speed: ${aggregates.avgSpeed.toFixed(1)} km/h.`
+        : 'Speed telemetry awaiting first payload.';
       setLiveAnnouncement(
-        `Corridor twin state updated at ${new Date(effectiveUpdated).toLocaleTimeString()}. Live stream active. Source mode: ${effectiveMode}. Speed: ${aggregates.avgSpeed.toFixed(1)} km/h. ${advisoryText}`
+        `Corridor twin state updated at ${new Date(effectiveUpdated).toLocaleTimeString()}. Live stream active. Source mode: ${effectiveMode}. ${speedText} ${advisoryText}`
       );
     }
   }, [effectiveUpdated, effectiveMode, advisorySummary, aggregates.avgSpeed]);

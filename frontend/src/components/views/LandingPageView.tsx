@@ -914,7 +914,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <NumberTicker value={4862} suffix=" kW" duration={1800} />
             </span>
             <span className="stat-label">Peak Commercial Load</span>
-            <span className="stat-sub">Commercial Microgrid</span>
+            <span className="stat-sub">Commercial Microgrid (Illustrative Calibration)</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-column">
