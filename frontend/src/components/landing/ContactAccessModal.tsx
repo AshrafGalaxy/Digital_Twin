@@ -16,6 +16,7 @@ import {
   Copy,
   Check
 } from 'lucide-react';
+import { submitAccessInquiry } from '../../services/api';
 
 interface ContactAccessModalProps {
   isOpen: boolean;
@@ -76,6 +77,14 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setErrorMessage(null);
+      setSubmittedInquiryId(null);
+      setIsCopied(false);
+    }
+  }, [isOpen]);
 
   // Live Email Validation
   const handleEmailChange = (val: string) => {
@@ -159,37 +168,17 @@ export const ContactAccessModal: React.FC<ContactAccessModalProps> = ({
     };
 
     try {
-      const response = await fetch('/api/v1/inquiries/request-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubmittedInquiryId(data.inquiry_id || `INQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+      const data = await submitAccessInquiry(payload);
+      if (data && data.inquiry_id) {
+        setSubmittedInquiryId(data.inquiry_id);
       } else {
-        // Fallback resilience for offline or pre-boot environments
-        saveLocalInquiry(payload);
+        setErrorMessage('Server response did not include a valid inquiry identifier.');
       }
-    } catch {
-      // Network/offline resilience: save locally
-      saveLocalInquiry(payload);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to submit access inquiry. Please check your submission and try again.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const saveLocalInquiry = (payload: any) => {
-    const mockId = `INQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    try {
-      const existing = JSON.parse(localStorage.getItem('digital_twin_access_inquiries') || '[]');
-      existing.push({ ...payload, inquiryId: mockId, createdAt: new Date().toISOString() });
-      localStorage.setItem('digital_twin_access_inquiries', JSON.stringify(existing));
-    } catch {
-      // Storage unavailable or blocked
-    }
-    setSubmittedInquiryId(mockId);
   };
 
   const handleResetAndClose = () => {

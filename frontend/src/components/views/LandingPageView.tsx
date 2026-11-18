@@ -30,6 +30,7 @@ import { KineticTaglineReveal } from '../landing/KineticTaglineReveal';
 import { CorridorCompareSlider } from '../landing/CorridorCompareSlider';
 import { AgencyCommandShowcase } from '../landing/AgencyCommandShowcase';
 import { GovernanceProtocolFlow } from '../landing/GovernanceProtocolFlow';
+import { ContactAccessModal } from '../landing/ContactAccessModal';
 import { NumberTicker } from '../common/NumberTicker';
 
 interface LandingPageViewProps {
@@ -49,6 +50,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState<boolean>(false);
 
   const handleOpenProvisioning = () => {
     if (onNavigateProvisioning) {
@@ -175,7 +177,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 </button>
                 <button
                   className="landing-btn-primary"
-                  onClick={handleOpenProvisioning}
+                  onClick={() => setIsContactModalOpen(true)}
                   title="Contact the Digital Twin team"
                 >
                   <span>Contact Us</span>
@@ -230,7 +232,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   className="landing-mobile-item highlight"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    handleOpenProvisioning();
+                    setIsContactModalOpen(true);
                   }}
                 >
                   Contact Us <ArrowRight size={14} />
@@ -275,7 +277,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             ) : (
               <button
                 className="landing-btn-large-primary"
-                onClick={handleOpenProvisioning}
+                onClick={() => setIsContactModalOpen(true)}
               >
                 <span>Contact Us</span>
                 <ArrowRight size={16} />
@@ -981,7 +983,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             ) : (
               <button
                 className="landing-btn-large-primary"
-                onClick={handleOpenProvisioning}
+                onClick={() => setIsContactModalOpen(true)}
               >
                 <span>Contact Us</span>
                 <ArrowRight size={16} />
@@ -1018,6 +1020,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <button className="footer-link" onClick={() => onLaunchConsole('traffic')}>Traffic Analytics</button>
               <button className="footer-link" onClick={() => onLaunchConsole('energy')}>Energy Analytics</button>
               <button className="footer-link" onClick={() => onLaunchConsole('scenarios')}>Scenario Studio</button>
+              <button className="footer-link" onClick={handleOpenProvisioning}>Corridor Provisioning</button>
             </div>
 
             <div className="footer-link-group">
@@ -1036,6 +1039,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </div>
         </div>
       </footer>
+
+      <ContactAccessModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
     </div>
   );
 };
