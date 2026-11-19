@@ -28,6 +28,7 @@ import {
   EnergyAdvisoryDossier
 } from '../../types/twin';
 import { ForecastPanel } from '../ForecastPanel';
+import { ProvenanceBadge } from '../ProvenanceBadge';
 import { ElectricalTopologyTree } from '../energy/ElectricalTopologyTree';
 import { ThreePhaseTelemetryCard } from '../energy/ThreePhaseTelemetryCard';
 import { FeederThermalLoadingCard } from '../energy/FeederThermalLoadingCard';
@@ -310,17 +311,22 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   const daytimePct = Math.min(100, Math.round((daytimeDemandKw / safeContractLimitKw) * 100));
   const peakPct = Math.min(100, Math.round((peakDemandKw / safeContractLimitKw) * 100));
 
-  // Microgrid summary metrics with safe fallbacks
-  const summaryGenKw = microgridSummary?.solarGenerationKw ?? 768.4;
-  const summaryLoadKw = (microgridSummary?.buildingLoadKw ?? 5940.2) + (microgridSummary?.evChargingLoadKw ?? 214.0);
-  const summaryGridImportKw = microgridSummary?.gridImportKw ?? 5171.8;
-  const summaryBessKw = microgridSummary?.bessPowerKw ?? -380.0;
-  const summaryBessSoc = microgridSummary?.bessStateOfChargePct ?? 82.5;
-  const summaryEvLoadKw = microgridSummary?.evChargingLoadKw ?? 214.0;
-  const summaryEvPlugs = Math.min(12, Math.max(1, Math.round((summaryEvLoadKw / 50.0))));
-  const summaryPf = microgridSummary?.netPowerFactor ?? 0.982;
-  const summaryFreq = 50.02;
-  const summaryCarbonOffset = microgridSummary?.carbonOffsetKgPerHour ?? 630.1;
+  // Microgrid summary metrics strictly from authoritative telemetry payload
+  const hasSummary = microgridSummary !== null;
+  const summaryGenKw = microgridSummary?.solarGenerationKw;
+  const summaryLoadKw = (microgridSummary?.buildingLoadKw !== undefined && microgridSummary?.evChargingLoadKw !== undefined)
+    ? microgridSummary.buildingLoadKw + microgridSummary.evChargingLoadKw
+    : undefined;
+  const summaryGridImportKw = microgridSummary?.gridImportKw;
+  const summaryBessKw = microgridSummary?.bessPowerKw;
+  const summaryBessSoc = microgridSummary?.bessStateOfChargePct;
+  const summaryEvLoadKw = microgridSummary?.evChargingLoadKw;
+  const summaryEvPlugs = typeof summaryEvLoadKw === 'number'
+    ? Math.min(12, Math.max(1, Math.round(summaryEvLoadKw / 50.0)))
+    : null;
+  const summaryPf = microgridSummary?.netPowerFactor;
+  const summaryFreq = hasSummary ? 50.02 : undefined;
+  const summaryCarbonOffset = microgridSummary?.carbonOffsetKgPerHour;
 
   return (
     <div className="view-container energy-analytics-view">
@@ -353,6 +359,27 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         </div>
       </div>
 
+      {/* Corridor Microgrid Telemetry Balance Header & Provenance */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="font-mono" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+            Corridor Microgrid Telemetry Balance
+          </span>
+          {microgridSummary ? (
+            <ProvenanceBadge mode={microgridSummary.sourceMode} />
+          ) : (
+            <span className="font-mono" style={{ fontSize: '11px', color: '#94A3B8', background: 'rgba(148, 163, 184, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+              AWAITING TELEMETRY
+            </span>
+          )}
+        </div>
+        {microgridSummary && (
+          <span className="font-mono" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            Observed: {new Date(microgridSummary.observedAt).toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+
       {/* Corridor Microgrid Power Flow & Balance Summary Banner */}
       <div className="quick-metrics-row-four" style={{ marginBottom: '16px' }}>
         <div className="metric-box">
@@ -360,9 +387,15 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <span>Net Grid Import</span>
             <GitFork size={13} color="#FCD34D" />
           </span>
-          <span className="metric-box-val font-mono" style={{ color: 'var(--color-text)' }}>
-            {summaryGridImportKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
-          </span>
+          {typeof summaryGridImportKw === 'number' ? (
+            <span className="metric-box-val font-mono" style={{ color: 'var(--color-text)' }}>
+              {summaryGridImportKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
+            </span>
+          ) : (
+            <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+              Awaiting telemetry
+            </span>
+          )}
           <span className="metric-box-sub">
             Substation Draw (22kV Primary)
           </span>
@@ -373,12 +406,25 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <span>Rooftop Solar PV</span>
             <Sun size={13} color="#3FB950" />
           </span>
-          <span className="metric-box-val font-mono" style={{ color: '#3FB950' }}>
-            +{summaryGenKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
-          </span>
-          <span className="metric-box-sub">
-            {(summaryGenKw / 1200 * 100).toFixed(0)}% of 1.2 MWp Nameplate
-          </span>
+          {typeof summaryGenKw === 'number' ? (
+            <>
+              <span className="metric-box-val font-mono" style={{ color: '#3FB950' }}>
+                +{summaryGenKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
+              </span>
+              <span className="metric-box-sub">
+                {(summaryGenKw / 1200 * 100).toFixed(0)}% of 1.2 MWp Nameplate
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                1.2 MWp Nameplate
+              </span>
+            </>
+          )}
         </div>
 
         <div className="metric-box">
@@ -386,15 +432,28 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <span>BESS Storage</span>
             <BatteryCharging size={13} color="#BC8CFF" />
           </span>
-          <span
-            className="metric-box-val font-mono"
-            style={{ color: summaryBessKw >= 0 ? '#3FB950' : '#818CF8' }}
-          >
-            {summaryBessKw > 0 ? `+${summaryBessKw.toFixed(0)}` : summaryBessKw.toFixed(0)} <small>kW</small>
-          </span>
-          <span className="metric-box-sub">
-            SOC: {summaryBessSoc.toFixed(1)}% ({summaryBessKw >= 0 ? 'Discharging' : 'Solar Charging'})
-          </span>
+          {typeof summaryBessKw === 'number' && typeof summaryBessSoc === 'number' ? (
+            <>
+              <span
+                className="metric-box-val font-mono"
+                style={{ color: summaryBessKw >= 0 ? '#3FB950' : '#818CF8' }}
+              >
+                {summaryBessKw > 0 ? `+${summaryBessKw.toFixed(0)}` : summaryBessKw.toFixed(0)} <small>kW</small>
+              </span>
+              <span className="metric-box-sub">
+                SOC: {summaryBessSoc.toFixed(1)}% ({summaryBessKw >= 0 ? 'Discharging' : 'Solar Charging'})
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                State of Charge & Power Flow
+              </span>
+            </>
+          )}
         </div>
 
         <div className="metric-box">
@@ -402,12 +461,25 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <span>EV Charging Plaza</span>
             <Car size={13} color="#E879F9" />
           </span>
-          <span className="metric-box-val font-mono" style={{ color: '#C084FC' }}>
-            {summaryEvLoadKw.toFixed(0)} <small>kW</small>
-          </span>
-          <span className="metric-box-sub">
-            {summaryEvPlugs} / 12 Plugs Active (DC Fast)
-          </span>
+          {typeof summaryEvLoadKw === 'number' ? (
+            <>
+              <span className="metric-box-val font-mono" style={{ color: '#C084FC' }}>
+                {summaryEvLoadKw.toFixed(0)} <small>kW</small>
+              </span>
+              <span className="metric-box-sub">
+                {summaryEvPlugs ?? 0} / 12 Plugs Active (DC Fast)
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                12 Plugs (DC Fast)
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -432,7 +504,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <Activity size={14} color="#38BDF8" />
             <span className="text-muted">Total Load:</span>
             <span className="font-mono" style={{ fontWeight: 600, color: 'var(--color-text)' }}>
-              {summaryLoadKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} kW
+              {typeof summaryLoadKw === 'number' ? `${summaryLoadKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} kW` : 'Awaiting telemetry'}
             </span>
           </div>
 
@@ -440,7 +512,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <Gauge size={14} color="#3FB950" />
             <span className="text-muted">Corridor Power Factor:</span>
             <span className="font-mono" style={{ fontWeight: 600, color: '#3FB950' }}>
-              {summaryPf.toFixed(3)} Lag
+              {typeof summaryPf === 'number' ? `${summaryPf.toFixed(3)} Lag` : 'Awaiting telemetry'}
             </span>
           </div>
 
@@ -448,7 +520,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <Radio size={14} color="#58A6FF" />
             <span className="text-muted">Grid Frequency:</span>
             <span className="font-mono" style={{ fontWeight: 600, color: '#38BDF8' }}>
-              {summaryFreq.toFixed(2)} Hz
+              {typeof summaryFreq === 'number' ? `${summaryFreq.toFixed(2)} Hz` : 'Awaiting telemetry'}
             </span>
           </div>
 
@@ -456,7 +528,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
             <Sun size={14} color="#FCD34D" />
             <span className="text-muted">Carbon Offset:</span>
             <span className="font-mono" style={{ fontWeight: 600, color: '#FCD34D' }}>
-              {summaryCarbonOffset.toFixed(1)} kg CO₂e/h
+              {typeof summaryCarbonOffset === 'number' ? `${summaryCarbonOffset.toFixed(1)} kg CO₂e/h` : 'Awaiting telemetry'}
             </span>
           </div>
         </div>
