@@ -39,6 +39,7 @@ class SubsystemHealth(BaseModel):
     quarantinedEventsCount: int = 0
     telemetryStreamerActive: bool = False
     telemetryStreamerTicks: int = 0
+    historyWriteFailuresCount: int = 0
 
 
 class HealthResponse(BaseModel):
@@ -123,7 +124,8 @@ async def get_health():
             activeAdvisoriesCount=advisory_summary.totalActive,
             quarantinedEventsCount=quarantine_summary["totalQuarantined"],
             telemetryStreamerActive=streamer_status.get("isRunning", False),
-            telemetryStreamerTicks=streamer_status.get("ticksCount", 0)
+            telemetryStreamerTicks=streamer_status.get("ticksCount", 0),
+            historyWriteFailuresCount=streamer_status.get("historyWriteFailuresCount", 0)
         ),
         governanceMode="HUMAN_ADVISORY"
     )

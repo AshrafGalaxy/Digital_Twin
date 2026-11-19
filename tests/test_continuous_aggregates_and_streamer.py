@@ -11,6 +11,7 @@ Verifies:
 """
 
 import asyncio
+import json
 import random
 from datetime import datetime, timezone
 import pytest
@@ -552,4 +553,85 @@ async def test_seeded_historical_rollups_have_simulation_provenance():
             assert r["sourceMode"] == "SIMULATION"
             # Quarter-hour scaled volume should be <= 700 veh (not unscaled 2200)
             assert r["totalFlowVeh"] <= 700.0
+
+
+@pytest.mark.asyncio
+async def test_segment_los_history_write_failure_surfacing(client, caplog):
+    """
+    Verifies BUG-31:
+    When a database insert to segment_los_history fails:
+    1. An ERROR log is emitted with segment ID, exception type, and error details.
+    2. The rejected record is persisted to quarantine with reason SEGMENT_HISTORY_WRITE_FAILURE.
+    3. telemetry_streamer.history_write_failures_count is incremented.
+    4. The current-state write for that tick remains intact and committed.
+    5. The health endpoint reports historyWriteFailuresCount > 0.
+    """
+    import logging
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from backend.ingestion.quarantine import quarantine_manager
+
+    orig_execute = AsyncSession.execute
+    fail_count = 0
+    target_seg_id = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+
+    async def mock_execute(self, statement, *args, **kwargs):
+        nonlocal fail_count
+        stmt_str = str(statement)
+        if "INSERT INTO segment_los_history" in stmt_str and fail_count == 0:
+            params = args[0] if args else kwargs.get("params")
+            if isinstance(params, dict) and params.get("segment_id") == target_seg_id:
+                fail_count += 1
+                raise RuntimeError("Simulated table lock on segment_los_history")
+        return await orig_execute(self, statement, *args, **kwargs)
+
+    telemetry_streamer.pause()
+    AsyncSession.execute = mock_execute
+    initial_failures = telemetry_streamer.history_write_failures_count
+
+    try:
+        with caplog.at_level(logging.ERROR):
+            await telemetry_streamer.tick_once()
+
+        # 1. Verify failure counter was incremented
+        assert telemetry_streamer.history_write_failures_count == initial_failures + 1
+
+        # 2. Verify ERROR log was emitted with segment ID and exception type
+        error_logs = [
+            r for r in caplog.records
+            if r.levelno == logging.ERROR
+            and target_seg_id in r.getMessage()
+            and "RuntimeError" in r.getMessage()
+            and "segment_los_history" in r.getMessage()
+        ]
+        assert len(error_logs) >= 1
+
+        # 3. Verify record was sent to quarantine
+        quarantined = quarantine_manager.get_quarantined_records(limit=10, reason="SEGMENT_HISTORY_WRITE_FAILURE")
+        matching = [q for q in quarantined if q["entityId"] == target_seg_id]
+        assert len(matching) >= 1
+        record = matching[0]
+        assert record["rejectionReason"] == "SEGMENT_HISTORY_WRITE_FAILURE"
+        assert record["validationDetails"]["exceptionType"] == "RuntimeError"
+        assert record["validationDetails"]["targetTable"] == "segment_los_history"
+
+        # 4. Verify current-state write for the tick remains intact
+        async with persistence_manager.session_factory() as session:
+            state_res = (await session.execute(
+                text("SELECT quality_status, source_mode, metrics FROM entity_current_state WHERE entity_id = :id"),
+                {"id": target_seg_id}
+            )).fetchone()
+            assert state_res is not None
+            assert state_res[0] == "VALID"
+            metrics = json.loads(state_res[2])
+            assert "averageSpeedKmh" in metrics
+
+        # 5. Verify /api/v1/health reports the failure counter
+        res = client.get("/api/v1/health")
+        assert res.status_code == 200
+        health_data = res.json()
+        assert health_data["subsystems"]["historyWriteFailuresCount"] >= 1
+    finally:
+        AsyncSession.execute = orig_execute
+        telemetry_streamer.resume()
+        quarantine_manager.clear_quarantine()
 

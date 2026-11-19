@@ -144,6 +144,7 @@ class TelemetryStreamerWorker:
         self.is_running: bool = False
         self.is_paused: bool = False
         self.ticks_count: int = 0
+        self.history_write_failures_count: int = 0
         self.last_tick_at: Optional[str] = None
         self._task: Optional[asyncio.Task] = None
         from backend.ingestion.weather_client import OpenMeteoWeatherClient
@@ -154,6 +155,7 @@ class TelemetryStreamerWorker:
             "isRunning": self.is_running,
             "isPaused": self.is_paused,
             "ticksCount": self.ticks_count,
+            "historyWriteFailuresCount": self.history_write_failures_count,
             "intervalSec": self.interval_sec,
             "lastTickAt": self.last_tick_at,
             "sourceMode": self.mode
@@ -341,34 +343,70 @@ class TelemetryStreamerWorker:
                         "metrics": json.dumps(metrics)
                     })
 
-                    # Persist to segment_los_history table
+                    # Persist to segment_los_history table (BUG-31: surface write failures and quarantine)
+                    hist_quality_score = 0.70 if self.mode.upper() == "SIMULATION" else 0.95
+                    hist_params = {
+                        "segment_id": seg_id,
+                        "observed_at": now_dt,
+                        "volume_capacity_ratio": los_data["volumeCapacityRatio"],
+                        "density_veh_km": los_data["densityVehKm"],
+                        "congestion_index": los_data["congestionIndex"],
+                        "los_grade": los_data["levelOfService"],
+                        "operational_condition": los_data["operationalCondition"],
+                        "policy_standard": los_data["policyStandard"],
+                        "source_mode": self.mode,
+                        "quality_score": hist_quality_score
+                    }
                     try:
-                        los_hist_stmt = text("""
-                            INSERT INTO segment_los_history (
-                                segment_id, observed_at, volume_capacity_ratio,
-                                density_veh_km, congestion_index, los_grade,
-                                operational_condition, policy_standard, source_mode, quality_score
-                            ) VALUES (
-                                :segment_id, :observed_at, :volume_capacity_ratio,
-                                :density_veh_km, :congestion_index, :los_grade,
-                                :operational_condition, :policy_standard, :source_mode, :quality_score
-                            )
-                        """)
-                        hist_quality_score = 0.70 if self.mode.upper() == "SIMULATION" else 0.95
-                        await session.execute(los_hist_stmt, {
-                            "segment_id": seg_id,
-                            "observed_at": now_dt,
-                            "volume_capacity_ratio": los_data["volumeCapacityRatio"],
-                            "density_veh_km": los_data["densityVehKm"],
-                            "congestion_index": los_data["congestionIndex"],
-                            "los_grade": los_data["levelOfService"],
-                            "operational_condition": los_data["operationalCondition"],
-                            "policy_standard": los_data["policyStandard"],
-                            "source_mode": self.mode,
-                            "quality_score": hist_quality_score
-                        })
+                        async with session.begin_nested():
+                            los_hist_stmt = text("""
+                                INSERT INTO segment_los_history (
+                                    segment_id, observed_at, volume_capacity_ratio,
+                                    density_veh_km, congestion_index, los_grade,
+                                    operational_condition, policy_standard, source_mode, quality_score
+                                ) VALUES (
+                                    :segment_id, :observed_at, :volume_capacity_ratio,
+                                    :density_veh_km, :congestion_index, :los_grade,
+                                    :operational_condition, :policy_standard, :source_mode, :quality_score
+                                )
+                            """)
+                            await session.execute(los_hist_stmt, hist_params)
                     except Exception as los_err:
-                        logger.debug("segment_los_history insert notice: %s", los_err)
+                        self.history_write_failures_count += 1
+                        logger.error(
+                            "Failed to persist segment_los_history for segment %s (%s): %s",
+                            seg_id,
+                            type(los_err).__name__,
+                            los_err
+                        )
+                        try:
+                            from backend.ingestion.quarantine import quarantine_manager
+                            quarantine_manager.record_quarantine(
+                                raw_payload={
+                                    "segmentId": seg_id,
+                                    "observedAt": now_iso,
+                                    "volumeCapacityRatio": los_data.get("volumeCapacityRatio"),
+                                    "densityVehKm": los_data.get("densityVehKm"),
+                                    "congestionIndex": los_data.get("congestionIndex"),
+                                    "losGrade": los_data.get("levelOfService"),
+                                    "operationalCondition": los_data.get("operationalCondition"),
+                                    "policyStandard": los_data.get("policyStandard"),
+                                    "sourceMode": self.mode,
+                                    "qualityScore": hist_quality_score
+                                },
+                                rejection_reason="SEGMENT_HISTORY_WRITE_FAILURE",
+                                entity_id=seg_id,
+                                entity_type="RoadSegment",
+                                source_mode=self.mode,
+                                observed_at=now_dt,
+                                validation_details={
+                                    "exceptionType": type(los_err).__name__,
+                                    "errorMessage": str(los_err),
+                                    "targetTable": "segment_los_history"
+                                }
+                            )
+                        except Exception as q_err:
+                            logger.error("Failed to quarantine segment_los_history write failure: %s", q_err)
 
                     segment_metrics_list.append({
                         "entityId": seg_id,
