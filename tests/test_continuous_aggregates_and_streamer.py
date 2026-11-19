@@ -100,14 +100,14 @@ async def test_telemetry_streamer_physics_tick_and_persistence():
 
 def test_high_demand_kinematics_emit_spillback_above_storage():
     """A blocked high-demand approach can queue past its storage. Speed and flow are not floored."""
-    segment = next(item for item in CORRIDOR_SEGMENTS if item["id"].endswith("SEG-NR-EB-01"))
-    storage = segment["approachStorageMeters"]
+    segment = next(item for item in CORRIDOR_SEGMENTS if str(item["id"]).endswith("SEG-NR-EB-01"))
+    storage = float(segment["approachStorageMeters"])
     assert storage >= 200.0
 
     row = compute_link_kinematics(
-        speed_limit_kmh=segment["speedLimit"],
-        base_speed_kmh=segment["baseSpeed"],
-        capacity_vph=segment["capacity"],
+        speed_limit_kmh=float(segment["speedLimit"]),
+        base_speed_kmh=float(segment["baseSpeed"]),
+        capacity_vph=float(segment["capacity"]),
         approach_storage_m=storage,
         rush_intensity=1.0,
         speed_jitter=0.0,

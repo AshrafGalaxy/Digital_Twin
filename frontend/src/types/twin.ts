@@ -261,9 +261,9 @@ export interface ModelVersion {
   horizonMinutes: number;
   unit: string;
   status: string;
-  testMae: number;
-  testRmse: number;
-  improvementVsPersistencePct: number;
+  testMae?: number | null;
+  testRmse?: number | null;
+  improvementVsPersistencePct?: number | null;
   trainedAt: string;
   localityCaveat?: string;
 }

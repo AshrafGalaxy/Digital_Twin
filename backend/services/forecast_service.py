@@ -82,11 +82,11 @@ class ForecastService:
                 "horizonMinutes": 15,
                 "unit": "km/h",
                 "status": "FALLBACK",
-                "testMae": 3.8,
-                "testRmse": 4.9,
-                "improvementVsPersistencePct": 15.0,
+                "testMae": None,
+                "testRmse": None,
+                "improvementVsPersistencePct": None,
                 "trainedAt": "",
-                "localityCaveat": "Heuristic fallback"
+                "localityCaveat": "Heuristic fallback: model artifact unavailable. No holdout metrics computed."
             })
 
         if self.forecaster.energy_artifact:
@@ -112,11 +112,11 @@ class ForecastService:
                 "horizonMinutes": 60,
                 "unit": "kW",
                 "status": "FALLBACK",
-                "testMae": 180.0,
-                "testRmse": 240.0,
-                "improvementVsPersistencePct": 20.0,
+                "testMae": None,
+                "testRmse": None,
+                "improvementVsPersistencePct": None,
                 "trainedAt": "",
-                "localityCaveat": "Heuristic fallback"
+                "localityCaveat": "Heuristic fallback: model artifact unavailable. No holdout metrics computed."
             })
 
         return models

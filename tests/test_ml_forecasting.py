@@ -741,6 +741,7 @@ def test_local_model_explainer_raw_booster_reference_and_additivity():
     row_dict = extract_traffic_features_row([25.0] * 13, now_utc, 30.0, 330)
     X_input = pd.DataFrame([row_dict])[FEATURE_COLUMNS]
 
+    assert forecaster.traffic_artifact is not None
     model = forecaster.traffic_artifact["model"]
     raw_pred = float(model.predict(X_input)[0])
 
@@ -806,6 +807,68 @@ def test_build_energy_features_from_timestamps_alone():
 
     assert (featured_df.loc[open_mask, "is_mall_open"] == 1).all()
     assert (featured_df.loc[closed_mask, "is_mall_open"] == 0).all()
+
+
+def test_forecast_missing_artifact_does_not_publish_fixed_mae():
+    """
+    Verifies BUG-23 (#46): When model artifacts are missing, the heuristic fallback paths
+    must NOT publish fabricated holdout evaluation metrics (modelTestMae, persistenceMae,
+    accuracyGainPct, testMae, testRmse, improvementVsPersistencePct). These fields must be None.
+    """
+    forecaster = CorridorForecaster()
+    # Temporarily set artifacts to None
+    orig_traffic = forecaster.traffic_artifact
+    orig_energy = forecaster.energy_artifact
+    try:
+        forecaster.traffic_artifact = None
+        forecaster.energy_artifact = None
+
+        # 1. Traffic heuristic fallback prediction
+        traffic_pred = forecaster.predict_traffic_speed(
+            segment_id="urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+            current_speed=38.5
+        )
+        assert traffic_pred["modelVersion"] == "traffic-heuristic-fallback"
+        assert traffic_pred["inputQualityStatus"] == "DEGRADED"
+        assert traffic_pred["baselineComparison"]["persistenceValue"] == 38.5
+        assert traffic_pred["baselineComparison"]["modelTestMae"] is None
+        assert traffic_pred["baselineComparison"]["persistenceMae"] is None
+        assert traffic_pred["baselineComparison"]["accuracyGainPct"] is None
+        assert "model artifact unavailable" in traffic_pred["localityNotice"]
+
+        # 2. Energy heuristic fallback prediction
+        energy_pred = forecaster.predict_building_energy(
+            building_id="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            current_kw=3200.0
+        )
+        assert energy_pred["modelVersion"] == "energy-heuristic-fallback"
+        assert energy_pred["inputQualityStatus"] == "DEGRADED"
+        assert energy_pred["baselineComparison"]["persistenceValue"] == 3200.0
+        assert energy_pred["baselineComparison"]["modelTestMae"] is None
+        assert energy_pred["baselineComparison"]["persistenceMae"] is None
+        assert energy_pred["baselineComparison"]["accuracyGainPct"] is None
+        assert "model artifact unavailable" in energy_pred["sourceLimitation"]
+
+        # 3. ForecastService.list_models() metadata
+        service = ForecastService()
+        service.forecaster = forecaster
+        models = service.list_models()
+        assert len(models) == 2
+
+        from backend.schemas.forecasts import ModelVersionInfo
+        for m in models:
+            assert m["status"] == "FALLBACK"
+            assert m["testMae"] is None
+            assert m["testRmse"] is None
+            assert m["improvementVsPersistencePct"] is None
+            # Verify Pydantic validation passes with None
+            validated = ModelVersionInfo(**m)
+            assert validated.testMae is None
+            assert validated.testRmse is None
+            assert validated.improvementVsPersistencePct is None
+    finally:
+        forecaster.traffic_artifact = orig_traffic
+        forecaster.energy_artifact = orig_energy
 
 
 if __name__ == "__main__":

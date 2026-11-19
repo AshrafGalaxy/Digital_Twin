@@ -147,6 +147,7 @@ def test_strict_non_actuation_invariant():
     """Verifies Non-Negotiable Invariant #4: recommendations remain advisory with zero field actuation."""
     engine = AdvisoryRuleEngine()
     rec = engine.get_recommendation("REC-TRF-20260920-001")
+    assert rec is not None
     assert rec.humanApprovalRequired is True
 
     req = AuthorizeAdvisoryRequest(
@@ -163,7 +164,9 @@ def test_strict_non_actuation_invariant():
         shiftId="SHIFT-A",
         decision=RecommendationStatus.ACKNOWLEDGED
     )
-    updated_rec, dispatch_order = engine.authorize_advisory("REC-TRF-20260920-001", req)
+    auth_res = engine.authorize_advisory("REC-TRF-20260920-001", req)
+    assert auth_res is not None
+    updated_rec, dispatch_order = auth_res
 
     # Human approval invariant must never be mutated
     assert updated_rec.humanApprovalRequired is True
@@ -187,7 +190,9 @@ def test_get_dispatch_order():
         shiftId="SHIFT-A",
         decision=RecommendationStatus.ACKNOWLEDGED
     )
-    _, dispatch_order = engine.authorize_advisory("REC-TRF-20260920-001", req)
+    auth_res = engine.authorize_advisory("REC-TRF-20260920-001", req)
+    assert auth_res is not None
+    _, dispatch_order = auth_res
 
     retrieved = engine.get_dispatch_order("REC-TRF-20260920-001")
     assert retrieved is not None
@@ -525,7 +530,7 @@ def test_safety_bound_failure_rejects_failed_min_green():
 def test_safety_constraint_checklist_requires_all_fields():
     """Verifies that SafetyConstraintChecklist cannot be instantiated with missing fields defaulting to true."""
     with pytest.raises(ValidationError):
-        SafetyConstraintChecklist()
+        SafetyConstraintChecklist.model_validate({})
 
 
 def test_authorize_rejects_missing_safety_checklist():
@@ -626,7 +631,9 @@ def test_dispatch_order_survives_process_restart():
 
         # Before reload, the fresh engine has default ACTIVE status and no in-memory order
         assert fresh_engine.get_dispatch_order(rec_id) is None
-        assert fresh_engine.get_recommendation(rec_id).status == RecommendationStatus.ACTIVE
+        fresh_rec = fresh_engine.get_recommendation(rec_id)
+        assert fresh_rec is not None
+        assert fresh_rec.status == RecommendationStatus.ACTIVE
 
         # Access dispatch order endpoint after simulated restart
         post_order_resp = client.get(f"/api/v1/recommendations/{rec_id}/dispatch-order")

@@ -105,11 +105,11 @@ class CorridorForecaster:
                 "inputQualityStatus": "DEGRADED",
                 "baselineComparison": {
                     "persistenceValue": round(current_speed, 2),
-                    "modelTestMae": 3.8,
-                    "persistenceMae": 4.5,
-                    "accuracyGainPct": 15.6
+                    "modelTestMae": None,
+                    "persistenceMae": None,
+                    "accuracyGainPct": None
                 },
-                "localityNotice": "Heuristic fallback: demonstration corridor baseline model."
+                "localityNotice": "Heuristic fallback: model artifact unavailable. No holdout evaluation metrics computed."
             }
 
         # Synthesize recent lags if partial history provided (ending at current observation)
@@ -240,11 +240,11 @@ class CorridorForecaster:
                 "peakThresholdKw": peak_threshold,
                 "baselineComparison": {
                     "persistenceValue": round(current_kw, 1),
-                    "modelTestMae": 180.0,
-                    "persistenceMae": 225.0,
-                    "accuracyGainPct": 20.0
+                    "modelTestMae": None,
+                    "persistenceMae": None,
+                    "accuracyGainPct": None
                 },
-                "sourceLimitation": "Heuristic fallback: demonstration facility baseline model."
+                "sourceLimitation": "Heuristic fallback: model artifact unavailable. No holdout evaluation metrics computed."
             }
 
         # Synthesize recent lags if partial history provided (ending at current observation)

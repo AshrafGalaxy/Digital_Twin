@@ -65,8 +65,8 @@ class ModelVersionInfo(BaseModel):
     horizonMinutes: int
     unit: str
     status: str
-    testMae: float
-    testRmse: float
-    improvementVsPersistencePct: float
+    testMae: Optional[float] = None
+    testRmse: Optional[float] = None
+    improvementVsPersistencePct: Optional[float] = None
     trainedAt: str
     localityCaveat: Optional[str] = None
