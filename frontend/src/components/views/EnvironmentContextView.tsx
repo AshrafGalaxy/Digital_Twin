@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { SourceMode, EnvironmentState } from '../../types/twin';
 import { fetchCurrentEnvironment } from '../../services/api';
+import { ProvenanceBadge } from '../ProvenanceBadge';
 
 interface EnvironmentContextViewProps {
   sourceMode: SourceMode;
@@ -54,7 +55,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
         setFetchError(null);
       })
       .catch(() => {
-        setFetchError('Station telemetry feed is currently unreachable. Displaying calibrated reference observations.');
+        setFetchError('Station telemetry feed is currently unreachable. Awaiting continuous monitoring broadcast.');
       })
       .finally(() => {
         setIsLoading(false);
@@ -70,43 +71,33 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
     loadStationData(selectedStationId);
   };
 
-  // Prefer station-specific telemetry if fetched, fallback to broadcast environmentData, then calibrated defaults
-  const activeData: EnvironmentState = stationTelemetry || environmentData || {
-    stationId: selectedStationId,
-    stationName: 'Airport Sector Regional CAAQMS',
-    temperatureC: 28.8,
-    humidityPct: 56,
-    apparentTempC: 30.2,
-    windSpeedKmh: 11.4,
-    windDir: 'WSW (242°)',
-    pm25: 48.5,
-    pm10: 89.0,
-    no2: 34.8,
-    aqi: 135,
-    aqiCategory: 'Moderate',
-    determiningPollutant: 'PM2.5',
-    sourceMode: sourceMode,
-    observedAt: new Date().toISOString(),
-    lastSynced: 'Just now'
-  };
+  // Prefer station-specific telemetry if fetched, fallback to broadcast environmentData, otherwise null
+  const activeData: EnvironmentState | null = stationTelemetry || environmentData || null;
 
-  const aqi = activeData.aqi ?? 135;
-  const aqiCategory = activeData.aqiCategory || 'Moderate';
-  const pm25 = activeData.pm25 ?? 48.5;
-  const pm10 = activeData.pm10 ?? 89.0;
-  const no2 = activeData.no2 ?? 34.8;
-  const temperatureC = activeData.temperatureC ?? 28.8;
-  const humidityPct = activeData.humidityPct ?? 56;
-  const windSpeedKmh = activeData.windSpeedKmh ?? 11.4;
-  const windDir = activeData.windDir || 'WSW (242°)';
-  const effectiveSourceMode = activeData.sourceMode || sourceMode;
+  const hasReading = activeData !== null;
+  const aqi = typeof activeData?.aqi === 'number' ? activeData.aqi : null;
+  const aqiCategory = activeData?.aqiCategory || null;
+  const pm25 = typeof activeData?.pm25 === 'number' ? activeData.pm25 : null;
+  const pm10 = typeof activeData?.pm10 === 'number' ? activeData.pm10 : null;
+  const no2 = typeof activeData?.no2 === 'number' ? activeData.no2 : null;
+  const temperatureC = typeof activeData?.temperatureC === 'number' ? activeData.temperatureC : null;
+  const apparentTempC = typeof activeData?.apparentTempC === 'number' ? activeData.apparentTempC : null;
+  const humidityPct = typeof activeData?.humidityPct === 'number' ? activeData.humidityPct : null;
+  const surfacePressureHpa = typeof activeData?.surfacePressureHpa === 'number' ? activeData.surfacePressureHpa : null;
+  const windSpeedKmh = typeof activeData?.windSpeedKmh === 'number' ? activeData.windSpeedKmh : null;
+  const windDir = activeData?.windDir || null;
+  const determiningPollutant = activeData?.determiningPollutant || 'PM2.5';
+  const effectiveSourceMode = activeData ? (activeData.sourceMode || sourceMode) : null;
 
   // Statistical anomaly evaluation (Isolation Forest + dynamic Z-score against 45.0 baseline)
-  const zScoreNum = ((pm25 - 45.0) / 12.0);
-  const zScore = zScoreNum.toFixed(2);
-  const isAnomaly = Math.abs(zScoreNum) > 2.0 || aqi > 200;
+  const zScoreNum = (typeof pm25 === 'number') ? ((pm25 - 45.0) / 12.0) : null;
+  const zScore = zScoreNum !== null ? zScoreNum.toFixed(2) : null;
+  const isAnomaly = zScoreNum !== null
+    ? (Math.abs(zScoreNum) > 2.0 || (typeof aqi === 'number' && aqi > 200))
+    : false;
 
-  const getAqiColor = (val: number) => {
+  const getAqiColor = (val: number | null) => {
+    if (val === null) return '#94A3B8';
     if (val <= 50) return '#10B981'; // Good
     if (val <= 100) return '#84CC16'; // Satisfactory
     if (val <= 200) return '#F59E0B'; // Moderate
@@ -126,12 +117,18 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
           </p>
         </div>
         <div className="view-header-badges">
-          <span className={`provenance-badge badge-${effectiveSourceMode.toLowerCase()}`}>
-            {effectiveSourceMode}
-          </span>
-          <span className="provenance-badge badge-live">
-            OPEN-METEO / CAAQMS
-          </span>
+          {effectiveSourceMode ? (
+            <ProvenanceBadge mode={effectiveSourceMode} />
+          ) : (
+            <span className="provenance-badge font-mono" style={{ background: 'rgba(148, 163, 184, 0.1)', color: '#94A3B8' }}>
+              AWAITING TELEMETRY
+            </span>
+          )}
+          {hasReading && (
+            <span className="provenance-badge badge-live">
+              OPEN-METEO / CAAQMS
+            </span>
+          )}
         </div>
       </div>
 
@@ -165,13 +162,15 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
         </div>
 
         <div className="analytics-meta-pill">
-          <Activity size={14} color={isLoading ? '#F59E0B' : fetchError ? '#F85149' : '#10B981'} />
+          <Activity size={14} color={isLoading ? '#F59E0B' : fetchError ? '#F85149' : hasReading ? '#10B981' : '#94A3B8'} />
           <span>
             {isLoading
               ? 'Updating Atmospheric Telemetry...'
-              : fetchError
-              ? 'Station Feed Offline | Reference Fallback'
-              : 'Continuous Monitoring Feed | Status: ONLINE'}
+              : fetchError && !environmentData
+              ? 'Station Feed Offline | Awaiting Broadcast'
+              : hasReading
+              ? 'Continuous Monitoring Feed | Status: ONLINE'
+              : 'Atmospheric Feed | Status: AWAITING TELEMETRY'}
           </span>
         </div>
       </div>
@@ -195,50 +194,139 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
         </div>
       )}
 
+      {/* Authoritative Telemetry Observation Time Header */}
+      {activeData?.observedAt && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+          <span className="font-mono" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            Observed: {new Date(activeData.observedAt).toLocaleTimeString()}
+          </span>
+        </div>
+      )}
+
+      {/* Empty State Banner when no reading has arrived */}
+      {!hasReading && !isLoading && (
+        <div
+          className="integrity-caveat-banner"
+          style={{
+            borderColor: 'var(--border-color, #30363D)',
+            background: 'rgba(22, 27, 34, 0.75)',
+            marginBottom: '16px'
+          }}
+        >
+          <Wind size={18} color="#94A3B8" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px', flexWrap: 'wrap' }}>
+            <span>
+              <strong>No Atmospheric Telemetry:</strong> Neither reference station sensors nor broadcast telemetry feeds have reported ambient observations yet. Awaiting fresh continuous monitoring packets.
+            </span>
+            <button
+              type="button"
+              className="btn-select-sm"
+              onClick={handleRefresh}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', height: '26px' }}
+            >
+              <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Metric Cards: AQI & Weather */}
       <div className="quick-metrics-row-four">
         {/* AQI Composite */}
         <div className="metric-box">
           <span className="metric-box-label">National AQI (India NAAQS)</span>
-          <span className="metric-box-val font-mono" style={{ color: getAqiColor(aqi) }}>
-            {aqi} <small style={{ fontSize: '13px', fontWeight: 600 }}>{aqiCategory}</small>
-          </span>
-          <span className="metric-box-sub">
-            Sub-index determined by {activeData.determiningPollutant || 'PM2.5'} ({pm25.toFixed(1)} µg/m³)
-          </span>
+          {typeof aqi === 'number' && aqiCategory ? (
+            <>
+              <span className="metric-box-val font-mono" style={{ color: getAqiColor(aqi) }}>
+                {aqi} <small style={{ fontSize: '13px', fontWeight: 600 }}>{aqiCategory}</small>
+              </span>
+              <span className="metric-box-sub">
+                Sub-index determined by {determiningPollutant} ({typeof pm25 === 'number' ? `${pm25.toFixed(1)} µg/m³` : 'N/A'})
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                Air quality index sub-score
+              </span>
+            </>
+          )}
         </div>
 
         {/* Ambient Temperature */}
         <div className="metric-box">
           <span className="metric-box-label">Ambient Temperature</span>
-          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
-            {temperatureC.toFixed(1)} <small>°C</small>
-          </span>
-          <span className="metric-box-sub">
-            Feels like {activeData.apparentTempC ? activeData.apparentTempC.toFixed(1) : (temperatureC + 1.2).toFixed(1)}°C
-          </span>
+          {typeof temperatureC === 'number' ? (
+            <>
+              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+                {temperatureC.toFixed(1)} <small>°C</small>
+              </span>
+              <span className="metric-box-sub">
+                Feels like {typeof apparentTempC === 'number' ? apparentTempC.toFixed(1) : (temperatureC + 1.2).toFixed(1)}°C
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                Corridor thermal sensor
+              </span>
+            </>
+          )}
         </div>
 
         {/* Relative Humidity */}
         <div className="metric-box">
           <span className="metric-box-label">Relative Humidity</span>
-          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
-            {Math.round(humidityPct)} <small>%</small>
-          </span>
-          <span className="metric-box-sub">
-            Surface Pressure: {activeData.surfacePressureHpa ? activeData.surfacePressureHpa.toFixed(0) : '948'} hPa
-          </span>
+          {typeof humidityPct === 'number' ? (
+            <>
+              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+                {Math.round(humidityPct)} <small>%</small>
+              </span>
+              <span className="metric-box-sub">
+                Surface Pressure: {typeof surfacePressureHpa === 'number' ? surfacePressureHpa.toFixed(0) : '948'} hPa
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                Atmospheric moisture
+              </span>
+            </>
+          )}
         </div>
 
         {/* Wind Speed & Direction */}
         <div className="metric-box">
           <span className="metric-box-label">Corridor Wind Speed & Flow</span>
-          <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
-            {windSpeedKmh.toFixed(1)} <small>km/h</small>
-          </span>
-          <span className="metric-box-sub">
-            Direction: {windDir}
-          </span>
+          {typeof windSpeedKmh === 'number' ? (
+            <>
+              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+                {windSpeedKmh.toFixed(1)} <small>km/h</small>
+              </span>
+              <span className="metric-box-sub">
+                Direction: {windDir || 'N/A'}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="metric-box-val font-mono text-muted" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                Awaiting telemetry
+              </span>
+              <span className="metric-box-sub">
+                Anemometer reading
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -251,30 +339,38 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
               <Wind size={18} color="var(--color-primary, #2F81F7)" />
               <span className="card-title">Particulate & Gaseous Concentrations</span>
             </div>
-            <span className={`provenance-badge badge-${effectiveSourceMode.toLowerCase()}`}>
-              {effectiveSourceMode} / CAAQMS
-            </span>
+            {effectiveSourceMode ? (
+              <span className={`provenance-badge badge-${effectiveSourceMode.toLowerCase()}`}>
+                {effectiveSourceMode} / CAAQMS
+              </span>
+            ) : (
+              <span className="provenance-badge font-mono" style={{ background: 'rgba(148, 163, 184, 0.1)', color: '#94A3B8' }}>
+                AWAITING TELEMETRY
+              </span>
+            )}
           </div>
 
           <div className="pollutant-grid">
             <div className="pollutant-card">
               <div className="pollutant-title-row">
                 <span className="pollutant-name">PM2.5 (Fine Particulates)</span>
-                <span className="pollutant-val font-mono">{pm25.toFixed(1)} µg/m³</span>
+                <span className="pollutant-val font-mono">
+                  {typeof pm25 === 'number' ? `${pm25.toFixed(1)} µg/m³` : 'Awaiting telemetry'}
+                </span>
               </div>
               <div className="progress-bar-bg">
                 <div
                   className="progress-bar-fill"
                   style={{
-                    width: `${Math.min(100, (pm25 / 150) * 100)}%`,
-                    backgroundColor: pm25 > 60 ? '#F59E0B' : '#10B981'
+                    width: typeof pm25 === 'number' ? `${Math.min(100, (pm25 / 150) * 100)}%` : '0%',
+                    backgroundColor: typeof pm25 === 'number' && pm25 > 60 ? '#F59E0B' : '#10B981'
                   }}
                 />
               </div>
               <div className="pollutant-subtext">
                 <span>NAAQS 24h limit: 60 µg/m³</span>
-                <span style={{ color: pm25 <= 60 ? '#10B981' : '#F59E0B', fontWeight: 600 }}>
-                  {pm25 <= 60 ? 'Within Standard' : 'Elevated'}
+                <span style={{ color: typeof pm25 === 'number' ? (pm25 <= 60 ? '#10B981' : '#F59E0B') : 'var(--text-muted)', fontWeight: 600 }}>
+                  {typeof pm25 === 'number' ? (pm25 <= 60 ? 'Within Standard' : 'Elevated') : 'Awaiting Telemetry'}
                 </span>
               </div>
             </div>
@@ -282,21 +378,23 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
             <div className="pollutant-card">
               <div className="pollutant-title-row">
                 <span className="pollutant-name">PM10 (Coarse Particulates)</span>
-                <span className="pollutant-val font-mono">{pm10.toFixed(1)} µg/m³</span>
+                <span className="pollutant-val font-mono">
+                  {typeof pm10 === 'number' ? `${pm10.toFixed(1)} µg/m³` : 'Awaiting telemetry'}
+                </span>
               </div>
               <div className="progress-bar-bg">
                 <div
                   className="progress-bar-fill"
                   style={{
-                    width: `${Math.min(100, (pm10 / 250) * 100)}%`,
-                    backgroundColor: pm10 > 100 ? '#F59E0B' : '#10B981'
+                    width: typeof pm10 === 'number' ? `${Math.min(100, (pm10 / 250) * 100)}%` : '0%',
+                    backgroundColor: typeof pm10 === 'number' && pm10 > 100 ? '#F59E0B' : '#10B981'
                   }}
                 />
               </div>
               <div className="pollutant-subtext">
                 <span>NAAQS 24h limit: 100 µg/m³</span>
-                <span style={{ color: pm10 <= 100 ? '#10B981' : '#F59E0B', fontWeight: 600 }}>
-                  {pm10 <= 100 ? 'Within Standard' : 'Elevated'}
+                <span style={{ color: typeof pm10 === 'number' ? (pm10 <= 100 ? '#10B981' : '#F59E0B') : 'var(--text-muted)', fontWeight: 600 }}>
+                  {typeof pm10 === 'number' ? (pm10 <= 100 ? 'Within Standard' : 'Elevated') : 'Awaiting Telemetry'}
                 </span>
               </div>
             </div>
@@ -304,21 +402,23 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
             <div className="pollutant-card">
               <div className="pollutant-title-row">
                 <span className="pollutant-name">NO₂ (Nitrogen Dioxide)</span>
-                <span className="pollutant-val font-mono">{no2.toFixed(1)} µg/m³</span>
+                <span className="pollutant-val font-mono">
+                  {typeof no2 === 'number' ? `${no2.toFixed(1)} µg/m³` : 'Awaiting telemetry'}
+                </span>
               </div>
               <div className="progress-bar-bg">
                 <div
                   className="progress-bar-fill"
                   style={{
-                    width: `${Math.min(100, (no2 / 80) * 100)}%`,
-                    backgroundColor: no2 > 80 ? '#EF4444' : '#10B981'
+                    width: typeof no2 === 'number' ? `${Math.min(100, (no2 / 80) * 100)}%` : '0%',
+                    backgroundColor: typeof no2 === 'number' && no2 > 80 ? '#EF4444' : '#10B981'
                   }}
                 />
               </div>
               <div className="pollutant-subtext">
                 <span>NAAQS 24h limit: 80 µg/m³</span>
-                <span style={{ color: no2 <= 80 ? '#10B981' : '#EF4444', fontWeight: 600 }}>
-                  {no2 <= 80 ? 'Compliant' : 'Exceeds Standard'}
+                <span style={{ color: typeof no2 === 'number' ? (no2 <= 80 ? '#10B981' : '#EF4444') : 'var(--text-muted)', fontWeight: 600 }}>
+                  {typeof no2 === 'number' ? (no2 <= 80 ? 'Compliant' : 'Exceeds Standard') : 'Awaiting Telemetry'}
                 </span>
               </div>
             </div>
@@ -337,25 +437,25 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
               </tr>
             </thead>
             <tbody>
-              <tr className={aqi <= 50 ? 'row-selected' : ''}>
+              <tr className={typeof aqi === 'number' && aqi <= 50 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#10B981', color: '#fff' }}>Good</span></td>
                 <td>0 - 50</td>
                 <td>0 - 30</td>
                 <td>Minimal health impact</td>
               </tr>
-              <tr className={aqi > 50 && aqi <= 100 ? 'row-selected' : ''}>
+              <tr className={typeof aqi === 'number' && aqi > 50 && aqi <= 100 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#84CC16', color: '#fff' }}>Satisfactory</span></td>
                 <td>51 - 100</td>
                 <td>31 - 60</td>
                 <td>Minor breathing discomfort to sensitive individuals</td>
               </tr>
-              <tr className={aqi > 100 && aqi <= 200 ? 'row-selected' : ''}>
+              <tr className={typeof aqi === 'number' && aqi > 100 && aqi <= 200 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#F59E0B', color: '#fff' }}>Moderate</span></td>
                 <td>101 - 200</td>
                 <td>61 - 90</td>
                 <td>Breathing discomfort to people with lungs/asthma/heart disease</td>
               </tr>
-              <tr className={aqi > 200 ? 'row-selected' : ''}>
+              <tr className={typeof aqi === 'number' && aqi > 200 ? 'row-selected' : ''}>
                 <td><span className="status-pill" style={{ backgroundColor: '#EF4444', color: '#fff' }}>Poor / Severe</span></td>
                 <td>201 - 500+</td>
                 <td>91 - 250+</td>
@@ -380,7 +480,13 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
             className="verdict-banner"
             style={{
               background: 'rgba(22, 27, 34, 0.95)',
-              border: `1px solid ${isAnomaly ? 'rgba(248, 81, 73, 0.4)' : 'rgba(63, 185, 80, 0.35)'}`
+              border: `1px solid ${
+                zScoreNum === null
+                  ? 'rgba(48, 54, 61, 0.7)'
+                  : isAnomaly
+                  ? 'rgba(248, 81, 73, 0.4)'
+                  : 'rgba(63, 185, 80, 0.35)'
+              }`
             }}
           >
             <div>
@@ -391,18 +497,22 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
                 style={{
                   fontSize: 'var(--font-size-lg)',
                   fontWeight: 'bold',
-                  color: isAnomaly ? '#F85149' : '#3FB950'
+                  color: zScoreNum === null ? '#94A3B8' : isAnomaly ? '#F85149' : '#3FB950'
                 }}
               >
-                {isAnomaly ? 'ELEVATED CONCENTRATION SURGE' : 'NORMAL AMBIENT BASELINE'}
+                {zScoreNum === null
+                  ? 'AWAITING TELEMETRY'
+                  : isAnomaly
+                  ? 'ELEVATED CONCENTRATION SURGE'
+                  : 'NORMAL AMBIENT BASELINE'}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
                 STATISTICAL Z-SCORE
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#F0F6FC' }}>
-                Z = {zScore} (Norm: ±2.0)
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: zScoreNum === null ? '#94A3B8' : '#F0F6FC' }}>
+                Z = {zScore !== null ? zScore : 'N/A'} (Norm: ±2.0)
               </div>
             </div>
           </div>
@@ -430,16 +540,25 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
               <div className="evidence-item">
                 <span className="ev-label">Live PM2.5 Delta:</span>
                 <span className="ev-val font-mono">
-                  {pm25 >= 45.0 ? `+${(pm25 - 45.0).toFixed(1)}` : (pm25 - 45.0).toFixed(1)} µg/m³
+                  {typeof pm25 === 'number'
+                    ? (pm25 >= 45.0 ? `+${(pm25 - 45.0).toFixed(1)}` : (pm25 - 45.0).toFixed(1)) + ' µg/m³'
+                    : 'N/A'}
                 </span>
               </div>
               <div className="evidence-item">
                 <span className="ev-label">Validation Status:</span>
                 <span
                   className="ev-val"
-                  style={{ color: isAnomaly ? '#F85149' : '#10B981', fontWeight: 600 }}
+                  style={{
+                    color: zScoreNum === null ? '#94A3B8' : isAnomaly ? '#F85149' : '#10B981',
+                    fontWeight: 600
+                  }}
                 >
-                  {isAnomaly ? 'Outlier Condition Detected' : 'No Outliers Detected'}
+                  {zScoreNum === null
+                    ? 'Awaiting Telemetry'
+                    : isAnomaly
+                    ? 'Outlier Condition Detected'
+                    : 'No Outliers Detected'}
                 </span>
               </div>
             </div>
