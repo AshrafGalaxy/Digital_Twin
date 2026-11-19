@@ -22,7 +22,12 @@ from backend.services.signal_optimizer import (
     SignalConstraints,
     webster_optimizer
 )
-from backend.services.spat_adapter import spat_adapter, SignalColor, ControllerMode
+from backend.services.spat_adapter import (
+    spat_adapter,
+    SignalColor,
+    ControllerMode,
+    resolve_intersection_id
+)
 
 logger = logging.getLogger("digital_twin.endpoints.traffic")
 
@@ -626,12 +631,11 @@ async def get_intersection_optimal_timing(
 
     if not approaches:
         # Fallback to configured defaults or generic approaches
-        approaches = DEFAULT_INTERSECTION_APPROACHES.get(intersection_id)
-        if not approaches:
-            for k, v in DEFAULT_INTERSECTION_APPROACHES.items():
-                if k.endswith(intersection_id) or intersection_id in k:
-                    approaches = v
-                    break
+        canonical_id = resolve_intersection_id(intersection_id)
+        if canonical_id:
+            approaches = DEFAULT_INTERSECTION_APPROACHES.get(canonical_id)
+        else:
+            approaches = DEFAULT_INTERSECTION_APPROACHES.get(intersection_id)
 
     if not approaches:
         # Generic 4-phase fallback approach set
@@ -699,8 +703,14 @@ async def get_intersection_spat(intersection_id: str):
     """
     Retrieves real-time Signal Phase and Timing (SPaT) state for an intersection.
     Evaluates sub-second freshness SLA (VALID, STALE, DISCONNECTED).
+    Rejects unregistered intersection identifiers with HTTP 404.
     """
     state = spat_adapter.get_current_spat(intersection_id)
+    if state is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Intersection '{intersection_id}' is not a registered signalized controller in the corridor network."
+        )
     return SPaTResponse(**state.to_dict())
 
 
@@ -775,19 +785,27 @@ async def get_spat_history(
 ):
     """
     Returns historical signal phase transitions recorded for an intersection.
+    Rejects unregistered intersection identifiers with HTTP 404.
     """
+    canonical_id = resolve_intersection_id(intersection_id)
+    if not canonical_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Intersection '{intersection_id}' is not a registered signalized controller in the corridor network."
+        )
+
     query = text("""
         SELECT id, intersection_id, phase_id, phase_name, color,
                duration_sec, start_time, end_time, source_mode, quality_status
         FROM signal_phase_history
-        WHERE intersection_id = :int_id
-           OR intersection_id LIKE :int_pattern
+        WHERE intersection_id = :canonical_id
+           OR intersection_id = :raw_id
         ORDER BY start_time DESC
         LIMIT :limit
     """)
     res = await session.execute(query, {
-        "int_id": intersection_id,
-        "int_pattern": f"%{intersection_id}%",
+        "canonical_id": canonical_id,
+        "raw_id": intersection_id,
         "limit": limit
     })
     rows = res.fetchall()

@@ -177,14 +177,33 @@ CANONICAL_INTERSECTION_PHASES: Dict[str, List[PhaseMovement]] = {
 
 REGISTERED_SIGNAL_IDS = frozenset(CANONICAL_INTERSECTION_PHASES)
 
+REGISTERED_INTERSECTION_ALIASES: Dict[str, str] = {
+    "urn:ngsi-ld:Intersection:PUNE:INT-VN-01": "urn:ngsi-ld:Intersection:PUNE:INT-VN-01",
+    "INT-VN-01": "urn:ngsi-ld:Intersection:PUNE:INT-VN-01",
+    "urn:ngsi-ld:Intersection:PUNE:INT-SN-01": "urn:ngsi-ld:Intersection:PUNE:INT-SN-01",
+    "INT-SN-01": "urn:ngsi-ld:Intersection:PUNE:INT-SN-01",
+}
+
+
+def resolve_intersection_id(identifier: Optional[str]) -> Optional[str]:
+    """
+    Resolves an intersection identifier strictly against registered canonical URNs and aliases.
+    Rejects partial substring or ambiguous matches (e.g. '1', 'SN').
+    """
+    if not identifier or not isinstance(identifier, str):
+        return None
+    cleaned = identifier.strip()
+    return REGISTERED_INTERSECTION_ALIASES.get(cleaned)
+
 
 def resolve_spat_source_mode(claimed_mode: Optional[str], intersection_id: str) -> str:
     """
     A missing claim is never LIVE. LIVE is stored only for a registered controller.
     Any other claim follows the stream mode, which is SIMULATION or REPLAY.
     """
+    canonical_id = resolve_intersection_id(intersection_id) or intersection_id
     claimed = (claimed_mode or "").strip().upper()
-    if claimed == SourceMode.LIVE.value and intersection_id in REGISTERED_SIGNAL_IDS:
+    if claimed == SourceMode.LIVE.value and canonical_id in REGISTERED_SIGNAL_IDS:
         return SourceMode.LIVE.value
     if claimed in (SourceMode.SIMULATION.value, SourceMode.REPLAY.value):
         return claimed
@@ -233,24 +252,22 @@ class SPaTAdapter:
                 source_mode="SIMULATION"
             )
 
-    def get_current_spat(self, intersection_id: str, now: Optional[datetime] = None) -> IntersectionSPaTState:
+    def get_current_spat(self, intersection_id: str, now: Optional[datetime] = None) -> Optional[IntersectionSPaTState]:
         """
-        Retrieves the current SPaT state for an intersection, resolving by exact ID or URN suffix.
+        Retrieves the current SPaT state for an intersection, resolving strictly by exact ID or registered alias.
+        Returns None if the intersection is unregistered. Does not generate or persist synthetic states on read.
         """
-        with self._lock:
-            state = self._states.get(intersection_id)
-            if not state:
-                # Suffix lookup
-                for k, v in self._states.items():
-                    if k.endswith(intersection_id) or intersection_id in k:
-                        state = v
-                        break
+        canonical_id = resolve_intersection_id(intersection_id)
+        if not canonical_id:
+            return None
 
+        with self._lock:
+            state = self._states.get(canonical_id)
             if not state:
-                # Dynamic initialization for new/unregistered intersection
+                name = "Viman Nagar Chowk" if "INT-VN-01" in canonical_id else "Somnath Nagar Chowk"
                 state = IntersectionSPaTState(
-                    intersection_id=intersection_id,
-                    intersection_name=f"Intersection {intersection_id}",
+                    intersection_id=canonical_id,
+                    intersection_name=name,
                     cycle_length_sec=90,
                     active_phase=1,
                     active_phase_name="Approach Movement 1",
@@ -258,8 +275,7 @@ class SPaTAdapter:
                     time_to_next_phase_sec=20.0,
                     source_mode="SIMULATION"
                 )
-                self._states[intersection_id] = state
-
+                self._states[canonical_id] = state
             return state
 
     async def ingest_packet(
@@ -279,6 +295,12 @@ class SPaTAdapter:
         with self._lock:
             current_state = self._states.get(packet.intersection_id)
             if not current_state:
+                if len(self._states) >= 100:
+                    evictable = [k for k in self._states if k not in CANONICAL_INTERSECTION_PHASES]
+                    if evictable:
+                        del self._states[evictable[0]]
+                    else:
+                        raise ValueError("SPaT state capacity limit reached (max 100)")
                 current_state = IntersectionSPaTState(
                     intersection_id=packet.intersection_id,
                     intersection_name=f"Intersection {packet.intersection_id}",
@@ -403,41 +425,33 @@ class SPaTAdapter:
         elapsed_delta_sec: float = 1.0,
         source_mode: str = "SIMULATION",
         **kwargs: Any
-    ) -> IntersectionSPaTState:
+    ) -> Optional[IntersectionSPaTState]:
         """
-        Advances the virtual signal phase cycle for an intersection in simulation/replay modes.
+        Advances the virtual signal phase cycle for a registered intersection in simulation/replay modes.
         Computes stage intervals: Green -> Yellow -> All-Red -> Next Stage Green.
         """
         step_delta = kwargs.get("elapsed_seconds_delta", elapsed_delta_sec)
-        phases = CANONICAL_INTERSECTION_PHASES.get(intersection_id)
-        if not phases:
-            # Match by suffix
-            for k, v in CANONICAL_INTERSECTION_PHASES.items():
-                if k.endswith(intersection_id) or intersection_id in k:
-                    phases = v
-                    break
+        canonical_id = resolve_intersection_id(intersection_id)
+        if not canonical_id:
+            return None
 
+        phases = CANONICAL_INTERSECTION_PHASES.get(canonical_id)
         if not phases:
-            # Generic 4-phase fallback
-            phases = [
-                PhaseMovement(phase_id=1, approach_id="APP-EB", phase_name="Eastbound Major Approach", allocated_green_sec=25.0),
-                PhaseMovement(phase_id=2, approach_id="APP-WB", phase_name="Westbound Major Approach", allocated_green_sec=25.0),
-                PhaseMovement(phase_id=3, approach_id="APP-NB", phase_name="Northbound Minor Approach", allocated_green_sec=15.0),
-                PhaseMovement(phase_id=4, approach_id="APP-SB", phase_name="Southbound Minor Approach", allocated_green_sec=15.0),
-            ]
+            return None
 
         total_cycle = sum(p.total_stage_duration_sec for p in phases)
 
         with self._lock:
-            state = self._states.get(intersection_id)
+            state = self._states.get(canonical_id)
             if not state:
+                name = "Viman Nagar Chowk" if "INT-VN-01" in canonical_id else "Somnath Nagar Chowk"
                 state = IntersectionSPaTState(
-                    intersection_id=intersection_id,
-                    intersection_name=f"Intersection {intersection_id}",
+                    intersection_id=canonical_id,
+                    intersection_name=name,
                     cycle_length_sec=int(total_cycle),
                     source_mode=source_mode
                 )
-                self._states[intersection_id] = state
+                self._states[canonical_id] = state
 
             # Advance elapsed cycle
             new_elapsed = (state.elapsed_cycle_sec + step_delta) % total_cycle

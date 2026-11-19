@@ -400,11 +400,51 @@ async def test_api_simulation_frame_does_not_replace_live_state():
     assert '"activePhase": 1' in row[1]
 
 
-def test_spat_unregistered_intersection_fallback():
-    """Verifies that querying an unregistered intersection creates a clean fallback without error."""
+def test_spat_unregistered_intersection_rejected():
+    """Verifies that querying an unregistered intersection returns None and does not create synthetic state."""
     adapter = SPaTAdapter()
+    initial_len = len(adapter._states)
     state = adapter.get_current_spat("INT-NEW-DISTRICT-09")
-    assert state.intersection_id == "INT-NEW-DISTRICT-09"
-    assert state.cycle_length_sec == 90
-    assert state.active_phase == 1
-    assert state.phase_color == SignalColor.GREEN
+    assert state is None
+    assert len(adapter._states) == initial_len
+
+
+def test_api_spat_exact_match_and_unregistered_rejection():
+    """
+    Verifies that:
+    - Partial substrings ('1', 'SN') return HTTP 404 and do not match seeded intersections.
+    - Unregistered identifiers return HTTP 404 and do not expand in-memory state count.
+    - Exact canonical URN returns HTTP 200 with matching intersectionId.
+    - Exact registered alias ('INT-VN-01', 'INT-SN-01') returns HTTP 200 with matching intersectionId.
+    - Unregistered history lookup returns HTTP 404.
+    """
+    initial_len = len(spat_adapter._states)
+
+    # Substrings must return 404
+    res_1 = client.get("/api/v1/traffic/signals/1/spat")
+    assert res_1.status_code == 404
+
+    res_sn = client.get("/api/v1/traffic/signals/SN/spat")
+    assert res_sn.status_code == 404
+
+    # Unknown identifier must return 404 and not allocate in memory
+    res_unknown = client.get("/api/v1/traffic/signals/NOT-A-REAL-INTERSECTION-99/spat")
+    assert res_unknown.status_code == 404
+    assert len(spat_adapter._states) == initial_len
+
+    # Exact registered canonical URN
+    res_exact_urn = client.get("/api/v1/traffic/signals/urn:ngsi-ld:Intersection:PUNE:INT-VN-01/spat")
+    assert res_exact_urn.status_code == 200
+    assert res_exact_urn.json()["intersectionId"] == "urn:ngsi-ld:Intersection:PUNE:INT-VN-01"
+
+    # Exact registered short alias
+    res_exact_alias = client.get("/api/v1/traffic/signals/INT-VN-01/spat")
+    assert res_exact_alias.status_code == 200
+    assert res_exact_alias.json()["intersectionId"] == "urn:ngsi-ld:Intersection:PUNE:INT-VN-01"
+
+    # History lookup for unregistered intersection must return 404
+    res_hist_unknown = client.get("/api/v1/traffic/signals/NOT-A-REAL-INTERSECTION-99/spat/history")
+    assert res_hist_unknown.status_code == 404
+
+    res_hist_substring = client.get("/api/v1/traffic/signals/1/spat/history")
+    assert res_hist_substring.status_code == 404
