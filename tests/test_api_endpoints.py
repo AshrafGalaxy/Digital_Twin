@@ -187,3 +187,35 @@ def test_access_inquiry_submission():
     assert data["inquiry_id"].startswith("INQ-")
     assert data["status"] == "received"
     assert "received_at" in data
+
+def test_traffic_segment_los_exact_match():
+    """Verifies GET /api/v1/traffic/segment/{id}/los returns single segment with exact ID matching."""
+    seg_id = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+    res = client.get(f"/api/v1/traffic/segment/{seg_id}/los")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["segmentId"] == seg_id
+    assert "levelOfService" in data
+    assert "volumeCapacityRatio" in data
+    assert "provenance" in data
+    assert data["provenance"]["sourceMode"] in ("LIVE", "REPLAY", "SIMULATION")
+    assert "observedAt" in data["provenance"]
+
+def test_traffic_segment_los_suffix_rejected():
+    """Verifies BUG-33: Suffix matching is rejected; partial or short IDs return 404."""
+    # Suffix only ('01' or 'SEG-NR-EB-01') should not match urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01
+    res_short = client.get("/api/v1/traffic/segment/01/los")
+    assert res_short.status_code == 404
+    assert "not found" in res_short.json()["detail"].lower()
+
+    res_partial = client.get("/api/v1/traffic/segment/SEG-NR-EB-01/los")
+    assert res_partial.status_code == 404
+    assert "not found" in res_partial.json()["detail"].lower()
+
+def test_traffic_segment_los_invalid_policy_standard():
+    """Verifies GET /api/v1/traffic/segment/{id}/los validates policy_standard parameter."""
+    seg_id = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+    res = client.get(f"/api/v1/traffic/segment/{seg_id}/los?policy_standard=INVALID_STANDARD")
+    assert res.status_code == 400
+    assert "invalid policy standard" in res.json()["detail"].lower()
+

@@ -238,20 +238,120 @@ async def get_segment_los(
     session: AsyncSession = Depends(get_db_session)
 ):
     """
-    Computes canonical Level of Service (LOS) for a single road segment.
+    Computes canonical Level of Service (LOS) for a single road segment using exact matching.
     """
-    corridor_data = await get_corridor_los(
-        policy_standard=policy_standard,
-        source_mode=source_mode,
-        session=session
-    )
-    for seg in corridor_data.segments:
-        if seg.segmentId == segment_id or seg.segmentId.endswith(segment_id):
-            return seg
+    valid_standards = [PolicyStandard.INDO_HCM, PolicyStandard.US_HCM_6TH, PolicyStandard.CUSTOM_DISTRICT]
+    if policy_standard not in valid_standards:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid policy standard '{policy_standard}'. Valid options: {valid_standards}"
+        )
 
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Segment '{segment_id}' not found in corridor network."
+    # 1. Fetch only the requested segment from database or fallback via exact ID match
+    target_seg = None
+    try:
+        seg_res = await session.execute(
+            text("""
+                SELECT id, name, direction, free_flow_speed_kmh, capacity_veh_per_hour, length_meters
+                FROM road_segments
+                WHERE id = :segment_id
+            """),
+            {"segment_id": segment_id}
+        )
+        s = seg_res.mappings().first()
+        if s:
+            target_seg = {
+                "id": s["id"],
+                "name": s["name"],
+                "direction": s["direction"],
+                "capacity": float(s["capacity_veh_per_hour"] or 2400.0),
+                "free_flow": float(s["free_flow_speed_kmh"] or 50.0),
+                "length_meters": float(s["length_meters"] or 500.0),
+                "default_speed": 35.0,
+                "default_flow": 1200.0
+            }
+    except Exception as db_err:
+        logger.warning("Could not query road_segments table for segment '%s': %s", segment_id, db_err)
+
+    if not target_seg:
+        target_seg = next((s for s in FALLBACK_SEGMENTS if s["id"] == segment_id), None)
+
+    if not target_seg:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Segment '{segment_id}' not found in corridor network."
+        )
+
+    # 2. Fetch live or latest entity state for only this segment
+    live_metrics = {}
+    now_iso = datetime.now(timezone.utc).isoformat()
+    obs_time = now_iso
+    src_mode = source_mode
+    quality_status = "VALID"
+
+    try:
+        state_res = await session.execute(
+            text("""
+                SELECT metrics, observed_at, source_mode, quality_status
+                FROM entity_current_state
+                WHERE entity_id = :segment_id
+            """),
+            {"segment_id": segment_id}
+        )
+        row = state_res.mappings().first()
+        if row:
+            if row["metrics"]:
+                try:
+                    live_metrics = json.loads(row["metrics"]) if isinstance(row["metrics"], str) else row["metrics"]
+                except Exception:
+                    live_metrics = {}
+            if row.get("observed_at"):
+                obs_time = str(row["observed_at"])
+            if row.get("source_mode"):
+                src_mode = row["source_mode"]
+            if row.get("quality_status"):
+                quality_status = row["quality_status"]
+    except Exception as state_err:
+        logger.warning("Could not query entity_current_state for segment '%s': %s", segment_id, state_err)
+
+    # 3. Compute LOS for only the target segment
+    speed = float(live_metrics.get("averageSpeedKmh", target_seg.get("default_speed", 35.0)))
+    flow = float(live_metrics.get("vehicleFlowPerHour", target_seg.get("default_flow", 1200.0)))
+    capacity = float(target_seg["capacity"])
+    free_flow = float(target_seg["free_flow"])
+    length_m = float(target_seg.get("length_meters") or 500.0)
+
+    res = los_engine.compute_segment_los(
+        segment_id=segment_id,
+        speed_kmh=speed,
+        flow_vph=flow,
+        capacity_vph=capacity,
+        free_flow_speed_kmh=free_flow,
+        policy_standard=policy_standard,
+        source_mode=src_mode,
+        quality_score=None,
+        observed_at=obs_time,
+        length_m=length_m
+    )
+
+    return SegmentLOSResponse(
+        segmentId=segment_id,
+        name=target_seg["name"],
+        direction=target_seg["direction"],
+        speedKmh=res["speedKmh"],
+        flowVehHr=res["flowVehHr"],
+        capacityVehHr=res["capacityVehHr"],
+        freeFlowSpeedKmh=res["freeFlowSpeedKmh"],
+        volumeCapacityRatio=res["volumeCapacityRatio"],
+        densityVehKm=res["densityVehKm"],
+        speedState=res["speedState"],
+        congestionIndex=res["congestionIndex"],
+        speedRatio=res["speedRatio"],
+        levelOfService=res["levelOfService"],
+        operationalCondition=res["operationalCondition"],
+        policyStandard=res["policyStandard"],
+        lengthMeters=res.get("lengthMeters"),
+        provenance=ProvenanceInfo(**res["provenance"])
     )
 
 

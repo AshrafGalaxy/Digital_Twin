@@ -311,14 +311,20 @@ def test_api_corridor_los_invalid_policy():
 
 
 def test_api_segment_los_single():
-    """Verifies GET /api/v1/traffic/segment/{segment_id}/los returns single segment detail."""
-    res = client.get("/api/v1/traffic/segment/SEG-NR-EB-01/los")
+    """Verifies GET /api/v1/traffic/segment/{segment_id}/los returns single segment detail using exact match."""
+    res = client.get("/api/v1/traffic/segment/urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01/los")
     assert res.status_code == 200
     seg = res.json()
-    assert "SEG-NR-EB-01" in seg["segmentId"]
+    assert seg["segmentId"] == "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
     assert "levelOfService" in seg
     assert "volumeCapacityRatio" in seg
     assert "densityVehKm" in seg
+
+
+def test_api_segment_los_suffix_rejected():
+    """Verifies BUG-33: partial suffix without full URN returns 404."""
+    res = client.get("/api/v1/traffic/segment/SEG-NR-EB-01/los")
+    assert res.status_code == 404
 
 
 def test_api_segment_los_not_found():
