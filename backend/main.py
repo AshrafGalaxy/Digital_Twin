@@ -68,6 +68,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Database schema initialization notice: %s", migration_res)
 
+    # 1b. Reload advisory recommendations and dispatch orders from persistent audit log (BUG-25)
+    try:
+        from backend.services.rule_engine import rule_engine
+        reloaded_mdo = await rule_engine.reload_persisted_state()
+        if reloaded_mdo > 0:
+            logger.info("Restored %d municipal dispatch order(s) from persistent audit log.", reloaded_mdo)
+    except Exception as reload_err:
+        logger.warning("Could not reload advisory dispatch state: %s", reload_err)
+
     # 2. Start MQTT background consumer
     mqtt_consumer.start()
 

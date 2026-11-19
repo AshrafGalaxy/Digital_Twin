@@ -9,9 +9,12 @@ without autonomous external actuation.
 from datetime import datetime, timezone
 import hashlib
 import json
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 import threading
 import uuid
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.constants import SourceMode
 from backend.schemas.recommendations import (
@@ -21,6 +24,7 @@ from backend.schemas.recommendations import (
     AuthorizeAdvisoryRequest,
     ConformalPredictedImpact,
     DispatchWorkOrder,
+    OfficerCredentials,
     ProposedParameterChange,
     RecommendationDomain,
     RecommendationEvidence,
@@ -31,6 +35,8 @@ from backend.schemas.recommendations import (
 from backend.services.forecast_service import forecast_service
 from backend.services.anomaly_detector import EnvironmentalAnomalyDetector
 from backend.services.signal_optimizer import ApproachDemand, webster_optimizer
+
+logger = logging.getLogger("digital_twin.services.rule_engine")
 
 
 class SafetyBoundRejected(Exception):
@@ -617,6 +623,185 @@ class AdvisoryRuleEngine:
         """Retrieves an active or historical dispatch work order for a recommendation."""
         with self._lock:
             return self._dispatch_orders.get(rec_id)
+
+    async def reload_dispatch_order(
+        self,
+        rec_id: str,
+        session: Optional[AsyncSession] = None
+    ) -> Optional[DispatchWorkOrder]:
+        """
+        Reloads a dispatch order from advisory_audit_log for a specific recommendation if present.
+        """
+        await self.reload_persisted_state(session=session, target_rec_id=rec_id)
+        with self._lock:
+            return self._dispatch_orders.get(rec_id)
+
+    async def sync_recommendation_status(
+        self,
+        rec_id: str,
+        session: Optional[AsyncSession] = None
+    ) -> None:
+        """
+        Synchronizes an in-memory recommendation's status with its latest audit log record.
+        """
+        await self.reload_persisted_state(session=session, target_rec_id=rec_id)
+
+    async def reload_persisted_state(
+        self,
+        session: Optional[AsyncSession] = None,
+        target_rec_id: Optional[str] = None
+    ) -> int:
+        """
+        Queries advisory_audit_log to restore recommendation status and reconstruct DispatchWorkOrder instances.
+        Ensures persisted dispatch orders and recommendation statuses survive process restarts.
+        """
+        from backend.core.database import AsyncSessionLocal
+        close_session = False
+        if session is None:
+            session = AsyncSessionLocal()
+            close_session = True
+
+        reloaded_count = 0
+        try:
+            if target_rec_id:
+                query = text("""
+                    SELECT recommendation_id, target_entity_id, new_status,
+                           authorized_by, badge_id, shift_id, justification_notes,
+                           dispatch_order_id, dispatch_payload_json, tamper_evident_hash,
+                           created_at
+                    FROM advisory_audit_log
+                    WHERE recommendation_id = :rec_id
+                      AND action_type = 'MUNICIPAL_DISPATCH_AUTHORIZATION'
+                    ORDER BY id ASC
+                """)
+                res = await session.execute(query, {"rec_id": target_rec_id})
+            else:
+                query = text("""
+                    SELECT recommendation_id, target_entity_id, new_status,
+                           authorized_by, badge_id, shift_id, justification_notes,
+                           dispatch_order_id, dispatch_payload_json, tamper_evident_hash,
+                           created_at
+                    FROM advisory_audit_log
+                    WHERE action_type = 'MUNICIPAL_DISPATCH_AUTHORIZATION'
+                    ORDER BY id ASC
+                """)
+                res = await session.execute(query)
+
+            rows = res.fetchall()
+            with self._lock:
+                for r in rows:
+                    rec_id = r[0]
+                    target_entity_id = r[1]
+                    new_status_str = r[2]
+                    authorized_by = r[3]
+                    badge_id = r[4]
+                    shift_id = r[5]
+                    notes = r[6]
+                    dispatch_order_id = r[7]
+                    payload_json = r[8]
+                    tamper_hash = r[9]
+                    ts = r[10]
+
+                    if isinstance(ts, datetime):
+                        issued_dt = ts
+                    elif isinstance(ts, str):
+                        try:
+                            issued_dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                        except Exception:
+                            issued_dt = datetime.now(timezone.utc)
+                    else:
+                        issued_dt = datetime.now(timezone.utc)
+
+                    try:
+                        enum_status = RecommendationStatus(new_status_str)
+                    except Exception:
+                        enum_status = RecommendationStatus.ACKNOWLEDGED
+
+                    rec = self._recommendations.get(rec_id)
+                    if rec:
+                        rec.status = enum_status
+                        rec.dispatchOrderId = dispatch_order_id
+                        rec.tamperEvidentHash = tamper_hash
+                        rec.updatedAt = issued_dt
+
+                    payload_dict = {}
+                    if payload_json:
+                        try:
+                            payload_dict = json.loads(payload_json) if isinstance(payload_json, str) else payload_json
+                        except Exception:
+                            payload_dict = {}
+
+                    primary_off = None
+                    if payload_dict.get("primaryOfficer"):
+                        try:
+                            primary_off = OfficerCredentials(**payload_dict["primaryOfficer"])
+                        except Exception:
+                            primary_off = None
+
+                    concurring_off = None
+                    if payload_dict.get("concurringOfficer"):
+                        try:
+                            concurring_off = OfficerCredentials(**payload_dict["concurringOfficer"])
+                        except Exception:
+                            concurring_off = None
+
+                    prop_change = None
+                    if payload_dict.get("proposedChange"):
+                        try:
+                            prop_change = ProposedParameterChange(**payload_dict["proposedChange"])
+                        except Exception:
+                            prop_change = None
+                    elif rec and rec.proposedChange:
+                        prop_change = rec.proposedChange
+
+                    pred_impact = None
+                    if payload_dict.get("predictedImpact"):
+                        try:
+                            pred_impact = ConformalPredictedImpact(**payload_dict["predictedImpact"])
+                        except Exception:
+                            pred_impact = None
+                    elif rec and rec.predictedImpact:
+                        pred_impact = rec.predictedImpact
+
+                    safety_check = None
+                    if payload_dict.get("safetyChecklist"):
+                        try:
+                            safety_check = SafetyConstraintChecklist(**payload_dict["safetyChecklist"])
+                        except Exception:
+                            safety_check = None
+                    elif rec and rec.safetyChecklist:
+                        safety_check = rec.safetyChecklist
+
+                    work_order = DispatchWorkOrder(
+                        dispatchOrderId=dispatch_order_id,
+                        recommendationId=rec_id,
+                        targetEntityId=target_entity_id,
+                        authorizedBy=authorized_by,
+                        badgeId=badge_id,
+                        shiftId=shift_id,
+                        issuedAt=issued_dt,
+                        decision=enum_status,
+                        primaryOfficer=primary_off,
+                        concurringOfficer=concurring_off,
+                        proposedChange=prop_change,
+                        predictedImpact=pred_impact,
+                        safetyChecklist=safety_check,
+                        notes=notes,
+                        tamperEvidentHash=tamper_hash,
+                        governanceDisclaimer=(
+                            "Advisory decision support only. Requires physical dispatch confirmation "
+                            "by field maintenance personnel outside the platform."
+                        )
+                    )
+                    self._dispatch_orders[rec_id] = work_order
+                    reloaded_count += 1
+        except Exception as err:
+            logger.warning("Error reloading advisory dispatch state from database: %s", err)
+        finally:
+            if close_session and session:
+                await session.close()
+
+        return reloaded_count
 
     def list_dispatch_orders(self) -> List[DispatchWorkOrder]:
         """Lists all registered dispatch work orders chronologically."""

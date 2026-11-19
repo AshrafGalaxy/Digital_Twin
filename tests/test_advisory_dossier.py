@@ -577,3 +577,73 @@ def test_api_authorize_rejects_missing_safety_checklist():
     assert "absent" in resp.json()["detail"].lower()
     missing = client.get("/api/v1/recommendations/REC-NO-CHECKLIST-API/dispatch-order")
     assert missing.status_code == 404
+
+
+def test_dispatch_order_survives_process_restart():
+    """
+    Verifies that when the in-memory rule engine is restarted,
+    persisted dispatch orders and recommendation statuses are reloaded from advisory_audit_log.
+    Acceptance criteria for BUG-25:
+    - Stopping the process and starting it on the same database returns the same dispatch order id.
+    - The recommendation status matches the latest audit row.
+    - A recommendation that was never authorized still returns 404 from the dispatch route.
+    """
+    import backend.services.rule_engine as re_mod
+    import backend.api.v1.endpoints.recommendations as rec_endpoints
+
+    headers = _get_traffic_auth_header()
+    payload = {
+        "primaryOfficer": {
+            "officerName": "Inspector Kulkarni",
+            "badgeId": "MCC-OPS-4091"
+        },
+        "concurringOfficer": {
+            "officerName": "Supervisor Deshmukh",
+            "badgeId": "MCC-SUP-1088"
+        },
+        "shiftId": "SHIFT-A",
+        "decision": "ACKNOWLEDGED",
+        "notes": "Field authorization test for restart persistence.",
+        "concurringToken": _analyst_session_token(),
+    }
+    rec_id = "REC-TRF-20260920-001"
+    auth_resp = client.post(f"/api/v1/recommendations/{rec_id}/authorize", json=payload, headers=headers)
+    assert auth_resp.status_code == 200
+    expected_order_id = auth_resp.json()["dispatchOrderId"]
+    expected_hash = auth_resp.json()["tamperEvidentHash"]
+
+    # Retrieve before restart
+    pre_order = client.get(f"/api/v1/recommendations/{rec_id}/dispatch-order")
+    assert pre_order.status_code == 200
+    assert pre_order.json()["dispatchOrderId"] == expected_order_id
+
+    # Simulate process restart with clean, isolated rule engine instance
+    orig_engine = re_mod.rule_engine
+    try:
+        fresh_engine = re_mod.AdvisoryRuleEngine()
+        re_mod.rule_engine = fresh_engine
+        rec_endpoints.rule_engine = fresh_engine
+
+        # Before reload, the fresh engine has default ACTIVE status and no in-memory order
+        assert fresh_engine.get_dispatch_order(rec_id) is None
+        assert fresh_engine.get_recommendation(rec_id).status == RecommendationStatus.ACTIVE
+
+        # Access dispatch order endpoint after simulated restart
+        post_order_resp = client.get(f"/api/v1/recommendations/{rec_id}/dispatch-order")
+        assert post_order_resp.status_code == 200
+        post_order_data = post_order_resp.json()
+        assert post_order_data["dispatchOrderId"] == expected_order_id
+        assert post_order_data["tamperEvidentHash"] == expected_hash
+
+        # Verify recommendation detail endpoint reflects persisted status
+        rec_detail_resp = client.get(f"/api/v1/recommendations/{rec_id}")
+        assert rec_detail_resp.status_code == 200
+        assert rec_detail_resp.json()["status"] == "ACKNOWLEDGED"
+        assert rec_detail_resp.json()["dispatchOrderId"] == expected_order_id
+
+        # Verify an unauthorized recommendation returns 404
+        unauth_resp = client.get("/api/v1/recommendations/REC-ENV-20260920-003/dispatch-order")
+        assert unauth_resp.status_code == 404
+    finally:
+        re_mod.rule_engine = orig_engine
+        rec_endpoints.rule_engine = orig_engine

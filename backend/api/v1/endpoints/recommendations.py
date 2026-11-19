@@ -38,11 +38,13 @@ router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 @router.get("", response_model=List[AdvisoryRecommendation])
 async def list_recommendations(
     domain: Optional[RecommendationDomain] = Query(None, description="Filter by domain: TRAFFIC, ENERGY, ENVIRONMENT"),
-    status: Optional[RecommendationStatus] = Query(None, description="Filter by review status: ACTIVE, UNDER_REVIEW, ACKNOWLEDGED, DISMISSED")
+    status: Optional[RecommendationStatus] = Query(None, description="Filter by review status: ACTIVE, UNDER_REVIEW, ACKNOWLEDGED, DISMISSED"),
+    session: AsyncSession = Depends(get_db_session)
 ):
     """
     Lists all advisory recommendations with optional domain and review status filters.
     """
+    await rule_engine.reload_persisted_state(session=session)
     return rule_engine.list_recommendations(domain=domain, status=status)
 
 
@@ -133,10 +135,14 @@ async def trigger_rule_evaluation():
 
 
 @router.get("/{rec_id}", response_model=AdvisoryRecommendation)
-async def get_recommendation_detail(rec_id: str):
+async def get_recommendation_detail(
+    rec_id: str,
+    session: AsyncSession = Depends(get_db_session)
+):
     """
     Retrieves a single advisory recommendation with complete evidence and audit history.
     """
+    await rule_engine.reload_persisted_state(session=session, target_rec_id=rec_id)
     rec = rule_engine.get_recommendation(rec_id)
     if not rec:
         raise HTTPException(
@@ -282,11 +288,16 @@ async def authorize_advisory(
 
 
 @router.get("/{rec_id}/dispatch-order", response_model=DispatchWorkOrder)
-async def get_dispatch_order(rec_id: str):
+async def get_dispatch_order(
+    rec_id: str,
+    session: AsyncSession = Depends(get_db_session)
+):
     """
     Retrieves the generated Municipal Dispatch Work Order for a specific recommendation.
     """
     order = rule_engine.get_dispatch_order(rec_id)
+    if not order:
+        order = await rule_engine.reload_dispatch_order(rec_id, session=session)
     if not order:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
