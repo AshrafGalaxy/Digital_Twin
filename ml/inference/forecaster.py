@@ -228,20 +228,25 @@ class CorridorForecaster:
         offset_minutes = get_corridor_utc_offset_minutes(utc_offset_minutes)
 
         is_registered = building_id in FACILITY_CONTRACT_KW
+        contract_demand: Optional[float] = None
+        peak_threshold: Optional[float] = None
+
+        active_capacity: Optional[float] = None
         if contract_kw is not None:
-            contract_demand: Optional[float] = float(contract_kw)
-            peak_threshold: Optional[float] = round(contract_demand * 0.85, 1)
+            active_capacity = float(contract_kw)
         elif is_registered:
-            contract_demand = float(FACILITY_CONTRACT_KW[building_id])
-            peak_threshold = round(contract_demand * 0.85, 1)
-        else:
-            # Unregistered building: do NOT assign fabricated contract demand
-            contract_demand = None
-            peak_threshold = None
+            active_capacity = float(FACILITY_CONTRACT_KW[building_id])
+
+        if active_capacity is not None:
+            contract_demand = active_capacity
+            peak_threshold = round(active_capacity * 0.85, 1)
 
         input_omitted = current_kw is None
         if input_omitted:
-            effective_kw = 4200.0 if not is_registered else (contract_demand * 0.65 if contract_demand is not None else 4200.0)
+            if active_capacity is not None:
+                effective_kw = active_capacity * 0.65
+            else:
+                effective_kw = 4200.0
         else:
             effective_kw = float(current_kw)
 
