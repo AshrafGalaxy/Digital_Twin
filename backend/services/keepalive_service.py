@@ -60,12 +60,20 @@ class KeepAliveService:
             return False
 
     async def _heartbeat_loop(self) -> None:
-        """Background loop executing pings at configured intervals."""
+        """Background loop executing pings and periodic quarantine maintenance."""
         while self._running:
             backend = get_active_backend()
             # Only execute keep-alive pings if connected to PostgreSQL / Supabase
             if backend == "postgresql":
                 await self.ping_database()
+
+            # Periodic quarantine spool maintenance per BUG-32
+            try:
+                from backend.ingestion.quarantine import quarantine_manager
+                quarantine_manager.prune_quarantine()
+            except Exception as q_err:
+                logger.warning("Periodic quarantine spool pruning notice: %s", q_err)
+
             try:
                 await asyncio.sleep(self._interval_seconds)
             except asyncio.CancelledError:

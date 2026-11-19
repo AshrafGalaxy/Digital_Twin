@@ -78,6 +78,19 @@ async def lifespan(app: FastAPI):
 
     # 4. Anti-Dormancy Database Keep-Alive Service
     keepalive_service.start()
+
+    # 5. Quarantine Spool Bounded Retention Pruning (BUG-32)
+    try:
+        from backend.ingestion.quarantine import quarantine_manager
+        prune_res = quarantine_manager.prune_quarantine()
+        if prune_res.get("totalPruned", 0) > 0:
+            logger.info(
+                "Quarantine spool pruned on startup: %s aged out, %s excess capped.",
+                prune_res.get("prunedByAge", 0),
+                prune_res.get("prunedByCap", 0)
+            )
+    except Exception as q_err:
+        logger.warning("Startup quarantine spool prune notice: %s", q_err)
     
     yield
 

@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     # Cryptographic Municipal Session Token Secret
     MUNICIPAL_JWT_SECRET: Optional[str] = None
 
+    # Quarantine Storage Bounds & Retention Policy (BUG-32)
+    QUARANTINE_RETENTION_HOURS: float = 168.0  # 7 days default retention
+    QUARANTINE_MAX_RECORDS: int = 10000        # Maximum row cap to protect local spool against floods
+
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT.lower() == "production"

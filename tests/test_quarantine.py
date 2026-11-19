@@ -212,3 +212,68 @@ def test_quarantined_event_state_isolation_invariant():
             if speed is not None:
                 assert speed < 120.0
                 assert speed != 250.0
+
+
+def test_quarantine_prune_by_retention_window():
+    """Verifies BUG-32: Records older than the retention window are deleted, newer records remain."""
+    import sqlite3
+    now_utc = datetime.now(timezone.utc)
+
+    # 1. Record an event that will be treated as aged out (10 days old)
+    rec_old = quarantine_manager.record_quarantine(
+        raw_payload={"speedKmh": 200.0, "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"},
+        rejection_reason="SPEED_OUT_OF_BOUNDS"
+    )
+
+    # Manually backdate quarantined_at in the SQLite database to 10 days ago
+    ten_days_ago = (now_utc - timedelta(days=10)).isoformat()
+    with quarantine_manager._lock:
+        conn = sqlite3.connect(quarantine_manager.db_path)
+        conn.execute("UPDATE quarantine_observations SET quarantined_at = ? WHERE id = ?", (ten_days_ago, rec_old["id"]))
+        conn.commit()
+        conn.close()
+
+    # 2. Record a fresh event (current time)
+    rec_fresh = quarantine_manager.record_quarantine(
+        raw_payload={"speedKmh": 180.0, "segmentId": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02"},
+        rejection_reason="SPEED_OUT_OF_BOUNDS"
+    )
+
+    # 3. Prune with 7-day retention (168 hours)
+    prune_res = quarantine_manager.prune_quarantine(retention_hours=168.0)
+    assert prune_res["prunedByAge"] == 1
+    assert prune_res["remaining"] == 1
+
+    # 4. Verify fresh record is still accessible via API
+    res = client.get("/api/v1/health/quarantine")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["totalQuarantined"] == 1
+    assert data["records"][0]["id"] == rec_fresh["id"]
+
+
+def test_quarantine_row_cap_flood_protection():
+    """Verifies BUG-32: Table capacity cap prevents unbounded row accumulation under floods."""
+    original_cap = quarantine_manager.max_records
+    try:
+        quarantine_manager.max_records = 3
+
+        for i in range(7):
+            quarantine_manager.record_quarantine(
+                raw_payload={"speedKmh": 150.0 + i, "segmentId": f"SEG-{i}"},
+                rejection_reason="SPEED_OUT_OF_BOUNDS"
+            )
+
+        summary = quarantine_manager.get_quarantine_summary()
+        assert summary["totalQuarantined"] == 3
+
+        records = quarantine_manager.get_quarantined_records(limit=10)
+        assert len(records) == 3
+        # Should keep the newest 3 records
+        entity_ids = [r["entityId"] for r in records]
+        assert "SEG-6" in entity_ids
+        assert "SEG-5" in entity_ids
+        assert "SEG-4" in entity_ids
+    finally:
+        quarantine_manager.max_records = original_cap
+

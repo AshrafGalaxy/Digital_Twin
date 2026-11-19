@@ -11,10 +11,12 @@ are NEVER allowed to alter authoritative twin state or simulation records.
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from threading import Lock
+
+from backend.core.config import settings
 
 # Persistent fallback database path
 DB_DIR = Path("data")
@@ -30,12 +32,22 @@ def _get_quarantine_db_path() -> Path:
 class QuarantineManager:
     """
     Manages recording, querying, and auditing of quarantined ingestion observations.
-    Provides persistent local SQLite storage with memory buffer and PostgreSQL compatibility.
+    Provides persistent local SQLite spool storage with bounded row capacity and temporal retention (BUG-32).
+    Rejected ingestion records are kept isolated from authoritative twin state in PostgreSQL/TimescaleDB,
+    with configurable retention window (default: 168h / 7 days) and maximum row limit (default: 10,000)
+    to prevent unbounded spool file growth.
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(
+        self,
+        db_path: Optional[Path] = None,
+        retention_hours: Optional[float] = None,
+        max_records: Optional[int] = None
+    ):
         self.db_path = db_path or _get_quarantine_db_path()
         self._lock = Lock()
+        self.retention_hours = retention_hours if retention_hours is not None else getattr(settings, "QUARANTINE_RETENTION_HOURS", 168.0)
+        self.max_records = max_records if max_records is not None else getattr(settings, "QUARANTINE_MAX_RECORDS", 10000)
         self._init_sqlite()
 
     def _init_sqlite(self) -> None:
@@ -134,6 +146,21 @@ class QuarantineManager:
                 )
             )
             record_id = cursor.lastrowid
+
+            # Flood protection cap per BUG-32
+            cursor.execute("SELECT COUNT(*) FROM quarantine_observations")
+            total_records = cursor.fetchone()[0]
+            if total_records > self.max_records:
+                excess = total_records - self.max_records
+                cursor.execute("""
+                    DELETE FROM quarantine_observations
+                    WHERE id IN (
+                        SELECT id FROM quarantine_observations
+                        ORDER BY quarantined_at ASC, id ASC
+                        LIMIT ?
+                    )
+                """, (excess,))
+
             conn.commit()
             conn.close()
 
@@ -239,6 +266,62 @@ class QuarantineManager:
                 "reasonsBreakdown": reasons_breakdown,
                 "lastQuarantinedAt": last_quarantined,
                 "dataHonestyStatus": "STRICT_REJECTION_ACTIVE"
+            }
+
+    def prune_quarantine(
+        self,
+        retention_hours: Optional[float] = None,
+        max_records: Optional[int] = None
+    ) -> Dict[str, int]:
+        """
+        Prunes quarantined observations older than retention window and caps total records.
+        Preserves recent audit records while bounding local spool storage growth per BUG-32.
+        """
+        hours = retention_hours if retention_hours is not None else self.retention_hours
+        cap = max_records if max_records is not None else self.max_records
+
+        now_utc = datetime.now(timezone.utc)
+        cutoff_iso = (now_utc - timedelta(hours=hours)).isoformat()
+
+        with self._lock:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # 1. Prune records older than cutoff timestamp
+            cursor.execute(
+                "DELETE FROM quarantine_observations WHERE quarantined_at < ?",
+                (cutoff_iso,)
+            )
+            pruned_by_age = cursor.rowcount
+
+            # 2. Prune records exceeding total capacity cap
+            cursor.execute("SELECT COUNT(*) FROM quarantine_observations")
+            current_count = cursor.fetchone()[0]
+            pruned_by_cap = 0
+
+            if current_count > cap:
+                excess = current_count - cap
+                cursor.execute("""
+                    DELETE FROM quarantine_observations
+                    WHERE id IN (
+                        SELECT id FROM quarantine_observations
+                        ORDER BY quarantined_at ASC, id ASC
+                        LIMIT ?
+                    )
+                """, (excess,))
+                pruned_by_cap = cursor.rowcount
+
+            cursor.execute("SELECT COUNT(*) FROM quarantine_observations")
+            remaining = cursor.fetchone()[0]
+
+            conn.commit()
+            conn.close()
+
+            return {
+                "prunedByAge": pruned_by_age,
+                "prunedByCap": pruned_by_cap,
+                "totalPruned": pruned_by_age + pruned_by_cap,
+                "remaining": remaining
             }
 
     def clear_quarantine(self) -> None:
