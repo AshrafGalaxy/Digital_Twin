@@ -51,9 +51,9 @@ class EnergyForecastResponse(BaseModel):
     unit: str = "kW"
     modelVersion: str
     inputQualityStatus: str = "VALID"
-    contractDemandKw: Optional[float] = 6800.0
+    contractDemandKw: Optional[float] = None
     isPeakDemandAlert: bool = False
-    peakThresholdKw: float = 4800.0
+    peakThresholdKw: Optional[float] = None
     baselineComparison: BaselineComparison
     sourceLimitation: str
 

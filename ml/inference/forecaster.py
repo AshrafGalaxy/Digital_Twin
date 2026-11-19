@@ -65,7 +65,7 @@ class CorridorForecaster:
     def predict_traffic_speed(
         self,
         segment_id: str,
-        current_speed: float,
+        current_speed: Optional[float] = None,
         speed_history: Optional[List[float]] = None,
         ambient_temp_c: float = 29.5,
         now_utc: Optional[datetime] = None,
@@ -79,12 +79,20 @@ class CorridorForecaster:
         target_utc = now_utc + timedelta(minutes=15)
         offset_minutes = get_corridor_utc_offset_minutes(utc_offset_minutes)
 
+        input_omitted = current_speed is None
+        effective_speed = 24.5 if input_omitted else float(current_speed)
+
         # Fallback if artifact is not loaded
         if not self.traffic_artifact:
             # Calibrated deterministic heuristic baseline
-            pred = max(10.0, min(50.0, current_speed * 0.95))
+            pred = max(10.0, min(50.0, effective_speed * 0.95))
             c_lower = round(max(8.0, pred - 3.5), 2)
             c_upper = round(min(52.0, pred + 3.5), 2)
+            notice = (
+                "Degraded heuristic fallback: model artifact unavailable and current speed observation was omitted."
+                if input_omitted else
+                "Heuristic fallback: model artifact unavailable. No holdout evaluation metrics computed."
+            )
             return {
                 "entityId": segment_id,
                 "targetMetric": "averageSpeedKmh",
@@ -104,16 +112,16 @@ class CorridorForecaster:
                 "modelVersion": "traffic-heuristic-fallback",
                 "inputQualityStatus": "DEGRADED",
                 "baselineComparison": {
-                    "persistenceValue": round(current_speed, 2),
+                    "persistenceValue": None if input_omitted else round(effective_speed, 2),
                     "modelTestMae": None,
                     "persistenceMae": None,
                     "accuracyGainPct": None
                 },
-                "localityNotice": "Heuristic fallback: model artifact unavailable. No holdout evaluation metrics computed."
+                "localityNotice": notice
             }
 
         # Synthesize recent lags if partial history provided (ending at current observation)
-        hist = list(speed_history) if speed_history is not None else [current_speed] * 13
+        hist = list(speed_history) if speed_history is not None else [effective_speed] * 13
         if len(hist) < 13:
             hist = [hist[0]] * (13 - len(hist)) + hist
 
@@ -163,8 +171,16 @@ class CorridorForecaster:
         )
 
         quality_status = "VALID"
-        if not explanation.get("available", True) or explanation.get("error"):
+        if input_omitted:
             quality_status = "DEGRADED"
+        elif not explanation.get("available", True) or explanation.get("error"):
+            quality_status = "DEGRADED"
+
+        locality_notice = (
+            "Degraded forecast: current speed observation was omitted; substituted 24.5 km/h arterial baseline. Speed lag history was synthesized."
+            if input_omitted else
+            self.traffic_artifact.get("locality_caveat", "")
+        )
 
         return {
             "entityId": segment_id,
@@ -186,18 +202,18 @@ class CorridorForecaster:
             "modelVersion": self.traffic_artifact.get("model_id", "traffic-xgb-v1"),
             "inputQualityStatus": quality_status,
             "baselineComparison": {
-                "persistenceValue": round(current_speed, 2),
+                "persistenceValue": None if input_omitted else round(effective_speed, 2),
                 "modelTestMae": self.traffic_artifact["metrics"]["test_mae"],
                 "persistenceMae": self.traffic_artifact["metrics"]["persistence_mae"],
                 "accuracyGainPct": self.traffic_artifact["metrics"]["improvement_vs_persistence_pct"]
             },
-            "localityNotice": self.traffic_artifact.get("locality_caveat", "")
+            "localityNotice": locality_notice
         }
 
     def predict_building_energy(
         self,
         building_id: str,
-        current_kw: float,
+        current_kw: Optional[float] = None,
         kw_history: Optional[List[float]] = None,
         ambient_temp_c: float = 30.5,
         contract_kw: Optional[float] = None,
@@ -210,13 +226,35 @@ class CorridorForecaster:
         now_utc = ensure_utc_datetime(now_utc)
         target_utc = now_utc + timedelta(minutes=60)
         offset_minutes = get_corridor_utc_offset_minutes(utc_offset_minutes)
-        contract_demand = contract_kw if contract_kw is not None else FACILITY_CONTRACT_KW.get(building_id, 6800.0)
-        peak_threshold = round(contract_demand * 0.85, 1)
+
+        is_registered = building_id in FACILITY_CONTRACT_KW
+        if contract_kw is not None:
+            contract_demand: Optional[float] = float(contract_kw)
+            peak_threshold: Optional[float] = round(contract_demand * 0.85, 1)
+        elif is_registered:
+            contract_demand = float(FACILITY_CONTRACT_KW[building_id])
+            peak_threshold = round(contract_demand * 0.85, 1)
+        else:
+            # Unregistered building: do NOT assign fabricated contract demand
+            contract_demand = None
+            peak_threshold = None
+
+        input_omitted = current_kw is None
+        if input_omitted:
+            effective_kw = 4200.0 if not is_registered else (contract_demand * 0.65 if contract_demand is not None else 4200.0)
+        else:
+            effective_kw = float(current_kw)
 
         if not self.energy_artifact:
-            pred = max(1200.0, current_kw * 1.02)
+            pred = max(1200.0, effective_kw * 1.02)
             c_lower = round(pred * 0.92, 1)
             c_upper = round(pred * 1.08, 1)
+            is_peak = bool(pred >= peak_threshold) if peak_threshold is not None else False
+            notice = (
+                "Degraded heuristic fallback: model artifact unavailable and current load observation was omitted."
+                if input_omitted else
+                "Heuristic fallback: model artifact unavailable. No holdout evaluation metrics computed."
+            )
             return {
                 "entityId": building_id,
                 "targetMetric": "activePowerKw",
@@ -236,19 +274,19 @@ class CorridorForecaster:
                 "modelVersion": "energy-heuristic-fallback",
                 "inputQualityStatus": "DEGRADED",
                 "contractDemandKw": contract_demand,
-                "isPeakDemandAlert": pred >= peak_threshold,
+                "isPeakDemandAlert": is_peak,
                 "peakThresholdKw": peak_threshold,
                 "baselineComparison": {
-                    "persistenceValue": round(current_kw, 1),
+                    "persistenceValue": None if input_omitted else round(effective_kw, 1),
                     "modelTestMae": None,
                     "persistenceMae": None,
                     "accuracyGainPct": None
                 },
-                "sourceLimitation": "Heuristic fallback: model artifact unavailable. No holdout evaluation metrics computed."
+                "sourceLimitation": notice
             }
 
         # Synthesize recent lags if partial history provided (ending at current observation)
-        hist = list(kw_history) if kw_history is not None else [current_kw] * 97
+        hist = list(kw_history) if kw_history is not None else [effective_kw] * 97
         if len(hist) < 97:
             hist = [hist[0]] * (97 - len(hist)) + hist
 
@@ -283,7 +321,7 @@ class CorridorForecaster:
         p90 = p90_monotone
 
         # Dynamic Peak load alert if forecast exceeds 85% of building contract capacity
-        is_peak_alert = pred >= peak_threshold
+        is_peak_alert = bool(pred >= peak_threshold) if peak_threshold is not None else False
 
         # Conformal prediction intervals & local feature attributions
         conformal = ConformalPredictionCalibrator.get_energy_intervals(
@@ -299,8 +337,19 @@ class CorridorForecaster:
         )
 
         quality_status = "VALID"
-        if not explanation.get("available", True) or explanation.get("error"):
+        if input_omitted or not is_registered:
             quality_status = "DEGRADED"
+        elif not explanation.get("available", True) or explanation.get("error"):
+            quality_status = "DEGRADED"
+
+        if not is_registered and input_omitted:
+            source_limitation = "Degraded forecast: facility is not in registered catalog and current load observation was omitted."
+        elif not is_registered:
+            source_limitation = "Degraded forecast: facility is not in registered catalog; contract demand is unassigned."
+        elif input_omitted:
+            source_limitation = f"Degraded forecast: current load observation was omitted; substituted {effective_kw:.1f} kW facility baseline. Load history was synthesized."
+        else:
+            source_limitation = self.energy_artifact.get("source_limitation", "Demonstration facility baseline model.")
 
         return {
             "entityId": building_id,
@@ -325,10 +374,10 @@ class CorridorForecaster:
             "isPeakDemandAlert": is_peak_alert,
             "peakThresholdKw": peak_threshold,
             "baselineComparison": {
-                "persistenceValue": round(current_kw, 1),
+                "persistenceValue": None if input_omitted else round(effective_kw, 1),
                 "modelTestMae": self.energy_artifact["metrics"]["test_mae"],
                 "persistenceMae": self.energy_artifact["metrics"]["persistence_mae"],
                 "accuracyGainPct": self.energy_artifact["metrics"]["improvement_vs_persistence_pct"]
             },
-            "sourceLimitation": self.energy_artifact.get("source_limitation", "")
+            "sourceLimitation": source_limitation
         }

@@ -316,7 +316,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
           <div className="peak-alert-banner">
             <ShieldAlert size={16} />
             <div>
-              <strong>Peak Load Advisory:</strong> Projected demand exceeds {energyForecast.peakThresholdKw} kW threshold. Recommend precooling HVAC staging.
+              <strong>Peak Load Advisory:</strong> Projected demand exceeds {energyForecast.peakThresholdKw ?? 'contract'} kW threshold. Recommend precooling HVAC staging.
             </div>
           </div>
         )}
@@ -351,7 +351,7 @@ export const ForecastPanel: React.FC<ForecastPanelProps> = ({
               <Clock size={12} /> Target: {energyForecast.targetTimestamp ? new Date(energyForecast.targetTimestamp).toLocaleTimeString() : '--:--'}
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#10B981' }}>
-              Contracted: {((contractDemandKw ?? energyForecast.contractDemandKw ?? 6800) as number).toLocaleString()} kW
+              Contracted: {(contractDemandKw ?? energyForecast.contractDemandKw) != null ? `${((contractDemandKw ?? energyForecast.contractDemandKw) as number).toLocaleString()} kW` : 'Unregistered'}
             </span>
           </div>
         </div>

@@ -871,6 +871,90 @@ def test_forecast_missing_artifact_does_not_publish_fixed_mae():
         forecaster.energy_artifact = orig_energy
 
 
+def test_traffic_forecast_omitted_speed_degrades_quality_and_clears_persistence():
+    """
+    Verifies BUG-24 (#47): When current_speed is omitted, the forecast must return
+    inputQualityStatus: DEGRADED and persistenceValue: None, never claiming VALID persistence.
+    """
+    forecaster = CorridorForecaster()
+    # 1. Omitted speed observation
+    omitted = forecaster.predict_traffic_speed(
+        segment_id="urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+        current_speed=None
+    )
+    assert omitted["sourceMode"] == "PREDICTED"
+    assert omitted["inputQualityStatus"] == "DEGRADED"
+    assert omitted["baselineComparison"]["persistenceValue"] is None
+    assert "omitted" in omitted["localityNotice"].lower()
+
+    # 2. Explicit speed observation
+    explicit = forecaster.predict_traffic_speed(
+        segment_id="urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01",
+        current_speed=40.0
+    )
+    assert explicit["sourceMode"] == "PREDICTED"
+    assert explicit["inputQualityStatus"] == "VALID"
+    assert explicit["baselineComparison"]["persistenceValue"] == 40.0
+
+
+def test_energy_forecast_unregistered_building_and_omitted_load():
+    """
+    Verifies BUG-24 (#47): An unregistered facility must not be assigned a fabricated contract demand,
+    and an omitted load observation must return inputQualityStatus: DEGRADED and persistenceValue: None.
+    """
+    forecaster = CorridorForecaster()
+
+    # 1. Unregistered facility with omitted load
+    unreg_omitted = forecaster.predict_building_energy(
+        building_id="urn:ngsi-ld:Building:UNKNOWN:NOT-A-BUILDING",
+        current_kw=None
+    )
+    assert unreg_omitted["sourceMode"] == "PREDICTED"
+    assert unreg_omitted["inputQualityStatus"] == "DEGRADED"
+    assert unreg_omitted["contractDemandKw"] is None
+    assert unreg_omitted["peakThresholdKw"] is None
+    assert unreg_omitted["baselineComparison"]["persistenceValue"] is None
+    assert "not in registered catalog" in unreg_omitted["sourceLimitation"]
+
+    # 2. Registered facility with explicit load
+    reg_explicit = forecaster.predict_building_energy(
+        building_id="urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+        current_kw=4250.0
+    )
+    assert reg_explicit["sourceMode"] == "PREDICTED"
+    assert reg_explicit["inputQualityStatus"] == "VALID"
+    assert reg_explicit["contractDemandKw"] == 6800.0
+    assert reg_explicit["peakThresholdKw"] == round(6800.0 * 0.85, 1)
+    assert reg_explicit["baselineComparison"]["persistenceValue"] == 4250.0
+
+
+def test_api_forecast_omitted_inputs_degrade_quality():
+    """
+    Verifies BUG-24 (#47) API routes:
+    GET /api/v1/forecasts/traffic/{segment} with omitted speed returns DEGRADED and null persistence.
+    GET /api/v1/forecasts/energy/{unregistered} returns DEGRADED, null persistence, and null contract demand.
+    """
+    from fastapi.testclient import TestClient
+    from backend.main import app
+
+    with TestClient(app) as client:
+        # Traffic endpoint without query param
+        t_resp = client.get("/api/v1/forecasts/traffic/urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01")
+        assert t_resp.status_code == 200
+        t_data = t_resp.json()
+        assert t_data["inputQualityStatus"] == "DEGRADED"
+        assert t_data["baselineComparison"]["persistenceValue"] is None
+
+        # Energy endpoint with unregistered building and no query param
+        e_resp = client.get("/api/v1/forecasts/energy/NOT-A-BUILDING")
+        assert e_resp.status_code == 200
+        e_data = e_resp.json()
+        assert e_data["inputQualityStatus"] == "DEGRADED"
+        assert e_data["contractDemandKw"] is None
+        assert e_data["peakThresholdKw"] is None
+        assert e_data["baselineComparison"]["persistenceValue"] is None
+
+
 if __name__ == "__main__":
     test_traffic_chronological_split_no_leakage()
     test_energy_chronological_split_no_leakage()

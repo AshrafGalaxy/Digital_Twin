@@ -241,9 +241,9 @@ export interface EnergyForecast {
   unit: string;
   modelVersion: string;
   inputQualityStatus: string;
-  contractDemandKw?: number;
+  contractDemandKw?: number | null;
   isPeakDemandAlert: boolean;
-  peakThresholdKw: number;
+  peakThresholdKw?: number | null;
   baselineComparison: {
     persistenceValue?: number;
     modelTestMae?: number;

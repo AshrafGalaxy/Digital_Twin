@@ -21,11 +21,9 @@ class ForecastService:
         current_speed: Optional[float] = None
     ) -> Dict[str, Any]:
         """Generates 15-minute ahead speed forecast for a road segment."""
-        # Default speed if none provided from live stream (e.g. 24.5 km/h evening rush)
-        speed = current_speed if current_speed is not None else 24.5
         return self.forecaster.predict_traffic_speed(
             segment_id=segment_id,
-            current_speed=speed
+            current_speed=current_speed
         )
 
     DEFAULT_FACILITY_BASELINES: Dict[str, float] = {
@@ -50,10 +48,9 @@ class ForecastService:
         current_kw: Optional[float] = None
     ) -> Dict[str, Any]:
         """Generates 60-minute ahead active power forecast for commercial building."""
-        kw = current_kw if current_kw is not None else self.DEFAULT_FACILITY_BASELINES.get(building_id, 4200.0)
         return self.forecaster.predict_building_energy(
             building_id=building_id,
-            current_kw=kw
+            current_kw=current_kw
         )
 
     def list_models(self) -> List[Dict[str, Any]]:
