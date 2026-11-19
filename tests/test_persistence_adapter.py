@@ -210,3 +210,50 @@ def test_current_state_endpoint_serves_seeded_entities(client):
     assert "averageSpeedKmh" in first_seg["metrics"]
     assert first_seg["sourceMode"] in ("REPLAY", "LIVE", "SIMULATION")
     assert first_seg["qualityStatus"] == "VALID"
+
+
+@pytest.mark.asyncio
+async def test_schema_indexes_environment_and_topology_foreign_keys():
+    """
+    Verifies BUG-28:
+    1. environment_observations has a compound index on (station_id, observed_at DESC).
+    2. road_segments has secondary indexes on study_area_id, from_intersection, and to_intersection.
+    3. sensors has secondary indexes on linked_segment_id and study_area_id.
+    4. Running init_db_schema() again on an existing database is idempotent and creates missing indexes.
+    """
+    await init_db_schema()
+
+    async with persistence_manager.session_factory() as session:
+        backend = get_active_backend()
+        if backend == "postgresql":
+            rows = (await session.execute(
+                text("SELECT indexname, tablename FROM pg_indexes WHERE schemaname = 'public'")
+            )).fetchall()
+            indexes = {r[0]: r[1] for r in rows}
+        else:
+            rows = (await session.execute(
+                text("SELECT name, tbl_name FROM sqlite_master WHERE type = 'index'")
+            )).fetchall()
+            indexes = {r[0]: r[1] for r in rows}
+
+        assert "idx_env_obs_station_time" in indexes
+        assert indexes["idx_env_obs_station_time"] == "environment_observations"
+
+        assert "idx_road_segments_study_area" in indexes
+        assert indexes["idx_road_segments_study_area"] == "road_segments"
+
+        assert "idx_road_segments_from_intersection" in indexes
+        assert indexes["idx_road_segments_from_intersection"] == "road_segments"
+
+        assert "idx_road_segments_to_intersection" in indexes
+        assert indexes["idx_road_segments_to_intersection"] == "road_segments"
+
+        assert "idx_sensors_linked_segment" in indexes
+        assert indexes["idx_sensors_linked_segment"] == "sensors"
+
+        assert "idx_sensors_study_area" in indexes
+        assert indexes["idx_sensors_study_area"] == "sensors"
+
+    # Verify idempotency by invoking schema migration again
+    result = await init_db_schema()
+    assert result is not None

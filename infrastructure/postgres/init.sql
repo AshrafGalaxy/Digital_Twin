@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS road_segments (
     properties JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_road_segments_study_area ON road_segments (study_area_id);
+CREATE INDEX IF NOT EXISTS idx_road_segments_from_intersection ON road_segments (from_intersection);
+CREATE INDEX IF NOT EXISTS idx_road_segments_to_intersection ON road_segments (to_intersection);
 
 -- 4. Sensors (Logical Traffic Detector Stations)
 CREATE TABLE IF NOT EXISTS sensors (
@@ -76,6 +79,8 @@ CREATE TABLE IF NOT EXISTS sensors (
     properties JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_sensors_linked_segment ON sensors (linked_segment_id);
+CREATE INDEX IF NOT EXISTS idx_sensors_study_area ON sensors (study_area_id);
 
 -- 5. Building Zones (Energy Entities)
 CREATE TABLE IF NOT EXISTS building_zones (
@@ -181,6 +186,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'Hypertable environment_observations skipped.';
 END $$;
+CREATE INDEX IF NOT EXISTS idx_env_obs_station_time ON environment_observations (station_id, observed_at DESC);
 
 -- 10. Model Versions Registry
 CREATE TABLE IF NOT EXISTS model_versions (

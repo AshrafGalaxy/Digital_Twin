@@ -638,7 +638,13 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_power_balance_alert ON energy_power_balance_history (thermal_alert_status, observed_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_shm_struct_time ON shm_telemetry (structure_id, observed_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_shm_status ON shm_telemetry (integrity_status, observed_at DESC);",
-    "CREATE INDEX IF NOT EXISTS idx_shm_span_time ON shm_telemetry (span_id, observed_at DESC);"
+    "CREATE INDEX IF NOT EXISTS idx_shm_span_time ON shm_telemetry (span_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_env_obs_station_time ON environment_observations (station_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_road_segments_study_area ON road_segments (study_area_id);",
+    "CREATE INDEX IF NOT EXISTS idx_road_segments_from_intersection ON road_segments (from_intersection);",
+    "CREATE INDEX IF NOT EXISTS idx_road_segments_to_intersection ON road_segments (to_intersection);",
+    "CREATE INDEX IF NOT EXISTS idx_sensors_linked_segment ON sensors (linked_segment_id);",
+    "CREATE INDEX IF NOT EXISTS idx_sensors_study_area ON sensors (study_area_id);"
 ]
 
 
