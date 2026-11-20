@@ -89,12 +89,14 @@ def test_energy_chronological_split_no_leakage():
 def test_saved_artifacts_reflect_consistent_booster_counts():
     """Verifies BUG-52: fitted booster count matches logged n_estimators (150 traffic, 160 energy)."""
     forecaster = CorridorForecaster()
-    if forecaster.traffic_artifact is not None:
-        assert forecaster.traffic_artifact["model"].n_estimators == 150
-        assert len(forecaster.traffic_artifact["model"].get_booster().get_dump()) == 150
-    if forecaster.energy_artifact is not None:
-        assert forecaster.energy_artifact["model"].n_estimators == 160
-        assert len(forecaster.energy_artifact["model"].get_booster().get_dump()) == 160
+    traffic_art = forecaster.traffic_artifact
+    if traffic_art is not None:
+        assert traffic_art["model"].n_estimators == 150
+        assert len(traffic_art["model"].get_booster().get_dump()) == 150
+    energy_art = forecaster.energy_artifact
+    if energy_art is not None:
+        assert energy_art["model"].n_estimators == 160
+        assert len(energy_art["model"].get_booster().get_dump()) == 160
 
     energy_src = (BASE_DIR / "ml" / "training" / "train_energy_model.py").read_text(encoding="utf-8")
     assert '"n_estimators": 160' in energy_src

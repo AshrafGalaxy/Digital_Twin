@@ -65,7 +65,8 @@ def test_seeded_traffic_advisory_is_not_served_as_a_measurement():
     assert all(rec.evidence.modelVersion != "traffic-xgb-v1" for rec in listed)
 
     rec = rule_engine.get_recommendation("REC-TRF-20260920-001")
-    assert rec is not None
+    if rec is None:
+        pytest.fail("Fixture recommendation REC-TRF-20260920-001 not found")
     assert rec.isFixture is True
     assert rec.evidence.modelVersion == "fixture"
     assert rec.evidence.observedOrPredictedValue != 17.8
@@ -632,7 +633,8 @@ def test_dispatch_order_survives_process_restart():
         # Before reload, the fresh engine has default ACTIVE status and no in-memory order
         assert fresh_engine.get_dispatch_order(rec_id) is None
         fresh_rec = fresh_engine.get_recommendation(rec_id)
-        assert fresh_rec is not None
+        if fresh_rec is None:
+            pytest.fail(f"Recommendation {rec_id} not found in fresh engine")
         assert fresh_rec.status == RecommendationStatus.ACTIVE
 
         # Access dispatch order endpoint after simulated restart

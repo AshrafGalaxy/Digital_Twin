@@ -111,6 +111,7 @@ class IntersectionSPaTState:
         self.observed_at = observed_at or datetime.now(timezone.utc).isoformat()
         self.last_heartbeat = datetime.now(timezone.utc)
         self.current_phase_start_time = datetime.now(timezone.utc)
+        self._packet_received: bool = False
 
     def evaluate_freshness(self, now: Optional[datetime] = None) -> Tuple[str, float]:
         """

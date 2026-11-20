@@ -1,0 +1,33 @@
+# Project-level Pyrefly configuration
+project-includes = [
+    "**/*.py*",
+]
+
+project-excludes = [
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/__pycache__/**",
+    "**/*.ipynb",
+    "**/tests/**",
+]
+
+python-version = "3.11"
+
+# Use repository root as canonical import root (matches CI PYTHONPATH=.)
+search-path = [
+    ".",
+]
+
+# SUMO TraCI lives in the optional external SUMO installation rather than .venv
+replace-imports-with-any = [
+    "traci",
+    "traci.*",
+]
+
+[errors]
+# Legacy try/except ImportError blocks inside backend/ attempt `core.*` before `backend.core.*`
+missing-import = "ignore"
+# Intentional defensive runtime coercions like float(x) / str(x)
+unnecessary-type-conversion = "ignore"
+

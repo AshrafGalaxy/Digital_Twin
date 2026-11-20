@@ -12,7 +12,7 @@ import logging
 import math
 import random
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypedDict
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +38,16 @@ VEHICLE_SPACING_M = 7.5
 SPEED_VALID_MAX_KMH = 120.0
 
 # Corridor Segment Topology
-CORRIDOR_SEGMENTS = [
+class CorridorSegmentDict(TypedDict):
+    id: str
+    name: str
+    speedLimit: float
+    baseSpeed: float
+    capacity: int
+    approachStorageMeters: float
+
+
+CORRIDOR_SEGMENTS: List[CorridorSegmentDict] = [
     {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01", "name": "Nagar Road EB Approach", "speedLimit": 50.0, "baseSpeed": 42.0, "capacity": 2400, "approachStorageMeters": 480.0},
     {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-02", "name": "Nagar Road EB Central", "speedLimit": 50.0, "baseSpeed": 38.0, "capacity": 2400, "approachStorageMeters": 1180.0},
     {"id": "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-03", "name": "Nagar Road EB Somnath", "speedLimit": 50.0, "baseSpeed": 44.0, "capacity": 2400, "approachStorageMeters": 450.0},

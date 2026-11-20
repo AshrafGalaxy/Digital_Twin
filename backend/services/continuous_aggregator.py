@@ -135,7 +135,7 @@ class ContinuousAggregatorService:
             groups: Dict[Any, List[Dict[str, Any]]] = defaultdict(list)
             for r in rows:
                 key = (r["bucket_15m"], r["segment_id"], r["source_mode"])
-                groups[key].append(r)
+                groups[key].append(dict(r))
 
             insert_stmt = text("""
                 INSERT OR REPLACE INTO traffic_15m_aggregates (
