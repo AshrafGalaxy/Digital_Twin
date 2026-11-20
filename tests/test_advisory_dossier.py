@@ -122,7 +122,8 @@ def test_authorize_advisory_generates_sha256_and_order_id():
     )
 
     result = engine.authorize_advisory(rec_id, req)
-    assert result is not None
+    if result is None:
+        pytest.fail(f"Authorization returned None for {rec_id}")
     updated_rec, dispatch_order = result
 
     # Verify Dispatch Work Order
@@ -148,7 +149,8 @@ def test_strict_non_actuation_invariant():
     """Verifies Non-Negotiable Invariant #4: recommendations remain advisory with zero field actuation."""
     engine = AdvisoryRuleEngine()
     rec = engine.get_recommendation("REC-TRF-20260920-001")
-    assert rec is not None
+    if rec is None:
+        pytest.fail("Recommendation REC-TRF-20260920-001 not found")
     assert rec.humanApprovalRequired is True
 
     req = AuthorizeAdvisoryRequest(
@@ -166,7 +168,8 @@ def test_strict_non_actuation_invariant():
         decision=RecommendationStatus.ACKNOWLEDGED
     )
     auth_res = engine.authorize_advisory("REC-TRF-20260920-001", req)
-    assert auth_res is not None
+    if auth_res is None:
+        pytest.fail("Authorization returned None for REC-TRF-20260920-001")
     updated_rec, dispatch_order = auth_res
 
     # Human approval invariant must never be mutated
@@ -192,7 +195,8 @@ def test_get_dispatch_order():
         decision=RecommendationStatus.ACKNOWLEDGED
     )
     auth_res = engine.authorize_advisory("REC-TRF-20260920-001", req)
-    assert auth_res is not None
+    if auth_res is None:
+        pytest.fail("Authorization returned None for REC-TRF-20260920-001")
     _, dispatch_order = auth_res
 
     retrieved = engine.get_dispatch_order("REC-TRF-20260920-001")
@@ -438,7 +442,8 @@ async def test_authorize_preserves_under_review_previous_status():
         notes="Authorized after field confirmation."
     )
     auth_result = engine.authorize_advisory(rec_id, auth_req)
-    assert auth_result is not None
+    if auth_result is None:
+        pytest.fail(f"Authorization returned None for {rec_id}")
     updated_rec, dispatch_order = auth_result
 
     # Latest audit log must capture UNDER_REVIEW as previousStatus, not ACTIVE
@@ -451,7 +456,8 @@ def test_authorize_rejects_failed_saturation_bound():
     """A checklist with maxWaitThresholdSafe false must not become a dispatch order."""
     engine = AdvisoryRuleEngine()
     source = engine.get_recommendation("REC-TRF-20260920-001")
-    assert source is not None
+    if source is None:
+        pytest.fail("Fixture REC-TRF-20260920-001 not found")
     unsafe = source.model_copy(update={
         "recommendationId": "REC-UNSAFE-SAT-01",
         "safetyChecklist": SafetyConstraintChecklist(
@@ -478,7 +484,8 @@ def test_authorize_rejects_failed_saturation_bound():
 def test_api_authorize_rejects_failed_saturation_bound():
     """POST authorize returns 409 when the stored safety checklist fails."""
     source = rule_engine.get_recommendation("REC-TRF-20260920-001")
-    assert source is not None
+    if source is None:
+        pytest.fail("Fixture REC-TRF-20260920-001 not found")
     unsafe = source.model_copy(update={
         "recommendationId": "REC-UNSAFE-SAT-API",
         "safetyChecklist": SafetyConstraintChecklist(
@@ -538,7 +545,8 @@ def test_authorize_rejects_missing_safety_checklist():
     """Verifies that AdvisoryRuleEngine refuses authorization when safetyChecklist is absent (None)."""
     engine = AdvisoryRuleEngine()
     source = engine.get_recommendation("REC-TRF-20260920-001")
-    assert source is not None
+    if source is None:
+        pytest.fail("Fixture REC-TRF-20260920-001 not found")
     no_checklist = source.model_copy(update={
         "recommendationId": "REC-NO-CHECKLIST-01",
         "safetyChecklist": None,
@@ -560,7 +568,8 @@ def test_authorize_rejects_missing_safety_checklist():
 def test_api_authorize_rejects_missing_safety_checklist():
     """POST /authorize returns 409 Conflict when stored recommendation lacks a safety checklist."""
     source = rule_engine.get_recommendation("REC-TRF-20260920-001")
-    assert source is not None
+    if source is None:
+        pytest.fail("Fixture REC-TRF-20260920-001 not found")
     no_checklist = source.model_copy(update={
         "recommendationId": "REC-NO-CHECKLIST-API",
         "safetyChecklist": None,

@@ -11,32 +11,18 @@ from typing import Any, Dict, Optional, Tuple
 
 from pydantic import ValidationError
 
-try:
-    from core.constants import (
-        ENERGY_FRESHNESS_THRESHOLD_SEC,
-        QualityStatus,
-        SourceMode,
-        TRAFFIC_FRESHNESS_THRESHOLD_SEC
-    )
-    from schemas.canonical import (
-        EnergyObservationEvent,
-        EnvironmentObservationEvent,
-        TrafficObservationEvent
-    )
-    from ingestion.quarantine import quarantine_manager
-except ImportError:
-    from backend.core.constants import (
-        ENERGY_FRESHNESS_THRESHOLD_SEC,
-        QualityStatus,
-        SourceMode,
-        TRAFFIC_FRESHNESS_THRESHOLD_SEC
-    )
-    from backend.schemas.canonical import (
-        EnergyObservationEvent,
-        EnvironmentObservationEvent,
-        TrafficObservationEvent
-    )
-    from backend.ingestion.quarantine import quarantine_manager
+from backend.core.constants import (
+    ENERGY_FRESHNESS_THRESHOLD_SEC,
+    QualityStatus,
+    SourceMode,
+    TRAFFIC_FRESHNESS_THRESHOLD_SEC
+)
+from backend.schemas.canonical import (
+    EnergyObservationEvent,
+    EnvironmentObservationEvent,
+    TrafficObservationEvent
+)
+from backend.ingestion.quarantine import quarantine_manager
 
 
 def _extract_rejection_reason_from_pydantic(err: ValidationError) -> Tuple[str, str]:

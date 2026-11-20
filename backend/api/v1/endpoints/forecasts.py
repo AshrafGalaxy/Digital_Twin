@@ -12,20 +12,12 @@ from fastapi import APIRouter, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 
-try:
-    from services.forecast_service import ForecastService
-    from schemas.forecasts import (
-        TrafficForecastResponse,
-        EnergyForecastResponse,
-        ModelVersionInfo
-    )
-except ImportError:
-    from backend.services.forecast_service import ForecastService
-    from backend.schemas.forecasts import (
-        TrafficForecastResponse,
-        EnergyForecastResponse,
-        ModelVersionInfo
-    )
+from backend.services.forecast_service import ForecastService
+from backend.schemas.forecasts import (
+    TrafficForecastResponse,
+    EnergyForecastResponse,
+    ModelVersionInfo
+)
 
 router = APIRouter(prefix="/forecasts", tags=["Forecasts & Predictive ML"])
 forecast_service = ForecastService()

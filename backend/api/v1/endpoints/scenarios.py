@@ -11,22 +11,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 
-try:
-    from services.scenario_service import ScenarioService
-    from schemas.scenarios import (
-        ScenarioTemplateResponse,
-        RunScenarioRequest,
-        ScenarioRunResponse,
-        ProposeAdvisoryRequest,
-    )
-except ImportError:
-    from backend.services.scenario_service import ScenarioService
-    from backend.schemas.scenarios import (
-        ScenarioTemplateResponse,
-        RunScenarioRequest,
-        ScenarioRunResponse,
-        ProposeAdvisoryRequest,
-    )
+from backend.services.scenario_service import ScenarioService
+from backend.schemas.scenarios import (
+    ScenarioTemplateResponse,
+    RunScenarioRequest,
+    ScenarioRunResponse,
+    ProposeAdvisoryRequest,
+)
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios & Simulation"])
 service = ScenarioService()

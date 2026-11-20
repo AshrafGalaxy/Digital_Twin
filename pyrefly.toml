@@ -9,14 +9,14 @@ project-excludes = [
     "**/dist/**",
     "**/__pycache__/**",
     "**/*.ipynb",
-    "**/tests/**",
 ]
 
 python-version = "3.11"
 
-# Use repository root as canonical import root (matches CI PYTHONPATH=.)
+# Use repository root and backend directory as canonical search paths
 search-path = [
     ".",
+    "backend",
 ]
 
 # SUMO TraCI lives in the optional external SUMO installation rather than .venv

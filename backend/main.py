@@ -21,24 +21,14 @@ BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-try:
-    from backend.core.config import settings
-    from backend.core.database import check_db_health, get_active_backend, get_persistence_info
-    from backend.core.schema_migrator import init_db_schema
-    from backend.api.v1.router import api_v1_router
-    from backend.api.v1.endpoints.stream import manager
-    from backend.ingestion.mqtt_consumer import MQTTConsumer
-    from backend.ingestion.telemetry_streamer import telemetry_streamer
-    from backend.services.keepalive_service import keepalive_service
-except ImportError:
-    from core.config import settings
-    from core.database import check_db_health, get_active_backend, get_persistence_info
-    from core.schema_migrator import init_db_schema
-    from api.v1.router import api_v1_router
-    from api.v1.endpoints.stream import manager
-    from ingestion.mqtt_consumer import MQTTConsumer
-    from ingestion.telemetry_streamer import telemetry_streamer
-    from services.keepalive_service import keepalive_service
+from backend.core.config import settings
+from backend.core.database import check_db_health, get_active_backend, get_persistence_info
+from backend.core.schema_migrator import init_db_schema
+from backend.api.v1.router import api_v1_router
+from backend.api.v1.endpoints.stream import manager
+from backend.ingestion.mqtt_consumer import MQTTConsumer
+from backend.ingestion.telemetry_streamer import telemetry_streamer
+from backend.services.keepalive_service import keepalive_service
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
@@ -210,10 +200,7 @@ async def ws_scenarios(websocket: WebSocket, run_id: str):
     """Simulation progress and KPI telemetry stream for a specific scenario run."""
     await websocket.accept()
     try:
-        try:
-            from backend.services.scenario_service import ScenarioService
-        except ImportError:
-            from services.scenario_service import ScenarioService
+        from backend.services.scenario_service import ScenarioService
         sc_svc = ScenarioService()
         run_data = sc_svc.get_run(run_id)
         await websocket.send_text(json.dumps({

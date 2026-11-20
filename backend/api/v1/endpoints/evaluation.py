@@ -8,16 +8,10 @@ executive municipal decision-support reporting, and reproducible corridor bundle
 from typing import Any, Dict
 from fastapi import APIRouter, Response, status
 
-try:
-    from services.evaluation_service import evaluation_service
-    from services.report_generator import report_generator
-    from services.scenario_service import scenario_service
-    from services.spatial_registry_service import spatial_service
-except ImportError:
-    from backend.services.evaluation_service import evaluation_service
-    from backend.services.report_generator import report_generator
-    from backend.services.scenario_service import scenario_service
-    from backend.services.spatial_registry_service import spatial_service
+from backend.services.evaluation_service import evaluation_service
+from backend.services.report_generator import report_generator
+from backend.services.scenario_service import scenario_service
+from backend.services.spatial_registry_service import spatial_service
 
 router = APIRouter(tags=["Evaluation, Reports & Exports"])
 

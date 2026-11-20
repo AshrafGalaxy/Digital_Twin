@@ -12,32 +12,18 @@ from typing import Any, Callable, Dict, Optional
 
 import paho.mqtt.client as mqtt
 
-try:
-    from core.config import settings
-    from core.constants import (
-        MQTT_TOPIC_ALL,
-        MQTT_TOPIC_ENERGY_OBS,
-        MQTT_TOPIC_ENV_OBS,
-        MQTT_TOPIC_TRAFFIC_OBS,
-        MQTT_TOPIC_NAGARTWIN_ALL,
-        MQTT_TOPIC_NAGARTWIN_PREFIX
-    )
-    from core.database import AsyncSessionLocal
-    from ingestion.state_projector import StateProjector
-    from ingestion.validator import IngestionValidator
-except ImportError:
-    from backend.core.config import settings
-    from backend.core.constants import (
-        MQTT_TOPIC_ALL,
-        MQTT_TOPIC_ENERGY_OBS,
-        MQTT_TOPIC_ENV_OBS,
-        MQTT_TOPIC_TRAFFIC_OBS,
-        MQTT_TOPIC_NAGARTWIN_ALL,
-        MQTT_TOPIC_NAGARTWIN_PREFIX
-    )
-    from backend.core.database import AsyncSessionLocal
-    from backend.ingestion.state_projector import StateProjector
-    from backend.ingestion.validator import IngestionValidator
+from backend.core.config import settings
+from backend.core.constants import (
+    MQTT_TOPIC_ALL,
+    MQTT_TOPIC_ENERGY_OBS,
+    MQTT_TOPIC_ENV_OBS,
+    MQTT_TOPIC_TRAFFIC_OBS,
+    MQTT_TOPIC_NAGARTWIN_ALL,
+    MQTT_TOPIC_NAGARTWIN_PREFIX
+)
+from backend.core.database import AsyncSessionLocal
+from backend.ingestion.state_projector import StateProjector
+from backend.ingestion.validator import IngestionValidator
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +80,7 @@ class MQTTConsumer:
                 # 2. Process by domain
                 if domain == "traffic":
                     is_valid, error, event = IngestionValidator.validate_traffic_event(payload)
-                    if not is_valid:
+                    if not is_valid or event is None:
                         logger.warning("Ingestion validation error on %s: %s", topic, error)
                         await StateProjector.record_ingestion_error(
                             session, topic, payload.get("sourceMode"), payload, error or "Validation failed"
@@ -124,7 +110,7 @@ class MQTTConsumer:
 
                 elif domain == "energy":
                     is_valid, error, event = IngestionValidator.validate_energy_event(payload)
-                    if not is_valid:
+                    if not is_valid or event is None:
                         logger.warning("Energy validation error on %s: %s", topic, error)
                         await StateProjector.record_ingestion_error(
                             session, topic, payload.get("sourceMode"), payload, error or "Validation failed"
@@ -155,7 +141,7 @@ class MQTTConsumer:
 
                 elif domain == "environment":
                     is_valid, error, event = IngestionValidator.validate_environment_event(payload)
-                    if not is_valid:
+                    if not is_valid or event is None:
                         logger.warning("Environment validation error on %s: %s", topic, error)
                         await StateProjector.record_ingestion_error(
                             session, topic, payload.get("sourceMode"), payload, error or "Validation failed"

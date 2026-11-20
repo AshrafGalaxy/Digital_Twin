@@ -21,10 +21,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core.database import get_db_session
 
-try:
-    from backend.core.config import settings
-except ImportError:
-    from core.config import settings
+from backend.core.config import settings
 
 DEV_MOCK_JWT_SECRET = "dev-mock-jwt-secret-key-pune-corridor-testing-2026-local"
 

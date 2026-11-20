@@ -17,20 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-try:
-    from core.database import get_db_session
-    from services.forecast_service import ForecastService
-    from services.scenario_service import ScenarioService
-    from services.rule_engine import rule_engine
-    from ingestion.quarantine import quarantine_manager
-    from schemas.scenarios import RunScenarioRequest
-except ImportError:
-    from backend.core.database import get_db_session
-    from backend.services.forecast_service import ForecastService
-    from backend.services.scenario_service import ScenarioService
-    from backend.services.rule_engine import rule_engine
-    from backend.ingestion.quarantine import quarantine_manager
-    from backend.schemas.scenarios import RunScenarioRequest
+from backend.core.database import get_db_session
+from backend.services.forecast_service import ForecastService
+from backend.services.scenario_service import ScenarioService
+from backend.services.rule_engine import rule_engine
+from backend.ingestion.quarantine import quarantine_manager
+from backend.schemas.scenarios import RunScenarioRequest
 
 router = APIRouter(tags=["Canonical Architecture Resources (TECHNICAL_ARCHITECTURE.md §13.2)"])
 forecast_service = ForecastService()
@@ -256,10 +248,7 @@ async def get_data_quality_report():
     }
 
 # 10. GET /api/v1/environment/stations & GET /api/v1/environment/current
-try:
-    from ingestion.weather_client import OpenMeteoWeatherClient, compute_india_naaqs_aqi
-except ImportError:
-    from backend.ingestion.weather_client import OpenMeteoWeatherClient, compute_india_naaqs_aqi
+from backend.ingestion.weather_client import OpenMeteoWeatherClient, compute_india_naaqs_aqi
 
 env_weather_client = OpenMeteoWeatherClient()
 

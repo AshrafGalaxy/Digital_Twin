@@ -13,12 +13,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-try:
-    from core.database import get_db_session
-    from schemas.canonical import EntityCurrentStateResponse
-except ImportError:
-    from backend.core.database import get_db_session
-    from backend.schemas.canonical import EntityCurrentStateResponse
+from backend.core.database import get_db_session
+from backend.schemas.canonical import EntityCurrentStateResponse
 
 router = APIRouter(prefix="/state", tags=["Twin State"])
 

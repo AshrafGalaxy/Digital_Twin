@@ -11,14 +11,9 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-try:
-    from core.config import settings
-    from core.database import check_db_health, get_active_backend, get_persistence_info
-    from ingestion.quarantine import quarantine_manager
-except ImportError:
-    from backend.core.config import settings
-    from backend.core.database import check_db_health, get_active_backend, get_persistence_info
-    from backend.ingestion.quarantine import quarantine_manager
+from backend.core.config import settings
+from backend.core.database import check_db_health, get_active_backend, get_persistence_info
+from backend.ingestion.quarantine import quarantine_manager
 
 from backend.services.rule_engine import rule_engine
 from backend.services.scenario_service import scenario_service
