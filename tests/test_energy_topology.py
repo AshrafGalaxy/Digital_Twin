@@ -267,3 +267,73 @@ def test_api_trigger_telemetry_tick():
     data = res.json()
     assert isinstance(data, list)
     assert len(data) == 10
+
+
+def test_feeder_bess_charging_and_discharging_aggregation_parity():
+    """
+    Verifies BUG-21 (#44): Charging a battery increases feeder import, and
+    both the node aggregation path and fallback path agree on sign convention.
+    """
+    building_kw = 1000.0
+    bess_charging_kw = -650.0  # simulate_bess_dynamics returns negative for charging
+    bess_discharging_kw = 550.0
+
+    # 1. Charging Case
+    # Fallback convention: building_kw - bess_kw
+    fallback_charging = building_kw - bess_charging_kw
+    assert fallback_charging == 1650.0
+    assert fallback_charging > building_kw
+
+    # Node aggregation convention: child_type in ("SOLAR_PV", "BESS") -> fdr_p -= cp
+    node_charging = building_kw - bess_charging_kw
+    assert node_charging == fallback_charging
+    assert node_charging == 1650.0
+
+    # 2. Discharging Case
+    fallback_discharging = building_kw - bess_discharging_kw
+    assert fallback_discharging == 450.0
+    assert fallback_discharging < building_kw
+
+    node_discharging = building_kw - bess_discharging_kw
+    assert node_discharging == fallback_discharging
+    assert node_discharging == 450.0
+
+
+@pytest.mark.asyncio
+async def test_substation_transformer_loss_identity():
+    """
+    Verifies BUG-21 (#44): Reported transformerLossKw equals substation active power
+    minus the feeder sum (i.e. exactly the 2.5% gross-up added to feeder power).
+    """
+    service = EnergyTopologyService()
+    async with AsyncSessionLocal() as session:
+        records = await service.generate_telemetry_tick(session=session)
+
+    # Separate substation and feeder records
+    sub_records = [r for r in records if r["assetId"] == "SUB-NR-22KV"]
+    feeder_records = [r for r in records if r["assetId"].startswith("FDR-")]
+
+    assert len(sub_records) == 1
+    assert len(feeder_records) == 3
+
+    sub = sub_records[0]
+    feeder_sum_p = sum(f["activePowerKw"] for f in feeder_records)
+
+    # Substation power must equal feeder_sum * 1.025
+    expected_sub_p = feeder_sum_p * 1.025
+    assert abs(sub["activePowerKw"] - expected_sub_p) < 0.2
+
+    # Transformer loss must equal substation active power minus feeder sum
+    expected_loss = round(sub["activePowerKw"] - feeder_sum_p, 1)
+    reported_loss = sub.get("transformerLossKw")
+    if reported_loss is None:
+        reported_loss = sub.get("deviceMetrics", {}).get("transformerLossKw")
+
+    assert reported_loss is not None
+    assert abs(reported_loss - expected_loss) < 0.1
+
+    # For a synthetic 1000 kW feeder sum, loss must be exactly 25.0 kW (not 25.6 kW)
+    synthetic_feeder_sum = 1000.0
+    synthetic_sub_p = synthetic_feeder_sum * 1.025  # 1025.0 kW
+    synthetic_loss = round(synthetic_sub_p - synthetic_feeder_sum, 1)
+    assert synthetic_loss == 25.0

@@ -617,7 +617,7 @@ class EnergyTopologyService:
                                 cp = endpoint_readings[child[0]]["p"]
                                 cq = endpoint_readings[child[0]]["q"]
                                 child_type = child[2]
-                                if child_type == "SOLAR_PV" or (child_type == "BESS" and cp > 0):
+                                if child_type in ("SOLAR_PV", "BESS"):
                                     fdr_p -= cp
                                 else:
                                     fdr_p += cp
@@ -636,11 +636,13 @@ class EnergyTopologyService:
                     nid, name, ntype, pid, v_kv, cap_kva = r[0], r[1], r[2], r[3], float(r[4]), float(r[5])
                     if ntype == "SUBSTATION":
                         v_nom = v_kv * 1000.0 if v_kv > 0 else 22000.0
-                        sub_p = sum(f["p"] for f in feeder_readings.values()) * 1.025
+                        feeder_sum_p = sum(f["p"] for f in feeder_readings.values())
+                        sub_p = feeder_sum_p * 1.025
                         sub_q = sum(f["q"] for f in feeder_readings.values()) * 1.035
+                        transformer_loss_kw = round(sub_p - feeder_sum_p, 1)
                         substation_readings[nid] = {
                             "id": nid, "p": sub_p, "q": sub_q, "v": v_nom,
-                            "metrics": {"powerDirection": "IMPORT" if sub_p >= 0 else "EXPORT", "transformerLossKw": round(sub_p * 0.025, 1)}
+                            "metrics": {"powerDirection": "IMPORT" if sub_p >= 0 else "EXPORT", "transformerLossKw": transformer_loss_kw}
                         }
 
                 asset_readings = list(substation_readings.values()) + list(feeder_readings.values()) + list(endpoint_readings.values())
@@ -660,11 +662,13 @@ class EnergyTopologyService:
                 fdr_c_p = bld_hyatt["activePowerKw"] + ev_data["activePowerKw"]
                 fdr_c_q = bld_hyatt["reactivePowerKvar"] + ev_data["reactivePowerKvar"]
 
-                sub_p = (fdr_a_p + fdr_b_p + fdr_c_p) * 1.025
+                feeder_sum_p = fdr_a_p + fdr_b_p + fdr_c_p
+                sub_p = feeder_sum_p * 1.025
                 sub_q = (fdr_a_q + fdr_b_q + fdr_c_q) * 1.035
+                transformer_loss_kw = round(sub_p - feeder_sum_p, 1)
 
                 asset_readings = [
-                    {"id": "SUB-NR-22KV", "p": sub_p, "q": sub_q, "v": 22000.0, "metrics": {"powerDirection": "IMPORT", "transformerLossKw": round(sub_p * 0.025, 1)}},
+                    {"id": "SUB-NR-22KV", "p": sub_p, "q": sub_q, "v": 22000.0, "metrics": {"powerDirection": "IMPORT", "transformerLossKw": transformer_loss_kw}},
                     {"id": "FDR-NR-RETAIL-11KV", "p": fdr_a_p, "q": fdr_a_q, "v": 11000.0, "metrics": {"feederName": "Feeder A - Retail", "feederLoadingPct": round(((fdr_a_p / 5000.0) * 100.0), 1)}},
                     {"id": "FDR-NR-ENTERPRISE-11KV", "p": fdr_b_p, "q": fdr_b_q, "v": 11000.0, "metrics": {"feederName": "Feeder B - Enterprise", "feederLoadingPct": round(((fdr_b_p / 5000.0) * 100.0), 1)}},
                     {"id": "FDR-NR-HOSPITALITY-11KV", "p": fdr_c_p, "q": fdr_c_q, "v": 11000.0, "metrics": {"feederName": "Feeder C - Hospitality", "feederLoadingPct": round(((fdr_c_p / 5000.0) * 100.0), 1)}},
