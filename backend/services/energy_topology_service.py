@@ -175,17 +175,25 @@ class EnergyTopologyService:
             "plugLoadKw": round(active_kw * other_pct, 2)
         }
 
+    BESS_ROUND_TRIP_EFFICIENCY: float = 0.885
+    BESS_USABLE_CAPACITY_KWH: float = 2000.0
+    BESS_SOC_MIN_PCT: float = 15.0
+    BESS_SOC_MAX_PCT: float = 95.0
+
     def simulate_bess_dynamics(
         self,
         solar_active_kw: float,
         hour: float,
-        dt_sec: float = 5.0
+        dt_sec: float = 5.0,
+        round_trip_efficiency: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Simulates Battery Energy Storage System (BESS) charge/discharge logic:
         - Absorbs local rooftop solar when generation exceeds 400 kW and SOC < 92%.
         - Discharges to support corridor during evening peak (18:00 - 21:00) when SOC > 20%.
-        - Standby floating mode otherwise.
+        - Standby floating mode otherwise with parasitic auxiliary losses.
+        - Enforces physical round-trip efficiency: charge stores ac_in * sqrt(eta_rt),
+          discharge removes ac_out / sqrt(eta_rt), and standby drains parasitic losses.
         """
         with self._lock:
             soc = self._bess_soc_pct
@@ -201,11 +209,23 @@ class EnergyTopologyService:
                 mode = "STANDBY"
                 power_kw = -8.0  # Parasitic BMS and cooling losses
 
-            # Update SOC: 2000 kWh capacity
-            usable_kwh = 2000.0
-            energy_delta_kwh = (-power_kw * (dt_sec / 3600.0)) * 0.885  # Round trip efficiency
+            usable_kwh = self.BESS_USABLE_CAPACITY_KWH
+            eta_rt = round_trip_efficiency if round_trip_efficiency is not None else self.BESS_ROUND_TRIP_EFFICIENCY
+            eta_one_way = math.sqrt(eta_rt) if eta_rt > 0 else 1.0
+            dt_hours = dt_sec / 3600.0
+
+            if mode == "CHARGING":
+                ac_kwh_in = abs(power_kw) * dt_hours
+                energy_delta_kwh = ac_kwh_in * eta_one_way
+            elif mode == "DISCHARGING":
+                ac_kwh_out = abs(power_kw) * dt_hours
+                energy_delta_kwh = -(ac_kwh_out / eta_one_way)
+            else:  # STANDBY
+                parasitic_kwh = abs(power_kw) * dt_hours
+                energy_delta_kwh = -parasitic_kwh
+
             new_soc = soc + (energy_delta_kwh / usable_kwh) * 100.0
-            new_soc = min(95.0, max(15.0, new_soc))
+            new_soc = min(self.BESS_SOC_MAX_PCT, max(self.BESS_SOC_MIN_PCT, new_soc))
             self._bess_soc_pct = round(new_soc, 2)
 
             reactive_kvar = 12.0
@@ -215,7 +235,8 @@ class EnergyTopologyService:
                 "reactivePowerKvar": round(reactive_kvar, 2),
                 "operatingMode": mode,
                 "stateOfChargePct": self._bess_soc_pct,
-                "usableCapacityKwh": usable_kwh
+                "usableCapacityKwh": usable_kwh,
+                "roundTripEfficiency": round(eta_rt, 3)
             }
 
     def simulate_ev_hub_dynamics(

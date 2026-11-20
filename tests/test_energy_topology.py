@@ -87,6 +87,75 @@ def test_bess_charge_discharge_dynamics():
     assert discharge_res["activePowerKw"] > 0.0
 
 
+def test_bess_cycle_efficiency_not_lossless():
+    """
+    Verifies BUG-20 (#43): A charge and matching discharge cycle is not lossless.
+    Starting at 50% SOC with 550 kWh in and 550 kWh out must leave the battery below 50% SOC.
+    Closed-SOC round-trip efficiency ratio matches 0.885 within 0.01.
+    """
+    service = EnergyTopologyService()
+    service._bess_soc_pct = 50.0
+
+    # Step 1: Charge 1 hour at -550 kW (550 kWh AC in)
+    charge_res = service.simulate_bess_dynamics(solar_active_kw=1000.0, hour=12.0, dt_sec=3600.0)
+    assert charge_res["operatingMode"] == "CHARGING"
+    assert charge_res["activePowerKw"] == -550.0
+    soc_after_charge = charge_res["stateOfChargePct"]
+    assert soc_after_charge > 50.0
+    # 50.0 + (550 * sqrt(0.885) / 2000 * 100) = 75.87%
+    assert abs(soc_after_charge - 75.87) < 0.1
+
+    # Step 2: Discharge 1 hour at +550 kW (550 kWh AC out)
+    discharge_res = service.simulate_bess_dynamics(solar_active_kw=0.0, hour=19.0, dt_sec=3600.0)
+    assert discharge_res["operatingMode"] == "DISCHARGING"
+    assert discharge_res["activePowerKw"] == 550.0
+    soc_after_discharge = discharge_res["stateOfChargePct"]
+
+    # Must end strictly below starting 50% SOC (specifically 46.64%)
+    assert soc_after_discharge < 50.0
+    assert abs(soc_after_discharge - 46.64) < 0.1
+
+    # Over a closed SOC cycle, AC energy out / AC energy in = 0.885
+    # Stored DC kWh gained in Step 1:
+    dc_kwh_gained = (soc_after_charge - 50.0) / 100.0 * 2000.0
+    # To return to 50.0% SOC, extracted DC kWh must equal gained DC kWh:
+    ac_kwh_out_to_neutral = dc_kwh_gained * (math.sqrt(0.885))
+    round_trip_ratio = ac_kwh_out_to_neutral / 550.0
+    assert abs(round_trip_ratio - 0.885) < 0.01
+
+
+def test_bess_standby_parasitic_loss_drains_soc():
+    """
+    Verifies BUG-20 (#43): Standby auxiliary/BMS parasitic power drains stored energy in the loss direction.
+    """
+    service = EnergyTopologyService()
+    service._bess_soc_pct = 50.0
+
+    standby_res = service.simulate_bess_dynamics(solar_active_kw=0.0, hour=12.0, dt_sec=3600.0)
+    assert standby_res["operatingMode"] == "STANDBY"
+    assert standby_res["activePowerKw"] == -8.0
+    # 8 kWh loss / 2000 kWh capacity * 100 = 0.4% SOC decrease -> 49.6%
+    assert standby_res["stateOfChargePct"] < 50.0
+    assert abs(standby_res["stateOfChargePct"] - 49.6) < 0.05
+
+
+def test_bess_soc_floor_and_ceiling_clamps():
+    """
+    Verifies BUG-20 (#43): BESS SOC respects physical operating limits (15% floor to 95% ceiling).
+    """
+    service = EnergyTopologyService()
+
+    # Ceiling clamp
+    service._bess_soc_pct = 94.5
+    charge_res = service.simulate_bess_dynamics(solar_active_kw=1000.0, hour=12.0, dt_sec=3600.0)
+    assert charge_res["stateOfChargePct"] <= 95.0
+
+    # Floor clamp
+    service._bess_soc_pct = 16.0
+    discharge_res = service.simulate_bess_dynamics(solar_active_kw=0.0, hour=19.0, dt_sec=3600.0)
+    assert discharge_res["stateOfChargePct"] >= 15.0
+
+
 def test_ev_hub_charging_dynamics():
     """
     Verifies EV charging plaza vehicle arrivals and active plug power.
