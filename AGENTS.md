@@ -48,6 +48,10 @@
       - In GitHub Flavored Markdown, raw underscores inside math blocks trigger italic HTML parsing; write complex multi-subscript equations inside fenced ````math```` blocks or as readable plain-text arithmetic to prevent parser corruption.
       - Mathematical formulas must never be broken, incomplete, or unparseable.
     - **Pre-Push Math & Markdown Gate:** The pre-push hook must execute `python scripts/verify_markdown_math.py` across all repository documentation and abort the push if any broken math delimiter, invalid brace structure, or corrupted shell escape character is detected.
+12. **Python Static Typing & Pyrefly Integrity Contract:**
+    - **Module Export and Singleton Import Parity:** Never invent or assume singleton variable names across service boundaries (e.g. `spatial_registry_service` vs `spatial_service`). Services exporting singleton instances must define module aliases when standard naming conventions vary, and importing callers must import the verified exported identifier.
+    - **Heterogeneous Dictionary Unpacking:** In typed Python services and test suites, extracting values from untyped or heterogeneous dictionaries (`dict[str, Any]`, `dict[str, Union[float, str, dict]]`) infers union types (`float | str | dict | Any`). Never pass subscripted dictionary values (`r["p"]`, `r["q"]`, `r["v"]`) directly into strictly typed parameter signatures (such as `float`) without explicit narrowing or defensive runtime coercion (e.g. `float(r["p"])`, `str(r["id"])`).
+    - **Arithmetic Scalar Narrowing:** Never perform binary operations (`*`, `/`, `+`, `-`) across `Optional[float]` variables without explicit non-null guards (`if x is not None:`) or inside un-narrowed ternary expressions that trigger `float.__rmul__` or `NoneType` static operator errors.
 
 ---
 
@@ -112,3 +116,4 @@ A contribution is complete only when:
 - [ ] Remote publication is serial: one commit per push. The next commit starts only after the previous run shows success on Backend & Simulation Tests, Frontend TypeScript & Vite Build, and GIS Assets & Catalog Integrity.
 - [ ] Issue tracking verified: the GitHub issue has a posted solution dossier comment (header and scope, architectural resolution, implementation files, verification counts, and operational summary) in the Section 10 template. A `Closes #<id>` trailer alone does not satisfy this item.
 - [ ] Markdown and mathematical notation integrity verified: contains zero broken LaTeX expressions, zero unbalanced math delimiters, and zero shell escaping artifacts (verified by `python scripts/verify_markdown_math.py`).
+- [ ] Python static typing integrity verified: contains zero Pyrefly or static typing mismatches across service modules, singleton imports, dictionary unpackings, and scalar operations.

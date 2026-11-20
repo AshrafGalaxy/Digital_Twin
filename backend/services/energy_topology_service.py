@@ -401,8 +401,8 @@ class EnergyTopologyService:
             # Resolve active study area ID dynamically from spatial registry
             study_area_id = "urn:ngsi-ld:StudyArea:CORRIDOR"
             try:
-                from backend.services.spatial_registry_service import spatial_registry_service
-                study_area_id = spatial_registry_service.catalog.studyAreaId
+                from backend.services.spatial_registry_service import spatial_service
+                study_area_id = spatial_service.catalog.studyAreaId
             except Exception as e:
                 logger.debug("Spatial registry study area resolution fallback: %s", e)
 
@@ -680,7 +680,10 @@ class EnergyTopologyService:
             generated_records = []
 
             for r in asset_readings:
-                ac = self.calculate_ac_physics(r["p"], r["q"], r["v"], phase_count=3)
+                p_kw = float(r.get("p", 0.0))
+                q_kvar = float(r.get("q", 0.0))
+                v_volts = float(r.get("v", 415.0))
+                ac = self.calculate_ac_physics(p_kw, q_kvar, v_volts, phase_count=3)
                 v_unbalance = round(random.uniform(0.35, 0.65), 2)
                 i_unbalance = round(random.uniform(0.95, 1.45), 2)
                 metrics_json = json.dumps(r.get("metrics", {}))

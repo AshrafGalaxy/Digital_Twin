@@ -394,5 +394,6 @@ class SpatialRegistryService:
         }
 
 
-# Global singleton instance
+# Global singleton instance and canonical module alias
 spatial_service = SpatialRegistryService()
+spatial_registry_service = spatial_service
