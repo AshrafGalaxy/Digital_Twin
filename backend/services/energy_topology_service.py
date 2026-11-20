@@ -22,6 +22,18 @@ from backend.core.database import AsyncSessionLocal, get_active_backend
 logger = logging.getLogger("digital_twin.energy")
 
 
+def _safe_float(val: Any, default: float = 0.0) -> float:
+    """Safely coerces untyped or heterogeneous dictionary values to float with explicit type narrowing."""
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        try:
+            return float(val)
+        except ValueError:
+            return default
+    return default
+
+
 class EnergyTopologyService:
     """
     Manages the multi-asset electrical distribution topology graph,
@@ -684,9 +696,9 @@ class EnergyTopologyService:
             generated_records = []
 
             for r in asset_readings:
-                p_kw = float(r.get("p", 0.0))
-                q_kvar = float(r.get("q", 0.0))
-                v_volts = float(r.get("v", 415.0))
+                p_kw = _safe_float(r.get("p"), 0.0)
+                q_kvar = _safe_float(r.get("q"), 0.0)
+                v_volts = _safe_float(r.get("v"), 415.0)
                 ac = self.calculate_ac_physics(p_kw, q_kvar, v_volts, phase_count=3)
                 v_unbalance = round(random.uniform(0.35, 0.65), 2)
                 i_unbalance = round(random.uniform(0.95, 1.45), 2)
