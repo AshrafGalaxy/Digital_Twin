@@ -19,6 +19,15 @@ from backend.core.database import AsyncSessionLocal
 client = TestClient(app)
 
 
+def _auth_header() -> dict:
+    res = client.post("/api/v1/auth/login", json={
+        "username_or_email": "analyst@pmc.gov.in",
+        "password": "analyst123",
+    })
+    assert res.status_code == 200
+    return {"Authorization": f"Bearer {res.json()['token']}"}
+
+
 def test_three_phase_ac_physics():
     """
     Verifies 3-phase AC power physics formulas:
@@ -261,12 +270,113 @@ def test_api_get_telemetry_history():
 
 
 def test_api_trigger_telemetry_tick():
-    """Verifies POST /api/v1/energy/telemetry/tick advances simulation and returns records."""
-    res = client.post("/api/v1/energy/telemetry/tick")
+    """Verifies POST /api/v1/energy/telemetry/tick advances simulation and returns records when authenticated."""
+    res = client.post("/api/v1/energy/telemetry/tick", headers=_auth_header())
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)
     assert len(data) == 10
+
+
+def test_api_tick_rejects_anonymous_request_with_401():
+    """
+    Verifies BUG-22 (#45): Anonymous callers cannot trigger telemetry ticks.
+    Unauthenticated request must return HTTP 401 Unauthorized.
+    """
+    res = client.post("/api/v1/energy/telemetry/tick")
+    assert res.status_code == 401
+
+
+def test_calculate_3phase_unbalance_deterministic_nema_rates():
+    """
+    Verifies BUG-22 (#45): calculate_3phase_unbalance produces strictly deterministic
+    NEMA Voltage and Current Unbalance Rates from per-phase quantities.
+    """
+    service = EnergyTopologyService()
+    # 500 kW active, 250 kVAR reactive at 415 V line-to-line
+    res1 = service.calculate_3phase_unbalance(500.0, 250.0, 415.0, phase_count=3)
+    res2 = service.calculate_3phase_unbalance(500.0, 250.0, 415.0, phase_count=3)
+
+    # Determinism
+    assert res1 == res2
+    assert "phaseVoltagesV" in res1
+    assert "phaseCurrentsA" in res1
+    assert len(res1["phaseVoltagesV"]) == 3
+    assert len(res1["phaseCurrentsA"]) == 3
+
+    # Hand-calculate expected NEMA VUR and CUR
+    voltages = res1["phaseVoltagesV"]
+    currents = res1["phaseCurrentsA"]
+    v_avg = sum(voltages) / 3.0
+    v_max_dev = max(abs(v - v_avg) for v in voltages)
+    expected_vur = round((v_max_dev / v_avg) * 100.0, 2)
+    assert abs(res1["voltageUnbalancePct"] - expected_vur) < 0.01
+
+    i_avg = sum(currents) / 3.0
+    i_max_dev = max(abs(i - i_avg) for i in currents)
+    expected_cur = round((i_max_dev / i_avg) * 100.0, 2)
+    assert abs(res1["currentUnbalancePct"] - expected_cur) < 0.01
+
+    # Single-phase case
+    res_1ph = service.calculate_3phase_unbalance(10.0, 2.0, 230.0, phase_count=1)
+    assert res_1ph["voltageUnbalancePct"] == 0.0
+    assert res_1ph["currentUnbalancePct"] == 0.0
+    assert len(res_1ph["phaseVoltagesV"]) == 1
+    assert len(res_1ph["phaseCurrentsA"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_unbalance_is_deterministic_and_traceable_to_phase_quantities():
+    """
+    Verifies BUG-22 (#45):
+    1. Unbalance is strictly deterministic across consecutive telemetry ticks.
+    2. Per-phase voltages and currents are stored in deviceMetrics.
+    3. Stored unbalance matches standard NEMA Voltage/Current Unbalance Rates calculated
+       from recorded phase quantities.
+    4. Records retain source_mode = 'SIMULATION' and quality_status = 'VALID'.
+    """
+    service = EnergyTopologyService()
+    async with AsyncSessionLocal() as session:
+        records1 = await service.generate_telemetry_tick(session=session)
+        records2 = await service.generate_telemetry_tick(session=session)
+
+    assert len(records1) == 10
+    assert len(records2) == 10
+
+    for r1, r2 in zip(records1, records2):
+        assert r1["assetId"] == r2["assetId"]
+        assert r1["sourceMode"] == "SIMULATION"
+        assert r1["qualityStatus"] == "VALID"
+
+        # If electrical inputs match, unbalance must be strictly identical (zero noise variance)
+        if r1["activePowerKw"] == r2["activePowerKw"] and r1["reactivePowerKvar"] == r2["reactivePowerKvar"]:
+            assert r1["voltageUnbalancePct"] == r2["voltageUnbalancePct"]
+            assert r1["currentUnbalancePct"] == r2["currentUnbalancePct"]
+
+        # Check phase quantities presence and exact NEMA formula compliance for all generated records
+        for r in (r1, r2):
+            dm = r.get("deviceMetrics", {})
+            assert "phaseVoltagesV" in dm
+            assert "phaseCurrentsA" in dm
+            phase_v = dm["phaseVoltagesV"]
+            phase_i = dm["phaseCurrentsA"]
+            assert len(phase_v) == 3
+            assert len(phase_i) == 3
+
+            # Verify NEMA Voltage Unbalance Rate (VUR) formula:
+            v_avg = sum(phase_v) / 3.0
+            v_max_dev = max(abs(v - v_avg) for v in phase_v)
+            expected_vur = round((v_max_dev / v_avg) * 100.0, 2)
+            assert abs(r["voltageUnbalancePct"] - expected_vur) < 0.01
+
+            # Verify NEMA Current Unbalance Rate (CUR) formula:
+            i_avg = sum(phase_i) / 3.0
+            if i_avg > 0.01:
+                i_max_dev = max(abs(i - i_avg) for i in phase_i)
+                expected_cur = round((i_max_dev / i_avg) * 100.0, 2)
+            else:
+                expected_cur = 0.0
+            assert abs(r["currentUnbalancePct"] - expected_cur) < 0.01
 
 
 def test_feeder_bess_charging_and_discharging_aggregation_parity():

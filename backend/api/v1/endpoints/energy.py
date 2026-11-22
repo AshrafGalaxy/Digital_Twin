@@ -226,9 +226,13 @@ async def get_asset_telemetry_history(
 
 
 @router.post("/telemetry/tick", response_model=List[Dict[str, Any]])
-async def trigger_telemetry_tick(session: AsyncSession = Depends(get_db)):
+async def trigger_telemetry_tick(
+    session: AsyncSession = Depends(get_db),
+    _officer: Dict[str, Any] = Depends(require_operational_officer)
+):
     """
     Manually triggers a simulated 3-phase AC telemetry tick across all canonical microgrid assets.
+    Requires operational officer credentials (TASK-10 / BUG-22).
     """
     try:
         records = await energy_topology_service.generate_telemetry_tick(session=session)

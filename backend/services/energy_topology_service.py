@@ -81,6 +81,88 @@ class EnergyTopologyService:
             "currentA": round(current_a, 2)
         }
 
+    def calculate_3phase_unbalance(
+        self,
+        active_power_kw: float,
+        reactive_power_kvar: float,
+        nominal_voltage_v: float,
+        phase_count: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Calculates per-phase voltages, currents, and standard NEMA Voltage/Current
+        Unbalance Rates (VUR/CUR).
+        Guarantees that identical electrical inputs produce strictly identical,
+        deterministic unbalance percentages without random noise.
+        """
+        if phase_count != 3:
+            s = math.sqrt(active_power_kw**2 + reactive_power_kvar**2)
+            v = max(1.0, nominal_voltage_v)
+            i = (s * 1000.0) / v
+            return {
+                "voltageUnbalancePct": 0.0,
+                "currentUnbalancePct": 0.0,
+                "phaseVoltagesV": [round(v, 2)],
+                "phaseCurrentsA": [round(i, 2)]
+            }
+
+        p_total = active_power_kw
+        q_total = reactive_power_kvar
+        v_nom = max(1.0, nominal_voltage_v)
+        s_total = math.sqrt(p_total**2 + q_total**2)
+
+        # Realistic deterministic network phase allocation shares:
+        # Phase A: 33.8% active, 33.5% reactive
+        # Phase B: 32.9% active, 33.2% reactive
+        # Phase C: 33.3% active, 33.3% reactive
+        shares_p = [0.338, 0.329, 0.333]
+        shares_q = [0.335, 0.332, 0.333]
+
+        phase_voltages: List[float] = []
+        phase_currents: List[float] = []
+
+        # Line-to-neutral nominal voltage: V_ln = V_ll / sqrt(3)
+        v_ln_nom = v_nom / math.sqrt(3.0)
+
+        # Slight deterministic impedance drop factors per phase
+        v_drop_factors = [0.008, 0.012, 0.006]
+
+        for idx in range(3):
+            p_phi = p_total * shares_p[idx]
+            q_phi = q_total * shares_q[idx]
+            s_phi = math.sqrt(p_phi**2 + q_phi**2)
+
+            # Line drop proportional to phase loading
+            load_factor = (s_phi / max(0.1, s_total / 3.0)) if s_total > 1e-4 else 1.0
+            v_phi = v_ln_nom * (1.0 - v_drop_factors[idx] * load_factor * 0.5)
+            v_phi = max(1.0, v_phi)
+            phase_voltages.append(round(v_phi, 2))
+
+            # Phase current I_phi = (S_phi * 1000) / V_phi
+            i_phi = (s_phi * 1000.0) / v_phi
+            phase_currents.append(round(i_phi, 2))
+
+        # NEMA Voltage Unbalance Rate (VUR):
+        # VUR = (max(|V_phi - V_avg|) / V_avg) * 100
+        v_avg = sum(phase_voltages) / 3.0
+        v_max_dev = max(abs(v - v_avg) for v in phase_voltages)
+        v_unbalance_pct = round((v_max_dev / v_avg) * 100.0, 2) if v_avg > 0 else 0.0
+
+        # NEMA Current Unbalance Rate (CUR):
+        # CUR = (max(|I_phi - I_avg|) / I_avg) * 100
+        i_avg = sum(phase_currents) / 3.0
+        if i_avg > 0.01:
+            i_max_dev = max(abs(i - i_avg) for i in phase_currents)
+            i_unbalance_pct = round((i_max_dev / i_avg) * 100.0, 2)
+        else:
+            i_unbalance_pct = 0.0
+
+        return {
+            "voltageUnbalancePct": v_unbalance_pct,
+            "currentUnbalancePct": i_unbalance_pct,
+            "phaseVoltagesV": phase_voltages,
+            "phaseCurrentsA": phase_currents
+        }
+
     def simulate_diurnal_solar_kw(
         self,
         rated_capacity_kwp: float,
@@ -700,9 +782,14 @@ class EnergyTopologyService:
                 q_kvar = _safe_float(r.get("q"), 0.0)
                 v_volts = _safe_float(r.get("v"), 415.0)
                 ac = self.calculate_ac_physics(p_kw, q_kvar, v_volts, phase_count=3)
-                v_unbalance = round(random.uniform(0.35, 0.65), 2)
-                i_unbalance = round(random.uniform(0.95, 1.45), 2)
-                metrics_json = json.dumps(r.get("metrics", {}))
+                unbalance = self.calculate_3phase_unbalance(p_kw, q_kvar, v_volts, phase_count=3)
+                v_unbalance = unbalance["voltageUnbalancePct"]
+                i_unbalance = unbalance["currentUnbalancePct"]
+
+                device_metrics = dict(r.get("metrics", {}))
+                device_metrics["phaseVoltagesV"] = unbalance["phaseVoltagesV"]
+                device_metrics["phaseCurrentsA"] = unbalance["phaseCurrentsA"]
+                metrics_json = json.dumps(device_metrics)
 
                 insert_stmt = text("""
                     INSERT INTO energy_asset_telemetry (
@@ -761,7 +848,9 @@ class EnergyTopologyService:
                     "voltageV": ac["voltageV"],
                     "currentA": ac["currentA"],
                     "frequencyHz": grid_freq,
-                    "deviceMetrics": r.get("metrics", {})
+                    "voltageUnbalancePct": v_unbalance,
+                    "currentUnbalancePct": i_unbalance,
+                    "deviceMetrics": device_metrics
                 }
                 await session.execute(upsert_state, {
                     "entity_id": r["id"],
@@ -776,7 +865,7 @@ class EnergyTopologyService:
                     "frequencyHz": grid_freq,
                     "voltageUnbalancePct": v_unbalance,
                     "currentUnbalancePct": i_unbalance,
-                    "deviceMetrics": r.get("metrics", {}),
+                    "deviceMetrics": device_metrics,
                     "observedAt": now_utc.isoformat(),
                     "sourceMode": "SIMULATION",
                     "qualityStatus": "VALID"
