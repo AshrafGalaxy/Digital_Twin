@@ -28,6 +28,13 @@ from backend.services.spat_adapter import (
     ControllerMode,
     resolve_intersection_id
 )
+from backend.services.arterial_coordinator import (
+    ArterialProgressionCoordinator,
+    CorridorCoordinationPlan,
+    ProgressionOffsetResult,
+    ProgressionRequest,
+    arterial_coordinator,
+)
 
 logger = logging.getLogger("digital_twin.endpoints.traffic")
 
@@ -177,7 +184,7 @@ async def get_corridor_los(
     now_iso = datetime.now(timezone.utc).isoformat()
 
     for seg in segments_to_eval:
-        seg_id = seg["id"]
+        seg_id = str(seg["id"])
         live = current_metrics.get(seg_id, {})
         m = live.get("metrics", {})
 
@@ -205,8 +212,8 @@ async def get_corridor_los(
 
         segment_los_list.append(SegmentLOSResponse(
             segmentId=seg_id,
-            name=seg["name"],
-            direction=seg["direction"],
+            name=str(seg["name"]),
+            direction=str(seg["direction"]),
             speedKmh=res["speedKmh"],
             flowVehHr=res["flowVehHr"],
             capacityVehHr=res["capacityVehHr"],
@@ -341,8 +348,8 @@ async def get_segment_los(
 
     return SegmentLOSResponse(
         segmentId=segment_id,
-        name=target_seg["name"],
-        direction=target_seg["direction"],
+        name=str(target_seg["name"]),
+        direction=str(target_seg["direction"]),
         speedKmh=res["speedKmh"],
         flowVehHr=res["flowVehHr"],
         capacityVehHr=res["capacityVehHr"],
@@ -633,9 +640,9 @@ async def get_intersection_optimal_timing(
         # Fallback to configured defaults or generic approaches
         canonical_id = resolve_intersection_id(intersection_id)
         if canonical_id:
-            approaches = DEFAULT_INTERSECTION_APPROACHES.get(canonical_id)
+            approaches = DEFAULT_INTERSECTION_APPROACHES.get(canonical_id) or []
         else:
-            approaches = DEFAULT_INTERSECTION_APPROACHES.get(intersection_id)
+            approaches = DEFAULT_INTERSECTION_APPROACHES.get(intersection_id) or []
 
     if not approaches:
         # Generic 4-phase fallback approach set
@@ -825,5 +832,146 @@ async def get_spat_history(
         )
         for r in rows
     ]
+
+
+# ============================================================================
+# Arterial Two-Way Green Wave Progression & Offset Optimizer (TASK-03)
+# ============================================================================
+
+
+@router.get("/corridors/{corridor_id}/green-wave-offset", response_model=ProgressionOffsetResult)
+@router.get("/corridor/{corridor_id}/green-wave-offset", response_model=ProgressionOffsetResult)
+async def get_green_wave_offset(
+    corridor_id: str,
+    upstream_intersection_id: Optional[str] = Query(None, description="Upstream intersection identifier or URN"),
+    downstream_intersection_id: Optional[str] = Query(None, description="Downstream intersection identifier or URN"),
+    upstreamIntersectionId: Optional[str] = Query(None, description="Upstream intersection identifier camelCase alias"),
+    downstreamIntersectionId: Optional[str] = Query(None, description="Downstream intersection identifier camelCase alias"),
+    common_cycle_sec: Optional[int] = Query(None, ge=30, le=240, description="Common coordinated cycle length in seconds"),
+    commonCycleSec: Optional[int] = Query(None, ge=30, le=240, description="Common cycle length in seconds camelCase alias"),
+    downstream_queue_m: Optional[float] = Query(None, ge=0.0, description="Downstream residual queue length in meters"),
+    downstreamQueueMeters: Optional[float] = Query(None, ge=0.0, description="Downstream queue length in meters camelCase alias"),
+    progression_speed_kmh: Optional[float] = Query(None, gt=0.0, le=120.0, description="Target design progression speed in km/h"),
+    progressionSpeedKmh: Optional[float] = Query(None, gt=0.0, le=120.0, description="Progression speed in km/h camelCase alias"),
+    distance_meters: Optional[float] = Query(None, gt=0.0, description="Explicit link distance override in meters"),
+    distanceMeters: Optional[float] = Query(None, gt=0.0, description="Explicit link distance override camelCase alias"),
+    forward_weight: float = Query(0.5, ge=0.0, le=1.0, description="Priority weight for forward direction"),
+    reverse_weight: float = Query(0.5, ge=0.0, le=1.0, description="Priority weight for reverse direction"),
+    reverse_queue_m: float = Query(0.0, ge=0.0, description="Reverse direction residual queue in meters"),
+    dissipation_speed_mps: float = Query(5.0, gt=0.0, description="Queue clearance wave dissipation speed in m/s"),
+):
+    """
+    Computes arterial green wave progression offset between an upstream and downstream intersection.
+    Calculates nominal travel time offset and applies backward queue clearance wave adjustment.
+    Enforces downstream queue storage safety envelope: if Q / d > 0.65, sets coordinationMode
+    to 'QUEUE_FLUSH_REQUIRED', safetyStatus to 'QUEUE_SPILLBACK_RISK', and suspends progression.
+    Returns standardized provenance (sourceMode 'PREDICTED', timestamp, qualityScore) and
+    advisory compliance status 'REQUIRES_HUMAN_APPROVAL'.
+    """
+    up_id = upstream_intersection_id or upstreamIntersectionId
+    down_id = downstream_intersection_id or downstreamIntersectionId
+
+    if not up_id or not down_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Both upstream_intersection_id and downstream_intersection_id must be provided."
+        )
+
+    cycle = common_cycle_sec if common_cycle_sec is not None else (commonCycleSec if commonCycleSec is not None else 90)
+    queue_m = downstream_queue_m if downstream_queue_m is not None else (downstreamQueueMeters if downstreamQueueMeters is not None else 0.0)
+    speed = progression_speed_kmh if progression_speed_kmh is not None else (progressionSpeedKmh if progressionSpeedKmh is not None else 40.0)
+    dist = distance_meters if distance_meters is not None else distanceMeters
+
+    try:
+        res = arterial_coordinator.calculate_progression_offset(
+            upstream_intersection_id=up_id,
+            downstream_intersection_id=down_id,
+            common_cycle_sec=cycle,
+            downstream_queue_m=queue_m,
+            progression_speed_kmh=speed,
+            distance_meters=dist,
+            corridor_id=corridor_id,
+            forward_weight=forward_weight,
+            reverse_weight=reverse_weight,
+            reverse_queue_m=reverse_queue_m,
+            dissipation_speed_mps=dissipation_speed_mps,
+        )
+        return res
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(val_err)
+        )
+    except Exception as exc:
+        logger.error("Error computing green wave offset: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Green wave offset calculation failure: {str(exc)}"
+        )
+
+
+@router.post("/optimizer/green-wave", response_model=ProgressionOffsetResult)
+async def optimize_green_wave(payload: ProgressionRequest):
+    """
+    Computes arterial two-way green wave progression offset from a JSON payload.
+    Applies queue clearance wave dynamics and evaluates bidirectional compromise efficiency.
+    Returns standardized provenance and advisory compliance status 'REQUIRES_HUMAN_APPROVAL'.
+    """
+    try:
+        res = arterial_coordinator.calculate_progression_offset(request=payload)
+        return res
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(val_err)
+        )
+    except Exception as exc:
+        logger.error("Error optimizing green wave offset: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Green wave optimization failure: {str(exc)}"
+        )
+
+
+@router.get("/corridors/{corridor_id}/coordination-plan", response_model=CorridorCoordinationPlan)
+@router.get("/corridor/{corridor_id}/coordination-plan", response_model=CorridorCoordinationPlan)
+async def get_corridor_coordination_plan(
+    corridor_id: str,
+    common_cycle_sec: Optional[int] = Query(None, ge=30, le=240, description="Common cycle length in seconds"),
+    commonCycleSec: Optional[int] = Query(None, ge=30, le=240, description="Common cycle length in seconds (camelCase)"),
+    progression_speed_kmh: Optional[float] = Query(None, gt=0.0, le=120.0, description="Target design progression speed in km/h"),
+    progressionSpeedKmh: Optional[float] = Query(None, gt=0.0, le=120.0, description="Target design progression speed in km/h (camelCase)"),
+    forward_weight: float = Query(0.5, ge=0.0, le=1.0, description="Priority weight for forward direction"),
+    reverse_weight: float = Query(0.5, ge=0.0, le=1.0, description="Priority weight for reverse direction"),
+):
+    """
+    Computes a comprehensive corridor-wide two-way green wave coordination plan.
+    Evaluates progression efficiency across all sequential links along the arterial corridor.
+    Identifies any queue spillback risk segments and flags queue flush requirements.
+    Returns standardized provenance and advisory compliance status 'REQUIRES_HUMAN_APPROVAL'.
+    """
+    cycle = common_cycle_sec if common_cycle_sec is not None else (commonCycleSec if commonCycleSec is not None else 90)
+    speed = progression_speed_kmh if progression_speed_kmh is not None else (progressionSpeedKmh if progressionSpeedKmh is not None else 40.0)
+
+    try:
+        plan = arterial_coordinator.compute_corridor_coordination_plan(
+            corridor_id=corridor_id,
+            common_cycle_sec=cycle,
+            progression_speed_kmh=speed,
+            forward_weight=forward_weight,
+            reverse_weight=reverse_weight,
+        )
+        return plan
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(val_err)
+        )
+    except Exception as exc:
+        logger.error("Error computing corridor coordination plan: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Corridor coordination plan computation failure: {str(exc)}"
+        )
 
 
