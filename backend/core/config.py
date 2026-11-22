@@ -49,6 +49,8 @@ class Settings(BaseSettings):
 
     # Temporal Alignment (Corridor Civil Time Offset from UTC; +330 = UTC+05:30 reference)
     CORRIDOR_UTC_OFFSET_MINUTES: int = 330
+    # Study Area IANA Timezone (Default: Asia/Kolkata for reference corridor pilot)
+    STUDY_AREA_TIMEZONE: str = "Asia/Kolkata"
 
     # Provenance Quality Score Baselines (AGENTS.md Section 3)
     SYNTHETIC_LOS_QUALITY_SCORE: float = 0.70  # Tier-0 zero-hardware synthetic baseline

@@ -12,11 +12,13 @@ import logging
 import math
 import random
 import threading
-from datetime import datetime, timezone
+import zoneinfo
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.config import settings
 from backend.core.database import AsyncSessionLocal, get_active_backend
 
 logger = logging.getLogger("digital_twin.energy")
@@ -34,6 +36,47 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
     return default
 
 
+def get_local_civil_datetime(
+    dt: Optional[datetime] = None,
+    tz_name: Optional[str] = None
+) -> datetime:
+    """
+    Converts a datetime to the local civil datetime for the study area.
+    If dt is None, uses datetime.now(timezone.utc).
+    If dt is naive, assumes UTC.
+    Uses zoneinfo.ZoneInfo(tz_name or settings.STUDY_AREA_TIMEZONE) with fallback to
+    timezone(timedelta(minutes=settings.CORRIDOR_UTC_OFFSET_MINUTES)).
+    """
+    if dt is None:
+        dt = datetime.now(timezone.utc)
+    elif dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    target_tz_str = tz_name or settings.STUDY_AREA_TIMEZONE
+    try:
+        target_tz = zoneinfo.ZoneInfo(target_tz_str)
+    except Exception as e:
+        logger.warning(
+            "Failed to load ZoneInfo for %s, falling back to CORRIDOR_UTC_OFFSET_MINUTES: %s",
+            target_tz_str,
+            e
+        )
+        target_tz = timezone(timedelta(minutes=settings.CORRIDOR_UTC_OFFSET_MINUTES))
+
+    return dt.astimezone(target_tz)
+
+
+def get_local_decimal_hour(
+    dt: Optional[datetime] = None,
+    tz_name: Optional[str] = None
+) -> float:
+    """
+    Computes decimal hour of day (0.0 to 24.0) from the local civil datetime.
+    """
+    local_dt = get_local_civil_datetime(dt, tz_name)
+    return local_dt.hour + local_dt.minute / 60.0 + local_dt.second / 3600.0 + local_dt.microsecond / 3600000000.0
+
+
 class EnergyTopologyService:
     """
     Manages the multi-asset electrical distribution topology graph,
@@ -45,6 +88,20 @@ class EnergyTopologyService:
         self._bess_soc_pct: float = 78.5
         self._ev_active_plugs: int = 6
         self._last_tick_time: datetime = datetime.now(timezone.utc)
+
+    def get_local_civil_datetime(
+        self,
+        dt: Optional[datetime] = None,
+        tz_name: Optional[str] = None
+    ) -> datetime:
+        return get_local_civil_datetime(dt, tz_name)
+
+    def get_local_decimal_hour(
+        self,
+        dt: Optional[datetime] = None,
+        tz_name: Optional[str] = None
+    ) -> float:
+        return get_local_decimal_hour(dt, tz_name)
 
     def calculate_ac_physics(
         self,
@@ -166,14 +223,14 @@ class EnergyTopologyService:
     def simulate_diurnal_solar_kw(
         self,
         rated_capacity_kwp: float,
-        now: Optional[datetime] = None
+        now: Optional[datetime] = None,
+        tz_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Simulates diurnal rooftop solar generation based on solar zenith angle.
-        Active generation peaks near 12:30, with zero output between 19:00 and 06:00.
+        Active generation peaks near 12:30 local civil time, with zero output between 18:30 and 06:12.
         """
-        t = now or datetime.now(timezone.utc)
-        decimal_hour = t.hour + t.minute / 60.0 + t.second / 3600.0
+        decimal_hour = self.get_local_decimal_hour(now, tz_name)
 
         sunrise = 6.2
         sunset = 18.5
@@ -212,14 +269,15 @@ class EnergyTopologyService:
         self,
         contract_demand_kw: float,
         category: str,
-        now: Optional[datetime] = None
+        now: Optional[datetime] = None,
+        tz_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Simulates commercial building load profiles:
         Commercial retail/hospitality/office diurnal demand with HVAC and tenant usage.
+        Driven by local civil time.
         """
-        t = now or datetime.now(timezone.utc)
-        decimal_hour = t.hour + t.minute / 60.0 + t.second / 3600.0
+        decimal_hour = self.get_local_decimal_hour(now, tz_name)
 
         if category == "COMMERCIAL_RETAIL":
             # Opens 10:00, peaks 14:00 - 20:30, closes 22:00
@@ -277,9 +335,11 @@ class EnergyTopologyService:
     def simulate_bess_dynamics(
         self,
         solar_active_kw: float,
-        hour: float,
+        hour: float = 12.0,
         dt_sec: float = 5.0,
-        round_trip_efficiency: Optional[float] = None
+        round_trip_efficiency: Optional[float] = None,
+        now: Optional[datetime] = None,
+        tz_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Simulates Battery Energy Storage System (BESS) charge/discharge logic:
@@ -289,6 +349,7 @@ class EnergyTopologyService:
         - Enforces physical round-trip efficiency: charge stores ac_in * sqrt(eta_rt),
           discharge removes ac_out / sqrt(eta_rt), and standby drains parasitic losses.
         """
+        effective_hour = self.get_local_decimal_hour(now, tz_name) if now is not None else hour
         with self._lock:
             soc = self._bess_soc_pct
 
@@ -296,7 +357,7 @@ class EnergyTopologyService:
             if solar_active_kw > 400.0 and soc < 92.0:
                 mode = "CHARGING"
                 power_kw = -min(650.0, solar_active_kw * 0.55)
-            elif 18.0 <= hour <= 21.0 and soc > 22.0:
+            elif 18.0 <= effective_hour <= 21.0 and soc > 22.0:
                 mode = "DISCHARGING"
                 power_kw = 550.0
             else:
@@ -335,22 +396,26 @@ class EnergyTopologyService:
 
     def simulate_ev_hub_dynamics(
         self,
-        hour: float,
+        hour: float = 12.0,
         total_plugs: int = 12,
-        plug_capacity_kw: float = 60.0
+        plug_capacity_kw: float = 60.0,
+        now: Optional[datetime] = None,
+        tz_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Simulates DC Fast-Charging Plaza dynamics with vehicle arrivals and charging pulses.
+        Driven by local civil time.
         """
+        effective_hour = self.get_local_decimal_hour(now, tz_name) if now is not None else hour
         with self._lock:
             # Vehicle arrivals rise in late afternoon and evening
-            if 7.0 <= hour <= 9.5:
+            if 7.0 <= effective_hour <= 9.5:
                 target_plugs = 5
-            elif 12.0 <= hour <= 14.5:
+            elif 12.0 <= effective_hour <= 14.5:
                 target_plugs = 7
-            elif 17.0 <= hour <= 21.5:
+            elif 17.0 <= effective_hour <= 21.5:
                 target_plugs = 10
-            elif hour > 23.0 or hour < 6.0:
+            elif effective_hour > 23.0 or effective_hour < 6.0:
                 target_plugs = 2
             else:
                 target_plugs = 4
@@ -646,7 +711,7 @@ class EnergyTopologyService:
             close_session = True
 
         now_utc = datetime.now(timezone.utc)
-        decimal_hour = now_utc.hour + now_utc.minute / 60.0 + now_utc.second / 3600.0
+        decimal_hour = self.get_local_decimal_hour(now_utc)
         is_pg = get_active_backend() == "postgresql"
 
         # Stochastic frequency drift around nominal 50.0 Hz (+/- 0.08 Hz)
@@ -684,7 +749,7 @@ class EnergyTopologyService:
                         }
                     elif ntype == "BESS":
                         solar_p = next((ep["p"] for ep in endpoint_readings.values() if "irradianceWm2" in ep.get("metrics", {})), 600.0)
-                        bess = self.simulate_bess_dynamics(solar_p, decimal_hour, 5.0)
+                        bess = self.simulate_bess_dynamics(solar_p, decimal_hour, 5.0, now=now_utc)
                         endpoint_readings[nid] = {
                             "id": nid, "p": bess["activePowerKw"], "q": bess["reactivePowerKvar"],
                             "v": v_nom, "metrics": {"operatingMode": bess["operatingMode"], "stateOfChargePct": bess["stateOfChargePct"]}
@@ -692,7 +757,7 @@ class EnergyTopologyService:
                     elif ntype == "EV_HUB":
                         plugs = int(props.get("totalPlugs", 12))
                         plug_kw = float(props.get("plugCapacityKw", 60.0))
-                        ev = self.simulate_ev_hub_dynamics(decimal_hour, plugs, plug_kw)
+                        ev = self.simulate_ev_hub_dynamics(decimal_hour, plugs, plug_kw, now=now_utc)
                         endpoint_readings[nid] = {
                             "id": nid, "p": ev["activePowerKw"], "q": ev["reactivePowerKvar"],
                             "v": v_nom, "metrics": {"activePlugs": ev["activePlugs"], "utilizationRatePct": ev["utilizationRatePct"]}
@@ -744,9 +809,9 @@ class EnergyTopologyService:
                 # Nominal fallback for unit test fixtures without provisioned nodes
                 solar_data = self.simulate_diurnal_solar_kw(1200.0, now_utc)
                 bld_phoenix = self.simulate_building_load_kw(2500.0, "COMMERCIAL_RETAIL", now_utc)
-                bess_data = self.simulate_bess_dynamics(solar_data["activePowerKw"], decimal_hour, 5.0)
+                bess_data = self.simulate_bess_dynamics(solar_data["activePowerKw"], decimal_hour, 5.0, now=now_utc)
                 bld_solitaire = self.simulate_building_load_kw(3000.0, "COMMERCIAL_OFFICE", now_utc)
-                ev_data = self.simulate_ev_hub_dynamics(decimal_hour, 12, 60.0)
+                ev_data = self.simulate_ev_hub_dynamics(decimal_hour, 12, 60.0, now=now_utc)
                 bld_hyatt = self.simulate_building_load_kw(1600.0, "HOSPITALITY", now_utc)
 
                 fdr_a_p = bld_phoenix["activePowerKw"] - solar_data["activePowerKw"]

@@ -58,23 +58,111 @@ def test_three_phase_ac_physics():
 def test_diurnal_solar_generation():
     """
     Verifies that solar generation accurately follows the diurnal sun curve:
-    Zero generation at night, peak generation near solar noon.
+    Zero generation at night, peak generation near solar noon in local civil time.
     """
     service = EnergyTopologyService()
     rated_kwp = 1200.0
 
-    # Midnight (01:00 UTC) -> Zero generation
-    night_time = datetime(2026, 10, 21, 1, 0, 0, tzinfo=timezone.utc)
+    # Night at 20:00 UTC (01:30 IST next day) -> Zero generation
+    night_time = datetime(2026, 10, 21, 20, 0, 0, tzinfo=timezone.utc)
     night_res = service.simulate_diurnal_solar_kw(rated_kwp, night_time)
     assert night_res["activePowerKw"] == 0.0
     assert night_res["irradianceWm2"] == 0.0
 
-    # Solar Noon (12:30 UTC) -> Peak generation (> 75% of rated capacity)
-    noon_time = datetime(2026, 10, 21, 12, 30, 0, tzinfo=timezone.utc)
+    # Solar Noon at 12:30 IST (07:00:00 UTC) -> Peak generation (> 800 kW on 1200 kW array)
+    noon_time = datetime(2026, 10, 21, 7, 0, 0, tzinfo=timezone.utc)
     noon_res = service.simulate_diurnal_solar_kw(rated_kwp, noon_time)
     assert noon_res["activePowerKw"] > 800.0
     assert noon_res["irradianceWm2"] > 800.0
     assert noon_res["inverterEfficiencyPct"] >= 95.0
+
+
+def test_solar_generation_driven_by_local_civil_time_not_utc():
+    """
+    Verifies that solar generation is driven by local civil time rather than naive UTC.
+    At 07:00:00 UTC (12:30 IST, local solar noon), generation peaks (> 850 kW on 1000 kW array).
+    At 12:30:00 UTC (18:00 IST, near dusk), generation drops sharply (< 150 kW on 1000 kW array).
+    """
+    service = EnergyTopologyService()
+    rated_kwp = 1000.0
+
+    # 07:00:00 UTC = 12:30:00 IST -> Peak solar (>850 kW on 1000 kW array)
+    t_noon_ist = datetime(2026, 10, 21, 7, 0, 0, tzinfo=timezone.utc)
+    res_noon = service.simulate_diurnal_solar_kw(rated_kwp, t_noon_ist)
+    assert res_noon["activePowerKw"] > 850.0
+
+    # 12:30:00 UTC = 18:00:00 IST -> Dusk solar (<150 kW on 1000 kW array)
+    t_dusk_ist = datetime(2026, 10, 21, 12, 30, 0, tzinfo=timezone.utc)
+    res_dusk = service.simulate_diurnal_solar_kw(rated_kwp, t_dusk_ist)
+    assert res_dusk["activePowerKw"] < 150.0
+
+
+def test_commercial_retail_building_load_factor_at_local_civil_noon():
+    """
+    Verifies that commercial retail building load profile is driven by local civil time.
+    At 07:00:00 UTC (12:30 IST), retail mall is fully open and operating in the active
+    daytime branch (~0.81 load factor), rather than pre-opening baseload (0.22).
+    """
+    service = EnergyTopologyService()
+    contract_demand_kw = 1000.0
+
+    t_noon_ist = datetime(2026, 10, 21, 7, 0, 0, tzinfo=timezone.utc)
+    res = service.simulate_building_load_kw(contract_demand_kw, "COMMERCIAL_RETAIL", now=t_noon_ist)
+    load_factor = res["activePowerKw"] / contract_demand_kw
+
+    # Open-hours branch produces ~0.814, distinct from baseload 0.22
+    assert 0.80 <= load_factor <= 0.83
+    assert abs(load_factor - 0.814) < 0.01
+    assert load_factor > 0.50
+
+
+def test_bess_evening_discharge_aligned_with_local_civil_time():
+    """
+    Verifies that BESS peak evening discharge (18:00 to 21:00) is governed by local civil time:
+    - At local 19:00 (13:30 UTC), BESS selects DISCHARGING when SOC allows.
+    - At 19:00 UTC (00:30 IST next day, midnight), BESS selects STANDBY.
+    """
+    service = EnergyTopologyService()
+    service._bess_soc_pct = 75.0
+
+    # Local 19:00 IST = 13:30 UTC -> DISCHARGING
+    t_evening_local = datetime(2026, 10, 21, 13, 30, 0, tzinfo=timezone.utc)
+    discharge_res = service.simulate_bess_dynamics(solar_active_kw=0.0, now=t_evening_local)
+    assert discharge_res["operatingMode"] == "DISCHARGING"
+    assert discharge_res["activePowerKw"] > 0.0
+
+    # 19:00 UTC = 00:30 IST (late night) -> STANDBY
+    t_utc_19 = datetime(2026, 10, 21, 19, 0, 0, tzinfo=timezone.utc)
+    standby_res = service.simulate_bess_dynamics(solar_active_kw=0.0, now=t_utc_19)
+    assert standby_res["operatingMode"] == "STANDBY"
+    assert standby_res["activePowerKw"] < 0.0  # Parasitic loss (-8 kW)
+
+
+def test_configurable_iana_timezone_generalization():
+    """
+    Verifies that civil time calculations support configurable IANA timezone strings
+    (e.g., UTC and America/New_York) without hardcoded offsets.
+    """
+    service = EnergyTopologyService()
+
+    # Given 16:00:00 UTC:
+    # In UTC: decimal hour is 16.0 (afternoon)
+    dt_utc = datetime(2026, 10, 21, 16, 0, 0, tzinfo=timezone.utc)
+    utc_hour = service.get_local_decimal_hour(dt_utc, tz_name="UTC")
+    assert abs(utc_hour - 16.0) < 1e-4
+
+    # In America/New_York (EDT, UTC-4 in October): 16:00 UTC is 12:00 local civil noon
+    ny_hour = service.get_local_decimal_hour(dt_utc, tz_name="America/New_York")
+    assert abs(ny_hour - 12.0) < 1e-4
+
+    # Solar generation for America/New_York at 16:00 UTC reaches peak noon (>800 kW on 1000 kW array)
+    ny_solar = service.simulate_diurnal_solar_kw(1000.0, now=dt_utc, tz_name="America/New_York")
+    assert ny_solar["activePowerKw"] > 800.0
+
+    # Solar generation for UTC at 12:00 UTC reaches peak noon (>800 kW on 1000 kW array)
+    dt_utc_noon = datetime(2026, 10, 21, 12, 0, 0, tzinfo=timezone.utc)
+    utc_solar = service.simulate_diurnal_solar_kw(1000.0, now=dt_utc_noon, tz_name="UTC")
+    assert utc_solar["activePowerKw"] > 800.0
 
 
 def test_bess_charge_discharge_dynamics():
@@ -217,6 +305,28 @@ async def test_telemetry_tick_generation_and_persistence():
             assert 49.5 <= r["frequencyHz"] <= 50.5
             assert r["sourceMode"] == "SIMULATION"
             assert r["qualityStatus"] == "VALID"
+
+
+@pytest.mark.asyncio
+async def test_provenance_remains_simulation():
+    """
+    Verifies that generated energy telemetry strictly preserves the State Separation Invariant
+    (AGENTS.md Section 2 and Section 3):
+    All microgrid simulation records are stamped with sourceMode = 'SIMULATION' and ISO 8601 UTC observedAt.
+    Simulations never overwrite or masquerade as observed or live twin state.
+    """
+    service = EnergyTopologyService()
+    async with AsyncSessionLocal() as session:
+        records = await service.generate_telemetry_tick(session=session)
+
+    assert len(records) == 10
+    for r in records:
+        assert r["sourceMode"] == "SIMULATION"
+        assert r["qualityStatus"] == "VALID"
+        observed_at = r.get("observedAt")
+        assert observed_at is not None
+        assert isinstance(observed_at, str)
+        assert observed_at.endswith("Z") or "+00:00" in observed_at
 
 
 # ============================================================================
