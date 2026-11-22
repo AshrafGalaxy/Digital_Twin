@@ -264,7 +264,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-muted" style={{ fontSize: '11px' }}>Feed:</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
                   {lastUpdated ? (
-                    <span style={{ color: 'var(--badge-synced-ink)' }}>Synced ({new Date(lastUpdated).toLocaleTimeString()})</span>
+                    Date.now() - new Date(lastUpdated).getTime() > 180000 ? (
+                      <span style={{ color: 'var(--status-warning-ink)' }}>Stale ({new Date(lastUpdated).toLocaleTimeString()})</span>
+                    ) : (
+                      <span style={{ color: 'var(--badge-synced-ink)' }}>Synced ({new Date(lastUpdated).toLocaleTimeString()})</span>
+                    )
                   ) : (
                     <span style={{ color: 'var(--status-warning-ink)' }}>Awaiting</span>
                   )}

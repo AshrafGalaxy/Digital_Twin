@@ -436,48 +436,7 @@ export const App: React.FC = () => {
     return () => disconnect();
   }, [activeTab]);
 
-  // Real-Time Micro-Fluctuation Telemetry Heartbeat
-  // Ensures telemetry values feel organically alive in LIVE mode even during network latency
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const timeSinceWs = Date.now() - lastWsMessageRef.current;
-      // If WebSocket broadcast is quiet (> 2200ms), gently step telemetry values
-      if (timeSinceWs >= 2200) {
-        setLiveEnergyKw(prev => {
-          if (prev === null) return null;
-          const delta = (Math.random() - 0.49) * 14.0;
-          return Math.round(Math.max(4350, Math.min(5380, prev + delta)) * 10) / 10;
-        });
 
-        setLiveStates(prev => {
-          if (Object.keys(prev).length === 0) return prev;
-          const next = { ...prev };
-          for (const key of Object.keys(next)) {
-            const seg = next[key];
-            if (seg && seg.metrics && typeof seg.metrics.averageSpeedKmh === 'number') {
-              const currentSpeed = seg.metrics.averageSpeedKmh;
-              const speedJitter = (Math.random() - 0.49) * 0.4;
-              const newSpeed = Math.round(Math.max(0.0, Math.min(56.0, currentSpeed + speedJitter)) * 10) / 10;
-              const newCongestion = Math.round(Math.max(0.06, Math.min(0.85, 1.0 - (newSpeed / 52.0))) * 100) / 100;
-              next[key] = {
-                ...seg,
-                updatedAt: new Date().toISOString(),
-                metrics: {
-                  ...seg.metrics,
-                  averageSpeedKmh: newSpeed,
-                  congestionIndex: newCongestion
-                }
-              };
-            }
-          }
-          return next;
-        });
-        setLastUpdated(new Date().toISOString());
-      }
-    }, 2400);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Determine Effective State: Real-Time Live Telemetry
   const effectiveStates = liveStates;
