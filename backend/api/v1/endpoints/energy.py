@@ -23,6 +23,11 @@ from backend.schemas.energy_advisory import (
     EnergyDispatchWorkOrder,
     EnergyOfficerCredentials,
 )
+from backend.services.bess_optimizer import (
+    BessOptimizationRequest,
+    BessOptimizationResult,
+    bess_optimizer,
+)
 from backend.services.energy_advisory_service import energy_advisory_service
 from backend.services.energy_topology_service import energy_topology_service
 from backend.services.power_balance_service import power_balance_service
@@ -390,4 +395,93 @@ async def get_energy_dispatch_ticket(advisory_id: str):
             detail=f"No dispatch ticket issued for energy advisory '{advisory_id}'."
         )
     return ticket
+
+
+@router.post("/optimize-bess", response_model=BessOptimizationResult)
+@router.post("/bess/optimize", response_model=BessOptimizationResult)
+async def optimize_bess_schedule(
+    request: BessOptimizationRequest,
+) -> BessOptimizationResult:
+    """
+    Computes a 24-hour convex Linear Program (LP) optimization schedule for BESS battery arbitrage
+    and peak demand shaving under Time-of-Use tariffs and monthly peak penalty constraints.
+    Returns optimal hourly dispatch setpoints, projected financial savings, peak shaving reduction,
+    governance non-actuation notice, and calculation provenance.
+    """
+    if request.custom_load_profile_kw is not None and len(request.custom_load_profile_kw) != 24:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="customLoadProfileKw must contain exactly 24 hourly floating point values.",
+        )
+    if request.custom_solar_profile_kw is not None and len(request.custom_solar_profile_kw) != 24:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="customSolarProfileKw must contain exactly 24 hourly floating point values.",
+        )
+    if request.custom_tariff_profile_inr is not None and len(request.custom_tariff_profile_inr) != 24:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="customTariffProfileInr must contain exactly 24 hourly floating point values.",
+        )
+
+    try:
+        result = bess_optimizer.optimize_24h_schedule(
+            facility_id=request.facility_id,
+            target_schedule_date=request.target_schedule_date,
+            initial_soc_pct=request.initial_soc_pct,
+            custom_load_profile_kw=request.custom_load_profile_kw,
+            custom_solar_profile_kw=request.custom_solar_profile_kw,
+            contract_demand_ceiling_kw=request.contract_demand_ceiling_kw,
+            demand_penalty_rate_inr=request.demand_penalty_rate_inr,
+            custom_tariff_profile_inr=request.custom_tariff_profile_inr,
+            capacity_kwh=request.capacity_kwh,
+        )
+        return BessOptimizationResult(**result)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        logger.error("BESS optimization solver failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"BESS optimization solver failed: {str(exc)}",
+        ) from exc
+    except Exception as exc:
+        logger.error("Failed to execute BESS 24h schedule optimization: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to execute BESS optimization: {str(exc)}",
+        ) from exc
+
+
+@router.get("/bess/schedule", response_model=BessOptimizationResult)
+@router.get("/bess-schedule", response_model=BessOptimizationResult)
+async def get_active_bess_schedule(
+    facility_id: Optional[str] = Query(None, description="Target facility entity identifier"),
+    facilityId: Optional[str] = Query(None, description="Target facility entity identifier camelCase alias"),
+) -> BessOptimizationResult:
+    """
+    Retrieves active 24-hour BESS battery arbitrage and peak shaving schedule for the requested facility.
+    If no active schedule is cached, automatically generates an advisory optimization schedule.
+    """
+    target_facility_id = facility_id or facilityId or "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01"
+    try:
+        schedule = bess_optimizer.get_active_schedule(facility_id=target_facility_id, auto_generate=True)
+        if not schedule:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Active BESS optimization schedule for facility '{target_facility_id}' not found.",
+            )
+        return BessOptimizationResult(**schedule)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to query active BESS schedule for %s: %s", target_facility_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to query active BESS schedule: {str(exc)}",
+        ) from exc
+
 
