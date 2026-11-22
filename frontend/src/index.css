@@ -110,6 +110,13 @@
   --color-stale: #D29922;
   --color-stale-subtle: rgba(210, 153, 34, 0.15);
 
+  /* Semantic Badge and Header Inks (WCAG AA Compliant) */
+  --text-clock: #F0F6FC;
+  --badge-synced-ink: #3FB950;
+  --badge-advisory-ink: #10B981;
+  --badge-simulation-ink: #00D2D3;
+  --status-warning-ink: #D29922;
+
   /* Data Visualization & Spatial Rendering */
   --color-traffic-low: #3FB950;
   --color-traffic-moderate: #D29922;
@@ -226,6 +233,13 @@
   --color-stale: #B45309;
   --color-stale-subtle: #FEF3C7;
 
+  /* Semantic Badge and Header Inks (WCAG AA >= 4.5:1 against white) */
+  --text-clock: #0D1117;
+  --badge-synced-ink: #1A7F37;
+  --badge-advisory-ink: #0E7490;
+  --badge-simulation-ink: #0969DA;
+  --status-warning-ink: #9A6700;
+
   /* Data Visualization */
   --color-traffic-low: #15803D;
   --color-traffic-moderate: #B45309;
@@ -322,6 +336,13 @@
     --color-predicted-subtle: #E0F2FE;
     --color-stale: #B45309;
     --color-stale-subtle: #FEF3C7;
+
+    /* Semantic Badge and Header Inks (WCAG AA >= 4.5:1 against white) */
+    --text-clock: #0D1117;
+    --badge-synced-ink: #1A7F37;
+    --badge-advisory-ink: #0E7490;
+    --badge-simulation-ink: #0969DA;
+    --status-warning-ink: #9A6700;
 
     --color-traffic-low: #15803D;
     --color-traffic-moderate: #B45309;
@@ -1426,32 +1447,32 @@ body {
 
 .status-pill .provenance-badge.badge-simulation,
 .header-provenance-clean.badge-simulation {
-  color: #00D2D3 !important;
+  color: var(--badge-simulation-ink) !important;
 }
 
 .status-pill .provenance-badge.badge-live,
 .header-provenance-clean.badge-live {
-  color: #10B981 !important;
+  color: var(--badge-synced-ink) !important;
 }
 
 .status-pill .provenance-badge.badge-replay,
 .header-provenance-clean.badge-replay {
-  color: #58A6FF !important;
+  color: var(--color-replay) !important;
 }
 
 .status-pill .provenance-badge.badge-predicted,
 .header-provenance-clean.badge-predicted {
-  color: #38BDF8 !important;
+  color: var(--color-predicted) !important;
 }
 
 .status-pill .provenance-badge.badge-stale,
 .header-provenance-clean.badge-stale {
-  color: #F59E0B !important;
+  color: var(--status-warning-ink) !important;
 }
 
 .status-pill .provenance-badge.badge-invalid,
 .header-provenance-clean.badge-invalid {
-  color: #F87171 !important;
+  color: var(--color-invalid) !important;
 }
 
 .status-pill-source {

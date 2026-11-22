@@ -249,9 +249,9 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Continuous Operational Digital Twin Clock */}
               <div className="status-pill" title="Operational Digital Twin Continuous Synchronized Clock">
-                <Clock size={12} color="#58A6FF" style={{ flexShrink: 0 }} />
+                <Clock size={12} color="var(--color-primary)" style={{ flexShrink: 0 }} />
                 <span className="text-muted" style={{ fontSize: '11px' }}>Twin Clock:</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#F0F6FC' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-clock)' }}>
                   {digitalTwinClock.toLocaleTimeString()}
                 </span>
               </div>
@@ -264,17 +264,17 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-muted" style={{ fontSize: '11px' }}>Feed:</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
                   {lastUpdated ? (
-                    <span style={{ color: '#3FB950' }}>Synced ({new Date(lastUpdated).toLocaleTimeString()})</span>
+                    <span style={{ color: 'var(--badge-synced-ink)' }}>Synced ({new Date(lastUpdated).toLocaleTimeString()})</span>
                   ) : (
-                    <span style={{ color: '#D29922' }}>Awaiting</span>
+                    <span style={{ color: 'var(--status-warning-ink)' }}>Awaiting</span>
                   )}
                 </span>
               </div>
 
               {/* Human Governance / Advisory Badge */}
               <div className="status-pill" title="Advisory platform: all decisions require human approval">
-                <ShieldCheck size={13} color="#10B981" />
-                <span style={{ color: '#10B981', fontWeight: 600 }}>Advisory Only</span>
+                <ShieldCheck size={13} color="var(--badge-advisory-ink)" />
+                <span style={{ color: 'var(--badge-advisory-ink)', fontWeight: 600 }}>Advisory Only</span>
               </div>
             </div>
 
