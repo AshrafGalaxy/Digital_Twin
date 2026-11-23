@@ -33,12 +33,15 @@ import { ElectricalTopologyTree } from '../energy/ElectricalTopologyTree';
 import { ThreePhaseTelemetryCard } from '../energy/ThreePhaseTelemetryCard';
 import { FeederThermalLoadingCard } from '../energy/FeederThermalLoadingCard';
 import { DemandResponseDossierModal } from '../energy/DemandResponseDossierModal';
+import { MicrogridSLDCanvas } from '../energy/MicrogridSLDCanvas';
 import {
   fetchEnergyTopology,
   fetchLiveEnergyTelemetry,
   fetchMicrogridSummary,
   advanceEnergyTelemetry,
-  fetchEnergyAdvisories
+  fetchEnergyAdvisories,
+  fetchFeederThermalMargins,
+  FeederThermalMargin
 } from '../../services/api';
 
 interface EnergyAnalyticsViewProps {
@@ -131,9 +134,11 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'TOPOLOGY' | 'FORECASTING'>('TOPOLOGY');
 
   // Topology & Multi-Asset Telemetry State
+  const [topologyViewMode, setTopologyViewMode] = useState<'SCHEMATIC' | 'TREE'>('SCHEMATIC');
   const [topology, setTopology] = useState<EnergyTopologyTreeResponse | null>(null);
   const [liveTelemetryMap, setLiveTelemetryMap] = useState<Record<string, EnergyAssetTelemetry>>({});
   const [microgridSummary, setMicrogridSummary] = useState<MicrogridSummary | null>(null);
+  const [feederThermalMargins, setFeederThermalMargins] = useState<FeederThermalMargin[]>([]);
   const [selectedNode, setSelectedNode] = useState<EnergyNodeAsset | null>(null);
   const [isTopologyLoading, setIsTopologyLoading] = useState<boolean>(true);
   const [isAdvancing, setIsAdvancing] = useState<boolean>(false);
@@ -168,10 +173,11 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   // Load Topology and Telemetry
   const loadNetworkData = useCallback(async () => {
     try {
-      const [topoData, telemData, summaryData] = await Promise.all([
+      const [topoData, telemData, summaryData, marginsData] = await Promise.all([
         fetchEnergyTopology().catch(() => null),
         fetchLiveEnergyTelemetry().catch(() => [] as EnergyAssetTelemetry[]),
-        fetchMicrogridSummary().catch(() => null)
+        fetchMicrogridSummary().catch(() => null),
+        fetchFeederThermalMargins().catch(() => [] as FeederThermalMargin[])
       ]);
 
       if (topoData) {
@@ -191,6 +197,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
       }
       if (summaryData) {
         setMicrogridSummary(summaryData);
+      }
+      if (marginsData && Array.isArray(marginsData)) {
+        setFeederThermalMargins(marginsData);
       }
     } catch {
       // Keep resilient fallback
@@ -217,6 +226,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         }
       }).catch(() => {});
       fetchMicrogridSummary().then(setMicrogridSummary).catch(() => {});
+      fetchFeederThermalMargins().then((margins) => {
+        if (Array.isArray(margins)) setFeederThermalMargins(margins);
+      }).catch(() => {});
       setRefreshTick((t) => t + 1);
     }, 5000);
     return () => clearInterval(interval);
@@ -613,40 +625,147 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
       {/* TAB 1: Network Topology & 3-Phase Telemetry */}
       {activeSubTab === 'TOPOLOGY' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Topology Display Mode Switcher */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(320px, 38%) 1fr',
-              gap: '16px',
-              alignItems: 'stretch'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+              padding: '8px 12px',
+              backgroundColor: 'var(--color-surface, rgba(15, 23, 42, 0.6))',
+              border: '1px solid var(--color-border, #1E293B)',
+              borderRadius: '6px'
             }}
           >
-            {/* Left Column: Electrical Single-Line Hierarchy Tree */}
-            <div style={{ minHeight: '620px' }}>
-              <ElectricalTopologyTree
-                topology={topology}
-                selectedNodeId={selectedNode?.nodeId || null}
-                onSelectNode={(node) => setSelectedNode(node)}
-                isLoading={isTopologyLoading}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', marginRight: '4px' }}>
+                View Mode:
+              </span>
+              <button
+                type="button"
+                className={`preset-pill-btn ${topologyViewMode === 'SCHEMATIC' ? 'active' : ''}`}
+                onClick={() => setTopologyViewMode('SCHEMATIC')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderColor: topologyViewMode === 'SCHEMATIC' ? '#38BDF8' : undefined,
+                  color: topologyViewMode === 'SCHEMATIC' ? '#38BDF8' : undefined
+                }}
+              >
+                <Zap size={12} color={topologyViewMode === 'SCHEMATIC' ? '#38BDF8' : '#94A3B8'} />
+                <span>SLD Schematic Canvas</span>
+              </button>
+
+              <button
+                type="button"
+                className={`preset-pill-btn ${topologyViewMode === 'TREE' ? 'active' : ''}`}
+                onClick={() => setTopologyViewMode('TREE')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderColor: topologyViewMode === 'TREE' ? '#38BDF8' : undefined,
+                  color: topologyViewMode === 'TREE' ? '#38BDF8' : undefined
+                }}
+              >
+                <GitFork size={12} color={topologyViewMode === 'TREE' ? '#38BDF8' : '#94A3B8'} />
+                <span>Hierarchical Tree</span>
+              </button>
             </div>
 
-            {/* Right Column: 3-Phase AC Telemetry & Physical Parameters Card */}
-            <div style={{ minHeight: '620px' }}>
-              <ThreePhaseTelemetryCard
-                selectedNode={selectedNode}
-                telemetry={selectedNode ? (liveTelemetryMap[selectedNode.nodeId] || selectedNode.telemetry || null) : null}
-                isLive={true}
-              />
+            <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+              Click any equipment node to inspect phase-by-phase AC telemetry and harmonics
             </div>
           </div>
 
-          {/* Feeder Thermal Loading & Ampacity Margins Panel (Energy TASK-02) */}
-          <FeederThermalLoadingCard
-            substationId={selectedNode?.nodeType === 'SUBSTATION' ? selectedNode.nodeId : undefined}
-            refreshTrigger={refreshTick}
-            onOpenDemandResponse={handleOpenDemandResponse}
-          />
+          {/* Mode A: Interactive Single-Line Diagram (SLD) Canvas */}
+          {topologyViewMode === 'SCHEMATIC' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <MicrogridSLDCanvas
+                topology={topology}
+                liveTelemetryMap={liveTelemetryMap}
+                microgridSummary={microgridSummary}
+                selectedNodeId={selectedNode?.nodeId || null}
+                onSelectNode={(node) => setSelectedNode(node)}
+                feederThermalMargins={feederThermalMargins}
+                sourceMode={sourceMode}
+              />
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(320px, 1fr) minmax(320px, 1fr)',
+                  gap: '16px',
+                  alignItems: 'stretch'
+                }}
+              >
+                {/* 3-Phase AC Telemetry Card */}
+                <div>
+                  <ThreePhaseTelemetryCard
+                    selectedNode={selectedNode}
+                    telemetry={selectedNode ? (liveTelemetryMap[selectedNode.nodeId] || selectedNode.telemetry || null) : null}
+                    isLive={true}
+                  />
+                </div>
+
+                {/* Feeder Thermal Loading & Ampacity Margins Panel */}
+                <div>
+                  <FeederThermalLoadingCard
+                    substationId={selectedNode?.nodeType === 'SUBSTATION' ? selectedNode.nodeId : undefined}
+                    refreshTrigger={refreshTick}
+                    onOpenDemandResponse={handleOpenDemandResponse}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mode B: Electrical Single-Line Hierarchy Tree */}
+          {topologyViewMode === 'TREE' && (
+            <>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(320px, 38%) 1fr',
+                  gap: '16px',
+                  alignItems: 'stretch'
+                }}
+              >
+                {/* Left Column: Electrical Single-Line Hierarchy Tree */}
+                <div style={{ minHeight: '620px' }}>
+                  <ElectricalTopologyTree
+                    topology={topology}
+                    selectedNodeId={selectedNode?.nodeId || null}
+                    onSelectNode={(node) => setSelectedNode(node)}
+                    isLoading={isTopologyLoading}
+                  />
+                </div>
+
+                {/* Right Column: 3-Phase AC Telemetry & Physical Parameters Card */}
+                <div style={{ minHeight: '620px' }}>
+                  <ThreePhaseTelemetryCard
+                    selectedNode={selectedNode}
+                    telemetry={selectedNode ? (liveTelemetryMap[selectedNode.nodeId] || selectedNode.telemetry || null) : null}
+                    isLive={true}
+                  />
+                </div>
+              </div>
+
+              {/* Feeder Thermal Loading & Ampacity Margins Panel */}
+              <FeederThermalLoadingCard
+                substationId={selectedNode?.nodeType === 'SUBSTATION' ? selectedNode.nodeId : undefined}
+                refreshTrigger={refreshTick}
+                onOpenDemandResponse={handleOpenDemandResponse}
+              />
+            </>
+          )}
         </div>
       )}
 
