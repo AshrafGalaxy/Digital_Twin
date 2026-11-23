@@ -10,8 +10,8 @@ and corridor-wide microgrid power flow analytics.
 import json
 import logging
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +30,15 @@ from backend.services.bess_optimizer import (
 )
 from backend.services.energy_advisory_service import energy_advisory_service
 from backend.services.energy_topology_service import energy_topology_service
+from backend.services.grid_safety_gateway import (
+    CandidateDispatchRequest,
+    GridSafetyGateway,
+    GridSafetyInterlockResult,
+    HeartbeatPingRequest,
+    ModbusRegisterMap,
+    OpenADREventPayload,
+    grid_safety_gateway,
+)
 from backend.services.power_balance_service import power_balance_service
 
 logger = logging.getLogger(__name__)
@@ -482,6 +491,194 @@ async def get_active_bess_schedule(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to query active BESS schedule: {str(exc)}",
+        ) from exc
+
+
+# ---------------------------------------------------------------------------
+# Grid Safety Interlocks & OpenADR / Modbus Failsafe Dispatch Gateway (ENERGY-07)
+# ---------------------------------------------------------------------------
+
+
+class HeartbeatPingResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    status: str = Field(default="HEARTBEAT_ACKNOWLEDGED", description="Heartbeat acknowledgement status")
+    sender_id: str = Field(..., alias="senderId", description="Actuator or controller sender identifier")
+    heartbeat_timestamp: str = Field(..., alias="heartbeatTimestamp", description="Timestamp of registered heartbeat in ISO 8601 format")
+    watchdog_counter: int = Field(..., alias="watchdogCounter", description="Monotonic watchdog tick counter")
+    failsafe_active: bool = Field(..., alias="failsafeActive", description="Whether failsafe mode is active")
+    timeout_limit_seconds: float = Field(default=60.0, alias="timeoutLimitSeconds", description="Watchdog timeout limit in seconds")
+
+
+class ModbusDispatchResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    setpoint_high: int = Field(..., alias="setpointHigh", ge=0, le=65535, description="Register 40001: Setpoint High Word")
+    setpoint_low: int = Field(..., alias="setpointLow", ge=0, le=65535, description="Register 40002: Setpoint Low Word")
+    control_mode: int = Field(..., alias="controlMode", ge=0, le=3, description="Register 40003: Control Mode (0=Standby, 1=Charge, 2=Discharge, 3=Failsafe)")
+    interlock_bitmask: int = Field(..., alias="interlockBitmask", ge=0, le=15, description="Register 40004: Interlock Bitmask (bit 0=volt, 1=ramp, 2=soc, 3=heartbeat)")
+    watchdog_counter: int = Field(..., alias="watchdogCounter", ge=0, le=65535, description="Register 40005: Watchdog Counter")
+    raw_registers: Dict[str, int] = Field(default_factory=dict, alias="rawRegisters")
+    named_registers: Dict[str, int] = Field(default_factory=dict, alias="namedRegisters")
+    register_list: List[int] = Field(default_factory=list, alias="registerList")
+    is_safe: bool = Field(default=True, alias="isSafe")
+    action_taken: str = Field(default="APPROVED", alias="actionTaken")
+    governance_notice: str = Field(
+        default="Advisory decision support only. Local BMS and protection relays remain authoritative.",
+        alias="governanceNotice",
+    )
+
+
+class GatewayStatusResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    gateway_operational: bool = Field(..., alias="gatewayOperational")
+    current_setpoint_kw: float = Field(..., alias="currentSetpointKw")
+    current_control_mode: int = Field(..., alias="currentControlMode")
+    current_control_mode_label: str = Field(..., alias="currentControlModeLabel")
+    failsafe_active: bool = Field(..., alias="failsafeActive")
+    last_heartbeat_timestamp: str = Field(..., alias="lastHeartbeatTimestamp")
+    last_heartbeat_sender: str = Field(..., alias="lastHeartbeatSender")
+    heartbeat_age_seconds: float = Field(..., alias="heartbeatAgeSeconds")
+    heartbeat_timeout_limit_seconds: float = Field(default=60.0, alias="heartbeatTimeoutLimitSeconds")
+    watchdog_counter: int = Field(..., alias="watchdogCounter")
+    nominal_voltage_v: float = Field(default=415.0, alias="nominalVoltageV")
+    voltage_operating_envelope_v: List[float] = Field(default_factory=lambda: [390.1, 439.9], alias="voltageOperatingEnvelopeV")
+    ramp_rate_slew_limit_pct_per_min: float = Field(default=10.0, alias="rampRateSlewLimitPctPerMin")
+    deadband_threshold_kw: float = Field(default=15.0, alias="deadbandThresholdKw")
+    statistics: Dict[str, int] = Field(default_factory=dict)
+    governance_notice: str = Field(
+        default="Advisory decision support only. Local BMS remains authoritative.",
+        alias="governanceNotice",
+    )
+
+
+@router.post("/dispatch/validate-safety", response_model=GridSafetyInterlockResult)
+@router.post("/dispatch/validate", response_model=GridSafetyInterlockResult)
+async def validate_dispatch_safety(
+    request: CandidateDispatchRequest = Body(default_factory=CandidateDispatchRequest),
+) -> GridSafetyInterlockResult:
+    """
+    Validates candidate dispatch setpoint against the 4 physical grid safety interlocks:
+    1. Under/over-voltage lockout: 0.94 * V_nom <= V_line <= 1.06 * V_nom (390.1V to 439.9V for 415V nominal).
+    2. Ramp-rate slew throttling: |delta_P / delta_t| <= 0.10 * P_rated (kW/min) (e.g. max 200 kW/min for 2000 kW BESS).
+    3. Dead-band thresholding: suppress dispatch if |delta_P_shave| < 15.0 kW.
+    4. Communication loss fallback: t_now - t_heartbeat > 60.0s triggers COMMUNICATION_LOST_FAILSAFE.
+    Returns interlock verification status, approved power setpoint, control mode, Register 40004 bitmask, and provenance.
+    """
+    try:
+        return grid_safety_gateway.validate_safety(request=request)
+    except Exception as exc:
+        logger.error("Failed to validate dispatch safety: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to validate dispatch safety: {str(exc)}",
+        ) from exc
+
+
+@router.post("/dispatch/serialize-openadr", response_model=OpenADREventPayload)
+async def serialize_openadr_dispatch(
+    request: CandidateDispatchRequest = Body(default_factory=CandidateDispatchRequest),
+) -> OpenADREventPayload:
+    """
+    Validates candidate dispatch setpoint against the 4 physical grid safety interlocks
+    and serializes the evaluated dispatch into canonical OpenADR 2.0b distributeEvent Profile B XML and JSON payloads.
+    If approved, updates gateway telemetry state with the approved setpoint.
+    """
+    try:
+        interlock_res = grid_safety_gateway.validate_safety(request=request)
+        if interlock_res.is_safe and interlock_res.action_taken == "APPROVED":
+            grid_safety_gateway.apply_approved_dispatch(interlock_res)
+
+        return grid_safety_gateway.serialize_openadr(
+            interlock_result=interlock_res,
+            event_id=request.event_id,
+            target_id=request.target_id or request.facility_id,
+            resource_id=request.resource_id,
+            duration=request.duration or "PT1H",
+        )
+    except Exception as exc:
+        logger.error("Failed to serialize OpenADR dispatch: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to serialize OpenADR dispatch: {str(exc)}",
+        ) from exc
+
+
+@router.post("/dispatch/serialize-modbus", response_model=ModbusDispatchResponse)
+async def serialize_modbus_dispatch(
+    request: CandidateDispatchRequest = Body(default_factory=CandidateDispatchRequest),
+) -> ModbusDispatchResponse:
+    """
+    Validates candidate dispatch setpoint against the 4 physical grid safety interlocks
+    and serializes the evaluated dispatch into Modbus TCP holding registers (Registers 40001 to 40005).
+    If approved, updates gateway telemetry state with the approved setpoint.
+    """
+    try:
+        interlock_res = grid_safety_gateway.validate_safety(request=request)
+        if interlock_res.is_safe and interlock_res.action_taken == "APPROVED":
+            grid_safety_gateway.apply_approved_dispatch(interlock_res)
+
+        modbus_map = grid_safety_gateway.serialize_modbus(interlock_result=interlock_res)
+        raw_regs = {str(k): v for k, v in modbus_map.raw_registers.items()}
+
+        return ModbusDispatchResponse(
+            setpointHigh=modbus_map.setpoint_high,
+            setpointLow=modbus_map.setpoint_low,
+            controlMode=modbus_map.control_mode,
+            interlockBitmask=modbus_map.interlock_bitmask,
+            watchdogCounter=modbus_map.watchdog_counter,
+            rawRegisters=raw_regs,
+            namedRegisters=modbus_map.named_registers,
+            registerList=modbus_map.to_register_list(),
+            isSafe=interlock_res.is_safe,
+            actionTaken=interlock_res.action_taken,
+        )
+    except Exception as exc:
+        logger.error("Failed to serialize Modbus dispatch: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to serialize Modbus dispatch: {str(exc)}",
+        ) from exc
+
+
+@router.post("/dispatch/heartbeat", response_model=HeartbeatPingResponse)
+async def register_actuator_heartbeat(
+    request: Optional[HeartbeatPingRequest] = Body(default=None),
+) -> HeartbeatPingResponse:
+    """
+    Registers an actuator, SCADA client, or BMS keepalive ping to reset the 60-second fallback timer.
+    Increments the monotonic watchdog tick counter and clears communication loss failsafe status.
+    """
+    try:
+        sender_id = request.sender_id if (request and request.sender_id) else "BMS-LOCAL-ACTUATOR-01"
+        ts = request.timestamp if request else None
+        result = grid_safety_gateway.record_heartbeat(sender_id=sender_id, timestamp=ts)
+        return HeartbeatPingResponse(**result)
+    except Exception as exc:
+        logger.error("Failed to record actuator heartbeat: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to record actuator heartbeat: {str(exc)}",
+        ) from exc
+
+
+@router.get("/dispatch/gateway-status", response_model=GatewayStatusResponse)
+@router.get("/dispatch/status", response_model=GatewayStatusResponse)
+async def get_grid_safety_gateway_status(
+    current_time: Optional[float] = Query(None, alias="currentTime", description="Optional evaluation epoch timestamp in seconds"),
+) -> GatewayStatusResponse:
+    """
+    Returns live operational health, heartbeat telemetry, watchdog counter, and failsafe status of the Grid Safety Gateway.
+    """
+    try:
+        status_data = grid_safety_gateway.get_gateway_status(current_time=current_time)
+        return GatewayStatusResponse(**status_data)
+    except Exception as exc:
+        logger.error("Failed to retrieve grid safety gateway status: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve grid safety gateway status: {str(exc)}",
         ) from exc
 
 

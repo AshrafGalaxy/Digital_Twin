@@ -78,6 +78,13 @@ class AdvisoryRuleEngine:
         self.anomaly_detector = EnvironmentalAnomalyDetector()
         self._seed_initial_advisories()
 
+    def reset_state(self):
+        """Resets in-memory recommendations and dispatch orders to initial seed state."""
+        with self._lock:
+            self._recommendations.clear()
+            self._dispatch_orders.clear()
+            self._seed_initial_advisories()
+
     def _seed_initial_advisories(self):
         """Seeds realistic initial corridor advisories reflecting current forecasts and observations."""
         now = datetime.now(timezone.utc)
