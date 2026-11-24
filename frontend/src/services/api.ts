@@ -1107,3 +1107,123 @@ export async function fetchEnergyDispatchTicket(advisoryId: string): Promise<Ene
   if (!res.ok) throw new Error(`Failed to fetch dispatch ticket for advisory ${advisoryId}`);
   return res.json();
 }
+
+// ============================================================================
+// Building Thermal Network & Dynamic Occupancy Setback (TASK-09 / ENERGY-09)
+// ============================================================================
+
+export interface BuildingZoneThermalState {
+  zoneId: string;
+  buildingId: string;
+  zoneName: string;
+  floorNumber: number;
+  floorAreaSqm: number;
+  thermalCapacitanceCin: number;
+  thermalCapacitanceCenv: number;
+  thermalResistanceR1: number;
+  thermalResistanceR2: number;
+  chillerCoolingCop: number;
+  nominalSetpointC: number;
+  observedAt?: string;
+  occupantCount: number;
+  co2Ppm: number;
+  occupancyDensityPaxSqm: number;
+  hvacMode: string;
+  currentTempC: number;
+  envelopeTempC: number;
+  coolingKwTh: number;
+  chillerElectricalKw: number;
+  ashrae55Compliant: boolean;
+  sourceMode?: string;
+}
+
+export interface DiurnalProfileHour {
+  hour: number;
+  timestamp: string;
+  tempAmbientC: number;
+  occupantCount: number;
+  occupancyDensityPaxSqm: number;
+  hvacMode: string;
+  tempIndoorC: number;
+  tempEnvelopeC: number;
+  coolingDemandKwTh: number;
+  chillerElectricalKw: number;
+  electricityTariffInrKwh: number;
+  hourlyCostInr: number;
+  ashrae55Compliant: boolean;
+}
+
+export interface PrecoolingSimulationResult {
+  zoneId: string;
+  zoneName: string;
+  generatedAt: string;
+  sourceMode: string;
+  baselineProfile: DiurnalProfileHour[];
+  precoolingProfile: DiurnalProfileHour[];
+  baselineTotalEnergyKwh: number;
+  precoolingTotalEnergyKwh: number;
+  baselineTotalCostInr: number;
+  precoolingTotalCostInr: number;
+  costSavingsInr: number;
+  costSavingsPct: number;
+  peakDemandReductionKw: number;
+  peakDemandReductionPct: number;
+  ashrae55ViolationsBaseline: number;
+  ashrae55ViolationsPrecooling: number;
+  nonActuationDisclaimer: string;
+}
+
+export async function fetchThermalZones(): Promise<BuildingZoneThermalState[]> {
+  const res = await resilientFetch(`${API_BASE}/energy/zones`);
+  if (!res.ok) throw new Error('Failed to fetch building thermal zones');
+  return res.json();
+}
+
+export async function fetchZoneThermalState(zoneId: string): Promise<BuildingZoneThermalState> {
+  const res = await resilientFetch(`${API_BASE}/energy/zones/${encodeURIComponent(zoneId)}/thermal-state`);
+  if (!res.ok) throw new Error(`Failed to fetch thermal state for zone ${zoneId}`);
+  return res.json();
+}
+
+export async function stepZoneSimulation(
+  zoneId: string,
+  payload: {
+    dtSeconds?: number;
+    tempAmbientC?: number;
+    occupantCount?: number;
+    lightingKw?: number;
+    plugKw?: number;
+    enableDynamicSetback?: boolean;
+  } = {}
+): Promise<BuildingZoneThermalState> {
+  const res = await fetch(`${API_BASE}/energy/zones/${encodeURIComponent(zoneId)}/step`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Failed to advance thermal simulation for zone ${zoneId}`);
+  return res.json();
+}
+
+export async function simulateZonePrecooling(
+  zoneId: string,
+  payload: {
+    targetPrecoolTempC?: number;
+    precoolStartHour?: number;
+    precoolEndHour?: number;
+    peakStartHour?: number;
+    peakEndHour?: number;
+    offPeakTariffInrKwh?: number;
+    peakTariffInrKwh?: number;
+    normalTariffInrKwh?: number;
+  } = {}
+): Promise<PrecoolingSimulationResult> {
+  const res = await fetch(`${API_BASE}/energy/zones/${encodeURIComponent(zoneId)}/simulate-precooling`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Failed to simulate pre-cooling strategy for zone ${zoneId}`);
+  return res.json();
+}
+

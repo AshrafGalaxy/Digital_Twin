@@ -15,7 +15,8 @@ import {
   RefreshCw,
   Layers,
   Radio,
-  Sliders
+  Sliders,
+  Thermometer
 } from 'lucide-react';
 import {
   SourceMode,
@@ -34,6 +35,7 @@ import { ThreePhaseTelemetryCard } from '../energy/ThreePhaseTelemetryCard';
 import { FeederThermalLoadingCard } from '../energy/FeederThermalLoadingCard';
 import { DemandResponseDossierModal } from '../energy/DemandResponseDossierModal';
 import { MicrogridSLDCanvas } from '../energy/MicrogridSLDCanvas';
+import { ThermalComfortHeatmap } from '../energy/ThermalComfortHeatmap';
 import {
   fetchEnergyTopology,
   fetchLiveEnergyTelemetry,
@@ -131,7 +133,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
   liveStates
 }) => {
   // Navigation Sub-tab
-  const [activeSubTab, setActiveSubTab] = useState<'TOPOLOGY' | 'FORECASTING'>('TOPOLOGY');
+  const [activeSubTab, setActiveSubTab] = useState<'TOPOLOGY' | 'THERMAL_ZONES' | 'FORECASTING'>('TOPOLOGY');
 
   // Topology & Multi-Asset Telemetry State
   const [topologyViewMode, setTopologyViewMode] = useState<'SCHEMATIC' | 'TREE'>('SCHEMATIC');
@@ -613,6 +615,16 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
 
         <button
           type="button"
+          className={`preset-pill-btn ${activeSubTab === 'THERMAL_ZONES' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('THERMAL_ZONES')}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Thermometer size={13} />
+          <span>Thermal Comfort & Dynamic Setback Heatmap</span>
+        </button>
+
+        <button
+          type="button"
           className={`preset-pill-btn ${activeSubTab === 'FORECASTING' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('FORECASTING')}
           style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -769,7 +781,14 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         </div>
       )}
 
-      {/* TAB 2: Commercial Demand Forecasting & Diurnal Schedules */}
+      {/* TAB 2: Thermal Comfort & Dynamic Setback Heatmap (TASK-09 / ENERGY-09) */}
+      {activeSubTab === 'THERMAL_ZONES' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <ThermalComfortHeatmap sourceMode={sourceMode} />
+        </div>
+      )}
+
+      {/* TAB 3: Commercial Demand Forecasting & Diurnal Schedules */}
       {activeSubTab === 'FORECASTING' && (
         <>
           {/* Facility Selector & Capacity Strip */}
