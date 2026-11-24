@@ -606,6 +606,42 @@ SQLITE_TABLE_DDL = [
         provenance_metadata TEXT NOT NULL DEFAULT '{}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 36. Building Thermal Zones (Energy TASK-03 / ENERGY-03)
+    """
+    CREATE TABLE IF NOT EXISTS building_thermal_zones (
+        id TEXT PRIMARY KEY,
+        building_id TEXT NOT NULL,
+        zone_name TEXT NOT NULL,
+        floor_number INTEGER NOT NULL,
+        floor_area_sqm REAL NOT NULL,
+        thermal_capacitance_cin REAL NOT NULL,
+        thermal_capacitance_cenv REAL NOT NULL,
+        thermal_resistance_r1 REAL NOT NULL,
+        thermal_resistance_r2 REAL NOT NULL,
+        chiller_cooling_cop REAL NOT NULL DEFAULT 4.2,
+        nominal_setpoint_c REAL NOT NULL DEFAULT 24.0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 37. Zone Occupancy and Thermal Telemetry (Energy TASK-03 / ENERGY-03)
+    """
+    CREATE TABLE IF NOT EXISTS zone_occupancy_telemetry (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        zone_id TEXT NOT NULL,
+        observed_at TIMESTAMP NOT NULL,
+        occupant_count INTEGER NOT NULL,
+        co2_ppm REAL NOT NULL,
+        occupancy_density_pax_sqm REAL NOT NULL,
+        hvac_mode TEXT NOT NULL,
+        current_temp_c REAL NOT NULL,
+        envelope_temp_c REAL NOT NULL,
+        cooling_kw_th REAL NOT NULL,
+        chiller_electrical_kw REAL NOT NULL,
+        ashrae55_compliant BOOLEAN NOT NULL DEFAULT 1,
+        source_mode TEXT NOT NULL DEFAULT 'SIMULATION',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -639,6 +675,8 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_shm_struct_time ON shm_telemetry (structure_id, observed_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_shm_status ON shm_telemetry (integrity_status, observed_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_shm_span_time ON shm_telemetry (span_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_zone_occ_zone_time ON zone_occupancy_telemetry (zone_id, observed_at DESC);",
+    "CREATE INDEX IF NOT EXISTS idx_thermal_zones_bld ON building_thermal_zones (building_id);",
     "CREATE INDEX IF NOT EXISTS idx_env_obs_station_time ON environment_observations (station_id, observed_at DESC);",
     "CREATE INDEX IF NOT EXISTS idx_road_segments_study_area ON road_segments (study_area_id);",
     "CREATE INDEX IF NOT EXISTS idx_road_segments_from_intersection ON road_segments (from_intersection);",
@@ -1519,6 +1557,161 @@ async def _seed_initial_energy_telemetry(session: AsyncSession, is_pg: bool) -> 
     return count
 
 
+async def _seed_building_thermal_zones(session: AsyncSession, is_pg: bool) -> int:
+    """
+    Seeds canonical reference building thermal zones and initial occupancy telemetry.
+    Adheres strictly to zero emojis and zero em dashes.
+    """
+    now_utc = datetime.now(timezone.utc)
+    obs_time = now_utc if is_pg else now_utc.isoformat()
+
+    zones: List[Dict[str, Any]] = [
+        {
+            "id": "ZONE-PHOENIX-RETAIL-01",
+            "building_id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            "zone_name": "Phoenix Retail Concourse",
+            "floor_number": 1,
+            "floor_area_sqm": 12500.0,
+            "thermal_capacitance_cin": 150000.0,
+            "thermal_capacitance_cenv": 850000.0,
+            "thermal_resistance_r1": 0.008,
+            "thermal_resistance_r2": 0.003,
+            "chiller_cooling_cop": 4.2,
+            "nominal_setpoint_c": 24.0,
+            "telemetry": {
+                "occupant_count": 650,
+                "co2_ppm": 680.0,
+                "occupancy_density_pax_sqm": 0.052,
+                "hvac_mode": "DYNAMIC_SETBACK",
+                "current_temp_c": 24.8,
+                "envelope_temp_c": 25.2,
+                "cooling_kw_th": 260.0,
+                "chiller_electrical_kw": 61.90,
+                "ashrae55_compliant": True,
+            }
+        },
+        {
+            "id": "ZONE-SOLITAIRE-OFFICE-01",
+            "building_id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
+            "zone_name": "Solitaire Corporate Office Floor",
+            "floor_number": 4,
+            "floor_area_sqm": 4500.0,
+            "thermal_capacitance_cin": 60000.0,
+            "thermal_capacitance_cenv": 350000.0,
+            "thermal_resistance_r1": 0.015,
+            "thermal_resistance_r2": 0.006,
+            "chiller_cooling_cop": 4.2,
+            "nominal_setpoint_c": 24.0,
+            "telemetry": {
+                "occupant_count": 540,
+                "co2_ppm": 820.0,
+                "occupancy_density_pax_sqm": 0.120,
+                "hvac_mode": "COMFORT",
+                "current_temp_c": 23.9,
+                "envelope_temp_c": 24.1,
+                "cooling_kw_th": 310.0,
+                "chiller_electrical_kw": 73.81,
+                "ashrae55_compliant": True,
+            }
+        },
+        {
+            "id": "ZONE-HYATT-BALLROOM-01",
+            "building_id": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
+            "zone_name": "Hyatt Regency Grand Ballroom",
+            "floor_number": 2,
+            "floor_area_sqm": 2800.0,
+            "thermal_capacitance_cin": 40000.0,
+            "thermal_capacitance_cenv": 220000.0,
+            "thermal_resistance_r1": 0.020,
+            "thermal_resistance_r2": 0.008,
+            "chiller_cooling_cop": 4.2,
+            "nominal_setpoint_c": 24.0,
+            "telemetry": {
+                "occupant_count": 120,
+                "co2_ppm": 540.0,
+                "occupancy_density_pax_sqm": 0.0429,
+                "hvac_mode": "DYNAMIC_SETBACK",
+                "current_temp_c": 25.4,
+                "envelope_temp_c": 25.8,
+                "cooling_kw_th": 95.0,
+                "chiller_electrical_kw": 22.62,
+                "ashrae55_compliant": True,
+            }
+        }
+    ]
+
+    count = 0
+    for z in zones:
+        if is_pg:
+            stmt_zone = text("""
+                INSERT INTO building_thermal_zones (
+                    id, building_id, zone_name, floor_number, floor_area_sqm,
+                    thermal_capacitance_cin, thermal_capacitance_cenv,
+                    thermal_resistance_r1, thermal_resistance_r2,
+                    chiller_cooling_cop, nominal_setpoint_c
+                ) VALUES (
+                    :id, :building_id, :zone_name, :floor_number, :floor_area_sqm,
+                    :cin, :cenv, :r1, :r2, :cop, :setpoint
+                ) ON CONFLICT (id) DO NOTHING;
+            """)
+        else:
+            stmt_zone = text("""
+                INSERT OR IGNORE INTO building_thermal_zones (
+                    id, building_id, zone_name, floor_number, floor_area_sqm,
+                    thermal_capacitance_cin, thermal_capacitance_cenv,
+                    thermal_resistance_r1, thermal_resistance_r2,
+                    chiller_cooling_cop, nominal_setpoint_c
+                ) VALUES (
+                    :id, :building_id, :zone_name, :floor_number, :floor_area_sqm,
+                    :cin, :cenv, :r1, :r2, :cop, :setpoint
+                );
+            """)
+
+        await session.execute(stmt_zone, {
+            "id": z["id"],
+            "building_id": z["building_id"],
+            "zone_name": z["zone_name"],
+            "floor_number": z["floor_number"],
+            "floor_area_sqm": z["floor_area_sqm"],
+            "cin": z["thermal_capacitance_cin"],
+            "cenv": z["thermal_capacitance_cenv"],
+            "r1": z["thermal_resistance_r1"],
+            "r2": z["thermal_resistance_r2"],
+            "cop": z["chiller_cooling_cop"],
+            "setpoint": z["nominal_setpoint_c"],
+        })
+
+        t = z["telemetry"]
+        stmt_tel = text("""
+            INSERT INTO zone_occupancy_telemetry (
+                zone_id, observed_at, occupant_count, co2_ppm,
+                occupancy_density_pax_sqm, hvac_mode, current_temp_c,
+                envelope_temp_c, cooling_kw_th, chiller_electrical_kw,
+                ashrae55_compliant, source_mode
+            ) VALUES (
+                :zone_id, :observed_at, :occupant_count, :co2_ppm,
+                :occupancy_density_pax_sqm, :hvac_mode, :current_temp_c,
+                :envelope_temp_c, :cooling_kw_th, :chiller_electrical_kw,
+                :ashrae55_compliant, 'SIMULATION'
+            );
+        """)
+        await session.execute(stmt_tel, {
+            "zone_id": z["id"],
+            "observed_at": obs_time,
+            "occupant_count": t["occupant_count"],
+            "co2_ppm": t["co2_ppm"],
+            "occupancy_density_pax_sqm": t["occupancy_density_pax_sqm"],
+            "hvac_mode": t["hvac_mode"],
+            "current_temp_c": t["current_temp_c"],
+            "envelope_temp_c": t["envelope_temp_c"],
+            "cooling_kw_th": t["cooling_kw_th"],
+            "chiller_electrical_kw": t["chiller_electrical_kw"],
+            "ashrae55_compliant": 1 if t["ashrae55_compliant"] else 0,
+        })
+        count += 1
+    return count
+
+
 async def init_db_schema() -> Dict[str, Any]:
     """
     Primary entrypoint called on FastAPI startup lifespan.
@@ -1571,6 +1764,15 @@ async def init_db_schema() -> Dict[str, Any]:
                 seeded_assets["energyTelemetry"] = await _seed_initial_energy_telemetry(session, is_pg)
                 await session.commit()
                 logger.info("Canonical energy network seeded (%s nodes).", seeded_assets.get("energyNodes"))
+
+            # Check if building thermal zones need seeding (TASK-03 / ENERGY-03)
+            check_thermal_zones = await session.execute(text("SELECT COUNT(*) FROM building_thermal_zones"))
+            thermal_zones_count = check_thermal_zones.scalar() or 0
+            if thermal_zones_count == 0:
+                logger.info("Seeding building thermal zones and initial occupancy telemetry...")
+                seeded_assets["thermalZones"] = await _seed_building_thermal_zones(session, is_pg)
+                await session.commit()
+                logger.info("Building thermal zones seeded (%s zones).", seeded_assets.get("thermalZones"))
 
             # Ensure continuous aggregates are seeded if empty
             try:

@@ -28,6 +28,14 @@ from backend.services.bess_optimizer import (
     BessOptimizationResult,
     bess_optimizer,
 )
+from backend.services.building_thermal_service import (
+    PrecoolingSimulationRequest,
+    PrecoolingSimulationResult,
+    SimulationStepRequest,
+    ThermalState,
+    ThermalZoneConfig,
+    building_thermal_service,
+)
 from backend.services.energy_advisory_service import energy_advisory_service
 from backend.services.energy_topology_service import energy_topology_service
 from backend.services.grid_safety_gateway import (
@@ -680,5 +688,82 @@ async def get_grid_safety_gateway_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve grid safety gateway status: {str(exc)}",
         ) from exc
+
+
+# =========================================================================
+# Building Thermal Network & Occupancy Setback Endpoints (TASK-03 / ENERGY-03)
+# =========================================================================
+
+@router.get("/zones", response_model=List[Dict[str, Any]])
+async def list_thermal_zones(session: AsyncSession = Depends(get_db)) -> List[Dict[str, Any]]:
+    """
+    Returns list of all configured building thermal zones with current temperatures,
+    occupancy, setback status, and ASHRAE 55 compliance indicators.
+    """
+    try:
+        return await building_thermal_service.get_all_thermal_zones(session)
+    except Exception as exc:
+        logger.error("Failed to list thermal zones: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list thermal zones: {str(exc)}",
+        ) from exc
+
+
+@router.get("/zones/{zone_id}/thermal-state", response_model=ThermalState)
+async def get_zone_thermal_state(
+    zone_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> ThermalState:
+    """
+    Returns the physical 2R-2C parameters and instantaneous thermal state for a specific zone.
+    """
+    state = await building_thermal_service.get_latest_zone_state(zone_id, session)
+    if not state:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal zone '{zone_id}' not found.",
+        )
+    return state
+
+
+@router.post("/zones/{zone_id}/step", response_model=ThermalState)
+async def step_zone_simulation(
+    zone_id: str,
+    request: SimulationStepRequest = Body(...),
+    session: AsyncSession = Depends(get_db),
+) -> ThermalState:
+    """
+    Advances the 2R-2C thermal simulation for a zone by dt_seconds, applying Runge-Kutta 4th-order (RK4)
+    numerical integration, dynamic occupancy setback, and internal sensible heat gains.
+    """
+    next_state = await building_thermal_service.advance_zone_step(zone_id, request, session)
+    if not next_state:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal zone '{zone_id}' not found.",
+        )
+    return next_state
+
+
+@router.post("/zones/{zone_id}/simulate-precooling", response_model=PrecoolingSimulationResult)
+async def simulate_zone_precooling(
+    zone_id: str,
+    request: PrecoolingSimulationRequest = Body(...),
+    session: AsyncSession = Depends(get_db),
+) -> PrecoolingSimulationResult:
+    """
+    Executes a 24-hour diurnal simulation comparing baseline operation against a pre-cooling strategy.
+    Quantifies peak chiller demand reduction (kW) and electricity tariff savings (INR) while evaluating
+    ASHRAE 55 statutory comfort compliance.
+    """
+    cfg = await building_thermal_service.get_zone_config(zone_id, session)
+    if not cfg:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thermal zone '{zone_id}' not found.",
+        )
+    return building_thermal_service.simulate_precooling_comparison(cfg, request)
+
 
 

@@ -620,3 +620,40 @@ CREATE TABLE IF NOT EXISTS shm_telemetry (
 CREATE INDEX IF NOT EXISTS idx_shm_struct_time ON shm_telemetry (structure_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_shm_status ON shm_telemetry (integrity_status, observed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_shm_span_time ON shm_telemetry (span_id, observed_at DESC);
+
+-- 36. Building Thermal Zones (Energy TASK-03 / ENERGY-03)
+CREATE TABLE IF NOT EXISTS building_thermal_zones (
+    id VARCHAR(128) PRIMARY KEY,
+    building_id VARCHAR(128) NOT NULL,
+    zone_name VARCHAR(128) NOT NULL,
+    floor_number INTEGER NOT NULL,
+    floor_area_sqm DOUBLE PRECISION NOT NULL,
+    thermal_capacitance_cin DOUBLE PRECISION NOT NULL,
+    thermal_capacitance_cenv DOUBLE PRECISION NOT NULL,
+    thermal_resistance_r1 DOUBLE PRECISION NOT NULL,
+    thermal_resistance_r2 DOUBLE PRECISION NOT NULL,
+    chiller_cooling_cop DOUBLE PRECISION NOT NULL DEFAULT 4.2,
+    nominal_setpoint_c DOUBLE PRECISION NOT NULL DEFAULT 24.0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_thermal_zones_bld ON building_thermal_zones (building_id);
+
+-- 37. Zone Occupancy and Thermal Telemetry (Energy TASK-03 / ENERGY-03)
+CREATE TABLE IF NOT EXISTS zone_occupancy_telemetry (
+    id BIGSERIAL PRIMARY KEY,
+    zone_id VARCHAR(128) NOT NULL,
+    observed_at TIMESTAMPTZ NOT NULL,
+    occupant_count INTEGER NOT NULL,
+    co2_ppm DOUBLE PRECISION NOT NULL,
+    occupancy_density_pax_sqm DOUBLE PRECISION NOT NULL,
+    hvac_mode VARCHAR(64) NOT NULL,
+    current_temp_c DOUBLE PRECISION NOT NULL,
+    envelope_temp_c DOUBLE PRECISION NOT NULL,
+    cooling_kw_th DOUBLE PRECISION NOT NULL,
+    chiller_electrical_kw DOUBLE PRECISION NOT NULL,
+    ashrae55_compliant BOOLEAN NOT NULL DEFAULT TRUE,
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'SIMULATION',
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_zone_occ_zone_time ON zone_occupancy_telemetry (zone_id, observed_at DESC);
+
