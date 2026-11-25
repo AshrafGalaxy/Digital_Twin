@@ -1712,6 +1712,54 @@ async def _seed_building_thermal_zones(session: AsyncSession, is_pg: bool) -> in
     return count
 
 
+async def _seed_model_versions(session: AsyncSession, is_pg: bool) -> int:
+    """
+    Idempotently seeds ML model registry records in model_versions so foreign keys
+    in forecasts(model_version_id) remain satisfied across clean checkouts and existing DBs.
+    """
+    models: List[Dict[str, Any]] = [
+        {
+            "id": "energy-quantile-xgb-v2",
+            "domain": "ENERGY",
+            "algorithm": "XGBoost Multi-Horizon Quantile Regressor (p10/p50/p90)",
+            "horizon_minutes": 1440,
+            "training_data_version": "multi-facility-normalized-v2",
+            "metrics": json.dumps({
+                "horizonsMinutes": [15, 60, 240, 1440],
+                "quantiles": [0.10, 0.50, 0.90],
+            }),
+            "is_active": True if is_pg else 1,
+            "approved_for_demo": True if is_pg else 1,
+            "model_card_path": "docs/tasks/energy-microgrid/TASK-04-quantile-load-forecasting.md",
+        }
+    ]
+    count = 0
+    for model_entry in models:
+        if is_pg:
+            stmt = text("""
+                INSERT INTO model_versions (
+                    id, domain, algorithm, horizon_minutes, training_data_version,
+                    metrics, is_active, approved_for_demo, model_card_path
+                ) VALUES (
+                    :id, :domain, :algorithm, :horizon_minutes, :training_data_version,
+                    CAST(:metrics AS jsonb), :is_active, :approved_for_demo, :model_card_path
+                ) ON CONFLICT (id) DO NOTHING;
+            """)
+        else:
+            stmt = text("""
+                INSERT OR IGNORE INTO model_versions (
+                    id, domain, algorithm, horizon_minutes, training_data_version,
+                    metrics, is_active, approved_for_demo, model_card_path
+                ) VALUES (
+                    :id, :domain, :algorithm, :horizon_minutes, :training_data_version,
+                    :metrics, :is_active, :approved_for_demo, :model_card_path
+                );
+            """)
+        await session.execute(stmt, model_entry)
+        count += 1
+    return count
+
+
 async def init_db_schema() -> Dict[str, Any]:
     """
     Primary entrypoint called on FastAPI startup lifespan.
@@ -1780,6 +1828,10 @@ async def init_db_schema() -> Dict[str, Any]:
                 await continuous_aggregator.seed_synthetic_historical_rollups(session)
             except Exception as agg_err:
                 logger.warning("Historical rollup seeding notice: %s", agg_err)
+
+            # Ensure registered model_versions entries exist idempotently
+            seeded_assets["modelVersions"] = await _seed_model_versions(session, is_pg)
+            await session.commit()
 
             # 3. Query total existing tables
             if is_pg:

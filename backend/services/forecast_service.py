@@ -53,6 +53,108 @@ class ForecastService:
             current_kw=current_kw
         )
 
+    def get_multi_horizon_load_forecast(
+        self,
+        building_id: str,
+        capacity_kw: float,
+        current_kw: Optional[float] = None,
+        kw_history: Optional[List[float]] = None,
+        ambient_temp_c: float = 30.5,
+        relative_humidity_pct: float = 55.0,
+        solar_irradiance_wm2: Optional[float] = None,
+        is_holiday_flag: int = 0,
+        quality_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Generates 15m, 60m, 240m, and 1440m quantile load forecasts (p10/p50/p90) with conformal bounds."""
+        from ml.inference.quantile_load_service import quantile_load_forecaster
+
+        predict_fn = getattr(
+            quantile_load_forecaster,
+            "predict_multi_horizon_load",
+            getattr(quantile_load_forecaster, "predict", None),
+        )
+        if predict_fn is None:
+            raise RuntimeError("quantile_load_forecaster does not expose a prediction method")
+
+        return predict_fn(
+            building_id=building_id,
+            capacity_kw=float(capacity_kw),
+            current_kw=float(current_kw) if current_kw is not None else None,
+            kw_history=[float(val) for val in kw_history] if kw_history is not None else None,
+            ambient_temp_c=float(ambient_temp_c),
+            relative_humidity_pct=float(relative_humidity_pct),
+            solar_irradiance_wm2=(
+                float(solar_irradiance_wm2) if solar_irradiance_wm2 is not None else None
+            ),
+            is_holiday_flag=int(is_holiday_flag),
+            quality_override=quality_override,
+        )
+
+    def _get_quantile_model_metadata(self) -> Dict[str, Any]:
+        """Returns metadata for the multi-horizon quantile load forecaster."""
+        try:
+            from ml.inference.quantile_load_service import quantile_load_forecaster
+
+            meta_fn = getattr(quantile_load_forecaster, "get_model_metadata", None)
+            if callable(meta_fn):
+                meta = meta_fn()
+                if isinstance(meta, dict) and meta.get("modelId"):
+                    return meta
+
+            art = getattr(quantile_load_forecaster, "artifact", None)
+            if isinstance(art, dict):
+                raw_metrics = art.get("metrics")
+                metrics: Dict[str, Any] = raw_metrics if isinstance(raw_metrics, dict) else {}
+                raw_horizons = metrics.get("horizons")
+                source_metrics: Dict[str, Any] = metrics
+                if isinstance(raw_horizons, dict):
+                    h60 = raw_horizons.get(60)
+                    if not isinstance(h60, dict):
+                        h60 = raw_horizons.get("60")
+                    if isinstance(h60, dict):
+                        source_metrics = h60
+
+                test_mae = source_metrics.get("test_mae")
+                test_rmse = source_metrics.get("test_rmse")
+                imp_pct = source_metrics.get("improvement_vs_persistence_pct")
+
+                return {
+                    "modelId": str(art.get("model_id", "energy-quantile-xgb-v2")),
+                    "domain": str(art.get("domain", "ENERGY")),
+                    "targetMetric": str(art.get("target_metric", "activePowerKw")),
+                    "horizonMinutes": int(art.get("horizon_minutes", 1440)),
+                    "unit": str(art.get("unit", "kW")),
+                    "status": str(art.get("status", "APPROVED_FOR_DEMO")),
+                    "testMae": float(test_mae) if isinstance(test_mae, (int, float)) else None,
+                    "testRmse": float(test_rmse) if isinstance(test_rmse, (int, float)) else None,
+                    "improvementVsPersistencePct": (
+                        float(imp_pct) if isinstance(imp_pct, (int, float)) else None
+                    ),
+                    "trainedAt": str(art.get("trained_at", "")),
+                    "localityCaveat": str(
+                        art.get(
+                            "source_limitation",
+                            "Normalized multi-horizon quantile load forecaster (15m, 60m, 240m, 1440m).",
+                        )
+                    ),
+                }
+        except Exception:
+            pass
+
+        return {
+            "modelId": "energy-quantile-xgb-v2",
+            "domain": "ENERGY",
+            "targetMetric": "activePowerKw",
+            "horizonMinutes": 1440,
+            "unit": "kW",
+            "status": "FALLBACK",
+            "testMae": None,
+            "testRmse": None,
+            "improvementVsPersistencePct": None,
+            "trainedAt": "",
+            "localityCaveat": "Heuristic fallback: quantile model artifact unavailable. No holdout metrics computed.",
+        }
+
     def list_models(self) -> List[Dict[str, Any]]:
         """Lists active models and evaluation metrics."""
         models = []
@@ -115,6 +217,9 @@ class ForecastService:
                 "trainedAt": "",
                 "localityCaveat": "Heuristic fallback: model artifact unavailable. No holdout metrics computed."
             })
+
+        if self.forecaster.traffic_artifact is not None or self.forecaster.energy_artifact is not None:
+            models.append(self._get_quantile_model_metadata())
 
         return models
 

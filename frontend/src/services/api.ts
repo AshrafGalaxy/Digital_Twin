@@ -272,6 +272,62 @@ export async function fetchEnergyForecast(buildingId: string, currentKw?: number
   return res.json();
 }
 
+export interface QuantileHorizonForecast {
+  horizonMinutes: number;
+  targetTimestamp: string;
+  p10Kw: number;
+  p50Kw: number;
+  p90Kw: number;
+  conformalInterval90: [number, number];
+}
+
+export interface QuantileTopFeature {
+  feature: string;
+  shapValue: number;
+  displayName?: string;
+  impact?: string;
+}
+
+export interface QuantileForecastProvenance {
+  sourceMode: string;
+  modelVersion: string;
+  qualityStatus: string;
+}
+
+export interface MultiHorizonLoadForecastResponse {
+  buildingId: string;
+  forecastGeneratedAt: string;
+  capacityKw: number;
+  horizons: QuantileHorizonForecast[];
+  topFeatures: QuantileTopFeature[];
+  provenance: QuantileForecastProvenance;
+  baselineMetrics?: Record<string, unknown>;
+  advisoryNotice: string;
+}
+
+export async function fetchMultiHorizonLoadForecast(
+  buildingId: string,
+  params?: { currentKw?: number; contractKw?: number; ambientTempC?: number }
+): Promise<MultiHorizonLoadForecastResponse> {
+  const query = new URLSearchParams();
+  if (params?.currentKw !== undefined) {
+    query.set('current_kw', String(params.currentKw));
+  }
+  if (params?.contractKw !== undefined) {
+    query.set('contract_kw', String(params.contractKw));
+  }
+  if (params?.ambientTempC !== undefined) {
+    query.set('ambient_temp_c', String(params.ambientTempC));
+  }
+  const qs = query.toString();
+  const url = `${API_BASE}/energy/forecasts/load/${encodeURIComponent(buildingId)}${qs ? `?${qs}` : ''}`;
+  const res = await resilientFetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch multi-horizon load forecast (${res.status})`);
+  }
+  return res.json();
+}
+
 export async function fetchForecastModels(): Promise<any[]> {
   try {
     const res = await fetch(`${API_BASE}/forecasts/models`);

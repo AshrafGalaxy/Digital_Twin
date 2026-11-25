@@ -36,6 +36,7 @@ import { FeederThermalLoadingCard } from '../energy/FeederThermalLoadingCard';
 import { DemandResponseDossierModal } from '../energy/DemandResponseDossierModal';
 import { MicrogridSLDCanvas } from '../energy/MicrogridSLDCanvas';
 import { ThermalComfortHeatmap } from '../energy/ThermalComfortHeatmap';
+import { QuantileLoadForecastPanel } from '../energy/QuantileLoadForecastPanel';
 import {
   fetchEnergyTopology,
   fetchLiveEnergyTelemetry,
@@ -997,6 +998,15 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Multi-Horizon Quantile Load Forecast Visualizer (ENERGY-04) */}
+          <div style={{ marginTop: '16px' }}>
+            <QuantileLoadForecastPanel
+              buildingId={activeFacility.id}
+              currentKw={currentKw}
+              contractDemandKw={contractLimitKw}
+            />
           </div>
         </>
       )}

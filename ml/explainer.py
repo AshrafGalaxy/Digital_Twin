@@ -42,7 +42,22 @@ class LocalModelExplainer:
         "load_roll_mean_6h": "6h Average Load",
         "load_roll_max_6h": "6h Peak Electrical Demand",
         "load_roll_std_6h": "6h Load Volatility",
-        "is_mall_open": "Commercial Mall Operating Hours"
+        "is_mall_open": "Commercial Mall Operating Hours",
+        "norm_load_current": "Current Normalized Load",
+        "norm_load_lag_15m": "Prior 15m Normalized Load",
+        "norm_load_lag_30m": "Prior 30m Normalized Load",
+        "norm_load_lag_60m": "Prior 60m Normalized Load",
+        "norm_load_lag_24h": "Same-Time Yesterday Load (Norm)",
+        "norm_load_lag_168h": "Same-Time Last Week Load (Norm)",
+        "norm_load_roll_mean_4h": "4h Moving Average Load (Norm)",
+        "norm_load_roll_peak_4h": "4h Peak Electrical Demand (Norm)",
+        "cdd_degree_days": "Cooling Degree Days (Base 24C)",
+        "hdd_degree_days": "Heating Degree Days (Base 18C)",
+        "relative_humidity_pct": "Relative Humidity (%)",
+        "solar_irradiance_wm2": "Solar Irradiance (W/m2)",
+        "sin_time": "Time-of-Day Cyclical (Sin)",
+        "cos_time": "Diurnal Rhythm (Cos)",
+        "is_holiday_flag": "Public Holiday Schedule"
     }
 
     @classmethod

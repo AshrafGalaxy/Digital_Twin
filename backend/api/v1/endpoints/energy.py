@@ -9,13 +9,15 @@ and corridor-wide microgrid power flow analytics.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.database import get_db
+from backend.core.database import get_active_backend, get_db
+from backend.schemas.forecasts import MultiHorizonLoadForecastResponse
 from backend.schemas.energy_advisory import (
     AdvisoryStatus,
     AuthorizeEnergyAdvisoryRequest,
@@ -38,6 +40,8 @@ from backend.services.building_thermal_service import (
 )
 from backend.services.energy_advisory_service import energy_advisory_service
 from backend.services.energy_topology_service import energy_topology_service
+from backend.services.forecast_service import forecast_service
+from backend.services.spatial_registry_service import spatial_service
 from backend.services.grid_safety_gateway import (
     CandidateDispatchRequest,
     GridSafetyGateway,
@@ -764,6 +768,315 @@ async def simulate_zone_precooling(
             detail=f"Thermal zone '{zone_id}' not found.",
         )
     return building_thermal_service.simulate_precooling_comparison(cfg, request)
+
+
+# =========================================================================
+# Multi-Horizon Quantile Load Forecasting Endpoint (TASK-04 / ENERGY-04)
+# =========================================================================
+
+_FACILITY_CAPACITY_KW_ALIASES: Dict[str, float] = {
+    "BLD-PHOENIX-01": 6800.0,
+    "PHOENIX-01": 6800.0,
+    "BLD-SOLITAIRE-01": 6010.0,
+    "SOLITAIRE-01": 6010.0,
+    "BLD-HYATT-01": 4990.0,
+    "HYATT-01": 4990.0,
+    "BLD-SOLITAIRE-03": 2400.0,
+    "SOLITAIRE-03": 2400.0,
+}
+
+
+def _extract_short_facility_id(building_id: str) -> str:
+    norm_id = building_id.strip()
+    if ":" in norm_id:
+        return norm_id.split(":")[-1].strip()
+    return norm_id
+
+
+async def _resolve_facility_capacity_kw(
+    building_id: str,
+    contract_kw: Optional[float],
+    sanctioned_load_kva: Optional[float],
+    session: AsyncSession,
+) -> float:
+    """
+    Dynamically resolves facility contract demand capacity (kW) across:
+    (a) contract_kw query override,
+    (b) sanctioned_load_kva * 0.85 query override,
+    (c) building_zones DB table,
+    (d) spatial_service.resolve_entity(building_id),
+    (e) normalized alias fallback for standard facility IDs.
+    """
+    if contract_kw is not None:
+        return float(contract_kw)
+    if sanctioned_load_kva is not None:
+        return float(sanctioned_load_kva) * 0.85
+
+    norm_id = building_id.strip()
+    short_id = _extract_short_facility_id(norm_id)
+    suffix_pattern = f"%:{short_id}" if short_id else norm_id
+
+    try:
+        stmt = text("""
+            SELECT contract_demand_kw, sanctioned_load_kva
+            FROM building_zones
+            WHERE id = :exact_id OR id LIKE :suffix_pattern
+            LIMIT 1
+        """)
+        res = await session.execute(stmt, {"exact_id": norm_id, "suffix_pattern": suffix_pattern})
+        row = res.fetchone()
+        if row is not None:
+            raw_cd = row[0]
+            if isinstance(raw_cd, (int, float)) and float(raw_cd) > 0.0:
+                return float(raw_cd)
+            raw_kva = row[1]
+            if isinstance(raw_kva, (int, float)) and float(raw_kva) > 0.0:
+                return float(raw_kva) * 0.85
+    except Exception as exc:
+        logger.debug("building_zones capacity lookup fallback for %s: %s", building_id, exc)
+
+    try:
+        spatial_res = spatial_service.resolve_entity(norm_id)
+        if spatial_res.spatialFound and isinstance(spatial_res.properties, dict):
+            raw_prop = spatial_res.properties.get("contractDemandKw")
+            if isinstance(raw_prop, (int, float, str)):
+                parsed_cd = float(raw_prop)
+                if parsed_cd > 0.0:
+                    return parsed_cd
+    except Exception as exc:
+        logger.debug("spatial_service capacity lookup fallback for %s: %s", building_id, exc)
+
+    alias_key = short_id.upper()
+    if alias_key in _FACILITY_CAPACITY_KW_ALIASES:
+        return float(_FACILITY_CAPACITY_KW_ALIASES[alias_key])
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=(
+            f"Facility '{building_id}' not found in registry and no "
+            "contract_kw or sanctioned_load_kva override was provided."
+        ),
+    )
+
+
+async def _resolve_observed_load_context(
+    building_id: str,
+    current_kw: Optional[float],
+    session: AsyncSession,
+) -> Tuple[Optional[float], Optional[List[float]]]:
+    """
+    Retrieves recent chronological active_power_kw history from energy_observations
+    and latest observed power from energy_observations or entity_current_state when
+    current_kw is omitted. Fails open if observation tables are sparse or absent.
+    """
+    norm_id = building_id.strip()
+    short_id = _extract_short_facility_id(norm_id)
+    suffix_pattern = f"%:{short_id}" if short_id else norm_id
+
+    resolved_current_kw: Optional[float] = float(current_kw) if current_kw is not None else None
+    kw_history: Optional[List[float]] = None
+
+    try:
+        obs_stmt = text("""
+            SELECT active_power_kw
+            FROM energy_observations
+            WHERE building_id = :exact_id OR building_id LIKE :suffix_pattern
+            ORDER BY observed_at DESC
+            LIMIT 673
+        """)
+        obs_res = await session.execute(obs_stmt, {"exact_id": norm_id, "suffix_pattern": suffix_pattern})
+        rows = obs_res.fetchall()
+        hist = [float(r[0]) for r in reversed(rows) if r[0] is not None and isinstance(r[0], (int, float))]
+        if hist:
+            if resolved_current_kw is None:
+                resolved_current_kw = hist[-1]
+                kw_history = hist
+            elif abs(hist[-1] - resolved_current_kw) > 1e-6:
+                kw_history = hist + [resolved_current_kw]
+            else:
+                kw_history = hist
+    except Exception as exc:
+        logger.debug("energy_observations lookup notice for %s: %s", building_id, exc)
+
+    if resolved_current_kw is None:
+        try:
+            state_stmt = text("""
+                SELECT metrics
+                FROM entity_current_state
+                WHERE entity_id = :exact_id OR entity_id LIKE :suffix_pattern
+                ORDER BY observed_at DESC
+                LIMIT 1
+            """)
+            state_res = await session.execute(state_stmt, {"exact_id": norm_id, "suffix_pattern": suffix_pattern})
+            state_row = state_res.fetchone()
+            if state_row is not None and state_row[0] is not None:
+                raw_metrics = state_row[0]
+                metrics_dict: Optional[Dict[str, Any]] = None
+                if isinstance(raw_metrics, str):
+                    parsed = json.loads(raw_metrics)
+                    if isinstance(parsed, dict):
+                        metrics_dict = parsed
+                elif isinstance(raw_metrics, dict):
+                    metrics_dict = raw_metrics
+
+                if metrics_dict is not None:
+                    raw_power = metrics_dict.get("activePowerKw")
+                    if raw_power is None:
+                        raw_power = metrics_dict.get("active_power_kw")
+                    if isinstance(raw_power, (int, float, str)):
+                        resolved_current_kw = float(raw_power)
+        except Exception as exc:
+            logger.debug("entity_current_state lookup notice for %s: %s", building_id, exc)
+
+    return resolved_current_kw, kw_history
+
+
+async def _persist_quantile_forecasts(
+    building_id: str,
+    capacity_kw: float,
+    payload: Dict[str, Any],
+    session: AsyncSession,
+) -> None:
+    """
+    Persists multi-horizon quantile forecasts into the segregated forecasts table
+    with source_mode='PREDICTED', domain='ENERGY', and model_version_id='energy-quantile-xgb-v2'.
+    Never writes predicted outputs into energy_observations.
+    """
+    is_pg = get_active_backend() == "postgresql"
+    gen_raw = str(payload.get("forecastGeneratedAt", ""))
+    gen_val: Any = datetime.fromisoformat(gen_raw.replace("Z", "+00:00")) if (is_pg and gen_raw) else gen_raw
+
+    raw_prov = payload.get("provenance")
+    prov: Dict[str, Any] = raw_prov if isinstance(raw_prov, dict) else {}
+    quality_status = str(prov.get("qualityStatus", "VALID"))
+
+    raw_top_features = payload.get("topFeatures")
+    top_features: List[Any] = raw_top_features if isinstance(raw_top_features, list) else []
+
+    raw_horizons = payload.get("horizons")
+    horizons: List[Any] = raw_horizons if isinstance(raw_horizons, list) else []
+
+    if is_pg:
+        insert_stmt = text("""
+            INSERT INTO forecasts (
+                generated_at, target_timestamp, entity_id, domain,
+                model_version_id, horizon_minutes, source_mode,
+                predicted_value, unit, confidence_lower, confidence_upper,
+                input_quality_status, features_used
+            ) VALUES (
+                :generated_at, :target_timestamp, :entity_id, 'ENERGY',
+                'energy-quantile-xgb-v2', :horizon_minutes, 'PREDICTED',
+                :predicted_value, 'kW', :confidence_lower, :confidence_upper,
+                :input_quality_status, CAST(:features_used AS jsonb)
+            );
+        """)
+    else:
+        insert_stmt = text("""
+            INSERT INTO forecasts (
+                generated_at, target_timestamp, entity_id, domain,
+                model_version_id, horizon_minutes, source_mode,
+                predicted_value, unit, confidence_lower, confidence_upper,
+                input_quality_status, features_used
+            ) VALUES (
+                :generated_at, :target_timestamp, :entity_id, 'ENERGY',
+                'energy-quantile-xgb-v2', :horizon_minutes, 'PREDICTED',
+                :predicted_value, 'kW', :confidence_lower, :confidence_upper,
+                :input_quality_status, :features_used
+            );
+        """)
+
+    entity_id = str(payload.get("buildingId", building_id))
+    for horizon in horizons:
+        if not isinstance(horizon, dict):
+            continue
+        target_raw = str(horizon.get("targetTimestamp", ""))
+        target_val: Any = datetime.fromisoformat(target_raw.replace("Z", "+00:00")) if (is_pg and target_raw) else target_raw
+        features_payload = json.dumps({
+            "capacityKw": float(capacity_kw),
+            "conformalInterval90": horizon.get("conformalInterval90", []),
+            "topFeatures": top_features,
+        })
+        await session.execute(insert_stmt, {
+            "generated_at": gen_val,
+            "target_timestamp": target_val,
+            "entity_id": entity_id,
+            "horizon_minutes": int(horizon["horizonMinutes"]),
+            "predicted_value": float(horizon["p50Kw"]),
+            "confidence_lower": float(horizon["p10Kw"]),
+            "confidence_upper": float(horizon["p90Kw"]),
+            "input_quality_status": quality_status,
+            "features_used": features_payload,
+        })
+    await session.commit()
+
+
+@router.get("/forecasts/load/{building_id}", response_model=MultiHorizonLoadForecastResponse)
+async def get_multi_horizon_load_forecast(
+    building_id: str,
+    current_kw: Optional[float] = Query(None, ge=0.0, description="Optional current observed active power in kW"),
+    contract_kw: Optional[float] = Query(None, gt=0.0, description="Optional facility contract demand override in kW"),
+    sanctioned_load_kva: Optional[float] = Query(None, gt=0.0, description="Optional sanctioned load override in kVA (converted at 0.85 pf)"),
+    ambient_temp_c: float = Query(30.5, description="Ambient temperature in Celsius"),
+    relative_humidity_pct: float = Query(55.0, ge=0.0, le=100.0, description="Relative humidity percentage"),
+    solar_irradiance_wm2: Optional[float] = Query(None, ge=0.0, description="Optional solar irradiance in W/m2"),
+    is_holiday_flag: int = Query(0, ge=0, le=1, description="Public holiday flag (0 or 1)"),
+    persist: bool = Query(False, description="Persist multi-horizon forecast rows into segregated forecasts table"),
+    session: AsyncSession = Depends(get_db),
+) -> MultiHorizonLoadForecastResponse:
+    """
+    Generates multi-horizon quantile active load forecasts (15m, 60m, 240m, 1440m)
+    with p10/p50/p90 bounds, 90% conformal prediction intervals, and TreeSHAP attributions.
+    Outputs carry strict PREDICTED provenance and non-actuation advisory notice.
+    """
+    capacity_kw = await _resolve_facility_capacity_kw(
+        building_id=building_id,
+        contract_kw=contract_kw,
+        sanctioned_load_kva=sanctioned_load_kva,
+        session=session,
+    )
+    resolved_current_kw, kw_history = await _resolve_observed_load_context(
+        building_id=building_id,
+        current_kw=current_kw,
+        session=session,
+    )
+
+    try:
+        result = forecast_service.get_multi_horizon_load_forecast(
+            building_id=building_id,
+            capacity_kw=capacity_kw,
+            current_kw=resolved_current_kw,
+            kw_history=kw_history,
+            ambient_temp_c=ambient_temp_c,
+            relative_humidity_pct=relative_humidity_pct,
+            solar_irradiance_wm2=solar_irradiance_wm2,
+            is_holiday_flag=is_holiday_flag,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Multi-horizon quantile load forecast failed for %s: %s", building_id, exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate multi-horizon load forecast: {str(exc)}",
+        ) from exc
+
+    if persist:
+        try:
+            await _persist_quantile_forecasts(
+                building_id=building_id,
+                capacity_kw=capacity_kw,
+                payload=result,
+                session=session,
+            )
+        except Exception as exc:
+            logger.error("Failed to persist multi-horizon load forecast for %s: %s", building_id, exc, exc_info=True)
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to persist multi-horizon load forecast: {str(exc)}",
+            ) from exc
+
+    return MultiHorizonLoadForecastResponse(**result)
 
 
 

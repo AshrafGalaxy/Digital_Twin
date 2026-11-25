@@ -5,7 +5,7 @@ Pydantic schemas for traffic and building energy forecasts,
 confidence intervals, baseline comparisons, and model registry records.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -70,3 +70,36 @@ class ModelVersionInfo(BaseModel):
     improvementVsPersistencePct: Optional[float] = None
     trainedAt: str
     localityCaveat: Optional[str] = None
+
+
+class QuantileHorizonForecast(BaseModel):
+    horizonMinutes: int
+    targetTimestamp: str
+    p10Kw: float
+    p50Kw: float
+    p90Kw: float
+    conformalInterval90: List[float]
+
+
+class QuantileTopFeature(BaseModel):
+    feature: str
+    shapValue: float
+    displayName: Optional[str] = None
+    impact: Optional[str] = None
+
+
+class QuantileForecastProvenance(BaseModel):
+    sourceMode: str = "PREDICTED"
+    modelVersion: str = "energy-quantile-xgb-v2"
+    qualityStatus: str = "VALID"
+
+
+class MultiHorizonLoadForecastResponse(BaseModel):
+    buildingId: str
+    forecastGeneratedAt: str
+    capacityKw: float
+    horizons: List[QuantileHorizonForecast]
+    topFeatures: List[QuantileTopFeature]
+    provenance: QuantileForecastProvenance
+    baselineMetrics: Optional[Dict[str, Any]] = None
+    advisoryNotice: str
