@@ -657,3 +657,32 @@ CREATE TABLE IF NOT EXISTS zone_occupancy_telemetry (
 );
 CREATE INDEX IF NOT EXISTS idx_zone_occ_zone_time ON zone_occupancy_telemetry (zone_id, observed_at DESC);
 
+-- 38. Solar PV Arrays (Energy TASK-05 / ENERGY-05)
+CREATE TABLE IF NOT EXISTS solar_pv_arrays (
+    id VARCHAR(128) PRIMARY KEY,
+    facility_id VARCHAR(128) NOT NULL,
+    inverter_id VARCHAR(128) NOT NULL,
+    collector_area_sqm DOUBLE PRECISION NOT NULL,
+    nominal_efficiency DOUBLE PRECISION NOT NULL DEFAULT 0.185,
+    thermal_derating_coeff DOUBLE PRECISION NOT NULL DEFAULT 0.004,
+    tilt_degrees DOUBLE PRECISION NOT NULL DEFAULT 18.0,
+    azimuth_degrees DOUBLE PRECISION NOT NULL DEFAULT 180.0,
+    rated_peak_power_kw DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 39. Solar PV Forecasts (Energy TASK-05 / ENERGY-05, Segregated from Observations)
+CREATE TABLE IF NOT EXISTS solar_pv_forecasts (
+    id BIGSERIAL PRIMARY KEY,
+    array_id VARCHAR(128) REFERENCES solar_pv_arrays(id),
+    forecast_generated_at TIMESTAMPTZ NOT NULL,
+    target_timestamp TIMESTAMPTZ NOT NULL,
+    expected_power_kw DOUBLE PRECISION NOT NULL,
+    ghi_w_per_sqm DOUBLE PRECISION NOT NULL,
+    cell_temperature_c DOUBLE PRECISION NOT NULL,
+    source_mode VARCHAR(32) NOT NULL DEFAULT 'PREDICTED',
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_solar_forecasts_array_time ON solar_pv_forecasts (array_id, target_timestamp DESC);
+
+

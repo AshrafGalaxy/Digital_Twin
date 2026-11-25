@@ -37,6 +37,7 @@ import { DemandResponseDossierModal } from '../energy/DemandResponseDossierModal
 import { MicrogridSLDCanvas } from '../energy/MicrogridSLDCanvas';
 import { ThermalComfortHeatmap } from '../energy/ThermalComfortHeatmap';
 import { QuantileLoadForecastPanel } from '../energy/QuantileLoadForecastPanel';
+import { SolarPVForecastPanel } from '../energy/SolarPVForecastPanel';
 import {
   fetchEnergyTopology,
   fetchLiveEnergyTelemetry,
@@ -1008,6 +1009,9 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
               contractDemandKw={contractLimitKw}
             />
           </div>
+
+          {/* Solar PV Physical Generation & Performance Ratio Panel (ENERGY-05) */}
+          <SolarPVForecastPanel activeFacilityId={activeFacility.id} />
         </>
       )}
 

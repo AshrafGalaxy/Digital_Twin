@@ -642,6 +642,35 @@ SQLITE_TABLE_DDL = [
         source_mode TEXT NOT NULL DEFAULT 'SIMULATION',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    # 38. Solar PV Arrays (Energy TASK-05 / ENERGY-05)
+    """
+    CREATE TABLE IF NOT EXISTS solar_pv_arrays (
+        id TEXT PRIMARY KEY,
+        facility_id TEXT NOT NULL,
+        inverter_id TEXT NOT NULL,
+        collector_area_sqm REAL NOT NULL,
+        nominal_efficiency REAL NOT NULL DEFAULT 0.185,
+        thermal_derating_coeff REAL NOT NULL DEFAULT 0.004,
+        tilt_degrees REAL NOT NULL DEFAULT 18.0,
+        azimuth_degrees REAL NOT NULL DEFAULT 180.0,
+        rated_peak_power_kw REAL NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # 39. Solar PV Forecasts (Energy TASK-05 / ENERGY-05)
+    """
+    CREATE TABLE IF NOT EXISTS solar_pv_forecasts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        array_id TEXT REFERENCES solar_pv_arrays(id),
+        forecast_generated_at TIMESTAMP NOT NULL,
+        target_timestamp TIMESTAMP NOT NULL,
+        expected_power_kw REAL NOT NULL,
+        ghi_w_per_sqm REAL NOT NULL,
+        cell_temperature_c REAL NOT NULL,
+        source_mode TEXT NOT NULL DEFAULT 'PREDICTED',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
 
@@ -682,7 +711,8 @@ SQLITE_INDEX_DDL = [
     "CREATE INDEX IF NOT EXISTS idx_road_segments_from_intersection ON road_segments (from_intersection);",
     "CREATE INDEX IF NOT EXISTS idx_road_segments_to_intersection ON road_segments (to_intersection);",
     "CREATE INDEX IF NOT EXISTS idx_sensors_linked_segment ON sensors (linked_segment_id);",
-    "CREATE INDEX IF NOT EXISTS idx_sensors_study_area ON sensors (study_area_id);"
+    "CREATE INDEX IF NOT EXISTS idx_sensors_study_area ON sensors (study_area_id);",
+    "CREATE INDEX IF NOT EXISTS idx_solar_forecasts_array_time ON solar_pv_forecasts (array_id, target_timestamp DESC);"
 ]
 
 
@@ -1760,6 +1790,79 @@ async def _seed_model_versions(session: AsyncSession, is_pg: bool) -> int:
     return count
 
 
+async def _seed_solar_pv_arrays(session: AsyncSession, is_pg: bool) -> int:
+    """
+    Idempotently seeds rooftop solar PV arrays with collector geometry, efficiency,
+    and Sandia thermal derating coefficients (TASK-05 / ENERGY-05).
+    Rated peak power satisfies P_rated = eta_sys * A_pv * 1.0 kW/m2 at STC (25 deg C).
+    """
+    arrays: List[Dict[str, Any]] = [
+        {
+            "id": "AST-PV-PHOENIX-01",
+            "facility_id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+            "inverter_id": "INV-PHOENIX-ROOF-01",
+            "collector_area_sqm": 6486.49,
+            "nominal_efficiency": 0.185,
+            "thermal_derating_coeff": 0.004,
+            "tilt_degrees": 18.0,
+            "azimuth_degrees": 180.0,
+            "rated_peak_power_kw": 1200.0,
+        },
+        {
+            "id": "AST-PV-SOLITAIRE-01",
+            "facility_id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
+            "inverter_id": "INV-SOLITAIRE-ROOF-01",
+            "collector_area_sqm": 4324.32,
+            "nominal_efficiency": 0.185,
+            "thermal_derating_coeff": 0.004,
+            "tilt_degrees": 18.0,
+            "azimuth_degrees": 180.0,
+            "rated_peak_power_kw": 800.0,
+        },
+        {
+            "id": "AST-PV-HYATT-01",
+            "facility_id": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
+            "inverter_id": "INV-HYATT-ROOF-01",
+            "collector_area_sqm": 2432.43,
+            "nominal_efficiency": 0.185,
+            "thermal_derating_coeff": 0.004,
+            "tilt_degrees": 18.0,
+            "azimuth_degrees": 180.0,
+            "rated_peak_power_kw": 450.0,
+        },
+    ]
+
+    count = 0
+    for arr in arrays:
+        if is_pg:
+            stmt = text("""
+                INSERT INTO solar_pv_arrays (
+                    id, facility_id, inverter_id, collector_area_sqm,
+                    nominal_efficiency, thermal_derating_coeff,
+                    tilt_degrees, azimuth_degrees, rated_peak_power_kw
+                ) VALUES (
+                    :id, :facility_id, :inverter_id, :collector_area_sqm,
+                    :nominal_efficiency, :thermal_derating_coeff,
+                    :tilt_degrees, :azimuth_degrees, :rated_peak_power_kw
+                ) ON CONFLICT (id) DO NOTHING;
+            """)
+        else:
+            stmt = text("""
+                INSERT OR IGNORE INTO solar_pv_arrays (
+                    id, facility_id, inverter_id, collector_area_sqm,
+                    nominal_efficiency, thermal_derating_coeff,
+                    tilt_degrees, azimuth_degrees, rated_peak_power_kw
+                ) VALUES (
+                    :id, :facility_id, :inverter_id, :collector_area_sqm,
+                    :nominal_efficiency, :thermal_derating_coeff,
+                    :tilt_degrees, :azimuth_degrees, :rated_peak_power_kw
+                );
+            """)
+        await session.execute(stmt, arr)
+        count += 1
+    return count
+
+
 async def init_db_schema() -> Dict[str, Any]:
     """
     Primary entrypoint called on FastAPI startup lifespan.
@@ -1829,8 +1932,9 @@ async def init_db_schema() -> Dict[str, Any]:
             except Exception as agg_err:
                 logger.warning("Historical rollup seeding notice: %s", agg_err)
 
-            # Ensure registered model_versions entries exist idempotently
+            # Ensure registered model_versions and solar PV arrays exist idempotently
             seeded_assets["modelVersions"] = await _seed_model_versions(session, is_pg)
+            seeded_assets["solarArrays"] = await _seed_solar_pv_arrays(session, is_pg)
             await session.commit()
 
             # 3. Query total existing tables

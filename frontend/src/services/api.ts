@@ -1283,3 +1283,113 @@ export async function simulateZonePrecooling(
   return res.json();
 }
 
+export interface SolarPVArrayInfo {
+  arrayId: string;
+  facilityId: string;
+  inverterId: string;
+  collectorAreaSqm: number;
+  nominalEfficiency: number;
+  thermalDeratingCoeff: number;
+  tiltDegrees: number;
+  azimuthDegrees: number;
+  ratedPeakPowerKw: number;
+}
+
+export interface SolarForecastPoint {
+  horizonMinutes: number;
+  targetTimestamp: string;
+  localHour: number;
+  ghiWPerSqm: number;
+  poaIrradianceWPerSqm: number;
+  ambientTemperatureC: number;
+  cellTemperatureC: number;
+  thermalDeratingFactor: number;
+  thermalDeratingLossPct: number;
+  expectedPowerKw: number;
+  isDaylight: boolean;
+}
+
+export interface SolarPVForecastResponse {
+  arrayId: string;
+  facilityId: string;
+  inverterId: string;
+  forecastGeneratedAt: string;
+  sourceMode: string;
+  qualityStatus: string;
+  ratedPeakPowerKw: number;
+  collectorAreaSqm: number;
+  nominalEfficiency: number;
+  thermalDeratingCoeff: number;
+  dailyExpectedEnergyKwh: number;
+  peakExpectedPowerKw: number;
+  horizons: SolarForecastPoint[];
+  curve24h: SolarForecastPoint[];
+  advisoryNotice: string;
+}
+
+export interface SolarPerformanceEvaluationResponse {
+  arrayId: string;
+  facilityId: string;
+  inverterId: string;
+  evaluatedAt: string;
+  measuredPowerKw: number;
+  expectedPhysicalPowerKw: number;
+  ghiWPerSqm: number;
+  ambientTemperatureC: number;
+  windSpeedMs: number;
+  cellTemperatureC: number;
+  thermalDeratingFactor: number;
+  thermalDeratingLossPct: number;
+  performanceRatio: number | null;
+  diagnosticStatus: string;
+  advisoryAction: string;
+  sourceMode: string;
+  nonActuationDisclaimer: string;
+}
+
+export async function fetchSolarArrays(): Promise<SolarPVArrayInfo[]> {
+  const res = await resilientFetch(`${API_BASE}/energy/solar/arrays`);
+  if (!res.ok) throw new Error('Failed to fetch solar PV arrays');
+  return res.json();
+}
+
+export async function fetchSolarPVForecast(
+  arrayId: string,
+  params?: {
+    horizonHours?: number;
+    ambientTempC?: number;
+    windSpeedMs?: number;
+    cloudCoverPct?: number;
+  }
+): Promise<SolarPVForecastResponse> {
+  const query = new URLSearchParams();
+  if (params?.horizonHours !== undefined) query.set('horizon_hours', String(params.horizonHours));
+  if (params?.ambientTempC !== undefined) query.set('ambient_temp_c', String(params.ambientTempC));
+  if (params?.windSpeedMs !== undefined) query.set('wind_speed_ms', String(params.windSpeedMs));
+  if (params?.cloudCoverPct !== undefined) query.set('cloud_cover_pct', String(params.cloudCoverPct));
+  const qs = query.toString();
+  const url = `${API_BASE}/energy/solar/${encodeURIComponent(arrayId)}/forecast${qs ? `?${qs}` : ''}`;
+  const res = await resilientFetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch solar PV forecast for ${arrayId}`);
+  return res.json();
+}
+
+export async function evaluateSolarPerformance(
+  arrayId: string,
+  payload: {
+    measuredKw: number;
+    ghiWPerSqm: number;
+    ambientTempC?: number;
+    windSpeedMs?: number;
+  }
+): Promise<SolarPerformanceEvaluationResponse> {
+  const res = await fetch(`${API_BASE}/energy/solar/${encodeURIComponent(arrayId)}/evaluate-performance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Failed to evaluate solar performance for ${arrayId}`);
+  return res.json();
+}
+
+

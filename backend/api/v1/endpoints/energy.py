@@ -52,6 +52,13 @@ from backend.services.grid_safety_gateway import (
     grid_safety_gateway,
 )
 from backend.services.power_balance_service import power_balance_service
+from backend.services.solar_forecast_service import (
+    SolarPVArrayConfig,
+    SolarPVForecastResult,
+    SolarPerformanceEvaluationRequest,
+    SolarPerformanceEvaluationResult,
+    solar_forecast_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1077,6 +1084,153 @@ async def get_multi_horizon_load_forecast(
             ) from exc
 
     return MultiHorizonLoadForecastResponse(**result)
+
+
+# =========================================================================
+# Solar PV Generation & Irradiance Physical Forecasting (TASK-05 / ENERGY-05)
+# =========================================================================
+
+async def _resolve_solar_array_config(
+    array_id: str,
+    collector_area_sqm: Optional[float],
+    nominal_efficiency: Optional[float],
+    thermal_derating_coeff: Optional[float],
+    rated_peak_power_kw: Optional[float],
+    session: AsyncSession,
+) -> SolarPVArrayConfig:
+    """
+    Resolves PV array physical geometry from solar_pv_arrays DB table or explicit
+    request overrides for portable cross-facility deployment.
+    """
+    db_cfg = await solar_forecast_service.get_solar_array_config(array_id, session)
+    if db_cfg is not None:
+        return SolarPVArrayConfig(
+            arrayId=db_cfg.arrayId,
+            facilityId=db_cfg.facilityId,
+            inverterId=db_cfg.inverterId,
+            collectorAreaSqm=float(collector_area_sqm) if collector_area_sqm is not None else db_cfg.collectorAreaSqm,
+            nominalEfficiency=float(nominal_efficiency) if nominal_efficiency is not None else db_cfg.nominalEfficiency,
+            thermalDeratingCoeff=(
+                float(thermal_derating_coeff) if thermal_derating_coeff is not None else db_cfg.thermalDeratingCoeff
+            ),
+            tiltDegrees=db_cfg.tiltDegrees,
+            azimuthDegrees=db_cfg.azimuthDegrees,
+            ratedPeakPowerKw=float(rated_peak_power_kw) if rated_peak_power_kw is not None else db_cfg.ratedPeakPowerKw,
+        )
+
+    if collector_area_sqm is not None and rated_peak_power_kw is not None:
+        return SolarPVArrayConfig(
+            arrayId=array_id,
+            facilityId=array_id,
+            inverterId=f"INV-{array_id}",
+            collectorAreaSqm=float(collector_area_sqm),
+            nominalEfficiency=float(nominal_efficiency) if nominal_efficiency is not None else 0.185,
+            thermalDeratingCoeff=float(thermal_derating_coeff) if thermal_derating_coeff is not None else 0.004,
+            tiltDegrees=18.0,
+            azimuthDegrees=180.0,
+            ratedPeakPowerKw=float(rated_peak_power_kw),
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=(
+            f"Solar PV array '{array_id}' not found in registry. "
+            "Provide collector_area_sqm and rated_peak_power_kw overrides for portable physical forecasting."
+        ),
+    )
+
+
+@router.get("/solar/arrays", response_model=List[SolarPVArrayConfig])
+async def list_solar_pv_arrays(
+    session: AsyncSession = Depends(get_db),
+) -> List[SolarPVArrayConfig]:
+    """Lists all registered rooftop solar PV arrays and physical collector parameters."""
+    try:
+        return await solar_forecast_service.list_solar_arrays(session)
+    except Exception as exc:
+        logger.error("Failed to list solar PV arrays: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list solar PV arrays: {str(exc)}",
+        ) from exc
+
+
+@router.get("/solar/{array_id}/forecast", response_model=SolarPVForecastResult)
+async def get_solar_pv_forecast(
+    array_id: str,
+    horizon_hours: int = Query(24, ge=1, le=72, description="Forecast horizon window in hours"),
+    step_minutes: int = Query(15, ge=5, le=60, description="Curve resolution in minutes"),
+    ambient_temp_c: Optional[float] = Query(None, ge=-20.0, le=60.0, description="Optional fixed ambient temperature override (C)"),
+    wind_speed_ms: float = Query(2.0, ge=0.0, le=40.0, description="Wind speed for Sandia thermal cooling (m/s)"),
+    cloud_cover_pct: float = Query(0.0, ge=0.0, le=100.0, description="Cloud attenuation percentage (0-100)"),
+    collector_area_sqm: Optional[float] = Query(None, gt=0.0, description="Optional portable collector area override (m2)"),
+    nominal_efficiency: Optional[float] = Query(None, gt=0.0, le=0.45, description="Optional nominal system efficiency override"),
+    thermal_derating_coeff: Optional[float] = Query(None, ge=0.0, le=0.02, description="Optional thermal derating gamma override"),
+    rated_peak_power_kw: Optional[float] = Query(None, gt=0.0, description="Optional rated inverter capacity override (kW)"),
+    persist: bool = Query(False, description="Persist curve into segregated solar_pv_forecasts table"),
+    session: AsyncSession = Depends(get_db),
+) -> SolarPVForecastResult:
+    """
+    Computes 15-minute resolution physical solar PV yield curve (15m to 24h)
+    applying local civil clear-sky irradiance and Sandia cell temperature derating.
+    """
+    cfg = await _resolve_solar_array_config(
+        array_id=array_id,
+        collector_area_sqm=collector_area_sqm,
+        nominal_efficiency=nominal_efficiency,
+        thermal_derating_coeff=thermal_derating_coeff,
+        rated_peak_power_kw=rated_peak_power_kw,
+        session=session,
+    )
+    result = solar_forecast_service.generate_multi_horizon_forecast(
+        array_cfg=cfg,
+        horizon_hours=horizon_hours,
+        step_minutes=step_minutes,
+        ambient_temp_c=ambient_temp_c,
+        wind_speed_ms=wind_speed_ms,
+        cloud_cover_pct=cloud_cover_pct,
+    )
+    if persist:
+        try:
+            await solar_forecast_service.persist_solar_forecasts(result, session)
+        except Exception as exc:
+            logger.error("Failed to persist solar forecasts for %s: %s", array_id, exc, exc_info=True)
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to persist solar forecasts: {str(exc)}",
+            ) from exc
+    return result
+
+
+@router.post("/solar/{array_id}/evaluate-performance", response_model=SolarPerformanceEvaluationResult)
+async def evaluate_solar_pv_performance(
+    array_id: str,
+    request: SolarPerformanceEvaluationRequest = Body(...),
+    session: AsyncSession = Depends(get_db),
+) -> SolarPerformanceEvaluationResult:
+    """
+    Evaluates live Performance Ratio (PR = P_measured / P_expected) under observed
+    irradiance and temperature to detect soiling or inverter/string faults.
+    Strictly advisory (non-actuating).
+    """
+    cfg = await _resolve_solar_array_config(
+        array_id=array_id,
+        collector_area_sqm=request.collectorAreaSqm,
+        nominal_efficiency=request.nominalEfficiency,
+        thermal_derating_coeff=request.thermalDeratingCoeff,
+        rated_peak_power_kw=request.ratedPeakPowerKw,
+        session=session,
+    )
+    return solar_forecast_service.evaluate_performance_ratio(
+        array_cfg=cfg,
+        measured_kw=request.measuredKw,
+        ghi_wm2=request.ghiWPerSqm,
+        ambient_temp_c=request.ambientTempC,
+        wind_speed_ms=request.windSpeedMs,
+        observed_at=request.observedAt,
+    )
+
 
 
 
