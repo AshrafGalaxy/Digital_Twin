@@ -17,11 +17,16 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     DEBUG: bool = True
 
-    # Multi-Storage Persistence (P4-A)
+    # Multi-Storage Persistence (P4-A & ENH-02 Pool Recycling)
     DATABASE_BACKEND: str = "auto"  # Options: "auto", "postgres", "sqlite"
     DATABASE_URL: Optional[str] = None  # Full PostgreSQL connection string override
     SQLITE_DB_PATH: str = "data/digital_twin.db"
     DB_CONNECT_TIMEOUT_SEC: float = 1.5
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_HOSTED_POOL_SIZE: int = 5
+    DB_HOSTED_MAX_OVERFLOW: int = 5
+    DB_POOL_RECYCLE_SEC: int = 300
 
     # PostgreSQL / PostGIS / TimescaleDB
     POSTGRES_USER: str = "postgres"
