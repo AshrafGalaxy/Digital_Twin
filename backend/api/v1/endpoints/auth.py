@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.core.database import get_db_session
 
 from backend.core.config import settings
+from backend.core.edge_controls import enforce_auth_rate_limit
 
 DEV_MOCK_JWT_SECRET = "dev-mock-jwt-secret-key-pune-corridor-testing-2026-local"
 
@@ -250,7 +251,11 @@ class AuthUserResponse(BaseModel):
     workspaces: List[str]
 
 
-@router.post("/login", response_model=AuthUserResponse)
+@router.post(
+    "/login",
+    response_model=AuthUserResponse,
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 def login(payload: LoginRequest):
     """
     Authenticates municipal credentials and issues a cryptographic JWT session token.
@@ -315,7 +320,11 @@ def login(payload: LoginRequest):
     )
 
 
-@router.post("/register", response_model=AuthUserResponse)
+@router.post(
+    "/register",
+    response_model=AuthUserResponse,
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 def register(payload: RegisterRequest):
     """
     Registers a new municipal official with PBKDF2-hashed credentials and role verification.
@@ -428,7 +437,11 @@ class MagicLinkRedeemRequest(BaseModel):
     token: str = Field(..., min_length=10, max_length=128, description="Cryptographic single-use magic access token")
 
 
-@router.post("/magic-link", response_model=AuthUserResponse)
+@router.post(
+    "/magic-link",
+    response_model=AuthUserResponse,
+    dependencies=[Depends(enforce_auth_rate_limit)],
+)
 async def redeem_magic_link(
     payload: MagicLinkRedeemRequest,
     session: AsyncSession = Depends(get_db_session)

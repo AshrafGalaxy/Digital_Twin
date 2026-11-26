@@ -13,6 +13,7 @@ if str(ROOT_DIR) not in sys.path:
 
 import asyncio
 import pytest
+from backend.core.edge_controls import rate_limiter
 from backend.core.schema_migrator import init_db_schema
 
 
@@ -33,3 +34,14 @@ def initialize_test_database():
         loop.run_until_complete(init_db_schema())
     else:
         asyncio.run(init_db_schema())
+
+
+@pytest.fixture(scope="module", autouse=True)
+def reset_edge_rate_limiter_per_module():
+    """
+    Isolates per-IP sliding-window rate-limit buckets across unrelated test modules
+    sharing the single in-process TestClient IP while keeping intra-module limits active.
+    """
+    rate_limiter.reset()
+    yield
+    rate_limiter.reset()

@@ -23,6 +23,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from backend.core.config import settings
 from backend.core.database import check_db_health, get_active_backend, get_persistence_info
+from backend.core.edge_controls import RateLimitMiddleware, TrustedHostControlMiddleware
 from backend.core.schema_migrator import init_db_schema
 from backend.api.v1.router import api_v1_router
 from backend.api.v1.endpoints.stream import manager
@@ -110,7 +111,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# Tiered edge rate limiting (auth & heavy compute) and Host validation
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(TrustedHostControlMiddleware)
+
+# Explicit CORS middleware (outermost so allowed origins receive headers on 4xx/429 responses)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,

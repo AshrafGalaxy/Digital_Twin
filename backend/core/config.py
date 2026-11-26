@@ -64,10 +64,17 @@ class Settings(BaseSettings):
     # Speeds below this are stopped. Density is not computed by substituting 1 km/h.
     LOS_STOPPED_SPEED_KMH: float = 1.0
 
-    # API Server
+    # API Server & Edge Controls (ENH-01)
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
+    ALLOWED_HOSTS: str = "localhost,127.0.0.1,testserver"
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_AUTH_REQUESTS: int = 25
+    RATE_LIMIT_AUTH_WINDOW_SEC: int = 60
+    RATE_LIMIT_COMPUTE_REQUESTS: int = 120
+    RATE_LIMIT_COMPUTE_WINDOW_SEC: int = 60
+    TRUST_PROXY_HEADERS: bool = False
 
     # Cryptographic Municipal Session Token Secret
     MUNICIPAL_JWT_SECRET: Optional[str] = None
@@ -98,10 +105,25 @@ class Settings(BaseSettings):
                 raise RuntimeError(
                     "Production environment requires a configured MQTT_USERNAME."
                 )
+            hosts = self.allowed_hosts_list
+            if not hosts or "*" in hosts:
+                raise RuntimeError(
+                    "Production environment requires explicit ALLOWED_HOSTS without wildcards ('*')."
+                )
 
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def allowed_hosts_list(self) -> List[str]:
+        return [host.strip().lower() for host in self.ALLOWED_HOSTS.split(",") if host.strip()]
+
+    @property
+    def is_exposed_beyond_localhost(self) -> bool:
+        """Returns True when deployed in production or bound outside strict loopback interfaces."""
+        bound_host = (self.API_HOST or "").strip().lower()
+        return self.is_production or bound_host not in {"127.0.0.1", "localhost", "::1"}
 
     @property
     def resolved_sqlite_path(self) -> Path:
