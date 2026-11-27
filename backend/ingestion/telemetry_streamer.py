@@ -171,6 +171,7 @@ class TelemetryStreamerWorker:
         self.history_write_failures_count: int = 0
         self.last_tick_at: Optional[str] = None
         self._task: Optional[asyncio.Task] = None
+        self._stop_event: Optional[asyncio.Event] = None
         from backend.ingestion.weather_client import OpenMeteoWeatherClient
         self.weather_client = OpenMeteoWeatherClient()
 
@@ -203,26 +204,38 @@ class TelemetryStreamerWorker:
             self.broadcast_callback = broadcast_callback
         self.is_running = True
         self.is_paused = False
+        self._stop_event = asyncio.Event()
         self._task = asyncio.create_task(self._run_loop())
         logger.info("In-process telemetry streamer worker started (interval: %.1fs, mode: %s).", self.interval_sec, self.mode)
 
     def stop(self) -> None:
         self.is_running = False
-        if self._task and not self._task.done():
+        if self._stop_event is not None:
+            self._stop_event.set()
+        elif self._task and not self._task.done():
             self._task.cancel()
         logger.info("In-process telemetry streamer worker stopped.")
 
     async def stop_async(self) -> None:
         self.is_running = False
+        if self._stop_event is not None:
+            self._stop_event.set()
         if self._task and not self._task.done():
-            self._task.cancel()
             try:
-                await self._task
-            except (asyncio.CancelledError, Exception):
-                pass
+                await asyncio.wait_for(self._task, timeout=5.0)
+            except (asyncio.TimeoutError, asyncio.CancelledError, Exception):
+                if not self._task.done():
+                    self._task.cancel()
+                    try:
+                        await self._task
+                    except (asyncio.CancelledError, Exception):
+                        pass
+        self._task = None
+        self._stop_event = None
         logger.info("In-process telemetry streamer worker stopped cleanly.")
 
     async def _run_loop(self) -> None:
+        stop_event = self._stop_event
         while self.is_running:
             try:
                 if not self.is_paused:
@@ -232,7 +245,18 @@ class TelemetryStreamerWorker:
             except Exception as exc:
                 logger.error("Error in telemetry streamer tick: %s", exc, exc_info=False)
 
-            await asyncio.sleep(self.interval_sec)
+            if not self.is_running:
+                break
+            if stop_event is not None:
+                try:
+                    await asyncio.wait_for(stop_event.wait(), timeout=self.interval_sec)
+                    break
+                except asyncio.TimeoutError:
+                    continue
+                except asyncio.CancelledError:
+                    break
+            else:
+                await asyncio.sleep(self.interval_sec)
 
     def _record_los_history_failure(
         self,
