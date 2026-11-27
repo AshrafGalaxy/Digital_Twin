@@ -7,6 +7,7 @@ diurnal solar generation modeling, BESS dispatch dynamics, EV charging simulatio
 and corridor-wide microgrid power flow analytics.
 """
 
+import asyncio
 import json
 import logging
 import math
@@ -14,7 +15,7 @@ import random
 import threading
 import zoneinfo
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -700,7 +701,247 @@ class EnergyTopologyService:
             "observedAt": datetime.now(timezone.utc).isoformat()
         }
 
-    async def generate_telemetry_tick(self, session: Optional[AsyncSession] = None) -> List[Dict[str, Any]]:
+    def _compute_asset_telemetry_batch(
+        self,
+        *,
+        db_nodes: List[Any],
+        now_utc: datetime,
+        grid_freq: float,
+        obs_val: Any,
+    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Builds physics readings and batch parameter dicts off the asyncio event loop."""
+        decimal_hour = self.get_local_decimal_hour(now_utc)
+
+        if db_nodes:
+            endpoint_readings: Dict[str, Dict[str, Any]] = {}
+            for r in db_nodes:
+                nid, _name, ntype, _pid, v_kv, cap_kva, props_raw = (
+                    r[0],
+                    r[1],
+                    r[2],
+                    r[3],
+                    float(r[4]),
+                    float(r[5]),
+                    r[6],
+                )
+                props = json.loads(props_raw) if isinstance(props_raw, str) else (props_raw or {})
+                v_nom = v_kv * 1000.0 if v_kv > 0 else 415.0
+
+                if ntype == "SOLAR_PV":
+                    kwp = cap_kva if cap_kva > 0 else 1200.0
+                    solar_data = self.simulate_diurnal_solar_kw(kwp, now_utc)
+                    endpoint_readings[nid] = {
+                        "id": nid,
+                        "p": solar_data["activePowerKw"],
+                        "q": solar_data["reactivePowerKvar"],
+                        "v": v_nom,
+                        "metrics": {
+                            "irradianceWm2": solar_data["irradianceWm2"],
+                            "inverterEfficiencyPct": solar_data["inverterEfficiencyPct"],
+                        },
+                    }
+                elif ntype == "BUILDING_LOAD":
+                    kw = cap_kva if cap_kva > 0 else 2500.0
+                    cat = props.get("category", "COMMERCIAL_OFFICE")
+                    bld = self.simulate_building_load_kw(kw, cat, now_utc)
+                    endpoint_readings[nid] = {
+                        "id": nid,
+                        "p": bld["activePowerKw"],
+                        "q": bld["reactivePowerKvar"],
+                        "v": v_nom,
+                        "metrics": {
+                            "hvacLoadKw": bld["hvacLoadKw"],
+                            "lightingLoadKw": bld["lightingLoadKw"],
+                        },
+                    }
+                elif ntype == "BESS":
+                    solar_p = next(
+                        (ep["p"] for ep in endpoint_readings.values() if "irradianceWm2" in ep.get("metrics", {})),
+                        600.0,
+                    )
+                    bess = self.simulate_bess_dynamics(solar_p, decimal_hour, 5.0, now=now_utc)
+                    endpoint_readings[nid] = {
+                        "id": nid,
+                        "p": bess["activePowerKw"],
+                        "q": bess["reactivePowerKvar"],
+                        "v": v_nom,
+                        "metrics": {
+                            "operatingMode": bess["operatingMode"],
+                            "stateOfChargePct": bess["stateOfChargePct"],
+                        },
+                    }
+                elif ntype == "EV_HUB":
+                    plugs = int(props.get("totalPlugs", 12))
+                    plug_kw = float(props.get("plugCapacityKw", 60.0))
+                    ev = self.simulate_ev_hub_dynamics(decimal_hour, plugs, plug_kw, now=now_utc)
+                    endpoint_readings[nid] = {
+                        "id": nid,
+                        "p": ev["activePowerKw"],
+                        "q": ev["reactivePowerKvar"],
+                        "v": v_nom,
+                        "metrics": {
+                            "activePlugs": ev["activePlugs"],
+                            "utilizationRatePct": ev["utilizationRatePct"],
+                        },
+                    }
+
+            feeder_readings: Dict[str, Dict[str, Any]] = {}
+            for r in db_nodes:
+                nid, name, ntype, _pid, v_kv, cap_kva = r[0], r[1], r[2], r[3], float(r[4]), float(r[5])
+                if ntype == "FEEDER":
+                    v_nom = v_kv * 1000.0 if v_kv > 0 else 11000.0
+                    fdr_p = 0.0
+                    fdr_q = 0.0
+                    for child in db_nodes:
+                        if child[3] == nid and child[0] in endpoint_readings:
+                            cp = float(endpoint_readings[child[0]]["p"])
+                            cq = float(endpoint_readings[child[0]]["q"])
+                            if child[2] in ("SOLAR_PV", "BESS"):
+                                fdr_p -= cp
+                            else:
+                                fdr_p += cp
+                            fdr_q += cq
+
+                    cap_val = cap_kva if cap_kva > 0 else 5000.0
+                    loading_pct = round(((abs(fdr_p) / cap_val) * 100.0), 1)
+                    feeder_readings[nid] = {
+                        "id": nid,
+                        "p": fdr_p,
+                        "q": fdr_q,
+                        "v": v_nom,
+                        "metrics": {"feederName": name, "feederLoadingPct": loading_pct},
+                    }
+
+            substation_readings: Dict[str, Dict[str, Any]] = {}
+            for r in db_nodes:
+                nid, _name, ntype, _pid, v_kv, _cap_kva = r[0], r[1], r[2], r[3], float(r[4]), float(r[5])
+                if ntype == "SUBSTATION":
+                    v_nom = v_kv * 1000.0 if v_kv > 0 else 22000.0
+                    feeder_sum_p = sum(float(f["p"]) for f in feeder_readings.values())
+                    sub_p = feeder_sum_p * 1.025
+                    sub_q = sum(float(f["q"]) for f in feeder_readings.values()) * 1.035
+                    transformer_loss_kw = round(sub_p - feeder_sum_p, 1)
+                    substation_readings[nid] = {
+                        "id": nid,
+                        "p": sub_p,
+                        "q": sub_q,
+                        "v": v_nom,
+                        "metrics": {
+                            "powerDirection": "IMPORT" if sub_p >= 0 else "EXPORT",
+                            "transformerLossKw": transformer_loss_kw,
+                        },
+                    }
+
+            asset_readings = (
+                list(substation_readings.values())
+                + list(feeder_readings.values())
+                + list(endpoint_readings.values())
+            )
+        else:
+            solar_data = self.simulate_diurnal_solar_kw(1200.0, now_utc)
+            bld_phoenix = self.simulate_building_load_kw(2500.0, "COMMERCIAL_RETAIL", now_utc)
+            bess_data = self.simulate_bess_dynamics(solar_data["activePowerKw"], decimal_hour, 5.0, now=now_utc)
+            bld_solitaire = self.simulate_building_load_kw(3000.0, "COMMERCIAL_OFFICE", now_utc)
+            ev_data = self.simulate_ev_hub_dynamics(decimal_hour, 12, 60.0, now=now_utc)
+            bld_hyatt = self.simulate_building_load_kw(1600.0, "HOSPITALITY", now_utc)
+
+            fdr_a_p = bld_phoenix["activePowerKw"] - solar_data["activePowerKw"]
+            fdr_a_q = bld_phoenix["reactivePowerKvar"] + solar_data["reactivePowerKvar"]
+            fdr_b_p = bld_solitaire["activePowerKw"] - bess_data["activePowerKw"]
+            fdr_b_q = bld_solitaire["reactivePowerKvar"] + bess_data["reactivePowerKvar"]
+            fdr_c_p = bld_hyatt["activePowerKw"] + ev_data["activePowerKw"]
+            fdr_c_q = bld_hyatt["reactivePowerKvar"] + ev_data["reactivePowerKvar"]
+
+            feeder_sum_p = fdr_a_p + fdr_b_p + fdr_c_p
+            sub_p = feeder_sum_p * 1.025
+            sub_q = (fdr_a_q + fdr_b_q + fdr_c_q) * 1.035
+            transformer_loss_kw = round(sub_p - feeder_sum_p, 1)
+
+            asset_readings = [
+                {"id": "SUB-NR-22KV", "p": sub_p, "q": sub_q, "v": 22000.0, "metrics": {"powerDirection": "IMPORT", "transformerLossKw": transformer_loss_kw}},
+                {"id": "FDR-NR-RETAIL-11KV", "p": fdr_a_p, "q": fdr_a_q, "v": 11000.0, "metrics": {"feederName": "Feeder A - Retail", "feederLoadingPct": round(((fdr_a_p / 5000.0) * 100.0), 1)}},
+                {"id": "FDR-NR-ENTERPRISE-11KV", "p": fdr_b_p, "q": fdr_b_q, "v": 11000.0, "metrics": {"feederName": "Feeder B - Enterprise", "feederLoadingPct": round(((fdr_b_p / 5000.0) * 100.0), 1)}},
+                {"id": "FDR-NR-HOSPITALITY-11KV", "p": fdr_c_p, "q": fdr_c_q, "v": 11000.0, "metrics": {"feederName": "Feeder C - Hospitality", "feederLoadingPct": round(((fdr_c_p / 5000.0) * 100.0), 1)}},
+                {"id": "AST-PV-PHOENIX-01", "p": solar_data["activePowerKw"], "q": solar_data["reactivePowerKvar"], "v": 415.0, "metrics": {"irradianceWm2": solar_data["irradianceWm2"], "inverterEfficiencyPct": solar_data["inverterEfficiencyPct"]}},
+                {"id": "AST-BLD-PHOENIX-01", "p": bld_phoenix["activePowerKw"], "q": bld_phoenix["reactivePowerKvar"], "v": 415.0, "metrics": {"hvacLoadKw": bld_phoenix["hvacLoadKw"], "lightingLoadKw": bld_phoenix["lightingLoadKw"]}},
+                {"id": "AST-BESS-SOLITAIRE-01", "p": bess_data["activePowerKw"], "q": bess_data["reactivePowerKvar"], "v": 415.0, "metrics": {"operatingMode": bess_data["operatingMode"], "stateOfChargePct": bess_data["stateOfChargePct"]}},
+                {"id": "AST-BLD-SOLITAIRE-01", "p": bld_solitaire["activePowerKw"], "q": bld_solitaire["reactivePowerKvar"], "v": 415.0, "metrics": {"officeTenantsLoadKw": bld_solitaire["hvacLoadKw"]}},
+                {"id": "AST-EV-HUB-01", "p": ev_data["activePowerKw"], "q": ev_data["reactivePowerKvar"], "v": 415.0, "metrics": {"activePlugs": ev_data["activePlugs"], "utilizationRatePct": ev_data["utilizationRatePct"]}},
+                {"id": "AST-BLD-HYATT-01", "p": bld_hyatt["activePowerKw"], "q": bld_hyatt["reactivePowerKvar"], "v": 415.0, "metrics": {"hospitalityLoadKw": bld_hyatt["hvacLoadKw"]}},
+            ]
+
+        telemetry_rows: List[Dict[str, Any]] = []
+        state_rows: List[Dict[str, Any]] = []
+        generated_records: List[Dict[str, Any]] = []
+
+        for r in asset_readings:
+            p_kw = _safe_float(r.get("p"), 0.0)
+            q_kvar = _safe_float(r.get("q"), 0.0)
+            v_volts = _safe_float(r.get("v"), 415.0)
+            ac = self.calculate_ac_physics(p_kw, q_kvar, v_volts, phase_count=3)
+            unbalance = self.calculate_3phase_unbalance(p_kw, q_kvar, v_volts, phase_count=3)
+            v_unbalance = unbalance["voltageUnbalancePct"]
+            i_unbalance = unbalance["currentUnbalancePct"]
+
+            raw_metrics = r.get("metrics")
+            device_metrics = dict(raw_metrics) if isinstance(raw_metrics, dict) else {}
+            device_metrics["phaseVoltagesV"] = unbalance["phaseVoltagesV"]
+            device_metrics["phaseCurrentsA"] = unbalance["phaseCurrentsA"]
+            metrics_json = json.dumps(device_metrics)
+
+            telemetry_rows.append({
+                "asset_id": r["id"],
+                "observed_at": obs_val,
+                "active_power_kw": ac["activePowerKw"],
+                "reactive_power_kvar": ac["reactivePowerKvar"],
+                "apparent_power_kva": ac["apparentPowerKva"],
+                "power_factor": ac["powerFactor"],
+                "voltage_v": ac["voltageV"],
+                "current_a": ac["currentA"],
+                "frequency_hz": grid_freq,
+                "voltage_unbalance_pct": v_unbalance,
+                "current_unbalance_pct": i_unbalance,
+                "device_metrics_json": metrics_json,
+            })
+
+            state_payload = {
+                "activePowerKw": ac["activePowerKw"],
+                "reactivePowerKvar": ac["reactivePowerKvar"],
+                "apparentPowerKva": ac["apparentPowerKva"],
+                "powerFactor": ac["powerFactor"],
+                "voltageV": ac["voltageV"],
+                "currentA": ac["currentA"],
+                "frequencyHz": grid_freq,
+                "voltageUnbalancePct": v_unbalance,
+                "currentUnbalancePct": i_unbalance,
+                "deviceMetrics": device_metrics,
+            }
+            state_rows.append({
+                "entity_id": r["id"],
+                "observed_at": obs_val,
+                "updated_at": obs_val,
+                "metrics": json.dumps(state_payload),
+            })
+
+            generated_records.append({
+                "assetId": r["id"],
+                **ac,
+                "frequencyHz": grid_freq,
+                "voltageUnbalancePct": v_unbalance,
+                "currentUnbalancePct": i_unbalance,
+                "deviceMetrics": device_metrics,
+                "observedAt": now_utc.isoformat(),
+                "sourceMode": "SIMULATION",
+                "qualityStatus": "VALID",
+            })
+
+        return telemetry_rows, state_rows, generated_records
+
+    async def generate_telemetry_tick(
+        self,
+        session: Optional[AsyncSession] = None,
+        commit: bool = True,
+    ) -> List[Dict[str, Any]]:
         """
         Generates a fresh real-time telemetry tick across all canonical microgrid assets,
         updates entity_current_state, logs to energy_asset_telemetry, and returns records.
@@ -711,237 +952,75 @@ class EnergyTopologyService:
             close_session = True
 
         now_utc = datetime.now(timezone.utc)
-        decimal_hour = self.get_local_decimal_hour(now_utc)
         is_pg = get_active_backend() == "postgresql"
-
-        # Stochastic frequency drift around nominal 50.0 Hz (+/- 0.08 Hz)
         grid_freq = round(50.0 + random.uniform(-0.06, 0.06), 2)
+        obs_val = now_utc if is_pg else now_utc.isoformat()
+
+        insert_stmt = text("""
+            INSERT INTO energy_asset_telemetry (
+                asset_id, observed_at, source_mode, active_power_kw,
+                reactive_power_kvar, apparent_power_kva, power_factor,
+                voltage_v, current_a, frequency_hz, voltage_unbalance_pct,
+                current_unbalance_pct, device_metrics_json, quality_status
+            ) VALUES (
+                :asset_id, :observed_at, 'SIMULATION', :active_power_kw,
+                :reactive_power_kvar, :apparent_power_kva, :power_factor,
+                :voltage_v, :current_a, :frequency_hz, :voltage_unbalance_pct,
+                :current_unbalance_pct, :device_metrics_json, 'VALID'
+            );
+        """)
+        upsert_state = text("""
+            INSERT INTO entity_current_state (
+                entity_id, entity_type, source_mode, observed_at,
+                updated_at, metrics, quality_status, freshness_seconds
+            ) VALUES (
+                :entity_id, 'EnergyAsset', 'SIMULATION', :observed_at,
+                :updated_at, :metrics, 'VALID', 0.0
+            )
+            ON CONFLICT (entity_id) DO UPDATE SET
+                entity_type = 'EnergyAsset',
+                source_mode = 'SIMULATION',
+                observed_at = EXCLUDED.observed_at,
+                updated_at = EXCLUDED.updated_at,
+                metrics = EXCLUDED.metrics,
+                quality_status = 'VALID',
+                freshness_seconds = 0.0
+            WHERE (
+                entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+            );
+        """)
 
         try:
-            # Query registered energy network nodes from database to support generalized topology
             nodes_res = await session.execute(
-                text("SELECT node_id, name, node_type, parent_node_id, nominal_voltage_kv, rated_capacity_kva, properties FROM energy_network_nodes ORDER BY nominal_voltage_kv ASC, node_id ASC")
+                text(
+                    "SELECT node_id, name, node_type, parent_node_id, nominal_voltage_kv, rated_capacity_kva, properties "
+                    "FROM energy_network_nodes ORDER BY nominal_voltage_kv ASC, node_id ASC"
+                )
             )
-            db_nodes = nodes_res.fetchall()
+            db_nodes = list(nodes_res.fetchall())
 
-            if db_nodes:
-                endpoint_readings: Dict[str, Dict[str, Any]] = {}
-                # 1. Simulate leaf/DER endpoint nodes
-                for r in db_nodes:
-                    nid, name, ntype, pid, v_kv, cap_kva, props_raw = r[0], r[1], r[2], r[3], float(r[4]), float(r[5]), r[6]
-                    props = json.loads(props_raw) if isinstance(props_raw, str) else (props_raw or {})
-                    v_nom = v_kv * 1000.0 if v_kv > 0 else 415.0
+            telemetry_rows, state_rows, generated_records = await asyncio.to_thread(
+                self._compute_asset_telemetry_batch,
+                db_nodes=db_nodes,
+                now_utc=now_utc,
+                grid_freq=grid_freq,
+                obs_val=obs_val,
+            )
 
-                    if ntype == "SOLAR_PV":
-                        kwp = cap_kva if cap_kva > 0 else 1200.0
-                        solar_data = self.simulate_diurnal_solar_kw(kwp, now_utc)
-                        endpoint_readings[nid] = {
-                            "id": nid, "p": solar_data["activePowerKw"], "q": solar_data["reactivePowerKvar"],
-                            "v": v_nom, "metrics": {"irradianceWm2": solar_data["irradianceWm2"], "inverterEfficiencyPct": solar_data["inverterEfficiencyPct"]}
-                        }
-                    elif ntype == "BUILDING_LOAD":
-                        kw = cap_kva if cap_kva > 0 else 2500.0
-                        cat = props.get("category", "COMMERCIAL_OFFICE")
-                        bld = self.simulate_building_load_kw(kw, cat, now_utc)
-                        endpoint_readings[nid] = {
-                            "id": nid, "p": bld["activePowerKw"], "q": bld["reactivePowerKvar"],
-                            "v": v_nom, "metrics": {"hvacLoadKw": bld["hvacLoadKw"], "lightingLoadKw": bld["lightingLoadKw"]}
-                        }
-                    elif ntype == "BESS":
-                        solar_p = next((ep["p"] for ep in endpoint_readings.values() if "irradianceWm2" in ep.get("metrics", {})), 600.0)
-                        bess = self.simulate_bess_dynamics(solar_p, decimal_hour, 5.0, now=now_utc)
-                        endpoint_readings[nid] = {
-                            "id": nid, "p": bess["activePowerKw"], "q": bess["reactivePowerKvar"],
-                            "v": v_nom, "metrics": {"operatingMode": bess["operatingMode"], "stateOfChargePct": bess["stateOfChargePct"]}
-                        }
-                    elif ntype == "EV_HUB":
-                        plugs = int(props.get("totalPlugs", 12))
-                        plug_kw = float(props.get("plugCapacityKw", 60.0))
-                        ev = self.simulate_ev_hub_dynamics(decimal_hour, plugs, plug_kw, now=now_utc)
-                        endpoint_readings[nid] = {
-                            "id": nid, "p": ev["activePowerKw"], "q": ev["reactivePowerKvar"],
-                            "v": v_nom, "metrics": {"activePlugs": ev["activePlugs"], "utilizationRatePct": ev["utilizationRatePct"]}
-                        }
+            if telemetry_rows:
+                await session.execute(insert_stmt, telemetry_rows)
+            if state_rows:
+                await session.execute(upsert_state, state_rows)
 
-                # 2. Feeder aggregations from direct children
-                feeder_readings: Dict[str, Dict[str, Any]] = {}
-                for r in db_nodes:
-                    nid, name, ntype, pid, v_kv, cap_kva = r[0], r[1], r[2], r[3], float(r[4]), float(r[5])
-                    if ntype == "FEEDER":
-                        v_nom = v_kv * 1000.0 if v_kv > 0 else 11000.0
-                        fdr_p = 0.0
-                        fdr_q = 0.0
-                        for child in db_nodes:
-                            if child[3] == nid and child[0] in endpoint_readings:
-                                cp = endpoint_readings[child[0]]["p"]
-                                cq = endpoint_readings[child[0]]["q"]
-                                child_type = child[2]
-                                if child_type in ("SOLAR_PV", "BESS"):
-                                    fdr_p -= cp
-                                else:
-                                    fdr_p += cp
-                                fdr_q += cq
-
-                        cap_val = cap_kva if cap_kva > 0 else 5000.0
-                        loading_pct = round(((abs(fdr_p) / cap_val) * 100.0), 1)
-                        feeder_readings[nid] = {
-                            "id": nid, "p": fdr_p, "q": fdr_q, "v": v_nom,
-                            "metrics": {"feederName": name, "feederLoadingPct": loading_pct}
-                        }
-
-                # 3. Substation aggregation with transformer and line losses
-                substation_readings: Dict[str, Dict[str, Any]] = {}
-                for r in db_nodes:
-                    nid, name, ntype, pid, v_kv, cap_kva = r[0], r[1], r[2], r[3], float(r[4]), float(r[5])
-                    if ntype == "SUBSTATION":
-                        v_nom = v_kv * 1000.0 if v_kv > 0 else 22000.0
-                        feeder_sum_p = sum(f["p"] for f in feeder_readings.values())
-                        sub_p = feeder_sum_p * 1.025
-                        sub_q = sum(f["q"] for f in feeder_readings.values()) * 1.035
-                        transformer_loss_kw = round(sub_p - feeder_sum_p, 1)
-                        substation_readings[nid] = {
-                            "id": nid, "p": sub_p, "q": sub_q, "v": v_nom,
-                            "metrics": {"powerDirection": "IMPORT" if sub_p >= 0 else "EXPORT", "transformerLossKw": transformer_loss_kw}
-                        }
-
-                asset_readings = list(substation_readings.values()) + list(feeder_readings.values()) + list(endpoint_readings.values())
-            else:
-                # Nominal fallback for unit test fixtures without provisioned nodes
-                solar_data = self.simulate_diurnal_solar_kw(1200.0, now_utc)
-                bld_phoenix = self.simulate_building_load_kw(2500.0, "COMMERCIAL_RETAIL", now_utc)
-                bess_data = self.simulate_bess_dynamics(solar_data["activePowerKw"], decimal_hour, 5.0, now=now_utc)
-                bld_solitaire = self.simulate_building_load_kw(3000.0, "COMMERCIAL_OFFICE", now_utc)
-                ev_data = self.simulate_ev_hub_dynamics(decimal_hour, 12, 60.0, now=now_utc)
-                bld_hyatt = self.simulate_building_load_kw(1600.0, "HOSPITALITY", now_utc)
-
-                fdr_a_p = bld_phoenix["activePowerKw"] - solar_data["activePowerKw"]
-                fdr_a_q = bld_phoenix["reactivePowerKvar"] + solar_data["reactivePowerKvar"]
-                fdr_b_p = bld_solitaire["activePowerKw"] - bess_data["activePowerKw"]
-                fdr_b_q = bld_solitaire["reactivePowerKvar"] + bess_data["reactivePowerKvar"]
-                fdr_c_p = bld_hyatt["activePowerKw"] + ev_data["activePowerKw"]
-                fdr_c_q = bld_hyatt["reactivePowerKvar"] + ev_data["reactivePowerKvar"]
-
-                feeder_sum_p = fdr_a_p + fdr_b_p + fdr_c_p
-                sub_p = feeder_sum_p * 1.025
-                sub_q = (fdr_a_q + fdr_b_q + fdr_c_q) * 1.035
-                transformer_loss_kw = round(sub_p - feeder_sum_p, 1)
-
-                asset_readings = [
-                    {"id": "SUB-NR-22KV", "p": sub_p, "q": sub_q, "v": 22000.0, "metrics": {"powerDirection": "IMPORT", "transformerLossKw": transformer_loss_kw}},
-                    {"id": "FDR-NR-RETAIL-11KV", "p": fdr_a_p, "q": fdr_a_q, "v": 11000.0, "metrics": {"feederName": "Feeder A - Retail", "feederLoadingPct": round(((fdr_a_p / 5000.0) * 100.0), 1)}},
-                    {"id": "FDR-NR-ENTERPRISE-11KV", "p": fdr_b_p, "q": fdr_b_q, "v": 11000.0, "metrics": {"feederName": "Feeder B - Enterprise", "feederLoadingPct": round(((fdr_b_p / 5000.0) * 100.0), 1)}},
-                    {"id": "FDR-NR-HOSPITALITY-11KV", "p": fdr_c_p, "q": fdr_c_q, "v": 11000.0, "metrics": {"feederName": "Feeder C - Hospitality", "feederLoadingPct": round(((fdr_c_p / 5000.0) * 100.0), 1)}},
-                    {"id": "AST-PV-PHOENIX-01", "p": solar_data["activePowerKw"], "q": solar_data["reactivePowerKvar"], "v": 415.0, "metrics": {"irradianceWm2": solar_data["irradianceWm2"], "inverterEfficiencyPct": solar_data["inverterEfficiencyPct"]}},
-                    {"id": "AST-BLD-PHOENIX-01", "p": bld_phoenix["activePowerKw"], "q": bld_phoenix["reactivePowerKvar"], "v": 415.0, "metrics": {"hvacLoadKw": bld_phoenix["hvacLoadKw"], "lightingLoadKw": bld_phoenix["lightingLoadKw"]}},
-                    {"id": "AST-BESS-SOLITAIRE-01", "p": bess_data["activePowerKw"], "q": bess_data["reactivePowerKvar"], "v": 415.0, "metrics": {"operatingMode": bess_data["operatingMode"], "stateOfChargePct": bess_data["stateOfChargePct"]}},
-                    {"id": "AST-BLD-SOLITAIRE-01", "p": bld_solitaire["activePowerKw"], "q": bld_solitaire["reactivePowerKvar"], "v": 415.0, "metrics": {"officeTenantsLoadKw": bld_solitaire["hvacLoadKw"]}},
-                    {"id": "AST-EV-HUB-01", "p": ev_data["activePowerKw"], "q": ev_data["reactivePowerKvar"], "v": 415.0, "metrics": {"activePlugs": ev_data["activePlugs"], "utilizationRatePct": ev_data["utilizationRatePct"]}},
-                    {"id": "AST-BLD-HYATT-01", "p": bld_hyatt["activePowerKw"], "q": bld_hyatt["reactivePowerKvar"], "v": 415.0, "metrics": {"hospitalityLoadKw": bld_hyatt["hvacLoadKw"]}},
-                ]
-
-            obs_val = now_utc if is_pg else now_utc.isoformat()
-            generated_records = []
-
-            for r in asset_readings:
-                p_kw = _safe_float(r.get("p"), 0.0)
-                q_kvar = _safe_float(r.get("q"), 0.0)
-                v_volts = _safe_float(r.get("v"), 415.0)
-                ac = self.calculate_ac_physics(p_kw, q_kvar, v_volts, phase_count=3)
-                unbalance = self.calculate_3phase_unbalance(p_kw, q_kvar, v_volts, phase_count=3)
-                v_unbalance = unbalance["voltageUnbalancePct"]
-                i_unbalance = unbalance["currentUnbalancePct"]
-
-                device_metrics = dict(r.get("metrics", {}))
-                device_metrics["phaseVoltagesV"] = unbalance["phaseVoltagesV"]
-                device_metrics["phaseCurrentsA"] = unbalance["phaseCurrentsA"]
-                metrics_json = json.dumps(device_metrics)
-
-                insert_stmt = text("""
-                    INSERT INTO energy_asset_telemetry (
-                        asset_id, observed_at, source_mode, active_power_kw,
-                        reactive_power_kvar, apparent_power_kva, power_factor,
-                        voltage_v, current_a, frequency_hz, voltage_unbalance_pct,
-                        current_unbalance_pct, device_metrics_json, quality_status
-                    ) VALUES (
-                        :asset_id, :observed_at, 'SIMULATION', :active_power_kw,
-                        :reactive_power_kvar, :apparent_power_kva, :power_factor,
-                        :voltage_v, :current_a, :frequency_hz, :voltage_unbalance_pct,
-                        :current_unbalance_pct, :device_metrics_json, 'VALID'
-                    );
-                """)
-                await session.execute(insert_stmt, {
-                    "asset_id": r["id"],
-                    "observed_at": obs_val,
-                    "active_power_kw": ac["activePowerKw"],
-                    "reactive_power_kvar": ac["reactivePowerKvar"],
-                    "apparent_power_kva": ac["apparentPowerKva"],
-                    "power_factor": ac["powerFactor"],
-                    "voltage_v": ac["voltageV"],
-                    "current_a": ac["currentA"],
-                    "frequency_hz": grid_freq,
-                    "voltage_unbalance_pct": v_unbalance,
-                    "current_unbalance_pct": i_unbalance,
-                    "device_metrics_json": metrics_json
-                })
-
-                # Update entity_current_state for this asset (Invariant 2: SIMULATION cannot overwrite LIVE/REPLAY)
-                upsert_state = text("""
-                    INSERT INTO entity_current_state (
-                        entity_id, entity_type, source_mode, observed_at,
-                        updated_at, metrics, quality_status, freshness_seconds
-                    ) VALUES (
-                        :entity_id, 'EnergyAsset', 'SIMULATION', :observed_at,
-                        :updated_at, :metrics, 'VALID', 0.0
-                    )
-                    ON CONFLICT (entity_id) DO UPDATE SET
-                        entity_type = 'EnergyAsset',
-                        source_mode = 'SIMULATION',
-                        observed_at = EXCLUDED.observed_at,
-                        updated_at = EXCLUDED.updated_at,
-                        metrics = EXCLUDED.metrics,
-                        quality_status = 'VALID',
-                        freshness_seconds = 0.0
-                    WHERE (
-                        entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
-                    );
-                """)
-                state_payload = {
-                    "activePowerKw": ac["activePowerKw"],
-                    "reactivePowerKvar": ac["reactivePowerKvar"],
-                    "apparentPowerKva": ac["apparentPowerKva"],
-                    "powerFactor": ac["powerFactor"],
-                    "voltageV": ac["voltageV"],
-                    "currentA": ac["currentA"],
-                    "frequencyHz": grid_freq,
-                    "voltageUnbalancePct": v_unbalance,
-                    "currentUnbalancePct": i_unbalance,
-                    "deviceMetrics": device_metrics
-                }
-                await session.execute(upsert_state, {
-                    "entity_id": r["id"],
-                    "observed_at": obs_val,
-                    "updated_at": obs_val,
-                    "metrics": json.dumps(state_payload)
-                })
-
-                generated_records.append({
-                    "assetId": r["id"],
-                    **ac,
-                    "frequencyHz": grid_freq,
-                    "voltageUnbalancePct": v_unbalance,
-                    "currentUnbalancePct": i_unbalance,
-                    "deviceMetrics": device_metrics,
-                    "observedAt": now_utc.isoformat(),
-                    "sourceMode": "SIMULATION",
-                    "qualityStatus": "VALID"
-                })
-
-            await session.commit()
+            if commit or close_session:
+                await session.commit()
             return generated_records
         except Exception as e:
             logger.error("Energy telemetry tick generation failed: %s", e, exc_info=True)
-            await session.rollback()
-            return []
+            if commit or close_session:
+                await session.rollback()
+                return []
+            raise
         finally:
             if close_session:
                 await session.close()

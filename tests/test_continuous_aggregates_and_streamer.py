@@ -571,17 +571,27 @@ async def test_segment_los_history_write_failure_surfacing(client, caplog):
     from backend.ingestion.quarantine import quarantine_manager
 
     orig_execute = AsyncSession.execute
-    fail_count = 0
     target_seg_id = "urn:ngsi-ld:RoadSegment:PUNE:SEG-NR-EB-01"
+    test_loop = asyncio.get_running_loop()
+    batch_failed = False
+    row_failed = False
 
     async def mock_execute(self, statement, *args, **kwargs):
-        nonlocal fail_count
-        stmt_str = str(statement)
-        if "INSERT INTO segment_los_history" in stmt_str and fail_count == 0:
-            params = args[0] if args else kwargs.get("params")
-            if isinstance(params, dict) and params.get("segment_id") == target_seg_id:
-                fail_count += 1
-                raise RuntimeError("Simulated table lock on segment_los_history")
+        nonlocal batch_failed, row_failed
+        if asyncio.get_running_loop() is test_loop:
+            stmt_str = str(statement)
+            if "INSERT INTO segment_los_history" in stmt_str:
+                params = args[0] if args else kwargs.get("params")
+                if (
+                    isinstance(params, list)
+                    and not batch_failed
+                    and any(isinstance(p, dict) and p.get("segment_id") == target_seg_id for p in params)
+                ):
+                    batch_failed = True
+                    raise RuntimeError("Simulated table lock on segment_los_history")
+                if isinstance(params, dict) and not row_failed and params.get("segment_id") == target_seg_id:
+                    row_failed = True
+                    raise RuntimeError("Simulated table lock on segment_los_history")
         return await orig_execute(self, statement, *args, **kwargs)
 
     telemetry_streamer.pause()

@@ -15,6 +15,7 @@ from typing import Any, AsyncGenerator, Dict, Optional
 from urllib.parse import urlparse
 
 from sqlalchemy import create_engine, event, text
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -158,7 +159,9 @@ class PersistenceAdapterManager:
             self._engine = create_async_engine(
                 settings.sqlite_async_url,
                 echo=False,
-                future=True
+                future=True,
+                poolclass=NullPool,
+                connect_args={"timeout": 15.0},
             )
 
             # Register SQLite hooks for WAL mode, foreign keys, and custom SQL functions
@@ -166,6 +169,7 @@ class PersistenceAdapterManager:
             def _setup_sqlite_connection(dbapi_conn, connection_record):
                 try:
                     cursor = dbapi_conn.cursor()
+                    cursor.execute("PRAGMA busy_timeout=15000;")
                     cursor.execute("PRAGMA journal_mode=WAL;")
                     cursor.execute("PRAGMA foreign_keys=ON;")
                     cursor.execute("PRAGMA synchronous=NORMAL;")

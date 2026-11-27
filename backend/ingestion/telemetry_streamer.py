@@ -7,6 +7,7 @@ when an external MQTT broker is not reachable, ensuring zero-configuration local
 """
 
 import asyncio
+import inspect
 import json
 import logging
 import math
@@ -45,6 +46,20 @@ class CorridorSegmentDict(TypedDict):
     baseSpeed: float
     capacity: int
     approachStorageMeters: float
+
+
+class CommercialFacilityDict(TypedDict):
+    id: str
+    aliases: List[str]
+    base_load: float
+    peak_delta: float
+    contract_kw: float
+
+
+class BuildingMetricEntry(TypedDict):
+    entityId: str
+    aliases: List[str]
+    metrics: Dict[str, Any]
 
 
 CORRIDOR_SEGMENTS: List[CorridorSegmentDict] = [
@@ -219,6 +234,369 @@ class TelemetryStreamerWorker:
 
             await asyncio.sleep(self.interval_sec)
 
+    def _record_los_history_failure(
+        self,
+        *,
+        hist_params: Dict[str, Any],
+        payload_meta: Dict[str, Any],
+        now_dt: datetime,
+        now_iso: str,
+        exc: Exception,
+    ) -> None:
+        seg_id = str(hist_params["segment_id"])
+        self.history_write_failures_count += 1
+        logger.error(
+            "Failed to persist segment_los_history for segment %s (%s): %s",
+            seg_id,
+            type(exc).__name__,
+            exc,
+        )
+        try:
+            from backend.ingestion.quarantine import quarantine_manager
+
+            quarantine_manager.record_quarantine(
+                raw_payload={
+                    "segmentId": seg_id,
+                    "observedAt": now_iso,
+                    "volumeCapacityRatio": payload_meta.get("volumeCapacityRatio"),
+                    "densityVehKm": payload_meta.get("densityVehKm"),
+                    "congestionIndex": payload_meta.get("congestionIndex"),
+                    "losGrade": payload_meta.get("levelOfService"),
+                    "operationalCondition": payload_meta.get("operationalCondition"),
+                    "policyStandard": payload_meta.get("policyStandard"),
+                    "sourceMode": self.mode,
+                    "qualityScore": hist_params["quality_score"],
+                },
+                rejection_reason="SEGMENT_HISTORY_WRITE_FAILURE",
+                entity_id=seg_id,
+                entity_type="RoadSegment",
+                source_mode=self.mode,
+                observed_at=now_dt,
+                validation_details={
+                    "exceptionType": type(exc).__name__,
+                    "errorMessage": str(exc),
+                    "targetTable": "segment_los_history",
+                },
+            )
+        except Exception as q_err:
+            logger.error("Failed to quarantine segment_los_history write failure: %s", q_err)
+
+    def _compute_tick_payload(
+        self,
+        *,
+        now_dt: datetime,
+        now_iso: str,
+        weather: Dict[str, Any],
+        rng: Optional[random.Random] = None,
+    ) -> Dict[str, Any]:
+        """Pure-Python physics computation and batch parameter assembly run off the event loop."""
+        sampler = rng if rng is not None else random
+        hour = now_dt.hour + (now_dt.minute / 60.0)
+
+        # Diurnal rush hour multiplier (morning 8-10am peak, evening 17-20pm peak)
+        morning_peak = math.exp(-0.5 * ((hour - 9.0) / 1.5) ** 2)
+        evening_peak = math.exp(-0.5 * ((hour - 18.5) / 1.8) ** 2)
+        rush_intensity = max(0.2, min(1.0, 0.25 + 0.55 * morning_peak + 0.65 * evening_peak))
+
+        sensor_lookup = {s["segmentId"]: s["sensorId"] for s in SENSOR_STATIONS}
+        hist_quality_score = 0.70 if self.mode.upper() == "SIMULATION" else 0.95
+
+        traffic_obs_rows: List[Dict[str, Any]] = []
+        los_hist_rows: List[Dict[str, Any]] = []
+        los_hist_meta: List[Dict[str, Any]] = []
+        current_state_rows: List[Dict[str, Any]] = []
+        segment_metrics_list: List[Dict[str, Any]] = []
+
+        total_speed = 0.0
+        total_flow = 0.0
+        total_queue = 0.0
+
+        # 1. Traffic segment kinematics, LOS grading, and observation rows
+        for seg in CORRIDOR_SEGMENTS:
+            seg_id = seg["id"]
+            kinematics = compute_link_kinematics(
+                speed_limit_kmh=seg["speedLimit"],
+                base_speed_kmh=seg["baseSpeed"],
+                capacity_vph=seg["capacity"],
+                approach_storage_m=seg["approachStorageMeters"],
+                rush_intensity=rush_intensity,
+                speed_jitter=sampler.uniform(-2.5, 2.5),
+                flow_jitter=sampler.uniform(-80.0, 80.0),
+            )
+            speed = kinematics["averageSpeedKmh"]
+            flow = kinematics["vehicleFlowPerHour"]
+            queue = kinematics["queueLengthMeters"]
+            occ = max(0.0, min(100.0, (1.0 - (speed / seg["speedLimit"])) * 75.0 + sampler.uniform(-3, 3)))
+            cong = max(0.0, min(1.0, (1.0 - (speed / seg["speedLimit"]))))
+
+            total_speed += speed
+            total_flow += flow
+            total_queue += queue
+
+            sensor_id = sensor_lookup.get(seg_id, "urn:ngsi-ld:TrafficSensor:PUNE:GEN-01")
+            traffic_obs_rows.append({
+                "observed_at": now_dt,
+                "sensor_id": sensor_id,
+                "segment_id": seg_id,
+                "source_mode": self.mode,
+                "average_speed_kmh": round(speed, 2),
+                "vehicle_flow_per_hour": round(flow, 1),
+                "occupancy_percent": round(occ, 1),
+                "queue_length_meters": round(queue, 1),
+                "congestion_index": round(cong, 3),
+            })
+
+            los_data = los_engine.compute_segment_los(
+                segment_id=seg_id,
+                speed_kmh=speed,
+                flow_vph=flow,
+                capacity_vph=seg.get("capacity", 2400.0),
+                free_flow_speed_kmh=seg.get("speedLimit", 50.0),
+                source_mode=self.mode,
+                observed_at=now_iso,
+            )
+
+            metrics = {
+                "averageSpeedKmh": round(speed, 1),
+                "vehicleFlowPerHour": round(flow, 0),
+                "occupancyPercent": round(occ, 1),
+                "queueLengthMeters": round(queue, 1),
+                "approachStorageMeters": kinematics["approachStorageMeters"],
+                "spillbackMeters": kinematics["spillbackMeters"],
+                "congestionIndex": round(cong, 3),
+                "volumeCapacityRatio": los_data["volumeCapacityRatio"],
+                "densityVehKm": los_data["densityVehKm"],
+                "levelOfService": los_data["levelOfService"],
+                "operationalCondition": los_data["operationalCondition"],
+                "policyStandard": los_data["policyStandard"],
+            }
+            current_state_rows.append({
+                "entity_id": seg_id,
+                "entity_type": "RoadSegment",
+                "source_mode": self.mode,
+                "observed_at": now_dt,
+                "updated_at": now_dt,
+                "metrics": json.dumps(metrics),
+            })
+
+            los_hist_rows.append({
+                "segment_id": seg_id,
+                "observed_at": now_dt,
+                "volume_capacity_ratio": los_data["volumeCapacityRatio"],
+                "density_veh_km": los_data["densityVehKm"],
+                "congestion_index": los_data["congestionIndex"],
+                "los_grade": los_data["levelOfService"],
+                "operational_condition": los_data["operationalCondition"],
+                "policy_standard": los_data["policyStandard"],
+                "source_mode": self.mode,
+                "quality_score": hist_quality_score,
+            })
+            los_hist_meta.append(los_data)
+
+            segment_metrics_list.append({
+                "entityId": seg_id,
+                "metrics": metrics,
+            })
+
+        # 2. Commercial building energy observation rows
+        commercial_facilities: List[CommercialFacilityDict] = [
+            {
+                "id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
+                "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01", "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01"],
+                "base_load": 2400.0,
+                "peak_delta": 2200.0,
+                "contract_kw": 6800.0,
+            },
+            {
+                "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
+                "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01"],
+                "base_load": 2100.0,
+                "peak_delta": 2000.0,
+                "contract_kw": 6010.0,
+            },
+            {
+                "id": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
+                "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-HYATT-01"],
+                "base_load": 1800.0,
+                "peak_delta": 1700.0,
+                "contract_kw": 4990.0,
+            },
+            {
+                "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-03",
+                "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-03"],
+                "base_load": 900.0,
+                "peak_delta": 850.0,
+                "contract_kw": 2400.0,
+            },
+        ]
+
+        energy_obs_rows: List[Dict[str, Any]] = []
+        primary_energy_load_kw = 4420.0
+        building_metrics_list: List[BuildingMetricEntry] = []
+        for fac in commercial_facilities:
+            fac_load_kw = max(
+                fac["base_load"] * 0.7,
+                min(fac["contract_kw"] * 0.95, fac["base_load"] + fac["peak_delta"] * rush_intensity + sampler.uniform(-40, 40)),
+            )
+            if fac["id"] == "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01":
+                primary_energy_load_kw = fac_load_kw
+            reactive_kvar = fac_load_kw * 0.32
+            power_factor = round(sampler.uniform(0.94, 0.97), 3)
+
+            all_ids = [fac["id"]] + [a for a in fac["aliases"] if a != fac["id"]]
+            for b_id in all_ids:
+                energy_obs_rows.append({
+                    "observed_at": now_dt,
+                    "building_id": b_id,
+                    "source_mode": self.mode,
+                    "active_power_kw": round(fac_load_kw, 2),
+                    "reactive_power_kvar": round(reactive_kvar, 2),
+                    "power_factor": power_factor,
+                    "energy_consumption_kwh": round(fac_load_kw * 24.0, 1),
+                })
+
+            bld_metrics = {
+                "activePowerKw": round(fac_load_kw, 1),
+                "reactivePowerKvar": round(reactive_kvar, 1),
+                "powerFactor": power_factor,
+                "energyConsumptionKwh": round(fac_load_kw * 24.0, 1),
+            }
+            building_metrics_list.append({
+                "entityId": fac["id"],
+                "aliases": fac["aliases"],
+                "metrics": bld_metrics,
+            })
+            bld_metrics_json = json.dumps(bld_metrics)
+            current_state_rows.append({
+                "entity_id": fac["id"],
+                "entity_type": "Building",
+                "source_mode": self.mode,
+                "observed_at": now_dt,
+                "updated_at": now_dt,
+                "metrics": bld_metrics_json,
+            })
+            for a_id in fac["aliases"]:
+                current_state_rows.append({
+                    "entity_id": a_id,
+                    "entity_type": "BuildingZone",
+                    "source_mode": self.mode,
+                    "observed_at": now_dt,
+                    "updated_at": now_dt,
+                    "metrics": bld_metrics_json,
+                })
+
+        # 3. Environmental air quality and weather observation rows
+        temp = weather.get("temperature_c", 28.5)
+        humidity = weather.get("humidity_pct", 56.0)
+        wind_speed = weather.get("wind_speed_kmh", 11.2)
+        wind_dir = weather.get("wind_direction_cardinal", "WSW (240°)")
+        pm25 = weather.get("pm25", 48.0)
+        pm10 = weather.get("pm10", 90.0)
+        no2 = weather.get("no2", 36.0)
+        co = weather.get("co", 410.0)
+        aqi = weather.get("aqi", 135)
+        aqi_category = weather.get("aqi_category", "Moderate")
+        weather_mode = weather.get("source_mode", self.mode)
+        precip_mm = weather.get("precipitation_mm", 0.0)
+
+        primary_station_id = "urn:ngsi-ld:AirQualityStation:PUNE:STATION-VIMAN-AQI-01"
+        corridor_station_id = "urn:ngsi-ld:AirQualityStation:PUNE:STATION-CORRIDOR-AQI-01"
+        env_metrics = {
+            "aqi": aqi,
+            "aqiCategory": aqi_category,
+            "temperatureC": temp,
+            "humidityPct": humidity,
+            "windSpeedKmh": wind_speed,
+            "windDirection": wind_dir,
+            "pm25": pm25,
+            "pm10": pm10,
+            "no2": no2,
+            "co": co,
+        }
+        env_metrics_json = json.dumps(env_metrics)
+
+        env_obs_rows: List[Dict[str, Any]] = []
+        for st_id in (primary_station_id, corridor_station_id):
+            env_obs_rows.append({
+                "observed_at": now_dt,
+                "station_id": st_id,
+                "source_mode": weather_mode,
+                "aqi_value": aqi,
+                "pm25": pm25,
+                "pm10": pm10,
+                "temperature_c": temp,
+                "relative_humidity_pct": humidity,
+                "precipitation_mm": precip_mm,
+            })
+            current_state_rows.append({
+                "entity_id": st_id,
+                "entity_type": "AirQualityStation",
+                "source_mode": weather_mode,
+                "observed_at": now_dt,
+                "updated_at": now_dt,
+                "metrics": env_metrics_json,
+            })
+
+        # 3b. Virtual SPaT signal controller state rows
+        spat_states_list: List[Dict[str, Any]] = []
+        for int_id in CORRIDOR_INTERSECTIONS:
+            try:
+                spat_state = spat_adapter.generate_synthetic_tick(
+                    intersection_id=int_id,
+                    elapsed_delta_sec=float(self.interval_sec),
+                    source_mode=self.mode,
+                )
+                if spat_state is not None:
+                    spat_dict = spat_state.to_dict()
+                    spat_states_list.append(spat_dict)
+                    spat_metrics = {
+                        "activePhase": spat_dict["activePhase"],
+                        "activePhaseName": spat_dict["activePhaseName"],
+                        "phaseColor": spat_dict["phaseColor"],
+                        "timeToNextPhaseSec": spat_dict["timeToNextPhaseSec"],
+                        "cycleLengthSec": spat_dict["cycleLengthSec"],
+                        "controllerMode": spat_dict["controllerMode"],
+                    }
+                    current_state_rows.append({
+                        "entity_id": int_id,
+                        "entity_type": "TrafficSignal",
+                        "source_mode": self.mode,
+                        "observed_at": now_dt,
+                        "updated_at": now_dt,
+                        "metrics": json.dumps(spat_metrics),
+                    })
+            except Exception as spat_err:
+                logger.debug("Virtual SPaT tick notice: %s", spat_err)
+
+        return {
+            "traffic_obs_rows": traffic_obs_rows,
+            "los_hist_rows": los_hist_rows,
+            "los_hist_meta": los_hist_meta,
+            "energy_obs_rows": energy_obs_rows,
+            "env_obs_rows": env_obs_rows,
+            "current_state_rows": current_state_rows,
+            "segment_metrics_list": segment_metrics_list,
+            "building_metrics_list": building_metrics_list,
+            "spat_states_list": spat_states_list,
+            "total_speed": total_speed,
+            "total_flow": total_flow,
+            "total_queue": total_queue,
+            "segment_count": len(CORRIDOR_SEGMENTS),
+            "energy_load_kw": primary_energy_load_kw,
+            "aqi": aqi,
+            "aqi_category": aqi_category,
+            "temp": temp,
+            "humidity": humidity,
+            "wind_speed": wind_speed,
+            "wind_dir": wind_dir,
+            "pm25": pm25,
+            "pm10": pm10,
+            "no2": no2,
+            "co": co,
+            "weather_mode": weather_mode,
+            "corridor_station_id": corridor_station_id,
+        }
+
     async def tick_once(
         self,
         *,
@@ -227,410 +605,136 @@ class TelemetryStreamerWorker:
     ) -> Dict[str, Any]:
         """
         Executes a single physics-grounded telemetry generation pass across all entities,
-        persisting records to database and dispatching WebSocket updates.
+        computing row batches off the event loop, persisting one batch per table, and
+        dispatching WebSocket updates.
         """
-        sampler = rng if rng is not None else random
         now_dt = now if now is not None else datetime.now(timezone.utc)
         if now_dt.tzinfo is None:
             now_dt = now_dt.replace(tzinfo=timezone.utc)
         now_iso = now_dt.isoformat()
-        hour = now_dt.hour + (now_dt.minute / 60.0)
 
-        # Diurnal rush hour multiplier (morning 8-10am peak, evening 17-20pm peak)
-        morning_peak = math.exp(-0.5 * ((hour - 9.0) / 1.5) ** 2)
-        evening_peak = math.exp(-0.5 * ((hour - 18.5) / 1.8) ** 2)
-        rush_intensity = max(0.2, min(1.0, 0.25 + 0.55 * morning_peak + 0.65 * evening_peak))
+        # Fetch ambient weather before opening the DB session to avoid holding connections on HTTP I/O
+        weather = await self.weather_client.get_current_weather()
+
+        # Offload physics calculations and payload assembly off the asyncio event loop
+        payload = await asyncio.to_thread(
+            self._compute_tick_payload,
+            now_dt=now_dt,
+            now_iso=now_iso,
+            weather=weather,
+            rng=rng,
+        )
+
+        # Invariant 2 (State Separation): SIMULATION ticks must never overwrite LIVE or REPLAY state
+        upsert_state = text("""
+            INSERT INTO entity_current_state (
+                entity_id, entity_type, source_mode, observed_at,
+                updated_at, metrics, quality_status, freshness_seconds
+            ) VALUES (
+                :entity_id, :entity_type, :source_mode, :observed_at,
+                :updated_at, :metrics, 'VALID', 0.0
+            )
+            ON CONFLICT (entity_id) DO UPDATE SET
+                entity_type = EXCLUDED.entity_type,
+                source_mode = EXCLUDED.source_mode,
+                observed_at = EXCLUDED.observed_at,
+                updated_at = EXCLUDED.updated_at,
+                metrics = EXCLUDED.metrics,
+                quality_status = 'VALID',
+                freshness_seconds = 0.0
+            WHERE (
+                EXCLUDED.source_mode IN ('LIVE', 'REPLAY')
+                OR entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
+            );
+        """)
+        obs_stmt = text("""
+            INSERT INTO traffic_observations (
+                observed_at, sensor_id, segment_id, source_mode,
+                average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
+                queue_length_meters, congestion_index, quality_flag
+            ) VALUES (
+                :observed_at, :sensor_id, :segment_id, :source_mode,
+                :average_speed_kmh, :vehicle_flow_per_hour, :occupancy_percent,
+                :queue_length_meters, :congestion_index, 'VALID'
+            )
+        """)
+        los_hist_stmt = text("""
+            INSERT INTO segment_los_history (
+                segment_id, observed_at, volume_capacity_ratio,
+                density_veh_km, congestion_index, los_grade,
+                operational_condition, policy_standard, source_mode, quality_score
+            ) VALUES (
+                :segment_id, :observed_at, :volume_capacity_ratio,
+                :density_veh_km, :congestion_index, :los_grade,
+                :operational_condition, :policy_standard, :source_mode, :quality_score
+            )
+        """)
+        energy_stmt = text("""
+            INSERT INTO energy_observations (
+                observed_at, building_id, source_mode, active_power_kw,
+                reactive_power_kvar, power_factor, energy_consumption_kwh, quality_flag
+            ) VALUES (
+                :observed_at, :building_id, :source_mode, :active_power_kw,
+                :reactive_power_kvar, :power_factor, :energy_consumption_kwh, 'VALID'
+            )
+        """)
+        env_stmt = text("""
+            INSERT INTO environment_observations (
+                observed_at, station_id, source_mode, aqi_value,
+                pm25, pm10, temperature_c, relative_humidity_pct,
+                precipitation_mm, quality_flag
+            ) VALUES (
+                :observed_at, :station_id, :source_mode, :aqi_value,
+                :pm25, :pm10, :temperature_c, :relative_humidity_pct,
+                :precipitation_mm, 'VALID'
+            )
+        """)
 
         async with AsyncSessionLocal() as session:
             try:
-                # 1. Generate & Persist Traffic Observations
-                segment_metrics_list = []
-                total_speed = 0.0
-                total_flow = 0.0
-                total_queue = 0.0
+                if payload["traffic_obs_rows"]:
+                    await session.execute(obs_stmt, payload["traffic_obs_rows"])
 
-                for seg in CORRIDOR_SEGMENTS:
-                    seg_id = seg["id"]
-                    kinematics = compute_link_kinematics(
-                        speed_limit_kmh=seg["speedLimit"],
-                        base_speed_kmh=seg["baseSpeed"],
-                        capacity_vph=seg["capacity"],
-                        approach_storage_m=seg["approachStorageMeters"],
-                        rush_intensity=rush_intensity,
-                        speed_jitter=sampler.uniform(-2.5, 2.5),
-                        flow_jitter=sampler.uniform(-80.0, 80.0),
-                    )
-                    speed = kinematics["averageSpeedKmh"]
-                    flow = kinematics["vehicleFlowPerHour"]
-                    queue = kinematics["queueLengthMeters"]
-                    occ = max(0.0, min(100.0, (1.0 - (speed / seg["speedLimit"])) * 75.0 + sampler.uniform(-3, 3)))
-                    cong = max(0.0, min(1.0, (1.0 - (speed / seg["speedLimit"]))))
-
-                    total_speed += speed
-                    total_flow += flow
-                    total_queue += queue
-
-                    # Insert observation
-                    obs_stmt = text("""
-                        INSERT INTO traffic_observations (
-                            observed_at, sensor_id, segment_id, source_mode,
-                            average_speed_kmh, vehicle_flow_per_hour, occupancy_percent,
-                            queue_length_meters, congestion_index, quality_flag
-                        ) VALUES (
-                            :observed_at, :sensor_id, :segment_id, :source_mode,
-                            :average_speed_kmh, :vehicle_flow_per_hour, :occupancy_percent,
-                            :queue_length_meters, :congestion_index, 'VALID'
-                        )
-                    """)
-                    sensor_id = next((s["sensorId"] for s in SENSOR_STATIONS if s["segmentId"] == seg_id), "urn:ngsi-ld:TrafficSensor:PUNE:GEN-01")
-                    await session.execute(obs_stmt, {
-                        "observed_at": now_dt,
-                        "sensor_id": sensor_id,
-                        "segment_id": seg_id,
-                        "source_mode": self.mode,
-                        "average_speed_kmh": round(speed, 2),
-                        "vehicle_flow_per_hour": round(flow, 1),
-                        "occupancy_percent": round(occ, 1),
-                        "queue_length_meters": round(queue, 1),
-                        "congestion_index": round(cong, 3)
-                    })
-
-                    # Compute Canonical Level of Service (TASK-01)
-                    los_data = los_engine.compute_segment_los(
-                        segment_id=seg_id,
-                        speed_kmh=speed,
-                        flow_vph=flow,
-                        capacity_vph=seg.get("capacity", 2400.0),
-                        free_flow_speed_kmh=seg.get("speedLimit", 50.0),
-                        source_mode=self.mode,
-                        observed_at=now_iso
-                    )
-
-                    # Update entity current state
-                    metrics = {
-                        "averageSpeedKmh": round(speed, 1),
-                        "vehicleFlowPerHour": round(flow, 0),
-                        "occupancyPercent": round(occ, 1),
-                        "queueLengthMeters": round(queue, 1),
-                        "approachStorageMeters": kinematics["approachStorageMeters"],
-                        "spillbackMeters": kinematics["spillbackMeters"],
-                        "congestionIndex": round(cong, 3),
-                        "volumeCapacityRatio": los_data["volumeCapacityRatio"],
-                        "densityVehKm": los_data["densityVehKm"],
-                        "levelOfService": los_data["levelOfService"],
-                        "operationalCondition": los_data["operationalCondition"],
-                        "policyStandard": los_data["policyStandard"]
-                    }
-                    # Invariant 2 (State Separation): SIMULATION ticks must never overwrite LIVE or REPLAY state
-                    upsert_state = text("""
-                        INSERT INTO entity_current_state (
-                            entity_id, entity_type, source_mode, observed_at,
-                            updated_at, metrics, quality_status, freshness_seconds
-                        ) VALUES (
-                            :entity_id, :entity_type, :source_mode, :observed_at,
-                            :updated_at, :metrics, 'VALID', 0.0
-                        )
-                        ON CONFLICT (entity_id) DO UPDATE SET
-                            entity_type = EXCLUDED.entity_type,
-                            source_mode = EXCLUDED.source_mode,
-                            observed_at = EXCLUDED.observed_at,
-                            updated_at = EXCLUDED.updated_at,
-                            metrics = EXCLUDED.metrics,
-                            quality_status = 'VALID',
-                            freshness_seconds = 0.0
-                        WHERE (
-                            EXCLUDED.source_mode IN ('LIVE', 'REPLAY')
-                            OR entity_current_state.source_mode NOT IN ('LIVE', 'REPLAY')
-                        );
-                    """)
-                    await session.execute(upsert_state, {
-                        "entity_id": seg_id,
-                        "entity_type": "RoadSegment",
-                        "source_mode": self.mode,
-                        "observed_at": now_dt,
-                        "updated_at": now_dt,
-                        "metrics": json.dumps(metrics)
-                    })
-
-                    # Persist to segment_los_history table (BUG-31: surface write failures and quarantine)
-                    hist_quality_score = 0.70 if self.mode.upper() == "SIMULATION" else 0.95
-                    hist_params = {
-                        "segment_id": seg_id,
-                        "observed_at": now_dt,
-                        "volume_capacity_ratio": los_data["volumeCapacityRatio"],
-                        "density_veh_km": los_data["densityVehKm"],
-                        "congestion_index": los_data["congestionIndex"],
-                        "los_grade": los_data["levelOfService"],
-                        "operational_condition": los_data["operationalCondition"],
-                        "policy_standard": los_data["policyStandard"],
-                        "source_mode": self.mode,
-                        "quality_score": hist_quality_score
-                    }
+                # Batch persist segment_los_history with per-row savepoint quarantine fallback (BUG-31)
+                if payload["los_hist_rows"]:
                     try:
                         async with session.begin_nested():
-                            los_hist_stmt = text("""
-                                INSERT INTO segment_los_history (
-                                    segment_id, observed_at, volume_capacity_ratio,
-                                    density_veh_km, congestion_index, los_grade,
-                                    operational_condition, policy_standard, source_mode, quality_score
-                                ) VALUES (
-                                    :segment_id, :observed_at, :volume_capacity_ratio,
-                                    :density_veh_km, :congestion_index, :los_grade,
-                                    :operational_condition, :policy_standard, :source_mode, :quality_score
+                            await session.execute(los_hist_stmt, payload["los_hist_rows"])
+                    except Exception:
+                        for hist_params, payload_meta in zip(
+                            payload["los_hist_rows"], payload["los_hist_meta"]
+                        ):
+                            try:
+                                async with session.begin_nested():
+                                    await session.execute(los_hist_stmt, hist_params)
+                            except Exception as los_err:
+                                self._record_los_history_failure(
+                                    hist_params=hist_params,
+                                    payload_meta=payload_meta,
+                                    now_dt=now_dt,
+                                    now_iso=now_iso,
+                                    exc=los_err,
                                 )
-                            """)
-                            await session.execute(los_hist_stmt, hist_params)
-                    except Exception as los_err:
-                        self.history_write_failures_count += 1
-                        logger.error(
-                            "Failed to persist segment_los_history for segment %s (%s): %s",
-                            seg_id,
-                            type(los_err).__name__,
-                            los_err
-                        )
-                        try:
-                            from backend.ingestion.quarantine import quarantine_manager
-                            quarantine_manager.record_quarantine(
-                                raw_payload={
-                                    "segmentId": seg_id,
-                                    "observedAt": now_iso,
-                                    "volumeCapacityRatio": los_data.get("volumeCapacityRatio"),
-                                    "densityVehKm": los_data.get("densityVehKm"),
-                                    "congestionIndex": los_data.get("congestionIndex"),
-                                    "losGrade": los_data.get("levelOfService"),
-                                    "operationalCondition": los_data.get("operationalCondition"),
-                                    "policyStandard": los_data.get("policyStandard"),
-                                    "sourceMode": self.mode,
-                                    "qualityScore": hist_quality_score
-                                },
-                                rejection_reason="SEGMENT_HISTORY_WRITE_FAILURE",
-                                entity_id=seg_id,
-                                entity_type="RoadSegment",
-                                source_mode=self.mode,
-                                observed_at=now_dt,
-                                validation_details={
-                                    "exceptionType": type(los_err).__name__,
-                                    "errorMessage": str(los_err),
-                                    "targetTable": "segment_los_history"
-                                }
-                            )
-                        except Exception as q_err:
-                            logger.error("Failed to quarantine segment_los_history write failure: %s", q_err)
 
-                    segment_metrics_list.append({
-                        "entityId": seg_id,
-                        "metrics": metrics
-                    })
+                if payload["energy_obs_rows"]:
+                    await session.execute(energy_stmt, payload["energy_obs_rows"])
 
-                # 2. Generate & Persist Commercial Building Energy Observations for Corridor Facilities
-                commercial_facilities = [
-                    {
-                        "id": "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01",
-                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:PHOENIX-01", "urn:ngsi-ld:BuildingZone:PUNE:BLD-PHOENIX-01"],
-                        "base_load": 2400.0,
-                        "peak_delta": 2200.0,
-                        "contract_kw": 6800.0,
-                    },
-                    {
-                        "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-01",
-                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-01"],
-                        "base_load": 2100.0,
-                        "peak_delta": 2000.0,
-                        "contract_kw": 6010.0,
-                    },
-                    {
-                        "id": "urn:ngsi-ld:Building:PUNE:BLD-HYATT-01",
-                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-HYATT-01"],
-                        "base_load": 1800.0,
-                        "peak_delta": 1700.0,
-                        "contract_kw": 4990.0,
-                    },
-                    {
-                        "id": "urn:ngsi-ld:Building:PUNE:BLD-SOLITAIRE-03",
-                        "aliases": ["urn:ngsi-ld:BuildingZone:PUNE:BLD-SOLITAIRE-03"],
-                        "base_load": 900.0,
-                        "peak_delta": 850.0,
-                        "contract_kw": 2400.0,
-                    },
-                ]
+                if payload["env_obs_rows"]:
+                    await session.execute(env_stmt, payload["env_obs_rows"])
 
-                energy_stmt = text("""
-                    INSERT INTO energy_observations (
-                        observed_at, building_id, source_mode, active_power_kw,
-                        reactive_power_kvar, power_factor, energy_consumption_kwh, quality_flag
-                    ) VALUES (
-                        :observed_at, :building_id, :source_mode, :active_power_kw,
-                        :reactive_power_kvar, :power_factor, :energy_consumption_kwh, 'VALID'
-                    )
-                """)
+                if payload["current_state_rows"]:
+                    await session.execute(upsert_state, payload["current_state_rows"])
 
-                primary_energy_load_kw = 4420.0
-                building_metrics_list = []
-                for fac in commercial_facilities:
-                    fac_load_kw = max(
-                        fac["base_load"] * 0.7,
-                        min(fac["contract_kw"] * 0.95, fac["base_load"] + fac["peak_delta"] * rush_intensity + random.uniform(-40, 40))
-                    )
-                    if fac["id"] == "urn:ngsi-ld:Building:PUNE:BLD-PHOENIX-01":
-                        primary_energy_load_kw = fac_load_kw
-                    reactive_kvar = fac_load_kw * 0.32
-                    power_factor = round(random.uniform(0.94, 0.97), 3)
-
-                    # Insert observation for canonical ID and legacy/spatial aliases
-                    all_ids = [fac["id"]] + [a for a in fac["aliases"] if a != fac["id"]]
-                    for b_id in all_ids:
-                        await session.execute(energy_stmt, {
-                            "observed_at": now_dt,
-                            "building_id": b_id,
-                            "source_mode": self.mode,
-                            "active_power_kw": round(fac_load_kw, 2),
-                            "reactive_power_kvar": round(reactive_kvar, 2),
-                            "power_factor": power_factor,
-                            "energy_consumption_kwh": round(fac_load_kw * 24.0, 1)
-                        })
-
-                    # Update Building Current State for canonical and alias URNs
-                    bld_metrics = {
-                        "activePowerKw": round(fac_load_kw, 1),
-                        "reactivePowerKvar": round(reactive_kvar, 1),
-                        "powerFactor": power_factor,
-                        "energyConsumptionKwh": round(fac_load_kw * 24.0, 1)
-                    }
-                    building_metrics_list.append({
-                        "entityId": fac["id"],
-                        "aliases": fac["aliases"],
-                        "metrics": bld_metrics
-                    })
-                    for b_id in [fac["id"]]:
-                        await session.execute(upsert_state, {
-                            "entity_id": b_id,
-                            "entity_type": "Building",
-                            "source_mode": self.mode,
-                            "observed_at": now_dt,
-                            "updated_at": now_dt,
-                            "metrics": json.dumps(bld_metrics),
-                            "quality_status": "VALID",
-                            "freshness_seconds": 0.0
-                        })
-                    for a_id in fac["aliases"]:
-                        await session.execute(upsert_state, {
-                            "entity_id": a_id,
-                            "entity_type": "BuildingZone",
-                            "source_mode": self.mode,
-                            "observed_at": now_dt,
-                            "updated_at": now_dt,
-                            "metrics": json.dumps(bld_metrics),
-                            "quality_status": "VALID",
-                            "freshness_seconds": 0.0
-                        })
-
-                energy_load_kw = primary_energy_load_kw
-
-                # 3. Generate & Persist Environmental Air Quality & Weather Observation
-                weather = await self.weather_client.get_current_weather()
-                temp = weather.get("temperature_c", 28.5)
-                humidity = weather.get("humidity_pct", 56.0)
-                wind_speed = weather.get("wind_speed_kmh", 11.2)
-                wind_dir = weather.get("wind_direction_cardinal", "WSW (240°)")
-                pm25 = weather.get("pm25", 48.0)
-                pm10 = weather.get("pm10", 90.0)
-                no2 = weather.get("no2", 36.0)
-                co = weather.get("co", 410.0)
-                aqi = weather.get("aqi", 135)
-                aqi_category = weather.get("aqi_category", "Moderate")
-                weather_mode = weather.get("source_mode", self.mode)
-
-                env_stmt = text("""
-                    INSERT INTO environment_observations (
-                        observed_at, station_id, source_mode, aqi_value,
-                        pm25, pm10, temperature_c, relative_humidity_pct,
-                        precipitation_mm, quality_flag
-                    ) VALUES (
-                        :observed_at, :station_id, :source_mode, :aqi_value,
-                        :pm25, :pm10, :temperature_c, :relative_humidity_pct,
-                        :precipitation_mm, 'VALID'
-                    )
-                """)
-
-                primary_station_id = "urn:ngsi-ld:AirQualityStation:PUNE:STATION-VIMAN-AQI-01"
-                corridor_station_id = "urn:ngsi-ld:AirQualityStation:PUNE:STATION-CORRIDOR-AQI-01"
-
-                for st_id in (primary_station_id, corridor_station_id):
-                    await session.execute(env_stmt, {
-                        "observed_at": now_dt,
-                        "station_id": st_id,
-                        "source_mode": weather_mode,
-                        "aqi_value": aqi,
-                        "pm25": pm25,
-                        "pm10": pm10,
-                        "temperature_c": temp,
-                        "relative_humidity_pct": humidity,
-                        "precipitation_mm": weather.get("precipitation_mm", 0.0)
-                    })
-
-                # Update Building/Station Current State for AirQualityStation
-                env_metrics = {
-                    "aqi": aqi,
-                    "aqiCategory": aqi_category,
-                    "temperatureC": temp,
-                    "humidityPct": humidity,
-                    "windSpeedKmh": wind_speed,
-                    "windDirection": wind_dir,
-                    "pm25": pm25,
-                    "pm10": pm10,
-                    "no2": no2,
-                    "co": co
-                }
-                for st_id in (primary_station_id, corridor_station_id):
-                    await session.execute(upsert_state, {
-                        "entity_id": st_id,
-                        "entity_type": "AirQualityStation",
-                        "source_mode": weather_mode,
-                        "observed_at": now_dt,
-                        "updated_at": now_dt,
-                        "metrics": json.dumps(env_metrics),
-                        "quality_status": "VALID",
-                        "freshness_seconds": 0.0
-                    })
-
-                # 3b. Advance Virtual SPaT Signal Controllers (TASK-08)
-                spat_states_list = []
-                for int_id in CORRIDOR_INTERSECTIONS:
-                    try:
-                        spat_state = spat_adapter.generate_synthetic_tick(
-                            intersection_id=int_id,
-                            elapsed_delta_sec=float(self.tick_interval_seconds),
-                            source_mode=self.mode
-                        )
-                        spat_dict = spat_state.to_dict()
-                        spat_states_list.append(spat_dict)
-
-                        spat_metrics = {
-                            "activePhase": spat_dict["activePhase"],
-                            "activePhaseName": spat_dict["activePhaseName"],
-                            "phaseColor": spat_dict["phaseColor"],
-                            "timeToNextPhaseSec": spat_dict["timeToNextPhaseSec"],
-                            "cycleLengthSec": spat_dict["cycleLengthSec"],
-                            "controllerMode": spat_dict["controllerMode"]
-                        }
-                        await session.execute(upsert_state, {
-                            "entity_id": int_id,
-                            "entity_type": "TrafficSignal",
-                            "source_mode": self.mode,
-                            "observed_at": now_dt,
-                            "updated_at": now_dt,
-                            "metrics": json.dumps(spat_metrics),
-                            "quality_status": "VALID",
-                            "freshness_seconds": 0.0
-                        })
-                    except Exception as spat_err:
-                        logger.debug("Virtual SPaT tick notice: %s", spat_err)
-
-                # 3c. Advance Canonical Multi-Asset Microgrid Telemetry (Energy TASK-01)
-                energy_telemetry_records = []
+                # 3c. Advance Canonical Multi-Asset Microgrid Telemetry inside an isolated savepoint
+                energy_telemetry_records: List[Dict[str, Any]] = []
                 try:
                     from backend.services.energy_topology_service import energy_topology_service
-                    energy_telemetry_records = await energy_topology_service.generate_telemetry_tick(session=session)
+
+                    async with session.begin_nested():
+                        energy_telemetry_records = await energy_topology_service.generate_telemetry_tick(
+                            session=session,
+                            commit=False,
+                        )
                 except Exception as energy_err:
                     logger.debug("Microgrid telemetry tick notice: %s", energy_err)
 
@@ -640,10 +744,16 @@ class TelemetryStreamerWorker:
                 self.ticks_count += 1
                 self.last_tick_at = now_iso
 
+                segment_metrics_list = payload["segment_metrics_list"]
+                building_metrics_list = payload["building_metrics_list"]
+                spat_states_list = payload["spat_states_list"]
+                energy_load_kw = float(payload["energy_load_kw"])
+                aqi = payload["aqi"]
+
                 # 4. Dispatch WebSocket Broadcast Messages
                 if self.broadcast_callback:
-                    n_segs = max(1, len(CORRIDOR_SEGMENTS))
-                    avg_speed = round(total_speed / n_segs, 1)
+                    n_segs = max(1, int(payload["segment_count"]))
+                    avg_speed = round(float(payload["total_speed"]) / n_segs, 1)
                     cong_idx = round(max(0.05, min(0.95, 1.0 - (avg_speed / 50.0))), 3)
                     corridor_summary = {
                         "eventType": "CORRIDOR_METRICS_UPDATED",
@@ -651,28 +761,28 @@ class TelemetryStreamerWorker:
                         "sourceMode": self.mode,
                         "averageSpeedKmh": avg_speed,
                         "congestionIndex": cong_idx,
-                        "totalFlowPerHour": round(total_flow, 0),
-                        "averageQueueLengthMeters": round(total_queue / n_segs, 1),
+                        "totalFlowPerHour": round(float(payload["total_flow"]), 0),
+                        "averageQueueLengthMeters": round(float(payload["total_queue"]) / n_segs, 1),
                         "energyActivePowerKw": round(energy_load_kw, 1),
                         "activeSensors": len(SENSOR_STATIONS),
                         "aqi": aqi,
                         "environment": {
-                            "stationId": corridor_station_id,
+                            "stationId": payload["corridor_station_id"],
                             "aqi": aqi,
-                            "aqiCategory": aqi_category,
-                            "temperatureC": temp,
-                            "humidityPct": humidity,
-                            "windSpeedKmh": wind_speed,
-                            "windDir": wind_dir,
-                            "pm25": pm25,
-                            "pm10": pm10,
-                            "no2": no2,
-                            "co": co,
-                            "sourceMode": weather_mode,
-                            "observedAt": now_iso
-                        }
+                            "aqiCategory": payload["aqi_category"],
+                            "temperatureC": payload["temp"],
+                            "humidityPct": payload["humidity"],
+                            "windSpeedKmh": payload["wind_speed"],
+                            "windDir": payload["wind_dir"],
+                            "pm25": payload["pm25"],
+                            "pm10": payload["pm10"],
+                            "no2": payload["no2"],
+                            "co": payload["co"],
+                            "sourceMode": payload["weather_mode"],
+                            "observedAt": now_iso,
+                        },
                     }
-                    if asyncio.iscoroutinefunction(self.broadcast_callback):
+                    if inspect.iscoroutinefunction(self.broadcast_callback):
                         await self.broadcast_callback(corridor_summary)
                     else:
                         self.broadcast_callback(corridor_summary)
@@ -686,7 +796,7 @@ class TelemetryStreamerWorker:
                             "sourceMode": self.mode,
                             "metrics": seg_item["metrics"]
                         }
-                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                        if inspect.iscoroutinefunction(self.broadcast_callback):
                             await self.broadcast_callback(msg)
                         else:
                             self.broadcast_callback(msg)
@@ -702,7 +812,7 @@ class TelemetryStreamerWorker:
                                 "sourceMode": self.mode,
                                 "metrics": bld_item["metrics"]
                             }
-                            if asyncio.iscoroutinefunction(self.broadcast_callback):
+                            if inspect.iscoroutinefunction(self.broadcast_callback):
                                 await self.broadcast_callback(energy_msg)
                             else:
                                 self.broadcast_callback(energy_msg)
@@ -722,7 +832,7 @@ class TelemetryStreamerWorker:
                             "sourceMode": spat_item["sourceMode"],
                             "timestamp": now_iso
                         }
-                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                        if inspect.iscoroutinefunction(self.broadcast_callback):
                             await self.broadcast_callback(spat_msg)
                         else:
                             self.broadcast_callback(spat_msg)
@@ -735,7 +845,7 @@ class TelemetryStreamerWorker:
                             "sourceMode": self.mode,
                             "records": energy_telemetry_records
                         }
-                        if asyncio.iscoroutinefunction(self.broadcast_callback):
+                        if inspect.iscoroutinefunction(self.broadcast_callback):
                             await self.broadcast_callback(microgrid_msg)
                         else:
                             self.broadcast_callback(microgrid_msg)
