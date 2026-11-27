@@ -1,12 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Map, Globe, TableProperties, Satellite, Moon, Compass, Zap } from 'lucide-react';
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
-import { CesiumCorridorViewer } from './CesiumCorridorViewer';
+import { ViewLoadingFallback } from './common/ViewLoadingFallback';
 import { fetchCorridor3DGeoJson } from '../services/spatialApi';
 import { Corridor3DFeatureCollection } from '../types/spatial';
+
+const CesiumCorridorViewer = React.lazy(() =>
+  import('./CesiumCorridorViewer').then((m) => ({ default: m.CesiumCorridorViewer }))
+);
 
 interface MapOperationsViewProps {
   studyAreaGeoJson: any;
@@ -1172,15 +1176,17 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
 
       {/* 3D Cesium WebGL Digital Twin Viewer */}
       {is3DMode && (
-        <CesiumCorridorViewer
-          roadSegments={roadSegments}
-          intersections={intersections}
-          liveStates={liveStates}
-          selectedEntity={selectedEntity}
-          currentTheme={currentTheme}
-          basemapMode={basemapMode}
-          onSelectEntity={onSelectEntity}
-        />
+        <Suspense fallback={<ViewLoadingFallback label="3D Corridor Twin Viewer" />}>
+          <CesiumCorridorViewer
+            roadSegments={roadSegments}
+            intersections={intersections}
+            liveStates={liveStates}
+            selectedEntity={selectedEntity}
+            currentTheme={currentTheme}
+            basemapMode={basemapMode}
+            onSelectEntity={onSelectEntity}
+          />
+        </Suspense>
       )}
 
       {/* Unified Corridor Presentation & Map Controls */}

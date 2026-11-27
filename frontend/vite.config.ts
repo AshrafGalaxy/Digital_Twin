@@ -50,5 +50,37 @@ export default defineConfig({
         }
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string): string | undefined {
+          const normId = id.replace(/\\/g, '/');
+          if (!normId.includes('/node_modules/')) {
+            return undefined;
+          }
+          if (normId.includes('/node_modules/cesium/') || normId.includes('/node_modules/@cesium/')) {
+            return 'vendor-cesium';
+          }
+          if (normId.includes('/node_modules/mapbox-gl/') || normId.includes('/node_modules/maplibre-gl/')) {
+            return 'vendor-mapbox';
+          }
+          if (normId.includes('/node_modules/framer-motion/')) {
+            return 'vendor-motion';
+          }
+          if (normId.includes('/node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+          if (
+            normId.includes('/node_modules/react/') ||
+            normId.includes('/node_modules/react-dom/') ||
+            normId.includes('/node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+          return undefined;
+        }
+      }
+    }
   }
 });

@@ -1,23 +1,11 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { Suspense, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Header, TabId, ROLE_ALLOWED_TABS } from './components/Header';
-import { AuthPageView } from './components/views/AuthPageView';
-import { MapOperationsView } from './components/MapOperationsView';
 import { CorridorMetricsCard } from './components/CorridorMetricsCard';
-import { EntityDetailDrawer } from './components/EntityDetailDrawer';
 import { MapLegend } from './components/MapLegend';
-import { ScenarioStudio } from './components/ScenarioStudio';
-import { AdvisoryCenterModal } from './components/AdvisoryCenterModal';
-import { TrafficAnalyticsView } from './components/views/TrafficAnalyticsView';
-import { EnergyAnalyticsView } from './components/views/EnergyAnalyticsView';
-import { EnvironmentContextView } from './components/views/EnvironmentContextView';
-import { ScenarioStudioView } from './components/views/ScenarioStudioView';
-import { RecommendationsView } from './components/views/RecommendationsView';
-import { SystemHealthView } from './components/views/SystemHealthView';
-import { PilotEvaluationView } from './components/views/PilotEvaluationView';
 import { LandingPageView } from './components/views/LandingPageView';
-import { ProvisioningView } from './components/views/ProvisioningView';
 import { DesktopViewportGuard } from './components/common/DesktopViewportGuard';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ViewLoadingFallback } from './components/common/ViewLoadingFallback';
 import {
   EntityCurrentState,
   IntersectionAsset,
@@ -40,7 +28,33 @@ import {
   fetchAdvisorySummary,
   redeemMagicLink
 } from './services/api';
-import { AdminProvisioningModal } from './components/admin/AdminProvisioningModal';
+
+function lazyNamed<
+  TModule extends Record<TName, React.ComponentType<any>>,
+  TName extends keyof TModule
+>(
+  loader: () => Promise<TModule>,
+  exportName: TName
+): React.LazyExoticComponent<TModule[TName]> {
+  return React.lazy(() =>
+    loader().then((m) => ({ default: m[exportName] }))
+  );
+}
+
+const AuthPageView = lazyNamed(() => import('./components/views/AuthPageView'), 'AuthPageView');
+const ProvisioningView = lazyNamed(() => import('./components/views/ProvisioningView'), 'ProvisioningView');
+const MapOperationsView = lazyNamed(() => import('./components/MapOperationsView'), 'MapOperationsView');
+const TrafficAnalyticsView = lazyNamed(() => import('./components/views/TrafficAnalyticsView'), 'TrafficAnalyticsView');
+const EnergyAnalyticsView = lazyNamed(() => import('./components/views/EnergyAnalyticsView'), 'EnergyAnalyticsView');
+const EnvironmentContextView = lazyNamed(() => import('./components/views/EnvironmentContextView'), 'EnvironmentContextView');
+const ScenarioStudioView = lazyNamed(() => import('./components/views/ScenarioStudioView'), 'ScenarioStudioView');
+const RecommendationsView = lazyNamed(() => import('./components/views/RecommendationsView'), 'RecommendationsView');
+const SystemHealthView = lazyNamed(() => import('./components/views/SystemHealthView'), 'SystemHealthView');
+const PilotEvaluationView = lazyNamed(() => import('./components/views/PilotEvaluationView'), 'PilotEvaluationView');
+const ScenarioStudio = lazyNamed(() => import('./components/ScenarioStudio'), 'ScenarioStudio');
+const AdvisoryCenterModal = lazyNamed(() => import('./components/AdvisoryCenterModal'), 'AdvisoryCenterModal');
+const AdminProvisioningModal = lazyNamed(() => import('./components/admin/AdminProvisioningModal'), 'AdminProvisioningModal');
+const EntityDetailDrawer = lazyNamed(() => import('./components/EntityDetailDrawer'), 'EntityDetailDrawer');
 
 function getStoredAuthUser(): AuthUser | null {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -564,24 +578,28 @@ export const App: React.FC = () => {
 
         {/* VIEW 0B: Dedicated Municipal Digital Twin Provisioning Intake Page */}
         {activeTab === 'provisioning' && (
-          <ProvisioningView
-            onNavigateHome={() => {
-              window.location.hash = 'landing';
-              setActiveTab('landing');
-            }}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="Municipal Access Provisioning" />}>
+            <ProvisioningView
+              onNavigateHome={() => {
+                window.location.hash = 'landing';
+                setActiveTab('landing');
+              }}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 0C: Dedicated Municipal Authentication & Role Gateway */}
         {activeTab === 'auth' && (
-          <AuthPageView
-            initialMode={authInitialMode}
-            onAuthSuccess={handleAuthSuccess}
-            onNavigateHome={() => {
-              window.location.hash = 'landing';
-              setActiveTab('landing');
-            }}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="Authentication Gateway" />}>
+            <AuthPageView
+              initialMode={authInitialMode}
+              onAuthSuccess={handleAuthSuccess}
+              onNavigateHome={() => {
+                window.location.hash = 'landing';
+                setActiveTab('landing');
+              }}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 1: Operations Map & Live Corridor Overview */}
@@ -598,25 +616,27 @@ export const App: React.FC = () => {
             )}
 
             <ErrorBoundary componentName="Corridor Map Operations View">
-              <MapOperationsView
-                studyAreaGeoJson={studyAreaGeoJson}
-                roadSegments={roadSegments}
-                intersections={intersections}
-                liveStates={effectiveStates}
-                selectedEntity={selectedEntity}
-                compareEntity={compareEntity}
-                currentTheme={currentTheme}
-                isTableView={isOperationsTableView}
-                onToggleTableView={setIsOperationsTableView}
-                on3DModeChange={setIs3DMode}
-                onSelectEntity={(entity) => {
-                  setSelectedEntity(entity);
-                  if (compareEntity && compareEntity.id === entity.id) {
-                    setCompareEntity(null);
-                  }
-                }}
-                onSelectCompareEntity={(comp) => setCompareEntity(comp)}
-              />
+              <Suspense fallback={<ViewLoadingFallback label="Corridor Map Operations" />}>
+                <MapOperationsView
+                  studyAreaGeoJson={studyAreaGeoJson}
+                  roadSegments={roadSegments}
+                  intersections={intersections}
+                  liveStates={effectiveStates}
+                  selectedEntity={selectedEntity}
+                  compareEntity={compareEntity}
+                  currentTheme={currentTheme}
+                  isTableView={isOperationsTableView}
+                  onToggleTableView={setIsOperationsTableView}
+                  on3DModeChange={setIs3DMode}
+                  onSelectEntity={(entity) => {
+                    setSelectedEntity(entity);
+                    if (compareEntity && compareEntity.id === entity.id) {
+                      setCompareEntity(null);
+                    }
+                  }}
+                  onSelectCompareEntity={(comp) => setCompareEntity(comp)}
+                />
+              </Suspense>
             </ErrorBoundary>
 
             {!isOperationsTableView && (
@@ -627,117 +647,147 @@ export const App: React.FC = () => {
               />
             )}
 
-            <ErrorBoundary
-              componentName="Entity Details Drawer"
-              onReset={() => {
-                setSelectedEntity(null);
-                setCompareEntity(null);
-              }}
-            >
-              <EntityDetailDrawer
-                entity={selectedEntity}
-                compareEntity={compareEntity}
-                availableSegments={roadSegments}
-                liveStates={effectiveStates}
-                onClose={() => {
+            {selectedEntity && (
+              <ErrorBoundary
+                componentName="Entity Details Drawer"
+                onReset={() => {
                   setSelectedEntity(null);
                   setCompareEntity(null);
                 }}
-                onSelectCompareEntity={(comp) => setCompareEntity(comp)}
-              />
-            </ErrorBoundary>
+              >
+                <Suspense fallback={null}>
+                  <EntityDetailDrawer
+                    entity={selectedEntity}
+                    compareEntity={compareEntity}
+                    availableSegments={roadSegments}
+                    liveStates={effectiveStates}
+                    onClose={() => {
+                      setSelectedEntity(null);
+                      setCompareEntity(null);
+                    }}
+                    onSelectCompareEntity={(comp) => setCompareEntity(comp)}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )}
           </div>
         )}
 
         {/* VIEW 2: Traffic Analytics & Near-Term Forecasting */}
         {activeTab === 'traffic' && (
-          <TrafficAnalyticsView
-            roadSegments={roadSegments}
-            liveStates={effectiveStates}
-            sourceMode={effectiveMode}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="Traffic Analytics" />}>
+            <TrafficAnalyticsView
+              roadSegments={roadSegments}
+              liveStates={effectiveStates}
+              sourceMode={effectiveMode}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 3: Energy Analytics & Commercial Load Forecasting */}
         {activeTab === 'energy' && (
-          <EnergyAnalyticsView
-            sourceMode={effectiveMode}
-            energyEntities={energyEntities}
-            liveStates={effectiveStates}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="Energy Analytics" />}>
+            <EnergyAnalyticsView
+              sourceMode={effectiveMode}
+              energyEntities={energyEntities}
+              liveStates={effectiveStates}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 4: Environmental Context & Air Quality Monitoring */}
         {activeTab === 'environment' && (
-          <EnvironmentContextView
-            sourceMode={effectiveMode}
-            environmentData={currentEnvironment}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="Environmental Context" />}>
+            <EnvironmentContextView
+              sourceMode={effectiveMode}
+              environmentData={currentEnvironment}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 5: Scenario Studio: Microscopic Simulation Sandbox */}
         {activeTab === 'scenarios' && (
-          <ScenarioStudioView />
+          <Suspense fallback={<ViewLoadingFallback label="Scenario Studio" />}>
+            <ScenarioStudioView />
+          </Suspense>
         )}
 
         {/* VIEW 6: Recommendations & Governance Decision Support */}
         {activeTab === 'recommendations' && (
-          <RecommendationsView
-            onNavigateToEntity={(entityId) => {
-              const foundSeg = roadSegments.find(s => s.id === entityId);
-              const foundInter = intersections.find(i => i.id === entityId);
-              if (foundSeg) setSelectedEntity(foundSeg);
-              else if (foundInter) setSelectedEntity(foundInter);
-              setActiveTab('operations');
-            }}
-            onNavigateToScenarios={() => setActiveTab('scenarios')}
-            userRole={userRole}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="Recommendations & Governance" />}>
+            <RecommendationsView
+              onNavigateToEntity={(entityId) => {
+                const foundSeg = roadSegments.find(s => s.id === entityId);
+                const foundInter = intersections.find(i => i.id === entityId);
+                if (foundSeg) setSelectedEntity(foundSeg);
+                else if (foundInter) setSelectedEntity(foundInter);
+                setActiveTab('operations');
+              }}
+              onNavigateToScenarios={() => setActiveTab('scenarios')}
+              userRole={userRole}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 7: System & Data Health Reliability Console */}
         {activeTab === 'health' && (
-          <SystemHealthView
-            wsConnected={wsConnected}
-            sourceMode={currentMode}
-            lastUpdated={lastUpdated}
-          />
+          <Suspense fallback={<ViewLoadingFallback label="System & Data Health" />}>
+            <SystemHealthView
+              wsConnected={wsConnected}
+              sourceMode={currentMode}
+              lastUpdated={lastUpdated}
+            />
+          </Suspense>
         )}
 
         {/* VIEW 8: Pilot Evaluation & Executive Decision-Support Reporting */}
         {activeTab === 'evaluation' && (
-          <PilotEvaluationView />
+          <Suspense fallback={<ViewLoadingFallback label="Pilot Evaluation" />}>
+            <PilotEvaluationView />
+          </Suspense>
         )}
 
         {/* Modals for Cross-View Quick Invocations */}
-        <ScenarioStudio
-          isOpen={isScenarioStudioOpen}
-          onClose={() => setIsScenarioStudioOpen(false)}
-        />
+        {isScenarioStudioOpen && (
+          <Suspense fallback={null}>
+            <ScenarioStudio
+              isOpen={isScenarioStudioOpen}
+              onClose={() => setIsScenarioStudioOpen(false)}
+            />
+          </Suspense>
+        )}
 
-        <AdvisoryCenterModal
-          isOpen={isAdvisoryCenterOpen}
-          onClose={() => {
-            setIsAdvisoryCenterOpen(false);
-            fetchAdvisorySummary().then(setAdvisorySummary).catch(() => null);
-          }}
-          onSelectEntity={(entityId) => {
-            const foundSeg = roadSegments.find(s => s.id === entityId);
-            const foundInter = intersections.find(i => i.id === entityId);
-            if (foundSeg) setSelectedEntity(foundSeg);
-            else if (foundInter) setSelectedEntity(foundInter);
-            setActiveTab('operations');
-          }}
-          onOpenScenarioStudio={() => {
-            setIsAdvisoryCenterOpen(false);
-            setActiveTab('scenarios');
-          }}
-        />
+        {isAdvisoryCenterOpen && (
+          <Suspense fallback={null}>
+            <AdvisoryCenterModal
+              isOpen={isAdvisoryCenterOpen}
+              onClose={() => {
+                setIsAdvisoryCenterOpen(false);
+                fetchAdvisorySummary().then(setAdvisorySummary).catch(() => null);
+              }}
+              onSelectEntity={(entityId) => {
+                const foundSeg = roadSegments.find(s => s.id === entityId);
+                const foundInter = intersections.find(i => i.id === entityId);
+                if (foundSeg) setSelectedEntity(foundSeg);
+                else if (foundInter) setSelectedEntity(foundInter);
+                setActiveTab('operations');
+              }}
+              onOpenScenarioStudio={() => {
+                setIsAdvisoryCenterOpen(false);
+                setActiveTab('scenarios');
+              }}
+            />
+          </Suspense>
+        )}
 
-        <AdminProvisioningModal
-          isOpen={isAdminModalOpen}
-          onClose={() => setIsAdminModalOpen(false)}
-        />
+        {isAdminModalOpen && (
+          <Suspense fallback={null}>
+            <AdminProvisioningModal
+              isOpen={isAdminModalOpen}
+              onClose={() => setIsAdminModalOpen(false)}
+            />
+          </Suspense>
+        )}
 
         <DesktopViewportGuard />
       </main>
