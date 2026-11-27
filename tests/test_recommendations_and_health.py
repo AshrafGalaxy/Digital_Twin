@@ -25,6 +25,14 @@ from backend.schemas.recommendations import (
 from backend.services.rule_engine import AdvisoryRuleEngine, rule_engine
 
 
+@pytest.fixture(autouse=True)
+def reset_rule_engine_state():
+    """Hermetic isolation fixture: resets rule engine singleton to initial seed state."""
+    rule_engine.reset_state()
+    yield
+    rule_engine.reset_state()
+
+
 @pytest.fixture
 def client():
     return TestClient(app)
@@ -93,6 +101,7 @@ def test_review_lifecycle_and_audit_trail_preservation():
         reviewer="Municipal Deputy Commissioner",
         notes="Approved manual cycle adjustment outside platform."
     )
+    assert final_rec is not None
     assert final_rec.status == RecommendationStatus.ACKNOWLEDGED
     assert len(final_rec.auditTrail) == initial_audit_len + 2
     assert final_rec.auditTrail[-1].newStatus == RecommendationStatus.ACKNOWLEDGED
