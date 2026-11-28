@@ -401,7 +401,7 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         <div className="metric-box">
           <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>Net Grid Import</span>
-            <GitFork size={13} color="#FCD34D" />
+            <GitFork size={13} color="var(--color-warning)" />
           </span>
           {typeof summaryGridImportKw === 'number' ? (
             <span className="metric-box-val font-mono" style={{ color: 'var(--color-text)' }}>
@@ -420,11 +420,11 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         <div className="metric-box">
           <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>Rooftop Solar PV</span>
-            <Sun size={13} color="#3FB950" />
+            <Sun size={13} color="var(--color-success)" />
           </span>
           {typeof summaryGenKw === 'number' ? (
             <>
-              <span className="metric-box-val font-mono" style={{ color: '#3FB950' }}>
+              <span className="metric-box-val font-mono" style={{ color: 'var(--color-success)' }}>
                 +{summaryGenKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>kW</small>
               </span>
               <span className="metric-box-sub">
@@ -446,13 +446,13 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         <div className="metric-box">
           <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>BESS Storage</span>
-            <BatteryCharging size={13} color="#BC8CFF" />
+            <BatteryCharging size={13} color="var(--color-accent-violet)" />
           </span>
           {typeof summaryBessKw === 'number' && typeof summaryBessSoc === 'number' ? (
             <>
               <span
                 className="metric-box-val font-mono"
-                style={{ color: summaryBessKw >= 0 ? '#3FB950' : '#818CF8' }}
+                style={{ color: summaryBessKw >= 0 ? 'var(--color-success)' : 'var(--color-primary)' }}
               >
                 {summaryBessKw > 0 ? `+${summaryBessKw.toFixed(0)}` : summaryBessKw.toFixed(0)} <small>kW</small>
               </span>
@@ -475,11 +475,11 @@ export const EnergyAnalyticsView: React.FC<EnergyAnalyticsViewProps> = ({
         <div className="metric-box">
           <span className="metric-box-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>EV Charging Plaza</span>
-            <Car size={13} color="#E879F9" />
+            <Car size={13} color="var(--color-accent-violet)" />
           </span>
           {typeof summaryEvLoadKw === 'number' ? (
             <>
-              <span className="metric-box-val font-mono" style={{ color: '#C084FC' }}>
+              <span className="metric-box-val font-mono" style={{ color: 'var(--color-accent-violet)' }}>
                 {summaryEvLoadKw.toFixed(0)} <small>kW</small>
               </span>
               <span className="metric-box-sub">

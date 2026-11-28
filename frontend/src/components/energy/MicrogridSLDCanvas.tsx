@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Zap,
   Sun,
@@ -38,6 +38,81 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
   sourceMode = 'SIMULATION'
 }) => {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [isLightTheme, setIsLightTheme] = useState<boolean>(() =>
+    typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const syncTheme = () => setIsLightTheme(root.getAttribute('data-theme') === 'light');
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const sldPalette = useMemo(
+    () =>
+      isLightTheme
+        ? {
+            surfaceCanvas: '#F8FAFC',
+            surfaceBar: '#FFFFFF',
+            surfaceFooter: '#FFFFFF',
+            border: '#E2E8F0',
+            nodeFill: '#FFFFFF',
+            nodeSelectedFill: '#EFF6FF',
+            nodeStroke: '#CBD5E1',
+            gridDot: '#CBD5E1',
+            wireBase: '#94A3B8',
+            wireSub: '#64748B',
+            busbarLine: '#334155',
+            busbarLabelBg: '#F1F5F9',
+            busbarLabelStroke: '#94A3B8',
+            textPrimary: '#0F172A',
+            textSecondary: '#334155',
+            textMuted: '#475569',
+            blue: '#0284C7',
+            green: '#047857',
+            amber: '#B45309',
+            amberFlow: '#D97706',
+            purple: '#7E22CE',
+            purpleIcon: '#9333EA',
+            cyan: '#0E7490',
+            gridFlow: '#4F46E5',
+            socTrack: '#E2E8F0',
+            cardShadow: '0 4px 16px rgba(15, 23, 42, 0.08)'
+          }
+        : {
+            surfaceCanvas: '#020617',
+            surfaceBar: 'rgba(15, 23, 42, 0.85)',
+            surfaceFooter: 'rgba(15, 23, 42, 0.95)',
+            border: '#1E293B',
+            nodeFill: '#0F172A',
+            nodeSelectedFill: '#1E293B',
+            nodeStroke: '#334155',
+            gridDot: '#1E293B',
+            wireBase: '#334155',
+            wireSub: '#64748B',
+            busbarLine: '#E2E8F0',
+            busbarLabelBg: '#0F172A',
+            busbarLabelStroke: '#475569',
+            textPrimary: '#F8FAFC',
+            textSecondary: '#E2E8F0',
+            textMuted: '#94A3B8',
+            blue: '#38BDF8',
+            green: '#34D399',
+            amber: '#FCD34D',
+            amberFlow: '#FBBF24',
+            purple: '#C084FC',
+            purpleIcon: '#E879F9',
+            cyan: '#22D3EE',
+            gridFlow: '#818CF8',
+            socTrack: '#1E293B',
+            cardShadow: '0 4px 20px rgba(0, 0, 0, 0.45)'
+          },
+    [isLightTheme]
+  );
 
   // Flatten all nodes from topology for lookup
   const nodeMap = useMemo(() => {
@@ -178,11 +253,11 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        background: '#020617',
-        border: '1px solid #1E293B',
+        background: sldPalette.surfaceCanvas,
+        border: `1px solid ${sldPalette.border}`,
         borderRadius: '8px',
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.45)'
+        boxShadow: sldPalette.cardShadow
       }}
     >
       {/* Canvas Top Bar */}
@@ -194,8 +269,8 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           justifyContent: 'space-between',
           gap: '12px',
           padding: '12px 18px',
-          borderBottom: '1px solid #1E293B',
-          background: 'rgba(15, 23, 42, 0.85)'
+          borderBottom: `1px solid ${sldPalette.border}`,
+          background: sldPalette.surfaceBar
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -211,13 +286,13 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               border: '1px solid rgba(245, 158, 11, 0.4)'
             }}
           >
-            <Zap size={16} color="#FCD34D" />
+            <Zap size={16} color={sldPalette.amber} />
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#F8FAFC', letterSpacing: '0.02em' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: sldPalette.textPrimary, letterSpacing: '0.02em' }}>
               Microgrid Electrical Single-Line Diagram & Power Flow Canvas
             </div>
-            <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+            <div style={{ fontSize: '11px', color: sldPalette.textMuted }}>
               IEC 60870-5-104 / IEEE 1547 Point of Common Coupling (PCC) & Feeder Hierarchy
             </div>
           </div>
@@ -233,7 +308,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               borderRadius: '4px',
               backgroundColor: 'rgba(56, 189, 248, 0.12)',
               border: '1px solid rgba(56, 189, 248, 0.35)',
-              color: '#38BDF8',
+              color: sldPalette.blue,
               fontWeight: 600
             }}
           >
@@ -248,7 +323,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               borderRadius: '4px',
               backgroundColor: 'rgba(16, 185, 129, 0.12)',
               border: '1px solid rgba(16, 185, 129, 0.35)',
-              color: '#34D399',
+              color: sldPalette.green,
               fontWeight: 600
             }}
           >
@@ -265,18 +340,18 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               borderRadius: '4px',
               backgroundColor: 'rgba(235, 169, 0, 0.1)',
               border: '1px solid rgba(235, 169, 0, 0.3)',
-              color: '#FCD34D'
+              color: sldPalette.amber
             }}
             title="Platform commands are non-actuating decision support only. Breaker actuation requires field personnel authorization."
           >
-            <ShieldCheck size={12} color="#FCD34D" />
+            <ShieldCheck size={12} color={sldPalette.amber} />
             <span>Advisory Only (Non-Actuating)</span>
           </span>
         </div>
       </div>
 
       {/* SVG Canvas Area */}
-      <div style={{ position: 'relative', width: '100%', minHeight: '520px', backgroundColor: '#020617' }}>
+      <div style={{ position: 'relative', width: '100%', minHeight: '520px', backgroundColor: sldPalette.surfaceCanvas }}>
         <svg
           viewBox="0 0 1000 600"
           style={{
@@ -289,7 +364,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           <defs>
             {/* Grid dot pattern for technical aesthetic */}
             <pattern id="sld-grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="#1E293B" opacity="0.6" />
+              <circle cx="2" cy="2" r="1" fill={sldPalette.gridDot} opacity="0.6" />
             </pattern>
 
             {/* Glowing filter for selected nodes */}
@@ -344,7 +419,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
 
           {/* Incoming 22kV Overhead Line */}
           <line x1="500" y1="0" x2="500" y2="25" stroke="#64748B" strokeWidth="2.5" />
-          <text x="510" y="16" fill="#94A3B8" fontSize="10" fontFamily="monospace">
+          <text x="510" y="16" fill={sldPalette.textMuted} fontSize="10" fontFamily="monospace">
             22kV Utility Grid Feed
           </text>
 
@@ -361,8 +436,8 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="250"
               height="75"
               rx="8"
-              fill={selectedNodeId === substationNode?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === substationNode?.nodeId ? '#38BDF8' : '#334155'}
+              fill={selectedNodeId === substationNode?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === substationNode?.nodeId ? '#38BDF8' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === substationNode?.nodeId ? 2 : 1}
               filter={selectedNodeId === substationNode?.nodeId ? 'url(#sld-glow)' : undefined}
             />
@@ -370,26 +445,26 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             <foreignObject x="387" y="37" width="18" height="18">
               <Zap size={16} color="#FCD34D" />
             </foreignObject>
-            <text x="412" y="49" fill="#F8FAFC" fontSize="12" fontWeight="700">
+            <text x="412" y="49" fill={sldPalette.textPrimary} fontSize="12" fontWeight="700">
               Primary Substation (PCC)
             </text>
             <rect x="548" y="37" width="65" height="16" rx="3" fill="#10B981" fillOpacity="0.15" stroke="#10B981" strokeWidth="0.8" />
-            <text x="554" y="49" fill="#34D399" fontSize="9" fontFamily="monospace" fontWeight="700">
+            <text x="554" y="49" fill={sldPalette.green} fontSize="9" fontFamily="monospace" fontWeight="700">
               CB-01 CLOSED
             </text>
 
             {/* Metrics Row */}
-            <text x="395" y="70" fill="#94A3B8" fontSize="10">
+            <text x="395" y="70" fill={sldPalette.textMuted} fontSize="10">
               Grid Import:
             </text>
-            <text x="460" y="70" fill="#38BDF8" fontSize="11" fontFamily="monospace" fontWeight="700">
+            <text x="460" y="70" fill={sldPalette.blue} fontSize="11" fontFamily="monospace" fontWeight="700">
               {gridImportKw.toLocaleString(undefined, { maximumFractionDigits: 0 })} kW
             </text>
 
-            <text x="395" y="86" fill="#94A3B8" fontSize="10">
+            <text x="395" y="86" fill={sldPalette.textMuted} fontSize="10">
               Bus Voltage:
             </text>
-            <text x="460" y="86" fill="#F8FAFC" fontSize="10" fontFamily="monospace">
+            <text x="460" y="86" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace">
               415.0 V AC | 50.00 Hz
             </text>
           </g>
@@ -417,7 +492,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             <text x="522" y="136" fill="#E2E8F0" fontSize="10" fontWeight="600">
               Dyn11 Step-Down Trafo
             </text>
-            <text x="522" y="148" fill="#94A3B8" fontSize="9" fontFamily="monospace">
+            <text x="522" y="148" fill={sldPalette.textMuted} fontSize="9" fontFamily="monospace">
               22kV / 415V (10 MVA, 2.5% loss)
             </text>
           </g>
@@ -442,9 +517,9 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           {/* ========================================================================= */}
 
           {/* Main Busbar Line */}
-          <line x1="100" y1="180" x2="900" y2="180" stroke="#E2E8F0" strokeWidth="6" strokeLinecap="round" />
-          <rect x="360" y="168" width="280" height="24" rx="4" fill="#0F172A" stroke="#475569" strokeWidth="1" />
-          <text x="500" y="184" fill="#F8FAFC" fontSize="10" fontWeight="700" textAnchor="middle" letterSpacing="0.05em">
+          <line x1="100" y1="180" x2="900" y2="180" stroke={sldPalette.busbarLine} strokeWidth="6" strokeLinecap="round" />
+          <rect x="360" y="168" width="280" height="24" rx="4" fill={sldPalette.nodeFill} stroke="#475569" strokeWidth="1" />
+          <text x="500" y="184" fill={sldPalette.textPrimary} fontSize="10" fontWeight="700" textAnchor="middle" letterSpacing="0.05em">
             415V AC THREE-PHASE LOW-VOLTAGE BUSBAR (BUS-01)
           </text>
 
@@ -473,11 +548,11 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="130"
               height="28"
               rx="4"
-              fill="#0F172A"
+              fill={sldPalette.nodeFill}
               stroke={getThermalColor(f1Load.ratio)}
               strokeWidth="1"
             />
-            <text x="183" y="214" fill="#F8FAFC" fontSize="10" fontWeight="600">
+            <text x="183" y="214" fill={sldPalette.textPrimary} fontSize="10" fontWeight="600">
               Feeder 1 (Retail)
             </text>
             <text x="183" y="224" fill={getThermalColor(f1Load.ratio)} fontSize="8" fontFamily="monospace">
@@ -489,7 +564,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           <path
             d="M 240 240 L 120 240 L 120 295"
             fill="none"
-            stroke="#334155"
+            stroke={sldPalette.wireBase}
             strokeWidth="2"
           />
           {solarGenKw > 10 && (
@@ -506,7 +581,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           <path
             d="M 240 240 L 240 465"
             fill="none"
-            stroke="#334155"
+            stroke={sldPalette.wireBase}
             strokeWidth="2"
           />
           <path
@@ -539,11 +614,11 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="130"
               height="28"
               rx="4"
-              fill="#0F172A"
+              fill={sldPalette.nodeFill}
               stroke={getThermalColor(f2Load.ratio)}
               strokeWidth="1"
             />
-            <text x="443" y="214" fill="#F8FAFC" fontSize="10" fontWeight="600">
+            <text x="443" y="214" fill={sldPalette.textPrimary} fontSize="10" fontWeight="600">
               Feeder 2 (Enterprise)
             </text>
             <text x="443" y="224" fill={getThermalColor(f2Load.ratio)} fontSize="8" fontFamily="monospace">
@@ -552,7 +627,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           </g>
 
           {/* BESS Connection Path */}
-          <line x1="500" y1="240" x2="500" y2="290" stroke="#334155" strokeWidth="2" />
+          <line x1="500" y1="240" x2="500" y2="290" stroke={sldPalette.wireBase} strokeWidth="2" />
           {bessSpeed > 0 && (
             <line
               x1="500"
@@ -567,7 +642,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           )}
 
           {/* Line from BESS down to Enterprise Load */}
-          <line x1="500" y1="395" x2="500" y2="465" stroke="#334155" strokeWidth="2" />
+          <line x1="500" y1="395" x2="500" y2="465" stroke={sldPalette.wireBase} strokeWidth="2" />
           <line
             x1="500"
             y1="395"
@@ -600,11 +675,11 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="130"
               height="28"
               rx="4"
-              fill="#0F172A"
+              fill={sldPalette.nodeFill}
               stroke={getThermalColor(f3Load.ratio)}
               strokeWidth="1"
             />
-            <text x="723" y="214" fill="#F8FAFC" fontSize="10" fontWeight="600">
+            <text x="723" y="214" fill={sldPalette.textPrimary} fontSize="10" fontWeight="600">
               Feeder 3 (Transit)
             </text>
             <text x="723" y="224" fill={getThermalColor(f3Load.ratio)} fontSize="8" fontFamily="monospace">
@@ -616,7 +691,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           <path
             d="M 780 240 L 710 240 L 710 465"
             fill="none"
-            stroke="#334155"
+            stroke={sldPalette.wireBase}
             strokeWidth="2"
           />
           {evLoadKw > 10 && (
@@ -633,7 +708,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           <path
             d="M 780 240 L 885 240 L 885 465"
             fill="none"
-            stroke="#334155"
+            stroke={sldPalette.wireBase}
             strokeWidth="2"
           />
           <path
@@ -662,8 +737,8 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="170"
               height="95"
               rx="6"
-              fill={selectedNodeId === solarNode?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === solarNode?.nodeId ? '#34D399' : '#334155'}
+              fill={selectedNodeId === solarNode?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === solarNode?.nodeId ? '#34D399' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === solarNode?.nodeId ? 2 : 1}
               filter={selectedNodeId === solarNode?.nodeId ? 'url(#sld-glow)' : undefined}
             />
@@ -671,32 +746,32 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             <foreignObject x="47" y="307" width="18" height="18">
               <Sun size={16} color="#34D399" />
             </foreignObject>
-            <text x="70" y="318" fill="#F8FAFC" fontSize="11" fontWeight="700">
+            <text x="70" y="318" fill={sldPalette.textPrimary} fontSize="11" fontWeight="700">
               Rooftop Solar PV
             </text>
-            <text x="70" y="329" fill="#94A3B8" fontSize="8" fontFamily="monospace">
+            <text x="70" y="329" fill={sldPalette.textMuted} fontSize="8" fontFamily="monospace">
               1.2 MWp Smart Inverter
             </text>
 
             {/* Metrics */}
-            <text x="50" y="348" fill="#94A3B8" fontSize="9">
+            <text x="50" y="348" fill={sldPalette.textMuted} fontSize="9">
               Generation:
             </text>
-            <text x="110" y="348" fill="#34D399" fontSize="11" fontFamily="monospace" fontWeight="700">
+            <text x="110" y="348" fill={sldPalette.green} fontSize="11" fontFamily="monospace" fontWeight="700">
               {solarGenKw.toFixed(0)} kW
             </text>
 
-            <text x="50" y="364" fill="#94A3B8" fontSize="9">
+            <text x="50" y="364" fill={sldPalette.textMuted} fontSize="9">
               Irradiance:
             </text>
-            <text x="110" y="364" fill="#F8FAFC" fontSize="10" fontFamily="monospace">
+            <text x="110" y="364" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace">
               {solarTelem?.deviceMetrics?.solarIrradianceWm2 ?? (solarGenKw > 50 ? 820 : 0)} W/m²
             </text>
 
-            <text x="50" y="380" fill="#94A3B8" fontSize="9">
+            <text x="50" y="380" fill={sldPalette.textMuted} fontSize="9">
               Inverter:
             </text>
-            <text x="110" y="380" fill="#38BDF8" fontSize="9" fontFamily="monospace">
+            <text x="110" y="380" fill={sldPalette.blue} fontSize="9" fontFamily="monospace">
               IEEE 1547 Mode
             </text>
           </g>
@@ -714,8 +789,8 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="200"
               height="105"
               rx="6"
-              fill={selectedNodeId === bessNode?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === bessNode?.nodeId ? '#BC8CFF' : '#334155'}
+              fill={selectedNodeId === bessNode?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === bessNode?.nodeId ? '#BC8CFF' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === bessNode?.nodeId ? 2 : 1}
               filter={selectedNodeId === bessNode?.nodeId ? 'url(#sld-glow)' : undefined}
             />
@@ -723,7 +798,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             <foreignObject x="412" y="302" width="18" height="18">
               <BatteryCharging size={16} color="#BC8CFF" />
             </foreignObject>
-            <text x="435" y="313" fill="#F8FAFC" fontSize="11" fontWeight="700">
+            <text x="435" y="313" fill={sldPalette.textPrimary} fontSize="11" fontWeight="700">
               Substation Support BESS
             </text>
             <rect
@@ -749,7 +824,7 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             </text>
 
             {/* BESS Power & SoC */}
-            <text x="420" y="333" fill="#94A3B8" fontSize="9">
+            <text x="420" y="333" fill={sldPalette.textMuted} fontSize="9">
               BESS Power:
             </text>
             <text
@@ -764,13 +839,13 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             </text>
 
             {/* State of Charge Bar */}
-            <text x="420" y="352" fill="#94A3B8" fontSize="9">
+            <text x="420" y="352" fill={sldPalette.textMuted} fontSize="9">
               State of Charge:
             </text>
-            <text x="500" y="352" fill="#F8FAFC" fontSize="10" fontFamily="monospace" fontWeight="600">
+            <text x="500" y="352" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace" fontWeight="600">
               {bessSoCPct.toFixed(1)}% ({(bessSoCPct * 20).toFixed(0)} kWh)
             </text>
-            <rect x="420" y="358" width="160" height="7" rx="3.5" fill="#1E293B" />
+            <rect x="420" y="358" width="160" height="7" rx="3.5" fill={sldPalette.socTrack} />
             <rect
               x="420"
               y="358"
@@ -781,10 +856,10 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
             />
 
             {/* Health & Safety */}
-            <text x="420" y="382" fill="#94A3B8" fontSize="9">
+            <text x="420" y="382" fill={sldPalette.textMuted} fontSize="9">
               Interlocks:
             </text>
-            <text x="475" y="382" fill="#34D399" fontSize="9" fontFamily="monospace">
+            <text x="475" y="382" fill={sldPalette.green} fontSize="9" fontFamily="monospace">
               Voltage/Slew OK (OpenADR 2.0b)
             </text>
           </g>
@@ -806,39 +881,39 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="180"
               height="92"
               rx="6"
-              fill={selectedNodeId === buildingNodes[0]?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === buildingNodes[0]?.nodeId ? '#38BDF8' : '#334155'}
+              fill={selectedNodeId === buildingNodes[0]?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === buildingNodes[0]?.nodeId ? '#38BDF8' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === buildingNodes[0]?.nodeId ? 2 : 1}
               filter={selectedNodeId === buildingNodes[0]?.nodeId ? 'url(#sld-glow)' : undefined}
             />
             <foreignObject x="162" y="477" width="18" height="18">
               <Building2 size={16} color="#38BDF8" />
             </foreignObject>
-            <text x="185" y="488" fill="#F8FAFC" fontSize="11" fontWeight="700">
+            <text x="185" y="488" fill={sldPalette.textPrimary} fontSize="11" fontWeight="700">
               Commercial Retail Zone
             </text>
-            <text x="185" y="499" fill="#94A3B8" fontSize="8" fontFamily="monospace">
+            <text x="185" y="499" fill={sldPalette.textMuted} fontSize="8" fontFamily="monospace">
               Phoenix Retail & Mall Complex
             </text>
 
-            <text x="165" y="518" fill="#94A3B8" fontSize="9">
+            <text x="165" y="518" fill={sldPalette.textMuted} fontSize="9">
               Active Demand:
             </text>
-            <text x="245" y="518" fill="#38BDF8" fontSize="11" fontFamily="monospace" fontWeight="700">
+            <text x="245" y="518" fill={sldPalette.blue} fontSize="11" fontFamily="monospace" fontWeight="700">
               {(microgridSummary?.buildingLoadKw ? microgridSummary.buildingLoadKw * 0.45 : 2450).toFixed(0)} kW
             </text>
 
-            <text x="165" y="534" fill="#94A3B8" fontSize="9">
+            <text x="165" y="534" fill={sldPalette.textMuted} fontSize="9">
               Contract Demand:
             </text>
-            <text x="245" y="534" fill="#F8FAFC" fontSize="10" fontFamily="monospace">
+            <text x="245" y="534" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace">
               2,500 kW Limit
             </text>
 
-            <text x="165" y="548" fill="#94A3B8" fontSize="9">
+            <text x="165" y="548" fill={sldPalette.textMuted} fontSize="9">
               Power Factor:
             </text>
-            <text x="245" y="548" fill="#34D399" fontSize="9" fontFamily="monospace">
+            <text x="245" y="548" fill={sldPalette.green} fontSize="9" fontFamily="monospace">
               0.98 Lag
             </text>
           </g>
@@ -856,39 +931,39 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="180"
               height="92"
               rx="6"
-              fill={selectedNodeId === buildingNodes[1]?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === buildingNodes[1]?.nodeId ? '#38BDF8' : '#334155'}
+              fill={selectedNodeId === buildingNodes[1]?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === buildingNodes[1]?.nodeId ? '#38BDF8' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === buildingNodes[1]?.nodeId ? 2 : 1}
               filter={selectedNodeId === buildingNodes[1]?.nodeId ? 'url(#sld-glow)' : undefined}
             />
             <foreignObject x="422" y="477" width="18" height="18">
               <Building2 size={16} color="#38BDF8" />
             </foreignObject>
-            <text x="445" y="488" fill="#F8FAFC" fontSize="11" fontWeight="700">
+            <text x="445" y="488" fill={sldPalette.textPrimary} fontSize="11" fontWeight="700">
               Commercial Enterprise
             </text>
-            <text x="445" y="499" fill="#94A3B8" fontSize="8" fontFamily="monospace">
+            <text x="445" y="499" fill={sldPalette.textMuted} fontSize="8" fontFamily="monospace">
               Solitaire Business Tech Hub
             </text>
 
-            <text x="425" y="518" fill="#94A3B8" fontSize="9">
+            <text x="425" y="518" fill={sldPalette.textMuted} fontSize="9">
               Active Demand:
             </text>
-            <text x="505" y="518" fill="#38BDF8" fontSize="11" fontFamily="monospace" fontWeight="700">
+            <text x="505" y="518" fill={sldPalette.blue} fontSize="11" fontFamily="monospace" fontWeight="700">
               {(microgridSummary?.buildingLoadKw ? microgridSummary.buildingLoadKw * 0.35 : 1820).toFixed(0)} kW
             </text>
 
-            <text x="425" y="534" fill="#94A3B8" fontSize="9">
+            <text x="425" y="534" fill={sldPalette.textMuted} fontSize="9">
               Contract Demand:
             </text>
-            <text x="505" y="534" fill="#F8FAFC" fontSize="10" fontFamily="monospace">
+            <text x="505" y="534" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace">
               3,000 kW Limit
             </text>
 
-            <text x="425" y="548" fill="#94A3B8" fontSize="9">
+            <text x="425" y="548" fill={sldPalette.textMuted} fontSize="9">
               Power Factor:
             </text>
-            <text x="505" y="548" fill="#34D399" fontSize="9" fontFamily="monospace">
+            <text x="505" y="548" fill={sldPalette.green} fontSize="9" fontFamily="monospace">
               0.99 Lag
             </text>
           </g>
@@ -906,39 +981,39 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="175"
               height="92"
               rx="6"
-              fill={selectedNodeId === evNode?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === evNode?.nodeId ? '#E879F9' : '#334155'}
+              fill={selectedNodeId === evNode?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === evNode?.nodeId ? '#E879F9' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === evNode?.nodeId ? 2 : 1}
               filter={selectedNodeId === evNode?.nodeId ? 'url(#sld-glow)' : undefined}
             />
             <foreignObject x="632" y="477" width="18" height="18">
               <Car size={16} color="#E879F9" />
             </foreignObject>
-            <text x="655" y="488" fill="#F8FAFC" fontSize="11" fontWeight="700">
+            <text x="655" y="488" fill={sldPalette.textPrimary} fontSize="11" fontWeight="700">
               EV DC Fast Plaza
             </text>
-            <text x="655" y="499" fill="#94A3B8" fontSize="8" fontFamily="monospace">
+            <text x="655" y="499" fill={sldPalette.textMuted} fontSize="8" fontFamily="monospace">
               12 Plugs (60 kW DC Fast)
             </text>
 
-            <text x="635" y="518" fill="#94A3B8" fontSize="9">
+            <text x="635" y="518" fill={sldPalette.textMuted} fontSize="9">
               Charging Load:
             </text>
             <text x="715" y="518" fill="#C084FC" fontSize="11" fontFamily="monospace" fontWeight="700">
               {evLoadKw.toFixed(0)} kW
             </text>
 
-            <text x="635" y="534" fill="#94A3B8" fontSize="9">
+            <text x="635" y="534" fill={sldPalette.textMuted} fontSize="9">
               Active Plugs:
             </text>
-            <text x="715" y="534" fill="#F8FAFC" fontSize="10" fontFamily="monospace">
+            <text x="715" y="534" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace">
               {Math.min(12, Math.max(1, Math.round(evLoadKw / 50.0)))} / 12 Vehicles
             </text>
 
-            <text x="635" y="548" fill="#94A3B8" fontSize="9">
+            <text x="635" y="548" fill={sldPalette.textMuted} fontSize="9">
               Protocol:
             </text>
-            <text x="715" y="548" fill="#38BDF8" fontSize="9" fontFamily="monospace">
+            <text x="715" y="548" fill={sldPalette.blue} fontSize="9" fontFamily="monospace">
               OCPP 2.0.1 Smart
             </text>
           </g>
@@ -956,39 +1031,39 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
               width="170"
               height="92"
               rx="6"
-              fill={selectedNodeId === buildingNodes[2]?.nodeId ? '#1E293B' : '#0F172A'}
-              stroke={selectedNodeId === buildingNodes[2]?.nodeId ? '#38BDF8' : '#334155'}
+              fill={selectedNodeId === buildingNodes[2]?.nodeId ? sldPalette.nodeSelectedFill : sldPalette.nodeFill}
+              stroke={selectedNodeId === buildingNodes[2]?.nodeId ? '#38BDF8' : sldPalette.nodeStroke}
               strokeWidth={selectedNodeId === buildingNodes[2]?.nodeId ? 2 : 1}
               filter={selectedNodeId === buildingNodes[2]?.nodeId ? 'url(#sld-glow)' : undefined}
             />
             <foreignObject x="817" y="477" width="18" height="18">
               <Building2 size={16} color="#38BDF8" />
             </foreignObject>
-            <text x="840" y="488" fill="#F8FAFC" fontSize="11" fontWeight="700">
+            <text x="840" y="488" fill={sldPalette.textPrimary} fontSize="11" fontWeight="700">
               Hospitality Zone
             </text>
-            <text x="840" y="499" fill="#94A3B8" fontSize="8" fontFamily="monospace">
+            <text x="840" y="499" fill={sldPalette.textMuted} fontSize="8" fontFamily="monospace">
               Hyatt Regency Complex
             </text>
 
-            <text x="820" y="518" fill="#94A3B8" fontSize="9">
+            <text x="820" y="518" fill={sldPalette.textMuted} fontSize="9">
               Active Demand:
             </text>
-            <text x="900" y="518" fill="#38BDF8" fontSize="11" fontFamily="monospace" fontWeight="700">
+            <text x="900" y="518" fill={sldPalette.blue} fontSize="11" fontFamily="monospace" fontWeight="700">
               {(microgridSummary?.buildingLoadKw ? microgridSummary.buildingLoadKw * 0.20 : 1380).toFixed(0)} kW
             </text>
 
-            <text x="820" y="534" fill="#94A3B8" fontSize="9">
+            <text x="820" y="534" fill={sldPalette.textMuted} fontSize="9">
               Contract Demand:
             </text>
-            <text x="900" y="534" fill="#F8FAFC" fontSize="10" fontFamily="monospace">
+            <text x="900" y="534" fill={sldPalette.textPrimary} fontSize="10" fontFamily="monospace">
               1,600 kW Limit
             </text>
 
-            <text x="820" y="548" fill="#94A3B8" fontSize="9">
+            <text x="820" y="548" fill={sldPalette.textMuted} fontSize="9">
               Power Factor:
             </text>
-            <text x="900" y="548" fill="#34D399" fontSize="9" fontFamily="monospace">
+            <text x="900" y="548" fill={sldPalette.green} fontSize="9" fontFamily="monospace">
               0.97 Lag
             </text>
           </g>
@@ -1004,16 +1079,16 @@ export const MicrogridSLDCanvas: React.FC<MicrogridSLDCanvasProps> = ({
           justifyContent: 'space-between',
           gap: '12px',
           padding: '10px 18px',
-          borderTop: '1px solid #1E293B',
-          background: 'rgba(15, 23, 42, 0.95)',
+          borderTop: `1px solid ${sldPalette.border}`,
+          background: sldPalette.surfaceFooter,
           fontSize: '11px',
-          color: '#94A3B8'
+          color: sldPalette.textMuted
         }}
       >
         {/* Dynamic Energy Flow Color Legend */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, color: '#E2E8F0' }}>
-            <Activity size={13} color="#38BDF8" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, color: sldPalette.textSecondary }}>
+            <Activity size={13} color={sldPalette.blue} />
             <span>Dynamic Flow Vectors:</span>
           </span>
 
