@@ -31,15 +31,21 @@ def test_study_area_error_sanitization(client):
     Verifies that when file reading raises an exception, GET /api/v1/study-area
     returns HTTP 500 with a fixed message and does not leak the path or exception string.
     """
+    from backend.api.v1.endpoints.study_area import clear_study_area_cache
+
     sensitive_path_error = "/var/secret/corridor/internal_schema.json: Permission denied"
-    with patch("builtins.open", side_effect=PermissionError(sensitive_path_error)):
-        resp = client.get("/api/v1/study-area")
-        assert resp.status_code == 500
-        detail = resp.json().get("detail", "")
-        assert detail == "Failed to load study area geometry."
-        assert "Permission denied" not in detail
-        assert "secret" not in detail
-        assert "json" not in detail.lower()
+    clear_study_area_cache()
+    try:
+        with patch("builtins.open", side_effect=PermissionError(sensitive_path_error)):
+            resp = client.get("/api/v1/study-area")
+            assert resp.status_code == 500
+            detail = resp.json().get("detail", "")
+            assert detail == "Failed to load study area geometry."
+            assert "Permission denied" not in detail
+            assert "secret" not in detail
+            assert "json" not in detail.lower()
+    finally:
+        clear_study_area_cache()
 
 
 def test_traffic_forecast_error_sanitization(client):
