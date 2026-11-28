@@ -3467,7 +3467,7 @@ body {
 }
 
 .advisory-evidence-box {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--bg-surface-elevated);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
@@ -4261,6 +4261,12 @@ body {
   line-height: 1.45;
 }
 
+[data-theme="light"] .integrity-caveat-banner {
+  background: #FFFBEB;
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #92400E;
+}
+
 /* Filter Bars & Selectors */
 .analytics-filter-bar {
   display: flex;
@@ -4484,7 +4490,7 @@ body {
   align-items: flex-start;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   font-size: 12px;

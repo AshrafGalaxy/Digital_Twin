@@ -262,7 +262,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
           <span className="metric-box-label">Ambient Temperature</span>
           {typeof temperatureC === 'number' ? (
             <>
-              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+              <span className="metric-box-val font-mono" style={{ color: 'var(--text-primary)' }}>
                 {temperatureC.toFixed(1)} <small>°C</small>
               </span>
               <span className="metric-box-sub">
@@ -286,7 +286,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
           <span className="metric-box-label">Relative Humidity</span>
           {typeof humidityPct === 'number' ? (
             <>
-              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+              <span className="metric-box-val font-mono" style={{ color: 'var(--text-primary)' }}>
                 {Math.round(humidityPct)} <small>%</small>
               </span>
               <span className="metric-box-sub">
@@ -310,7 +310,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
           <span className="metric-box-label">Corridor Wind Speed & Flow</span>
           {typeof windSpeedKmh === 'number' ? (
             <>
-              <span className="metric-box-val font-mono" style={{ color: '#F0F6FC' }}>
+              <span className="metric-box-val font-mono" style={{ color: 'var(--text-primary)' }}>
                 {windSpeedKmh.toFixed(1)} <small>km/h</small>
               </span>
               <span className="metric-box-sub">
@@ -424,7 +424,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
             </div>
           </div>
 
-          <h4 style={{ fontSize: '13px', fontWeight: 600, marginTop: '20px', marginBottom: '10px', color: 'var(--color-text, #F0F6FC)' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 600, marginTop: '20px', marginBottom: '10px', color: 'var(--text-primary)' }}>
             National Ambient Air Quality Index (NAAQS) Standards
           </h4>
           <table className="analytics-table">
@@ -479,10 +479,10 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
           <div
             className="verdict-banner"
             style={{
-              background: 'rgba(22, 27, 34, 0.95)',
+              background: 'var(--bg-surface-elevated)',
               border: `1px solid ${
                 zScoreNum === null
-                  ? 'rgba(48, 54, 61, 0.7)'
+                  ? 'var(--border-color)'
                   : isAnomaly
                   ? 'rgba(248, 81, 73, 0.4)'
                   : 'rgba(63, 185, 80, 0.35)'
@@ -497,7 +497,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
                 style={{
                   fontSize: 'var(--font-size-lg)',
                   fontWeight: 'bold',
-                  color: zScoreNum === null ? '#94A3B8' : isAnomaly ? '#F85149' : '#3FB950'
+                  color: zScoreNum === null ? 'var(--text-muted)' : isAnomaly ? 'var(--color-danger)' : 'var(--color-success)'
                 }}
               >
                 {zScoreNum === null
@@ -511,7 +511,7 @@ export const EnvironmentContextView: React.FC<EnvironmentContextViewProps> = ({
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
                 STATISTICAL Z-SCORE
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: zScoreNum === null ? '#94A3B8' : '#F0F6FC' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: zScoreNum === null ? 'var(--text-muted)' : 'var(--text-primary)' }}>
                 Z = {zScore !== null ? zScore : 'N/A'} (Norm: ±2.0)
               </div>
             </div>
