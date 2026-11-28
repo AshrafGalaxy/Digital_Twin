@@ -1,9 +1,27 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import cesium from 'vite-plugin-cesium';
 
+function nonBlockingCesiumAssets(): Plugin {
+  return {
+    name: 'non-blocking-cesium-assets',
+    enforce: 'post',
+    transformIndexHtml(html: string): string {
+      return html
+        .replace(
+          /<link\s+rel="stylesheet"\s+href="(\/cesium\/Widgets\/widgets\.css)"\s*\/?>/i,
+          '<link rel="stylesheet" href="$1" media="print" onload="this.media=\'all\'" />'
+        )
+        .replace(
+          /<script\s+src="(\/cesium\/Cesium\.js)"\s*><\/script>/i,
+          '<script defer src="$1"></script>'
+        );
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), cesium()],
+  plugins: [react(), cesium(), nonBlockingCesiumAssets()],
   server: {
     port: 5173,
     host: '0.0.0.0',

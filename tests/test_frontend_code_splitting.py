@@ -144,7 +144,7 @@ def test_vite_config_manual_chunks_configuration() -> None:
     assert VITE_CONFIG_TS.is_file(), f"vite.config.ts not found at {VITE_CONFIG_TS}"
     content = VITE_CONFIG_TS.read_text(encoding="utf-8")
 
-    assert "plugins: [react(), cesium()]" in content, (
+    assert "plugins:" in content and "react()" in content and "cesium()" in content, (
         "vite.config.ts must preserve react() and cesium() plugins"
     )
     assert "manualChunks" in content, "vite.config.ts must configure rollupOptions.output.manualChunks"

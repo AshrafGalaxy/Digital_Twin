@@ -5,6 +5,7 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   componentName?: string;
   fallback?: ReactNode;
+  onError?: (error: Error) => void;
   onReset?: () => void;
 }
 
@@ -33,6 +34,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error(`[ErrorBoundary] Captured exception in ${this.props.componentName || 'component'}:`, error, errorInfo);
+    if (this.props.onError) {
+      this.props.onError(error);
+    }
   }
 
   handleReset = (): void => {
@@ -61,17 +65,28 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           role="alert"
           className="error-boundary-fallback"
           style={{
-            position: 'relative',
-            zIndex: 70,
-            margin: 'var(--space-4, 16px)',
-            maxWidth: '540px',
+            position: 'absolute',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             padding: 'var(--space-4, 16px)',
-            borderRadius: 'var(--radius-md, 8px)',
-            background: 'var(--bg-card, #161B22)',
-            border: '1px solid var(--border-default, rgba(148, 163, 184, 0.25))',
-            boxShadow: 'var(--shadow-lg, 0 14px 38px rgba(1, 4, 9, 0.65))'
+            background: 'var(--bg-canvas, #0b111c)',
+            overflowY: 'auto'
           }}
         >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '540px',
+              padding: 'var(--space-4, 16px)',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: 'var(--bg-card, #161B22)',
+              border: '1px solid var(--border-default, rgba(148, 163, 184, 0.25))',
+              boxShadow: 'var(--shadow-lg, 0 14px 38px rgba(1, 4, 9, 0.65))'
+            }}
+          >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <AlertTriangle size={18} color="#F59E0B" style={{ flexShrink: 0 }} aria-hidden="true" />
             <h4
@@ -131,6 +146,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <RotateCcw size={13} aria-hidden="true" />
             <span>Recover Component</span>
           </button>
+          </div>
         </div>
       );
     }

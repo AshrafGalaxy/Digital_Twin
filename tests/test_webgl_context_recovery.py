@@ -98,7 +98,7 @@ def test_error_boundary_preserves_render_exception_isolation() -> None:
     assert "<Fragment key={this.state.resetCount}>" in src
     assert "Recover Component" in src
     assert "--bg-card" in src
-    assert "zIndex: 70" in src
+    assert "zIndex: 100" in src
 
 
 def test_modified_webgl_recovery_files_zero_forbidden_characters() -> None:

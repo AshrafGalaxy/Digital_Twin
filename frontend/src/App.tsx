@@ -93,6 +93,7 @@ function getStoredAuthUser(): AuthUser | null {
 export const App: React.FC = () => {
   // Municipal Authentication & Session State with localStorage persistence & cryptographic JWT validation
   const [authUser, setAuthUser] = useState<AuthUser | null>(getStoredAuthUser);
+  const [hasOperationsError, setHasOperationsError] = useState<boolean>(false);
 
   const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup'>(() => {
     const rawHash = window.location.hash.replace('#', '');
@@ -605,7 +606,7 @@ export const App: React.FC = () => {
         {/* VIEW 1: Operations Map & Live Corridor Overview */}
         {activeTab === 'operations' && (
           <div className="operations-view-layout">
-            {!isOperationsTableView && (
+            {!isOperationsTableView && !hasOperationsError && (
               <CorridorMetricsCard
                 averageSpeed={aggregates.avgSpeed}
                 congestionIndex={aggregates.congestionIndex}
@@ -615,7 +616,11 @@ export const App: React.FC = () => {
               />
             )}
 
-            <ErrorBoundary componentName="Corridor Map Operations View">
+            <ErrorBoundary
+              componentName="Corridor Map Operations View"
+              onError={() => setHasOperationsError(true)}
+              onReset={() => setHasOperationsError(false)}
+            >
               <Suspense fallback={<ViewLoadingFallback label="Corridor Map Operations" />}>
                 <MapOperationsView
                   studyAreaGeoJson={studyAreaGeoJson}
@@ -639,7 +644,7 @@ export const App: React.FC = () => {
               </Suspense>
             </ErrorBoundary>
 
-            {!isOperationsTableView && (
+            {!isOperationsTableView && !hasOperationsError && (
               <MapLegend
                 isDrawerOpen={Boolean(selectedEntity)}
                 isComparisonMode={Boolean(compareEntity)}

@@ -1,7 +1,13 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import type {
+  GeoJSONSource as MapboxGeoJSONSource,
+  Map as MapboxMap,
+  MapLayerMouseEvent as MapboxMapLayerMouseEvent,
+  Marker as MapboxMarker
+} from 'mapbox-gl';
 import { Map, Globe, TableProperties, Satellite, Moon, Compass, Zap } from 'lucide-react';
+
+type MapboxModule = typeof import('mapbox-gl')['default'];
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { ViewLoadingFallback } from './common/ViewLoadingFallback';
@@ -252,8 +258,9 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   onSelectCompareEntity
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const map = useRef<MapboxMap | null>(null);
+  const mapboxRef = useRef<MapboxModule | null>(null);
+  const markersRef = useRef<MapboxMarker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
   const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets' | 'dark'>('dark');
   const [styleRevision, setStyleRevision] = useState<number>(0);
@@ -298,84 +305,121 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     streets: 'mapbox://styles/mapbox/navigation-day-v1'
   };
 
-  // Initialize Mapbox GL JS Vector Map with Dark, Satellite, and Streets vector styles
+  // Initialize Mapbox GL JS Vector Map after first paint so initial shell/LCP renders unblocked
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    const token = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
-    mapboxgl.accessToken = token;
+    let cancelled = false;
+    let rafId = 0;
+    let timerId = 0;
+    let detachWebGLListeners: (() => void) | null = null;
+    let activeMap: MapboxMap | null = null;
 
-    const initialStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
-    const savedCam = savedCameraRef.current;
+    const initMapbox = async () => {
+      try {
+        const [mapboxModule] = await Promise.all([
+          import('mapbox-gl'),
+          import('mapbox-gl/dist/mapbox-gl.css')
+        ]);
+        if (cancelled || !mapContainer.current || map.current) return;
 
-    const newMap = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: initialStyle,
-      center: savedCam?.center ?? [73.9220, 18.5615], // Corridor midpoint
-      zoom: savedCam?.zoom ?? 15.0,
-      pitch: savedCam?.pitch ?? 36, // 36-degree cinematic 3D perspective
-      bearing: savedCam?.bearing ?? -10, // Alignment with Nagar Road arterial
-      maxZoom: 20,
-      minZoom: 13.0,
-      maxBounds: [
-        [73.890, 18.535], // Southwest coordinates (locks camera to corridor vicinity)
-        [73.955, 18.585]  // Northeast coordinates
-      ],
-      attributionControl: false
-    });
+        const mapboxgl = mapboxModule.default;
+        mapboxRef.current = mapboxgl;
 
-    newMap.on('load', () => {
-      setWebglContextLost(false);
-      setMapLoaded(true);
-    });
+        const token = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
+        mapboxgl.accessToken = token;
 
-    newMap.on('error', (e) => {
-      // Graceful fallback if token is invalid or network issues occur
-      if (e?.error && (e.error as any).status === 401) {
-        console.warn('Mapbox authorization failed, falling back to open vector style:', e.error);
-        newMap.setStyle('https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
-      }
-    });
+        const initialStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
+        const savedCam = savedCameraRef.current;
 
-    newMap.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right');
-    newMap.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
+        const newMap = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: initialStyle,
+          center: savedCam?.center ?? [73.9220, 18.5615], // Corridor midpoint
+          zoom: savedCam?.zoom ?? 15.0,
+          pitch: savedCam?.pitch ?? 36, // 36-degree cinematic 3D perspective
+          bearing: savedCam?.bearing ?? -10, // Alignment with Nagar Road arterial
+          maxZoom: 20,
+          minZoom: 13.0,
+          maxBounds: [
+            [73.890, 18.535], // Southwest coordinates (locks camera to corridor vicinity)
+            [73.955, 18.585]  // Northeast coordinates
+          ],
+          attributionControl: false
+        });
 
-    let canvasEl: HTMLCanvasElement | null = null;
-    try {
-      canvasEl = newMap.getCanvas();
-    } catch {
-      canvasEl = null;
-    }
+        activeMap = newMap;
 
-    const detachWebGLListeners = attachWebGLContextListeners(canvasEl, {
-      onLost: () => {
+        newMap.on('load', () => {
+          if (cancelled) return;
+          setWebglContextLost(false);
+          setMapLoaded(true);
+        });
+
+        newMap.on('error', (e) => {
+          // Graceful fallback if token is invalid or network issues occur
+          if (e?.error && (e.error as any).status === 401) {
+            console.warn('Mapbox authorization failed, falling back to open vector style:', e.error);
+            newMap.setStyle('https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
+          }
+        });
+
+        newMap.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right');
+        newMap.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
+
+        let canvasEl: HTMLCanvasElement | null = null;
         try {
-          const c = newMap.getCenter();
-          savedCameraRef.current = {
-            center: [c.lng, c.lat],
-            zoom: newMap.getZoom(),
-            pitch: newMap.getPitch(),
-            bearing: newMap.getBearing()
-          };
+          canvasEl = newMap.getCanvas();
         } catch {
-          // Keep existing saved camera if canvas query fails during GPU reset
+          canvasEl = null;
         }
-        setMapLoaded(false);
-        setWebglContextLost(true);
-      },
-      onRestored: () => {
-        setWebglContextLost(false);
-        setMapRebuildNonce((prev) => prev + 1);
-      }
-    });
 
-    map.current = newMap;
+        detachWebGLListeners = attachWebGLContextListeners(canvasEl, {
+          onLost: () => {
+            try {
+              const c = newMap.getCenter();
+              savedCameraRef.current = {
+                center: [c.lng, c.lat],
+                zoom: newMap.getZoom(),
+                pitch: newMap.getPitch(),
+                bearing: newMap.getBearing()
+              };
+            } catch {
+              // Keep existing saved camera if canvas query fails during GPU reset
+            }
+            setMapLoaded(false);
+            setWebglContextLost(true);
+          },
+          onRestored: () => {
+            setWebglContextLost(false);
+            setMapRebuildNonce((prev) => prev + 1);
+          }
+        });
+
+        map.current = newMap;
+      } catch (err) {
+        console.error('[MapOperationsView] Failed to initialize Mapbox GL:', err);
+      }
+    };
+
+    rafId = window.requestAnimationFrame(() => {
+      timerId = window.setTimeout(() => {
+        void initMapbox();
+      }, 0);
+    });
 
     return () => {
-      detachWebGLListeners();
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timerId);
+      if (detachWebGLListeners) {
+        detachWebGLListeners();
+      }
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
-      newMap.remove();
+      if (activeMap) {
+        activeMap.remove();
+      }
       map.current = null;
       setMapLoaded(false);
     };
@@ -577,7 +621,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
               }
             });
           } else {
-            (currentMap.getSource('secondary-streets') as mapboxgl.GeoJSONSource).setData({
+            (currentMap.getSource('secondary-streets') as MapboxGeoJSONSource).setData({
               type: 'FeatureCollection',
               features: secFeatures
             } as any);
@@ -787,7 +831,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           }
         });
 
-        const handleRoadClick = (e: mapboxgl.MapLayerMouseEvent) => {
+        const handleRoadClick = (e: MapboxMapLayerMouseEvent) => {
           if (!e.features || !e.features[0]) return;
           const clickedId = e.features[0].id;
           const found = roadSegments.find(s => s.id === clickedId);
@@ -811,7 +855,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           currentMap.getCanvas().style.cursor = '';
         });
       } else {
-        (currentMap.getSource('road-segments') as mapboxgl.GeoJSONSource).setData(segmentsGeoJson as any);
+        (currentMap.getSource('road-segments') as MapboxGeoJSONSource).setData(segmentsGeoJson as any);
       }
 
       // 3. Add Intersection Approach Stoplines (Navigation Grade)
@@ -1019,7 +1063,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           currentMap.getCanvas().style.cursor = '';
         });
       } else {
-        (currentMap.getSource('corridor-buildings-source') as mapboxgl.GeoJSONSource).setData(buildingsGeoJson as any);
+        (currentMap.getSource('corridor-buildings-source') as MapboxGeoJSONSource).setData(buildingsGeoJson as any);
         if (currentMap.getLayer('corridor-buildings-2d-fill')) {
           currentMap.setLayoutProperty('corridor-buildings-2d-fill', 'visibility', is3DMode ? 'none' : 'visible');
         }
@@ -1034,6 +1078,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       // 5. Add Signalized Intersection Markers (Navigation Chowk Badges & Pulsing Halos)
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
+      const mapboxgl = mapboxRef.current;
+      if (!mapboxgl) return;
 
       intersections.forEach(ix => {
         const isSelected = selectedEntity?.id === ix.id;
@@ -1170,6 +1216,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         role="region"
         aria-label="Interactive 2D Corridor Map Canvas"
       />
+
+      {!mapLoaded && !is3DMode && !isTableView && !webglContextLost && (
+        <div className="map-canvas-placeholder" aria-live="polite">
+          <Map size={22} />
+          <span className="map-canvas-placeholder-title">Corridor Digital Twin Canvas</span>
+          <span className="map-canvas-placeholder-sub">Initializing vector telemetry layers...</span>
+        </div>
+      )}
 
       {webglContextLost && !is3DMode && !isTableView && (
         <WebGLRecoveryOverlay
@@ -1485,8 +1539,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
                       {Array.isArray(ix.connectedSegments)
                         ? ix.connectedSegments.join(', ')
                         : typeof ix.connectedSegments === 'string'
-                        ? ix.connectedSegments
-                        : 'Corridor Arterial Network'}
+                          ? ix.connectedSegments
+                          : 'Corridor Arterial Network'}
                     </td>
                     <td>
                       <button
