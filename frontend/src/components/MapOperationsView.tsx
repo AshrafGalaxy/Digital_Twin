@@ -5,6 +5,8 @@ import { Map, Globe, TableProperties, Satellite, Moon, Compass, Zap } from 'luci
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
 import { ProvenanceBadge } from './ProvenanceBadge';
 import { ViewLoadingFallback } from './common/ViewLoadingFallback';
+import { WebGLRecoveryOverlay } from './common/WebGLRecoveryOverlay';
+import { attachWebGLContextListeners } from '../utils/webglRecovery';
 import { fetchCorridor3DGeoJson } from '../services/spatialApi';
 import { Corridor3DFeatureCollection } from '../types/spatial';
 
@@ -256,6 +258,14 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets' | 'dark'>('dark');
   const [styleRevision, setStyleRevision] = useState<number>(0);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+  const [webglContextLost, setWebglContextLost] = useState<boolean>(false);
+  const [mapRebuildNonce, setMapRebuildNonce] = useState<number>(0);
+  const savedCameraRef = useRef<{
+    center: [number, number];
+    zoom: number;
+    pitch: number;
+    bearing: number;
+  } | null>(null);
   const [corridorGeoJson, setCorridorGeoJson] = useState<Corridor3DFeatureCollection | null>(null);
   const [internalTableView, setInternalTableView] = useState<boolean>(false);
   const [hoveredBuilding, setHoveredBuilding] = useState<{
@@ -296,14 +306,15 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     mapboxgl.accessToken = token;
 
     const initialStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
+    const savedCam = savedCameraRef.current;
 
     const newMap = new mapboxgl.Map({
       container: mapContainer.current,
       style: initialStyle,
-      center: [73.9220, 18.5615], // Corridor midpoint
-      zoom: 15.0,
-      pitch: 36, // 36-degree cinematic 3D perspective
-      bearing: -10, // Alignment with Nagar Road arterial
+      center: savedCam?.center ?? [73.9220, 18.5615], // Corridor midpoint
+      zoom: savedCam?.zoom ?? 15.0,
+      pitch: savedCam?.pitch ?? 36, // 36-degree cinematic 3D perspective
+      bearing: savedCam?.bearing ?? -10, // Alignment with Nagar Road arterial
       maxZoom: 20,
       minZoom: 13.0,
       maxBounds: [
@@ -314,6 +325,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     });
 
     newMap.on('load', () => {
+      setWebglContextLost(false);
       setMapLoaded(true);
     });
 
@@ -328,16 +340,51 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     newMap.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right');
     newMap.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
 
+    let canvasEl: HTMLCanvasElement | null = null;
+    try {
+      canvasEl = newMap.getCanvas();
+    } catch {
+      canvasEl = null;
+    }
+
+    const detachWebGLListeners = attachWebGLContextListeners(canvasEl, {
+      onLost: () => {
+        try {
+          const c = newMap.getCenter();
+          savedCameraRef.current = {
+            center: [c.lng, c.lat],
+            zoom: newMap.getZoom(),
+            pitch: newMap.getPitch(),
+            bearing: newMap.getBearing()
+          };
+        } catch {
+          // Keep existing saved camera if canvas query fails during GPU reset
+        }
+        setMapLoaded(false);
+        setWebglContextLost(true);
+      },
+      onRestored: () => {
+        setWebglContextLost(false);
+        setMapRebuildNonce((prev) => prev + 1);
+      }
+    });
+
     map.current = newMap;
 
     return () => {
+      detachWebGLListeners();
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
       newMap.remove();
       map.current = null;
       setMapLoaded(false);
     };
-  }, []);
+  }, [mapRebuildNonce]);
+
+  const handleManualMapRebuild = () => {
+    setWebglContextLost(false);
+    setMapRebuildNonce((prev) => prev + 1);
+  };
 
   // Dynamically update Mapbox style when switching between Satellite, Streets, and Dark
   useEffect(() => {
@@ -1123,6 +1170,13 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         role="region"
         aria-label="Interactive 2D Corridor Map Canvas"
       />
+
+      {webglContextLost && !is3DMode && !isTableView && (
+        <WebGLRecoveryOverlay
+          viewLabel="2D Corridor Map"
+          onRebuild={handleManualMapRebuild}
+        />
+      )}
 
       {/* 2D Building Interactive Hover Tooltip Card */}
       {hoveredBuilding && hoverPos && !is3DMode && (

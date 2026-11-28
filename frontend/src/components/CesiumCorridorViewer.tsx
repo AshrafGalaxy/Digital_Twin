@@ -8,6 +8,8 @@ import { CesiumCameraControls, CORRIDOR_VIEWPOINTS, CameraViewpoint } from './Ce
 import { Activity, AlertTriangle, Zap } from 'lucide-react';
 import fallbackBuildingsJson from '../assets/corridor_buildings_3d.json';
 import { ACTIVE_CORRIDOR_CONFIG } from '../config/corridorConfig';
+import { WebGLRecoveryOverlay } from './common/WebGLRecoveryOverlay';
+import { attachWebGLContextListeners } from '../utils/webglRecovery';
 
 interface CesiumCorridorViewerProps {
   roadSegments: RoadSegmentAsset[];
@@ -149,6 +151,29 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
   const [corridorGeoJson, setCorridorGeoJson] = useState<Corridor3DFeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
+  const [webglContextLost, setWebglContextLost] = useState<boolean>(false);
+  const [viewerRebuildNonce, setViewerRebuildNonce] = useState<number>(0);
+  const savedCameraRef = useRef<{
+    destination: Cesium.Cartesian3;
+    heading: number;
+    pitch: number;
+    roll: number;
+  } | null>(null);
+
+  const handleManualViewerRebuild = useCallback(() => {
+    const viewer = viewerRef.current;
+    if (viewer && !viewer.isDestroyed()) {
+      savedCameraRef.current = {
+        destination: viewer.camera.positionWC.clone(),
+        heading: viewer.camera.heading,
+        pitch: viewer.camera.pitch,
+        roll: viewer.camera.roll
+      };
+    }
+    setWebglContextLost(false);
+    setErrorNotice(null);
+    setViewerRebuildNonce((prev) => prev + 1);
+  }, []);
 
   const activeSourceMode = Object.values(liveStates)[0]?.sourceMode || 'REPLAY';
 
@@ -339,36 +364,87 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
 
       viewerRef.current = viewer;
 
-      // Initial Camera Fly-To: Full Corridor Overview
-      const defaultVp = CORRIDOR_VIEWPOINTS[0];
+      const detachWebGLListeners = attachWebGLContextListeners(scene.canvas, {
+        onLost: () => {
+          if (!viewer.isDestroyed()) {
+            savedCameraRef.current = {
+              destination: viewer.camera.positionWC.clone(),
+              heading: viewer.camera.heading,
+              pitch: viewer.camera.pitch,
+              roll: viewer.camera.roll
+            };
+          }
+          setWebglContextLost(true);
+          setErrorNotice('3D WebGL context lost. Awaiting GPU restoration or manual rebuild.');
+        },
+        onRestored: () => {
+          setWebglContextLost(false);
+          setErrorNotice(null);
+          setViewerRebuildNonce((prev) => prev + 1);
+        }
+      });
+
+      const removeRenderErrorListener = scene.renderError.addEventListener((_scene, err) => {
+        console.error('[Cesium] Scene renderError:', err);
+        if (!viewer.isDestroyed()) {
+          savedCameraRef.current = {
+            destination: viewer.camera.positionWC.clone(),
+            heading: viewer.camera.heading,
+            pitch: viewer.camera.pitch,
+            roll: viewer.camera.roll
+          };
+        }
+        setWebglContextLost(true);
+        setErrorNotice('3D rendering context interrupted. Rebuild viewer to recover.');
+      });
+
+      // Restore previous camera if rebuilding after WebGL context loss, otherwise fly to corridor overview
       if (!viewer.isDestroyed()) {
-        viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(
-            defaultVp.longitude,
-            defaultVp.latitude,
-            defaultVp.height
-          ),
-          orientation: {
-            heading: Cesium.Math.toRadians(defaultVp.headingDegrees),
-            pitch: Cesium.Math.toRadians(defaultVp.pitchDegrees),
-            roll: Cesium.Math.toRadians(defaultVp.rollDegrees)
-          },
-          duration: 1.5
-        });
+        if (savedCameraRef.current) {
+          const savedCamera = savedCameraRef.current;
+          viewer.camera.setView({
+            destination: savedCamera.destination,
+            orientation: {
+              heading: savedCamera.heading,
+              pitch: savedCamera.pitch,
+              roll: savedCamera.roll
+            }
+          });
+          savedCameraRef.current = null;
+        } else {
+          const defaultVp = CORRIDOR_VIEWPOINTS[0];
+          viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(
+              defaultVp.longitude,
+              defaultVp.latitude,
+              defaultVp.height
+            ),
+            orientation: {
+              heading: Cesium.Math.toRadians(defaultVp.headingDegrees),
+              pitch: Cesium.Math.toRadians(defaultVp.pitchDegrees),
+              roll: Cesium.Math.toRadians(defaultVp.rollDegrees)
+            },
+            duration: 1.5
+          });
+        }
       }
 
       return () => {
+        detachWebGLListeners();
+        removeRenderErrorListener();
         handler.destroy();
         if (!viewer.isDestroyed()) {
           viewer.destroy();
         }
         viewerRef.current = null;
+        vehiclesCollectionRef.current = null;
+        signalsCollectionRef.current = null;
       };
     } catch (e) {
       console.error('[Cesium] Viewer initialization error:', e);
       setErrorNotice('WebGL 3D engine failed to initialize.');
     }
-  }, []); // Run ONCE on mount, NEVER re-instantiate on theme change
+  }, [viewerRebuildNonce]);
 
   // 2.1 Dynamic Theme Background Color (Preserves WebGL Viewer & Vehicle Listeners)
   useEffect(() => {
@@ -377,7 +453,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     viewer.scene.backgroundColor = Cesium.Color.fromCssColorString(
       currentTheme === 'light' ? '#E2E8F0' : '#0B1320'
     );
-  }, [currentTheme]);
+  }, [currentTheme, viewerRebuildNonce]);
 
   // 2.5 Dynamic 3D Basemap Swapping (Mapbox Dark v11, Satellite Streets, and Navigation Day Retina Tiles)
   const effectiveBasemap = basemapMode || 'dark';
@@ -437,7 +513,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     const layer = layers.addImageryProvider(provider);
     layer.minificationFilter = Cesium.TextureMinificationFilter.LINEAR;
     layer.magnificationFilter = Cesium.TextureMagnificationFilter.LINEAR;
-  }, [effectiveBasemap]);
+  }, [effectiveBasemap, viewerRebuildNonce]);
 
   // 3. Render Static 3D Spatial Geometry (Buildings, Roads, Sensors, Secondary Streets)
   useEffect(() => {
@@ -957,7 +1033,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         }
       });
     });
-  }, [corridorGeoJson, currentTheme]);
+  }, [corridorGeoJson, currentTheme, viewerRebuildNonce]);
 
 
   // 4. Dynamic Live Vehicle Kinematics Engine (Continuous 60 FPS Sub-Second Motion)
@@ -1039,7 +1115,7 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
         }
       });
     });
-  }, [liveStates, roadSegments]);
+  }, [liveStates, roadSegments, viewerRebuildNonce]);
 
   // 4B. 60 FPS Continuous Frame Kinematic Clock Listener (scene.preRender)
   useEffect(() => {
@@ -1064,9 +1140,11 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
     });
 
     return () => {
-      removePreRenderListener();
+      if (!viewer.isDestroyed()) {
+        removePreRenderListener();
+      }
     };
-  }, []);
+  }, [viewerRebuildNonce]);
 
   // 5. Selected Entity Focus Effect
   useEffect(() => {
@@ -1218,11 +1296,18 @@ export const CesiumCorridorViewer: React.FC<CesiumCorridorViewerProps> = ({
       )}
 
       {/* Error / Notice Notification */}
-      {errorNotice && (
+      {errorNotice && !webglContextLost && (
         <div className="cesium-error-notice" role="alert">
           <AlertTriangle size={15} />
           <span>{errorNotice}</span>
         </div>
+      )}
+
+      {webglContextLost && (
+        <WebGLRecoveryOverlay
+          viewLabel="3D Corridor Viewer"
+          onRebuild={handleManualViewerRebuild}
+        />
       )}
     </div>
   );

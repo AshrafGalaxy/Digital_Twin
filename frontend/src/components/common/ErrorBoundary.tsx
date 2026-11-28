@@ -1,4 +1,4 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, Fragment, ReactNode } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -11,6 +11,7 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  resetCount: number;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -18,11 +19,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     super(props);
     this.state = {
       hasError: false,
-      error: null
+      error: null,
+      resetCount: 0
     };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return {
       hasError: true,
       error
@@ -34,7 +36,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null });
+    this.setState((prev) => ({
+      hasError: false,
+      error: null,
+      resetCount: prev.resetCount + 1
+    }));
     if (this.props.onReset) {
       this.props.onReset();
     }
@@ -56,24 +62,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           className="error-boundary-fallback"
           style={{
             position: 'relative',
-            zIndex: 50,
+            zIndex: 70,
             margin: 'var(--space-4, 16px)',
             maxWidth: '540px',
             padding: 'var(--space-4, 16px)',
             borderRadius: 'var(--radius-md, 8px)',
-            background: 'var(--bg-surface-elevated, #161B22)',
-            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+            background: 'var(--bg-card, #161B22)',
+            border: '1px solid var(--border-default, rgba(148, 163, 184, 0.25))',
             boxShadow: 'var(--shadow-lg, 0 14px 38px rgba(1, 4, 9, 0.65))'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <AlertTriangle size={18} color="#F59E0B" style={{ flexShrink: 0 }} />
+            <AlertTriangle size={18} color="#F59E0B" style={{ flexShrink: 0 }} aria-hidden="true" />
             <h4
               style={{
                 margin: 0,
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'var(--color-text, #E6EDF3)'
+                color: 'var(--text-primary, #E6EDF3)'
               }}
             >
               {compTitle}
@@ -84,7 +90,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               margin: '0 0 12px 0',
               fontSize: '12px',
               lineHeight: 1.5,
-              color: 'var(--color-text-secondary, #8B949E)'
+              color: 'var(--text-secondary, #8B949E)'
             }}
           >
             An isolated exception occurred while rendering this module. The rest of the platform remains fully operational.
@@ -122,13 +128,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               cursor: 'pointer'
             }}
           >
-            <RotateCcw size={13} />
+            <RotateCcw size={13} aria-hidden="true" />
             <span>Recover Component</span>
           </button>
         </div>
       );
     }
 
-    return this.props.children;
+    return <Fragment key={this.state.resetCount}>{this.props.children}</Fragment>;
   }
 }
