@@ -395,8 +395,9 @@
 /* Skip Link for Keyboard Accessibility (WCAG 2.4.1 Bypass Blocks) */
 .skip-link {
   position: absolute;
-  top: -60px;
+  top: var(--space-2);
   left: var(--space-4);
+  transform: translateY(-150%);
   background: var(--color-primary);
   color: var(--color-text-inverse);
   padding: var(--space-2) var(--space-4);
@@ -406,11 +407,11 @@
   z-index: 99999;
   text-decoration: none;
   box-shadow: var(--shadow-md);
-  transition: top 0.15s ease-in-out;
+  transition: transform 0.15s ease-in-out;
 }
 
 .skip-link:focus {
-  top: var(--space-2);
+  transform: translateY(0);
   outline: 2px solid var(--color-text);
   outline-offset: 2px;
 }
@@ -715,7 +716,7 @@ body {
 
 .header-nav-tabs {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 3px;
   padding: 0 var(--space-4);
   height: 38px;
@@ -733,16 +734,19 @@ body {
 .nav-tab-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  height: 38px;
-  padding: 0 12px;
+  height: 100%;
+  padding: 6px 12px;
   background: transparent;
   border: none;
+  border-top: 2px solid transparent;
   border-bottom: 2px solid transparent;
   color: var(--text-muted);
   font-family: var(--font-sans);
   font-size: 12.5px;
   font-weight: 500;
+  line-height: 1.15;
   cursor: pointer;
   box-sizing: border-box;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -764,6 +768,39 @@ body {
 .nav-tab-icon {
   display: flex;
   align-items: center;
+}
+
+.nav-tab-label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.map-canvas-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-canvas, #0b111c);
+  color: var(--text-secondary, #94a3b8);
+  pointer-events: none;
+}
+
+.map-canvas-placeholder-title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.map-canvas-placeholder-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
 }
 
 .nav-tab-badge {
@@ -1615,7 +1652,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 12px 14px;
-  width: 368px;
+  width: min(368px, calc(100% - 24px));
   max-width: calc(100vw - 28px);
   z-index: 10;
   box-shadow: var(--shadow-card);
@@ -2145,6 +2182,8 @@ body {
   position: absolute;
   top: 44px;
   right: var(--space-3);
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
   background: var(--bg-surface, #161B22);
   border: 1px solid var(--color-border, #30363D);
   border-radius: var(--radius-sm, 6px);
@@ -2172,6 +2211,19 @@ body {
 
 .map-legend.collapsed {
   padding: 6px 10px;
+}
+
+@media (max-width: 860px) {
+  .map-legend,
+  .map-legend.in-3d-mode,
+  .map-legend.drawer-open,
+  .map-legend.drawer-comparison-open {
+    top: auto;
+    bottom: var(--space-3);
+    left: var(--space-3);
+    right: var(--space-3);
+    max-width: calc(100% - 24px);
+  }
 }
 
 .legend-header {
