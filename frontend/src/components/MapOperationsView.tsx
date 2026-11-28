@@ -5,7 +5,7 @@ import type {
   MapLayerMouseEvent as MapboxMapLayerMouseEvent,
   Marker as MapboxMarker
 } from 'mapbox-gl';
-import { Map, Globe, TableProperties, Satellite, Moon, Compass, Zap } from 'lucide-react';
+import { Map, Globe, TableProperties, Satellite, Compass, Zap } from 'lucide-react';
 
 type MapboxModule = typeof import('mapbox-gl')['default'];
 import { EntityCurrentState, IntersectionAsset, RoadSegmentAsset } from '../types/twin';
@@ -262,7 +262,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
   const mapboxRef = useRef<MapboxModule | null>(null);
   const markersRef = useRef<MapboxMarker[]>([]);
   const [is3DMode, setIs3DMode] = useState<boolean>(false);
-  const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets' | 'dark'>('dark');
+  const [basemapMode, setBasemapMode] = useState<'satellite' | 'streets'>('streets');
   const [styleRevision, setStyleRevision] = useState<number>(0);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const [webglContextLost, setWebglContextLost] = useState<boolean>(false);
@@ -329,7 +329,12 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
         const token = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
         mapboxgl.accessToken = token;
 
-        const initialStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
+        const initialStyle =
+          basemapMode === 'satellite'
+            ? MAPBOX_STYLES.satellite
+            : currentTheme === 'dark'
+            ? MAPBOX_STYLES.dark
+            : MAPBOX_STYLES.streets;
         const savedCam = savedCameraRef.current;
 
         const newMap = new mapboxgl.Map({
@@ -430,12 +435,17 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     setMapRebuildNonce((prev) => prev + 1);
   };
 
-  // Dynamically update Mapbox style when switching between Satellite, Streets, and Dark
+  // Dynamically update Mapbox style when switching between Satellite and Streets (following global theme)
   useEffect(() => {
     const currentMap = map.current;
     if (!currentMap || !mapLoaded) return;
 
-    const targetStyle = MAPBOX_STYLES[basemapMode] || MAPBOX_STYLES.dark;
+    const targetStyle =
+      basemapMode === 'satellite'
+        ? MAPBOX_STYLES.satellite
+        : currentTheme === 'dark'
+        ? MAPBOX_STYLES.dark
+        : MAPBOX_STYLES.streets;
     currentMap.setStyle(targetStyle);
 
     const handleStyleData = () => {
@@ -449,16 +459,10 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
     return () => {
       currentMap.off('styledata', handleStyleData);
     };
-  }, [basemapMode, mapLoaded]);
+  }, [basemapMode, currentTheme, mapLoaded]);
 
-  // Dynamically synchronize basemap with current visual theme
+  // Dynamically synchronize overlay paint colors with current visual theme
   useEffect(() => {
-    if (currentTheme === 'light' && basemapMode === 'dark') {
-      setBasemapMode('streets');
-    } else if (currentTheme === 'dark' && basemapMode === 'streets') {
-      setBasemapMode('dark');
-    }
-
     const currentMap = map.current;
     if (!currentMap) return;
 
@@ -1128,20 +1132,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       // 6. Add Energy Entity Marker (Commercial Facility) per UI_UX_SPEC §7.3
       const energyEl = document.createElement('div');
       energyEl.className = 'energy-entity-marker';
-      energyEl.style.display = 'flex';
-      energyEl.style.alignItems = 'center';
-      energyEl.style.gap = '5px';
-      energyEl.style.padding = '3px 8px';
-      energyEl.style.borderRadius = '6px';
-      energyEl.style.backgroundColor = '#161B22';
-      energyEl.style.border = '1px solid #D29922';
-      energyEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
-      energyEl.style.fontSize = '11px';
-      energyEl.style.fontWeight = '600';
-      energyEl.style.color = '#F0883E';
-      energyEl.style.cursor = 'pointer';
       energyEl.title = 'Commercial Facility Energy Zone (Sanctioned: 8,500 kVA)';
-      energyEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Commercial Facility (Energy)</span>';
+      energyEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Commercial Facility (Energy)</span>';
       const energyMarker = new mapboxgl.Marker({ element: energyEl })
         .setLngLat([73.9170, 18.5625])
         .addTo(currentMap);
@@ -1150,20 +1142,8 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
       // 7. Add Environmental Context Station Marker (Lohegaon CAAQMS) per UI_UX_SPEC §7.3
       const envEl = document.createElement('div');
       envEl.className = 'env-station-marker';
-      envEl.style.display = 'flex';
-      envEl.style.alignItems = 'center';
-      envEl.style.gap = '5px';
-      envEl.style.padding = '3px 8px';
-      envEl.style.borderRadius = '6px';
-      envEl.style.backgroundColor = '#161B22';
-      envEl.style.border = '1px solid #3FB950';
-      envEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
-      envEl.style.fontSize = '11px';
-      envEl.style.fontWeight = '600';
-      envEl.style.color = '#3FB950';
-      envEl.style.cursor = 'pointer';
       envEl.title = 'Pune Airport / Lohegaon CAAQMS Air Quality Reference Station (NAAQS: Moderate)';
-      envEl.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3FB950;box-shadow:0 0 6px #3FB950;"></span><span>Lohegaon CAAQMS</span>';
+      envEl.innerHTML = '<span class="env-station-marker-dot"></span><span>Lohegaon CAAQMS</span>';
       const envMarker = new mapboxgl.Marker({ element: envEl })
         .setLngLat([73.9215, 18.5665])
         .addTo(currentMap);
@@ -1291,7 +1271,7 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
             liveStates={liveStates}
             selectedEntity={selectedEntity}
             currentTheme={currentTheme}
-            basemapMode={basemapMode}
+            basemapMode={basemapMode === 'satellite' ? 'satellite' : currentTheme === 'dark' ? 'dark' : 'streets'}
             onSelectEntity={onSelectEntity}
           />
         </Suspense>
@@ -1376,20 +1356,6 @@ export const MapOperationsView: React.FC<MapOperationsViewProps> = ({
           >
             <Compass size={12} aria-hidden="true" />
             <span>Streets</span>
-          </button>
-          <button
-            type="button"
-            className={`toolbar-segmented-btn ${basemapMode === 'dark' ? 'active' : ''}`}
-            onClick={() => {
-              setBasemapMode('dark');
-              if (isTableView) handleToggleTableView(false);
-            }}
-            title="Dark Operations Canvas"
-            role="radio"
-            aria-checked={basemapMode === 'dark'}
-          >
-            <Moon size={12} aria-hidden="true" />
-            <span>Dark</span>
           </button>
         </div>
       </div>

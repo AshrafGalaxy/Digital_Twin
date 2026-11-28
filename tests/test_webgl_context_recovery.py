@@ -58,7 +58,7 @@ def test_map_operations_view_webgl_recovery_wiring() -> None:
     assert "newMap.getCanvas()" in src
     assert "detachWebGLListeners()" in src
     assert "}, [mapRebuildNonce]);" in src
-    assert "}, [basemapMode, mapLoaded]);" in src
+    assert "}, [basemapMode, currentTheme, mapLoaded]);" in src
     assert "handleManualMapRebuild" in src
     assert "<WebGLRecoveryOverlay" in src
     assert "window.location.reload" not in src
