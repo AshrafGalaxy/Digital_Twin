@@ -269,18 +269,21 @@ export const TrafficAnalyticsView: React.FC<TrafficAnalyticsViewProps> = ({
 
       {/* Corridor Summary Banner */}
       {corridorLosData?.corridorSummary && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-          padding: '12px 16px',
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--radius-sm)',
-          marginTop: '12px'
-        }}>
+        <div
+          className="corridor-aggregate-banner"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            padding: '12px 16px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-sm)',
+            marginTop: '12px'
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Activity size={18} color="#2DD4BF" />
             <div>

@@ -3071,7 +3071,7 @@ body {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
-  color: #34D399;
+  color: var(--color-success, #34D399);
 }
 
 .forecast-footer-info {
@@ -3090,9 +3090,10 @@ body {
 }
 
 .model-tag code {
-  background: rgba(0, 0, 0, 0.25);
-  padding: 1px 4px;
-  border-radius: 2px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  padding: 1px 6px;
+  border-radius: 4px;
   font-family: var(--font-mono);
   color: var(--color-primary, #58A6FF);
 }
@@ -3106,9 +3107,9 @@ body {
 }
 
 .peak-alert-banner {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #FBBF24;
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+  border: 1px solid var(--color-warning, rgba(245, 158, 11, 0.4));
+  color: var(--color-warning, #FBBF24);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   font-size: 12px;
@@ -3947,8 +3948,8 @@ body {
 }
 
 .forecast-hero-card {
-  background: rgba(22, 27, 34, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
 }
@@ -3971,7 +3972,7 @@ body {
 .forecast-main-val {
   font-size: 26px;
   font-weight: 700;
-  color: #F0F6FC;
+  color: var(--text-primary, #F0F6FC);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
   transition: color 0.3s ease, transform 0.2s ease;
@@ -3985,7 +3986,7 @@ body {
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
-  color: #79C0FF;
+  color: var(--color-primary, #79C0FF);
 }
 
 .forecast-unit {
@@ -4000,7 +4001,7 @@ body {
   align-items: center;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--color-divider, rgba(255, 255, 255, 0.06));
   font-size: 11px;
   color: var(--text-secondary);
 }
@@ -4010,28 +4011,25 @@ body {
 }
 
 .forecast-delta.text-positive {
-  color: #3FB950;
+  color: var(--color-success, #3FB950);
 }
 
 .forecast-delta.text-negative {
-  color: #F87171;
+  color: var(--color-danger, #F87171);
 }
 
 @keyframes numberPulse {
   0% {
     transform: scale(1);
-    color: #38BDF8;
-    text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+    color: var(--color-primary, #38BDF8);
   }
   50% {
-    transform: scale(1.05);
-    color: #38BDF8;
-    text-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
+    transform: scale(1.04);
+    color: var(--color-primary, #38BDF8);
   }
   100% {
     transform: scale(1);
-    color: #F0F6FC;
-    text-shadow: none;
+    color: var(--text-primary, #F0F6FC);
   }
 }
 
@@ -4047,6 +4045,11 @@ body {
   gap: 3px;
 }
 
+[data-theme="light"] .forecast-conformal-box {
+  background: rgba(13, 148, 136, 0.08);
+  border-color: rgba(13, 148, 136, 0.28);
+}
+
 .conformal-header {
   display: flex;
   align-items: center;
@@ -4059,6 +4062,10 @@ body {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #2DD4BF;
+}
+
+[data-theme="light"] .conformal-badge {
+  color: #0F766E;
 }
 
 .conformal-target {
@@ -4081,8 +4088,8 @@ body {
 
 /* Local TreeSHAP Feature Explainability */
 .forecast-explanation-box {
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-top: var(--space-2);
@@ -4107,7 +4114,7 @@ body {
 
 .explanation-subtitle {
   font-size: 11px;
-  color: #6E7681;
+  color: var(--text-subtle, #6E7681);
 }
 
 .explanation-chips {
@@ -4140,27 +4147,25 @@ body {
 }
 
 .explanation-chip.contrib-pos {
-  background: linear-gradient(90deg, rgba(16, 185, 129, 0.10) 0%, rgba(22, 27, 34, 0.5) 100%);
+  background: rgba(16, 185, 129, 0.09);
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .explanation-chip.contrib-pos .chip-indicator {
   background: #10B981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .explanation-chip.contrib-neg {
-  background: linear-gradient(90deg, rgba(239, 68, 68, 0.10) 0%, rgba(22, 27, 34, 0.5) 100%);
+  background: rgba(239, 68, 68, 0.09);
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 .explanation-chip.contrib-neg .chip-indicator {
   background: #EF4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
 }
 
 .chip-name {
-  color: #C9D1D9;
+  color: var(--text-primary, #C9D1D9);
   font-weight: 500;
 }
 
@@ -4175,8 +4180,16 @@ body {
   color: #34D399;
 }
 
+[data-theme="light"] .contrib-pos .chip-val {
+  color: #047857;
+}
+
 .contrib-neg .chip-val {
   color: #F87171;
+}
+
+[data-theme="light"] .contrib-neg .chip-val {
+  color: #DC2626;
 }
 
 /* ==========================================================================
