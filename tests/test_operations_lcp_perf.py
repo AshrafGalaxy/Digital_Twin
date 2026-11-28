@@ -67,6 +67,7 @@ def test_operations_error_boundary_prevents_overlay_collision() -> None:
     assert "zIndex: 100" in eb_src
     assert "inset: 0" in eb_src
     assert "translateY(-150%)" in css_src
-    assert "width: min(368px, calc(100% - 24px));" in css_src
+    assert "width: min(400px, calc(100% - 24px));" in css_src
+    assert "flex-wrap: wrap;" in css_src
     assert "@media (max-width: 860px)" in css_src
     assert "max-width: calc(100% - 24px);" in css_src
